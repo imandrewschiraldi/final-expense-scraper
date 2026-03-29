@@ -1,0 +1,17 @@
+{
+  "name": "final-expense-lead-scraper-v2",
+  "version": "2.0.0",
+  "description": "Final Expense Lead Scraper using Apify built-in actors",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "apify": "^3.0.0",
+    "googleapis": "^126.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
