@@ -16,9 +16,9 @@ export function AgentNav({ agentName }: { agentName: string }) {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 bg-black">
+    <header className="sticky top-0 z-50 border-b-2 border-copper bg-black">
       {/* Brand row: logo / Agent Accelerator wordmark centered / actions */}
-      <div className="mx-auto grid max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-2 border-b-2 border-copper px-3 py-3 sm:gap-3 sm:px-6">
+      <div className="mx-auto grid max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-3 sm:gap-3 sm:px-6">
         <Link href="/agent/dashboard" className="block shrink-0 justify-self-start">
           <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-9 w-auto sm:h-14" priority />
         </Link>
