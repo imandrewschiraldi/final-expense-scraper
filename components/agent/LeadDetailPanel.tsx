@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -33,12 +34,40 @@ type Lead = {
   notes: Note[];
 };
 
-export function LeadDetailPanel({ lead: initialLead }: { lead: Lead }) {
+type Navigation = {
+  prevId: string | null;
+  nextId: string | null;
+  position: number | null;
+  total: number;
+  filterQuery: string;
+};
+
+export function LeadDetailPanel({ lead: initialLead, navigation }: { lead: Lead; navigation: Navigation }) {
   const router = useRouter();
   const [lead, setLead] = useState(initialLead);
   const [noteBody, setNoteBody] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const prevHref = navigation.prevId ? `/agent/leads/${navigation.prevId}?${navigation.filterQuery}` : null;
+  const nextHref = navigation.nextId ? `/agent/leads/${navigation.nextId}?${navigation.filterQuery}` : null;
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      const isEditing = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+      if (isEditing) return;
+
+      if (e.key === "ArrowLeft" && prevHref) {
+        router.push(prevHref);
+      } else if (e.key === "ArrowRight" && nextHref) {
+        router.push(nextHref);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [prevHref, nextHref, router]);
 
   async function updateStatus(status: LeadStatus) {
     setSaving(true);
@@ -76,6 +105,27 @@ export function LeadDetailPanel({ lead: initialLead }: { lead: Lead }) {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <Link href={`/agent/dashboard`} className="text-sm text-muted hover:text-foreground">
+          &larr; Back to My Leads
+        </Link>
+        <div className="flex items-center gap-3">
+          {navigation.position && (
+            <span className="font-condensed text-xs font-bold tracking-[0.1em] text-muted uppercase">
+              Lead {navigation.position} of {navigation.total}
+            </span>
+          )}
+          <div className="flex gap-2">
+            <Button variant="ghost" disabled={!prevHref} onClick={() => prevHref && router.push(prevHref)}>
+              &larr; Prev
+            </Button>
+            <Button variant="ghost" disabled={!nextHref} onClick={() => nextHref && router.push(nextHref)}>
+              Next &rarr;
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <div>
@@ -144,6 +194,8 @@ export function LeadDetailPanel({ lead: initialLead }: { lead: Lead }) {
           ))}
         </div>
       </Card>
+
+      <p className="text-center text-xs text-muted">Tip: use the &larr; and &rarr; arrow keys to move between leads.</p>
     </div>
   );
 }

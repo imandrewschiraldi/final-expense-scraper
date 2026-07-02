@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 
@@ -25,23 +26,30 @@ const ACTIVE_TABS: { value: LeadStatus | "ALL"; label: string }[] = [
   { value: "APPOINTMENT_BOOKING", label: LEAD_STATUS_LABELS.APPOINTMENT_BOOKING },
 ];
 
+function buildFilterParams(tab: LeadStatus | "ALL", archiveView: boolean) {
+  const params = new URLSearchParams();
+  if (archiveView) {
+    params.set("archived", "true");
+  } else if (tab !== "ALL") {
+    params.set("status", tab);
+  }
+  return params;
+}
+
 export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
   const [tab, setTab] = useState<LeadStatus | "ALL">("ALL");
   const [archiveView, setArchiveView] = useState(false);
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [loading, setLoading] = useState(false);
 
+  const filterParams = buildFilterParams(tab, archiveView);
+  const filterQuery = filterParams.toString();
+
   useEffect(() => {
     async function loadLeads() {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (archiveView) {
-          params.set("archived", "true");
-        } else if (tab !== "ALL") {
-          params.set("status", tab);
-        }
-        const res = await fetch(`/api/agent/leads?${params.toString()}`);
+        const res = await fetch(`/api/agent/leads?${filterQuery}`);
         const data = await res.json();
         setLeads(data.leads);
       } finally {
@@ -50,7 +58,7 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
     }
 
     loadLeads();
-  }, [tab, archiveView]);
+  }, [filterQuery]);
 
   return (
     <div>
@@ -74,15 +82,20 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
             </button>
           ))}
         </div>
-        <button
-          onClick={() => setArchiveView(true)}
-          className={cn(
-            "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-            archiveView ? "border-gold bg-gold text-black" : "border-border text-muted hover:border-gold hover:text-foreground",
-          )}
-        >
-          Archive
-        </button>
+        <div className="flex items-center gap-2">
+          <a href={`/api/agent/leads/export?${filterQuery}`}>
+            <Button variant="secondary">Export CSV</Button>
+          </a>
+          <button
+            onClick={() => setArchiveView(true)}
+            className={cn(
+              "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+              archiveView ? "border-gold bg-gold text-black" : "border-border text-muted hover:border-gold hover:text-foreground",
+            )}
+          >
+            Archive
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-[10px] border border-border bg-surface">
@@ -107,7 +120,7 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
             {leads.map((lead) => (
               <tr key={lead.id} className="border-b border-border/60 hover:bg-surface2">
                 <td className="px-4 py-3">
-                  <Link href={`/agent/leads/${lead.id}`} className="text-white hover:text-copper">
+                  <Link href={`/agent/leads/${lead.id}?${filterQuery}`} className="text-white hover:text-copper">
                     {lead.firstName} {lead.lastName}
                   </Link>
                 </td>
