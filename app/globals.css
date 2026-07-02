@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0a;
+  --surface: #151513;
+  --surface-raised: #1c1c19;
+  --border: #2a2a25;
+  --foreground: #f2f0ea;
+  --muted: #9c9890;
+
+  --copper: #c97c4b;
+  --copper-light: #e0955f;
+  --teal: #2fbfae;
+  --teal-light: #6fd9cc;
+  --green: #3fbf63;
+  --green-light: #6fd98c;
+  --gold: #d9a73b;
+  --gold-dark: #b8862b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+
+  --color-copper: var(--copper);
+  --color-copper-light: var(--copper-light);
+  --color-teal: var(--teal);
+  --color-teal-light: var(--teal-light);
+  --color-green: var(--green);
+  --color-green-light: var(--green-light);
+  --color-gold: var(--gold);
+  --color-gold-dark: var(--gold-dark);
+
+  --font-sans: var(--font-barlow-condensed);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-barlow-condensed), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: var(--copper);
+  color: #0a0a0a;
+}
+
+* {
+  scrollbar-color: var(--border) var(--background);
+}
