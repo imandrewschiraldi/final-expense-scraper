@@ -1,4 +1,4 @@
-# Tier 1 Lead System
+# Agent Accelerator
 
 Lead management system for Veterans/Widows final expense leads. Admins import
 and assign leads; agents work their own dedicated pool and never see the
@@ -9,7 +9,7 @@ shared pool or each other's leads.
 - Next.js 16 (App Router) + TypeScript
 - PostgreSQL via Supabase, accessed through Prisma 7 with the `pg` driver adapter
 - NextAuth (credentials login, JWT sessions, role-based route guards)
-- Tailwind CSS (black background, copper/teal/green/gold theme, Barlow Condensed)
+- Tailwind CSS, theme matched to Tier 1's script tool (black background, copper/teal/green/gold/red palette, Barlow + Barlow Condensed)
 - Deployed on Vercel; weekly auto-assignment runs via Vercel Cron
 
 ## Local setup
@@ -68,6 +68,14 @@ with a one-time link to `/invite/[token]` where the agent sets their own passwor
 signed in. Invite tokens are stored as a SHA-256 hash and expire after 7 days; the admin's
 Agents page shows "Invited (pending)" until accepted and can resend the invite at any time.
 `RESEND_FROM_EMAIL` must be a verified sender/domain in your Resend account.
+
+## Training
+
+Admins build a course under `/admin/training`: modules containing video lessons (YouTube,
+Vimeo, or Loom links are auto-embedded; anything else falls back to an "Open Video" link),
+reorderable with the up/down controls. Agents work through it at `/agent/training` with a
+per-module progress bar, mark lessons complete, and move lesson-to-lesson with Next/Prev or
+the arrow keys, the same pattern used for lead navigation.
 
 ## How assignment works
 

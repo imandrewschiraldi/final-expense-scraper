@@ -12,6 +12,7 @@ const links = [
   { href: "/admin/leads/import", label: "Import Leads" },
   { href: "/admin/leads/assign", label: "Assign Leads" },
   { href: "/admin/agents", label: "Agents" },
+  { href: "/admin/training", label: "Training" },
 ];
 
 export function AdminNav() {

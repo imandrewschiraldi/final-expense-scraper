@@ -39,7 +39,7 @@ export default function LoginPage() {
     <div className="flex flex-1 items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <h1 className="font-condensed mb-1 text-center text-3xl font-extrabold tracking-wide text-copper uppercase">
-          Tier 1 Lead System
+          Agent Accelerator
         </h1>
         <p className="mb-8 text-center text-sm text-muted">Sign in to continue</p>
 
