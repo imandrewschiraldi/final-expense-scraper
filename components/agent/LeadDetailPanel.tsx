@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Callout } from "@/components/ui/Callout";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { cn } from "@/lib/cn";
+import { formatPhone } from "@/lib/formatPhone";
 
 const STATUS_OPTIONS: LeadStatus[] = [
   "NEW",
@@ -133,7 +134,7 @@ export function LeadDetailPanel({ lead: initialLead, navigation }: { lead: Lead;
               {lead.firstName} {lead.lastName}
             </CardTitle>
             <p className="mt-1 text-sm text-muted">
-              {lead.phone} &middot; {lead.state} &middot; DOB {format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}
+              {formatPhone(lead.phone)} &middot; {lead.state} &middot; DOB {format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}
             </p>
           </div>
           <StatusBadge status={lead.status} />

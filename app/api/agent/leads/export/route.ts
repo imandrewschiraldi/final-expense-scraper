@@ -5,6 +5,7 @@ import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { buildAgentLeadsWhere, AGENT_LEADS_ORDER_BY } from "@/lib/agentLeads";
 import { LEAD_STATUS_LABELS } from "@/lib/leadStatus";
+import { formatPhone } from "@/lib/formatPhone";
 
 export async function GET(req: NextRequest) {
   const guard = await requireAgent();
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
     leads.map((lead) => ({
       "First Name": lead.firstName,
       "Last Name": lead.lastName,
-      Phone: lead.phone,
+      Phone: formatPhone(lead.phone),
       State: lead.state,
       "Date of Birth": format(lead.dateOfBirth, "MM/dd/yyyy"),
       Status: LEAD_STATUS_LABELS[lead.status],

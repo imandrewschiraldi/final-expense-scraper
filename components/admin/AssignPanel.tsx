@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { format } from "date-fns";
+import { formatPhone } from "@/lib/formatPhone";
 
 type Agent = { id: string; name: string; licensedStates: string[] };
 type Lead = { id: string; firstName: string; lastName: string; phone: string; state: string; dateOfBirth: string };
@@ -193,7 +194,7 @@ export function AssignPanel({
                   <td className="py-2 pr-4 text-white">
                     {lead.firstName} {lead.lastName}
                   </td>
-                  <td className="py-2 pr-4 text-muted">{lead.phone}</td>
+                  <td className="py-2 pr-4 text-muted">{formatPhone(lead.phone)}</td>
                   <td className="py-2 pr-4 text-muted">{format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}</td>
                 </tr>
               ))}

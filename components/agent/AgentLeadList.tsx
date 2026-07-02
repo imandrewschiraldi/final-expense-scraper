@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
+import { formatPhone } from "@/lib/formatPhone";
 
 type Lead = {
   id: string;
@@ -124,7 +125,7 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
                     {lead.firstName} {lead.lastName}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-muted">{lead.phone}</td>
+                <td className="px-4 py-3 text-muted">{formatPhone(lead.phone)}</td>
                 <td className="px-4 py-3 text-muted">{lead.state}</td>
                 <td className="px-4 py-3 text-muted">{format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}</td>
                 <td className="px-4 py-3">
