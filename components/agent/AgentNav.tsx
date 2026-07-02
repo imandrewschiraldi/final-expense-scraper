@@ -3,9 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
 import { cn } from "@/lib/cn";
-import { Button } from "@/components/ui/Button";
+import { SignOutButton } from "@/components/ui/SignOutButton";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 
 const links = [
@@ -18,28 +17,47 @@ export function AgentNav({ agentName }: { agentName: string }) {
 
   return (
     <header className="sticky top-0 z-50 border-b-2 border-copper bg-black">
-      <div className="mx-auto grid max-w-5xl grid-cols-[auto_1fr] items-center gap-3 px-6 py-3 sm:grid-cols-[1fr_auto_1fr]">
+      {/* Mobile brand row: logo + action icons, wordmark on its own row below */}
+      <div className="flex items-center justify-between gap-2 px-4 pt-3 sm:hidden">
+        <Link href="/agent/dashboard" className="block shrink-0">
+          <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-9 w-auto" priority />
+        </Link>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <NotificationBell />
+          <SignOutButton />
+        </div>
+      </div>
+      <Image
+        src="/agent-accelerator-wordmark.jpg"
+        alt="Agent Accelerator"
+        width={841}
+        height={95}
+        className="mx-auto mt-1.5 block h-5 w-auto sm:hidden"
+        priority
+      />
+
+      {/* Desktop brand row: logo / wordmark / actions in one line */}
+      <div className="mx-auto hidden max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-6 py-3 sm:grid">
         <div className="flex min-w-0 items-center gap-3 justify-self-start">
           <Link href="/agent/dashboard" className="block shrink-0">
-            <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-10 w-auto shrink-0" priority />
+            <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-10 w-auto" priority />
           </Link>
-          <span className="hidden truncate text-sm text-muted sm:inline">Hi, {agentName}</span>
+          <span className="truncate text-sm text-muted">Hi, {agentName}</span>
         </div>
         <Image
           src="/agent-accelerator-wordmark.jpg"
           alt="Agent Accelerator"
           width={841}
           height={95}
-          className="hidden h-6 w-auto shrink-0 justify-self-center sm:block"
+          className="h-6 w-auto justify-self-center"
           priority
         />
-        <div className="flex min-w-0 items-center justify-end gap-2 justify-self-end sm:gap-3">
+        <div className="flex items-center justify-end gap-3 justify-self-end">
           <NotificationBell />
-          <Button variant="ghost" onClick={() => signOut({ callbackUrl: "/login" })}>
-            Sign Out
-          </Button>
+          <SignOutButton />
         </div>
       </div>
+
       <nav className="mx-auto flex max-w-5xl flex-wrap justify-center gap-2.5 border-t border-border px-6 py-2.5">
         {links.map((link) => {
           const active = pathname.startsWith(link.href);

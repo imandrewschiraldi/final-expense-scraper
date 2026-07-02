@@ -46,9 +46,14 @@ export function NotificationBell() {
     <div className="relative">
       <button
         onClick={handleOpen}
-        className="font-condensed relative rounded-lg border-[1.5px] border-copper-dim px-4 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper hover:text-foreground"
+        aria-label="Notifications"
+        className="font-condensed relative flex items-center gap-2 rounded-lg border-[1.5px] border-copper-dim px-3 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper hover:text-foreground sm:px-4"
       >
-        Notifications
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4.5 w-4.5 shrink-0">
+          <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span className="hidden sm:inline">Notifications</span>
         {unreadCount > 0 && (
           <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-xs font-bold text-black">
             {unreadCount}

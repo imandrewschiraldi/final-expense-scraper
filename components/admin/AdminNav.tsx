@@ -3,9 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
 import { cn } from "@/lib/cn";
-import { Button } from "@/components/ui/Button";
+import { SignOutButton } from "@/components/ui/SignOutButton";
 
 const links = [
   { href: "/admin/dashboard", label: "Dashboard" },
@@ -20,22 +19,40 @@ export function AdminNav() {
 
   return (
     <header className="sticky top-0 z-50 border-b-2 border-copper bg-black">
-      <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr] items-center gap-3 px-6 py-3 sm:grid-cols-[1fr_auto_1fr]">
+      {/* Mobile brand row: logo + sign out, wordmark on its own row below */}
+      <div className="flex items-center justify-between gap-2 px-4 pt-3 sm:hidden">
+        <Link href="/admin/dashboard" className="block shrink-0">
+          <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-9 w-auto" priority />
+        </Link>
+        <SignOutButton />
+      </div>
+      <Image
+        src="/agent-accelerator-wordmark.jpg"
+        alt="Agent Accelerator"
+        width={841}
+        height={95}
+        className="mx-auto mt-1.5 block h-5 w-auto sm:hidden"
+        priority
+      />
+
+      {/* Desktop brand row: logo / wordmark / sign out in one line */}
+      <div className="mx-auto hidden max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-6 py-3 sm:grid">
         <Link href="/admin/dashboard" className="block shrink-0 justify-self-start">
-          <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-10 w-auto shrink-0" priority />
+          <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-10 w-auto" priority />
         </Link>
         <Image
           src="/agent-accelerator-wordmark.jpg"
           alt="Agent Accelerator"
           width={841}
           height={95}
-          className="hidden h-6 w-auto shrink-0 justify-self-center sm:block"
+          className="h-6 w-auto justify-self-center"
           priority
         />
-        <Button variant="ghost" className="justify-self-end" onClick={() => signOut({ callbackUrl: "/login" })}>
-          Sign Out
-        </Button>
+        <div className="justify-self-end">
+          <SignOutButton />
+        </div>
       </div>
+
       <nav className="mx-auto flex max-w-7xl flex-wrap justify-center gap-2.5 border-t border-border px-6 py-2.5">
         {links.map((link) => {
           const active = pathname.startsWith(link.href);
