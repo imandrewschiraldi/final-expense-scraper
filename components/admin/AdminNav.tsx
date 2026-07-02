@@ -18,42 +18,23 @@ export function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b-2 border-copper bg-black">
-      {/* Mobile brand row: logo + sign out, wordmark on its own row below */}
-      <div className="flex items-center justify-between gap-2 px-4 pt-3 sm:hidden">
-        <Link href="/admin/dashboard" className="block shrink-0">
-          <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-9 w-auto" priority />
+    <header className="sticky top-0 z-50 bg-black">
+      {/* Brand row: logo + sign out, same layout on mobile and desktop */}
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 border-b-2 border-copper px-4 py-3 sm:px-6">
+        <Link href="/admin/dashboard" className="block min-w-0 shrink-0">
+          <Image
+            src="/agent-accelerator-full-logo.jpg"
+            alt="Tier 1 Financial — Agent Accelerator"
+            width={1320}
+            height={492}
+            className="h-12 w-auto sm:h-16"
+            priority
+          />
         </Link>
         <SignOutButton />
       </div>
-      <Image
-        src="/agent-accelerator-wordmark.jpg"
-        alt="Agent Accelerator"
-        width={841}
-        height={95}
-        className="mx-auto mt-1.5 block h-5 w-auto sm:hidden"
-        priority
-      />
 
-      {/* Desktop brand row: logo / wordmark / sign out in one line */}
-      <div className="mx-auto hidden max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-6 py-3 sm:grid">
-        <Link href="/admin/dashboard" className="block shrink-0 justify-self-start">
-          <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-10 w-auto" priority />
-        </Link>
-        <Image
-          src="/agent-accelerator-wordmark.jpg"
-          alt="Agent Accelerator"
-          width={841}
-          height={95}
-          className="h-6 w-auto justify-self-center"
-          priority
-        />
-        <div className="justify-self-end">
-          <SignOutButton />
-        </div>
-      </div>
-
-      <nav className="mx-auto flex max-w-7xl flex-wrap justify-center gap-2.5 border-t border-border px-6 py-2.5">
+      <nav className="mx-auto flex max-w-7xl flex-wrap justify-center gap-2.5 px-6 py-2.5">
         {links.map((link) => {
           const active = pathname.startsWith(link.href);
           return (
