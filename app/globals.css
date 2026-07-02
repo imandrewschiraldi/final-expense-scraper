@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --surface: #0d0d0d;
+  --surface2: #141414;
+  --border: rgba(255, 255, 255, 0.08);
+  --foreground: #d0d0d0;
+  --white: #ffffff;
+  --muted: #606060;
+
+  --copper: #c87941;
+  --copper-dim: #7a4a26;
+  --copper-glow: rgba(200, 121, 65, 0.12);
+  --teal: #20b2aa;
+  --teal-light: #7fdbda;
+  --teal-lighter: #a8efee;
+  --green: #27ae60;
+  --green-light: #7dff7d;
+  --red: #c0392b;
+  --red-light: #ff6b6b;
+  --red-lighter: #ff9090;
+  --amber: #d68910;
+  --blue: #2980b9;
+  --blue-light: #74b9ff;
+  --gold: #d4af37;
+  --radius: 10px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-white: var(--white);
+  --color-muted: var(--muted);
+
+  --color-copper: var(--copper);
+  --color-copper-dim: var(--copper-dim);
+  --color-copper-glow: var(--copper-glow);
+  --color-teal: var(--teal);
+  --color-teal-light: var(--teal-light);
+  --color-teal-lighter: var(--teal-lighter);
+  --color-green: var(--green);
+  --color-green-light: var(--green-light);
+  --color-red: var(--red);
+  --color-red-light: var(--red-light);
+  --color-red-lighter: var(--red-lighter);
+  --color-amber: var(--amber);
+  --color-blue: var(--blue);
+  --color-blue-light: var(--blue-light);
+  --color-gold: var(--gold);
+
+  --font-condensed: var(--font-barlow-condensed);
+  --font-sans: var(--font-barlow);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-barlow), Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-condensed {
+  font-family: var(--font-barlow-condensed), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: var(--copper);
+  color: #000000;
+}
+
+* {
+  scrollbar-color: var(--border) var(--background);
+}

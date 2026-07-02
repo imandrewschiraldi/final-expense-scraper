@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  AGENT
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  NO_ANSWER
+  APPOINTMENT_BOOKING
+  SOLD
+  NOT_INTERESTED
+}
+
+enum NotificationType {
+  LEADS_ASSIGNED
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  passwordHash          String?
+  name                  String
+  role                  Role      @default(AGENT)
+  licensedStates        String[]  @default([])
+  active                Boolean   @default(true)
+  inviteTokenHash       String?   @unique
+  inviteTokenExpiresAt  DateTime?
+  invitedAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  assignedLeads     Lead[]              @relation("AssignedLeads")
+  notes             LeadNote[]
+  imports           Import[]
+  notifications     Notification[]
+  assignmentFlags   AssignmentRunFlag[]
+
+  @@map("users")
+}
+
+model Lead {
+  id              String     @id @default(cuid())
+  firstName       String
+  lastName        String
+  phone           String
+  dateOfBirth     DateTime
+  state           String
+  status          LeadStatus @default(NEW)
+  isArchived      Boolean    @default(false)
+  assignedAgentId String?
+  assignedAgent   User?      @relation("AssignedLeads", fields: [assignedAgentId], references: [id])
+  assignedAt      DateTime?
+  sourceImportId  String?
+  sourceImport    Import?    @relation(fields: [sourceImportId], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  notes LeadNote[]
+
+  @@index([state])
+  @@index([status])
+  @@index([assignedAgentId])
+  @@index([isArchived])
+  @@index([assignedAgentId, status])
+  @@map("leads")
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@map("lead_notes")
+}
+
+model Import {
+  id           String   @id @default(cuid())
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  filename     String
+  rowCount     Int
+  createdAt    DateTime @default(now())
+
+  leads Lead[]
+
+  @@map("imports")
+}
+
+model AssignmentRun {
+  id        String   @id @default(cuid())
+  weekOf    DateTime
+  createdAt DateTime @default(now())
+
+  flags AssignmentRunFlag[]
+
+  @@map("assignment_runs")
+}
+
+model AssignmentRunFlag {
+  id              String        @id @default(cuid())
+  assignmentRunId String
+  assignmentRun   AssignmentRun @relation(fields: [assignmentRunId], references: [id], onDelete: Cascade)
+  agentId         String
+  agent           User          @relation(fields: [agentId], references: [id])
+  reason          String
+  leadsAssigned   Int           @default(0)
+  createdAt       DateTime      @default(now())
+
+  @@map("assignment_run_flags")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  payload   Json
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@map("notifications")
+}
