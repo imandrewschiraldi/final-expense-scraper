@@ -1,15 +1,19 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "success";
 
 const variants: Record<Variant, string> = {
-  primary:
-    "bg-gold text-background hover:bg-gold-dark border border-gold font-semibold",
-  secondary:
-    "bg-transparent text-copper-light border border-copper hover:bg-copper/10",
-  ghost: "bg-transparent text-foreground border border-border hover:bg-surface-raised",
-  danger: "bg-transparent text-red-400 border border-red-500/40 hover:bg-red-500/10",
+  // Gold — key actions (create, save, submit, assign)
+  primary: "bg-transparent text-gold border-[1.5px] border-gold hover:bg-gold hover:text-black",
+  // Copper — secondary actions, matches the script tool's default button treatment
+  secondary: "bg-transparent text-copper border-[1.5px] border-copper hover:bg-copper hover:text-black",
+  // Subtle outline for low-emphasis actions
+  ghost: "bg-transparent text-muted border-[1.5px] border-border hover:border-copper-dim hover:text-foreground",
+  // Red — destructive / negative actions
+  danger: "bg-transparent text-red border-[1.5px] border-red hover:bg-red hover:text-white",
+  // Solid green — confirmation / positive terminal actions
+  success: "bg-green text-white border-[1.5px] border-green hover:opacity-85",
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -22,7 +26,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm tracking-wide uppercase transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
+          "font-condensed inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-[13px] font-bold tracking-[0.08em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40",
           variants[variant],
           className,
         )}

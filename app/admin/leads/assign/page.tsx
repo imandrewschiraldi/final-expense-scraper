@@ -22,7 +22,7 @@ export default async function AssignLeadsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold uppercase tracking-wide text-foreground">Assign Leads</h1>
+      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Assign Leads</h1>
       <AssignPanel stateOptions={stateOptions} agents={agents} />
     </div>
   );

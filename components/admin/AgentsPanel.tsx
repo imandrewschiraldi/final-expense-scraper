@@ -12,6 +12,7 @@ type Agent = {
   email: string;
   licensedStates: string[];
   active: boolean;
+  inviteAccepted: boolean;
   leadCount: number;
 };
 
@@ -27,7 +28,7 @@ function StateMultiSelect({
       multiple
       value={value}
       onChange={(e) => onChange(Array.from(e.target.selectedOptions, (o) => o.value))}
-      className="h-32 w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-sm text-foreground focus:border-copper focus:outline-none"
+      className="h-32 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-copper-dim focus:outline-none"
     >
       {US_STATES.map((s) => (
         <option key={s.code} value={s.code}>
@@ -42,9 +43,11 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
   const [agents, setAgents] = useState(initialAgents);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editStates, setEditStates] = useState<string[]>([]);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<{ id: string; text: string } | null>(null);
 
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", licensedStates: [] as string[] });
+  const [form, setForm] = useState({ name: "", email: "", licensedStates: [] as string[] });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -63,8 +66,19 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
       return;
     }
     setAgents((prev) => [...prev, { ...data.agent, leadCount: 0 }]);
-    setForm({ name: "", email: "", password: "", licensedStates: [] });
+    setForm({ name: "", email: "", licensedStates: [] });
     setShowForm(false);
+  }
+
+  async function resendInvite(agent: Agent) {
+    setResendingId(agent.id);
+    setResendMessage(null);
+    const res = await fetch(`/api/admin/agents/${agent.id}/resend-invite`, { method: "POST" });
+    setResendingId(null);
+    setResendMessage({
+      id: agent.id,
+      text: res.ok ? `Invite resent to ${agent.email}.` : "Failed to resend invite.",
+    });
   }
 
   async function saveLicensedStates(agentId: string) {
@@ -100,7 +114,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
         </CardHeader>
 
         {showForm && (
-          <div className="mb-6 space-y-3 rounded-md border border-border bg-surface-raised p-4">
+          <div className="mb-6 space-y-3 rounded-[10px] border border-copper-dim bg-surface2 p-4">
             <div className="grid grid-cols-2 gap-3">
               <Input
                 placeholder="Name"
@@ -114,22 +128,21 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </div>
-            <Input
-              placeholder="Temporary password"
-              type="text"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-            />
+            <p className="text-xs text-muted">
+              An invite email will be sent to this address so the agent can set their own password.
+            </p>
             <div>
-              <label className="mb-1 block text-xs uppercase tracking-wide text-muted">Licensed States</label>
+              <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+                Licensed States
+              </label>
               <StateMultiSelect
                 value={form.licensedStates}
                 onChange={(states) => setForm({ ...form, licensedStates: states })}
               />
             </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-light">{error}</p>}
             <Button onClick={createAgent} disabled={loading}>
-              {loading ? "Creating..." : "Create Agent"}
+              {loading ? "Sending invite..." : "Create Agent & Send Invite"}
             </Button>
           </div>
         )}
@@ -137,7 +150,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+              <tr className="font-condensed border-b border-border text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
                 <th className="py-2 pr-4">Name</th>
                 <th className="py-2 pr-4">Email</th>
                 <th className="py-2 pr-4">Licensed States</th>
@@ -148,8 +161,8 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
             </thead>
             <tbody>
               {agents.map((agent) => (
-                <tr key={agent.id} className="border-b border-border/60 align-top">
-                  <td className="py-2 pr-4 text-foreground">{agent.name}</td>
+                <tr key={agent.id} className="border-b border-border/60 align-top hover:bg-surface2">
+                  <td className="py-2 pr-4 text-white">{agent.name}</td>
                   <td className="py-2 pr-4 text-muted">{agent.email}</td>
                   <td className="py-2 pr-4">
                     {editingId === agent.id ? (
@@ -176,16 +189,36 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                       </button>
                     )}
                   </td>
-                  <td className="py-2 pr-4 text-foreground">{agent.leadCount.toLocaleString()}</td>
+                  <td className="py-2 pr-4 text-white">{agent.leadCount.toLocaleString()}</td>
                   <td className="py-2 pr-4">
-                    <span className={agent.active ? "text-green-light" : "text-muted"}>
-                      {agent.active ? "Active" : "Inactive"}
-                    </span>
+                    {!agent.inviteAccepted ? (
+                      <span className="text-gold">Invited (pending)</span>
+                    ) : (
+                      <span className={agent.active ? "text-green-light" : "text-muted"}>
+                        {agent.active ? "Active" : "Inactive"}
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 pr-4">
-                    <Button variant="ghost" onClick={() => toggleActive(agent)}>
-                      {agent.active ? "Deactivate" : "Activate"}
-                    </Button>
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex gap-2">
+                        {!agent.inviteAccepted && (
+                          <Button
+                            variant="secondary"
+                            onClick={() => resendInvite(agent)}
+                            disabled={resendingId === agent.id}
+                          >
+                            {resendingId === agent.id ? "Sending..." : "Resend Invite"}
+                          </Button>
+                        )}
+                        <Button variant="ghost" onClick={() => toggleActive(agent)}>
+                          {agent.active ? "Deactivate" : "Activate"}
+                        </Button>
+                      </div>
+                      {resendMessage?.id === agent.id && (
+                        <span className="text-xs text-teal-light">{resendMessage.text}</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

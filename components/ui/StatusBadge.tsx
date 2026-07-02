@@ -6,10 +6,9 @@ export function StatusBadge({ status }: { status: LeadStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide",
+        "font-condensed inline-flex items-center rounded px-2 py-[3px] text-[11px] font-extrabold tracking-[0.08em] uppercase",
         colors.bg,
         colors.text,
-        colors.border,
       )}
     >
       {LEAD_STATUS_LABELS[status]}

@@ -55,7 +55,7 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-2">
           {ACTIVE_TABS.map((t) => (
             <button
               key={t.value}
@@ -64,10 +64,10 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
                 setTab(t.value);
               }}
               className={cn(
-                "rounded-md px-3 py-2 text-sm uppercase tracking-wide transition-colors",
+                "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
                 !archiveView && tab === t.value
-                  ? "bg-copper/10 text-copper-light"
-                  : "text-muted hover:text-foreground",
+                  ? "border-copper bg-copper text-black"
+                  : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
               )}
             >
               {t.label}
@@ -77,18 +77,18 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
         <button
           onClick={() => setArchiveView(true)}
           className={cn(
-            "rounded-md px-3 py-2 text-sm uppercase tracking-wide transition-colors",
-            archiveView ? "bg-gold/10 text-gold" : "text-muted hover:text-foreground",
+            "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+            archiveView ? "border-gold bg-gold text-black" : "border-border text-muted hover:border-gold hover:text-foreground",
           )}
         >
           Archive
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <div className="overflow-x-auto rounded-[10px] border border-border bg-surface">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+            <tr className="font-condensed border-b border-border text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">State</th>
@@ -105,9 +105,9 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
               </tr>
             )}
             {leads.map((lead) => (
-              <tr key={lead.id} className="border-b border-border/60 hover:bg-surface-raised">
+              <tr key={lead.id} className="border-b border-border/60 hover:bg-surface2">
                 <td className="px-4 py-3">
-                  <Link href={`/agent/leads/${lead.id}`} className="text-foreground hover:text-copper-light">
+                  <Link href={`/agent/leads/${lead.id}`} className="text-white hover:text-copper">
                     {lead.firstName} {lead.lastName}
                   </Link>
                 </td>

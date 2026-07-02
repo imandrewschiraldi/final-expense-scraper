@@ -20,7 +20,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         const user = await db.user.findUnique({ where: { email } });
-        if (!user || !user.active) {
+        if (!user || !user.active || !user.passwordHash) {
           return null;
         }
 

@@ -27,7 +27,7 @@ export default async function AdminDashboardPage({
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold uppercase tracking-wide text-foreground">
+      <h1 className="font-condensed mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">
         Master Dashboard
       </h1>
 
@@ -37,7 +37,7 @@ export default async function AdminDashboardPage({
         <StatCard label="Contacted" value={stats.totals.CONTACTED} accent="teal" />
         <StatCard label="Appointment Booking" value={stats.totals.APPOINTMENT_BOOKING} accent="gold" />
         <StatCard label="Sold" value={stats.totals.SOLD} accent="green" />
-        <StatCard label="Not Interested" value={stats.totals.NOT_INTERESTED} accent="copper" />
+        <StatCard label="Not Interested" value={stats.totals.NOT_INTERESTED} accent="red" />
       </div>
 
       <div className="mb-8">
@@ -51,12 +51,12 @@ export default async function AdminDashboardPage({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+              <tr className="font-condensed border-b border-border text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
                 <th className="py-2 pr-4">Agent</th>
                 <th className="py-2 pr-4 text-teal-light">Contacted</th>
                 <th className="py-2 pr-4 text-gold">Appt. Booking</th>
                 <th className="py-2 pr-4 text-green-light">Sold</th>
-                <th className="py-2 pr-4 text-copper-light">Not Interested</th>
+                <th className="py-2 pr-4 text-red-light">Not Interested</th>
               </tr>
             </thead>
             <tbody>
@@ -68,8 +68,8 @@ export default async function AdminDashboardPage({
                 </tr>
               )}
               {stats.byAgent.map((row) => (
-                <tr key={row.agentId} className="border-b border-border/60">
-                  <td className="py-2 pr-4 text-foreground">{row.agentName}</td>
+                <tr key={row.agentId} className="border-b border-border/60 hover:bg-surface2">
+                  <td className="py-2 pr-4 text-white">{row.agentName}</td>
                   <td className="py-2 pr-4">{row.CONTACTED}</td>
                   <td className="py-2 pr-4">{row.APPOINTMENT_BOOKING}</td>
                   <td className="py-2 pr-4">{row.SOLD}</td>

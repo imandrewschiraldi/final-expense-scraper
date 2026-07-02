@@ -6,7 +6,9 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Callout } from "@/components/ui/Callout";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
+import { cn } from "@/lib/cn";
 
 const STATUS_OPTIONS: LeadStatus[] = [
   "NEW",
@@ -88,20 +90,23 @@ export function LeadDetailPanel({ lead: initialLead }: { lead: Lead }) {
         </CardHeader>
 
         {lead.isArchived ? (
-          <p className="rounded-md border border-border bg-surface-raised p-3 text-sm text-muted">
+          <p className="rounded-[10px] border border-border bg-surface2 p-3 text-sm text-muted">
             This lead is {LEAD_STATUS_LABELS[lead.status].toLowerCase()} and locked — it has exited your active
             pool.
           </p>
         ) : (
           <div>
-            <label className="mb-2 block text-xs uppercase tracking-wide text-muted">Update Status</label>
+            <label className="font-condensed mb-2 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              Update Status
+            </label>
             <div className="flex flex-wrap gap-2">
               {STATUS_OPTIONS.map((status) => (
                 <Button
                   key={status}
-                  variant={status === lead.status ? "primary" : "secondary"}
+                  variant="secondary"
                   disabled={saving}
                   onClick={() => updateStatus(status)}
+                  className={cn(status === lead.status && "!border-copper !bg-copper !text-black")}
                 >
                   {LEAD_STATUS_LABELS[status]}
                 </Button>
@@ -109,7 +114,7 @@ export function LeadDetailPanel({ lead: initialLead }: { lead: Lead }) {
             </div>
           </div>
         )}
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        {error && <p className="mt-3 text-sm text-red-light">{error}</p>}
       </Card>
 
       <Card>
@@ -121,23 +126,23 @@ export function LeadDetailPanel({ lead: initialLead }: { lead: Lead }) {
             value={noteBody}
             onChange={(e) => setNoteBody(e.target.value)}
             placeholder="Add a note about this lead..."
-            className="min-h-20 w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper focus:outline-none"
+            className="min-h-20 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper-dim focus:outline-none"
           />
           <Button onClick={addNote} disabled={saving || !noteBody.trim()}>
             Add
           </Button>
         </div>
-        <ul className="space-y-3">
+        <div className="space-y-3">
           {lead.notes.length === 0 && <p className="text-sm text-muted">No notes yet.</p>}
           {lead.notes.map((note) => (
-            <li key={note.id} className="rounded-md border border-teal/30 bg-teal/5 p-3">
-              <p className="text-sm text-foreground">{note.body}</p>
+            <Callout key={note.id} variant="teal">
+              <p className="text-white">{note.body}</p>
               <p className="mt-1 text-xs text-teal-light">
                 {note.author.name} &middot; {format(new Date(note.createdAt), "MMM d, yyyy h:mm a")}
               </p>
-            </li>
+            </Callout>
           ))}
-        </ul>
+        </div>
       </Card>
     </div>
   );

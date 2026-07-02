@@ -45,6 +45,7 @@ See `.env.example`. Summary:
 - `NEXTAUTH_URL` — base URL of the app (`http://localhost:3000` locally).
 - `CRON_SECRET` — shared secret Vercel Cron sends as a bearer token to protect `/api/cron/weekly-assign`.
 - `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` — used once by `npm run db:seed` to create the first admin.
+- `RESEND_API_KEY` / `RESEND_FROM_EMAIL` — sends the agent invite email (see below).
 
 ## Supabase setup
 
@@ -59,6 +60,14 @@ See `.env.example`. Summary:
 3. Vercel automatically sends `CRON_SECRET` as a bearer token to cron-triggered requests when the env var is set, matching the check in `/api/cron/weekly-assign`.
 4. `vercel.json` schedules the weekly auto-assignment job for Monday at 13:00 UTC — adjust the cron expression if your agents are not on US Eastern time.
 5. Run `npm run db:deploy` (via a one-off build step or manually) before the first deploy so the schema exists, then `npm run db:seed` once to create the initial admin.
+
+## Agent invites
+
+Admins create agents by name + email only (no password). This sends an email via Resend
+with a one-time link to `/invite/[token]` where the agent sets their own password and is
+signed in. Invite tokens are stored as a SHA-256 hash and expire after 7 days; the admin's
+Agents page shows "Invited (pending)" until accepted and can resend the invite at any time.
+`RESEND_FROM_EMAIL` must be a verified sender/domain in your Resend account.
 
 ## How assignment works
 

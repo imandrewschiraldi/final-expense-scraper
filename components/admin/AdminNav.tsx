@@ -17,29 +17,30 @@ export function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <header className="border-b border-border bg-surface">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-8">
-          <span className="text-xl font-semibold uppercase tracking-wide text-copper-light">
-            Tier 1 <span className="text-gold">Admin</span>
-          </span>
-          <nav className="flex gap-1">
-            {links.map((link) => (
+    <header className="sticky top-0 z-50 border-b-2 border-copper bg-black">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-3.5">
+        <span className="font-condensed text-xl font-extrabold uppercase tracking-wide text-copper">
+          Tier 1 <span className="text-gold">Admin</span>
+        </span>
+        <nav className="flex flex-wrap gap-2.5">
+          {links.map((link) => {
+            const active = pathname.startsWith(link.href);
+            return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "rounded-md px-3 py-2 text-sm uppercase tracking-wide transition-colors",
-                  pathname.startsWith(link.href)
-                    ? "bg-copper/10 text-copper-light"
-                    : "text-muted hover:text-foreground",
+                  "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+                  active
+                    ? "border-copper bg-copper text-black"
+                    : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
                 )}
               >
                 {link.label}
               </Link>
-            ))}
-          </nav>
-        </div>
+            );
+          })}
+        </nav>
         <Button variant="ghost" onClick={() => signOut({ callbackUrl: "/login" })}>
           Sign Out
         </Button>

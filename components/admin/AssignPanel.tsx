@@ -109,7 +109,7 @@ export function AssignPanel({
         </CardHeader>
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-40">
-            <label className="mb-1 block text-xs uppercase tracking-wide text-muted">State</label>
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">State</label>
             <Select value={state} onChange={(e) => { setState(e.target.value); setPage(1); }}>
               {stateOptions.map((s) => (
                 <option key={s.state} value={s.state}>
@@ -119,7 +119,7 @@ export function AssignPanel({
             </Select>
           </div>
           <div className="w-56">
-            <label className="mb-1 block text-xs uppercase tracking-wide text-muted">Agent</label>
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">Agent</label>
             <Select value={agentId} onChange={(e) => setAgentId(e.target.value)}>
               {agents.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -130,7 +130,7 @@ export function AssignPanel({
           </div>
         </div>
         {agentId && state && !agentLicensedForState && (
-          <p className="mt-3 text-sm text-copper-light">
+          <p className="mt-3 text-sm text-amber">
             Warning: {currentAgent?.name} is not licensed in {state}.
           </p>
         )}
@@ -142,7 +142,7 @@ export function AssignPanel({
         </CardHeader>
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-32">
-            <label className="mb-1 block text-xs uppercase tracking-wide text-muted">Count</label>
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">Count</label>
             <Input
               type="number"
               min={1}
@@ -171,7 +171,7 @@ export function AssignPanel({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+              <tr className="font-condensed border-b border-border text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
                 <th className="py-2 pr-4">
                   <input
                     type="checkbox"
@@ -186,11 +186,11 @@ export function AssignPanel({
             </thead>
             <tbody>
               {leads.map((lead) => (
-                <tr key={lead.id} className="border-b border-border/60">
+                <tr key={lead.id} className="border-b border-border/60 hover:bg-surface2">
                   <td className="py-2 pr-4">
                     <input type="checkbox" checked={selected.has(lead.id)} onChange={() => toggle(lead.id)} />
                   </td>
-                  <td className="py-2 pr-4 text-foreground">
+                  <td className="py-2 pr-4 text-white">
                     {lead.firstName} {lead.lastName}
                   </td>
                   <td className="py-2 pr-4 text-muted">{lead.phone}</td>

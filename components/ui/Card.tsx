@@ -5,7 +5,20 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-border bg-surface p-5",
+        "rounded-[10px] border border-border bg-surface p-5",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/** Card with a left accent border and copper-dim outline, matching the reference tool's "dial-card". */
+export function AccentCard({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "rounded-[10px] border border-copper-dim border-l-4 border-l-copper bg-surface p-5",
         className,
       )}
       {...props}
@@ -23,7 +36,7 @@ export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingEle
   return (
     <h3
       className={cn(
-        "text-lg font-semibold uppercase tracking-wide text-copper-light",
+        "font-condensed text-lg font-extrabold uppercase tracking-wide text-white",
         className,
       )}
       {...props}

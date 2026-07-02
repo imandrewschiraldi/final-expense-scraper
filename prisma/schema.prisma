@@ -25,15 +25,18 @@ enum NotificationType {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  passwordHash   String
-  name           String
-  role           Role     @default(AGENT)
-  licensedStates String[] @default([])
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  passwordHash          String?
+  name                  String
+  role                  Role      @default(AGENT)
+  licensedStates        String[]  @default([])
+  active                Boolean   @default(true)
+  inviteTokenHash       String?   @unique
+  inviteTokenExpiresAt  DateTime?
+  invitedAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   assignedLeads     Lead[]              @relation("AssignedLeads")
   notes             LeadNote[]

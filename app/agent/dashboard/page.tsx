@@ -28,7 +28,7 @@ export default async function AgentDashboardPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold uppercase tracking-wide text-foreground">My Leads</h1>
+      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">My Leads</h1>
 
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="New" value={counts.NEW ?? 0} accent="copper" />

@@ -32,10 +32,10 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
 };
 
 export const LEAD_STATUS_COLORS: Record<LeadStatus, { bg: string; text: string; border: string }> = {
-  NEW: { bg: "bg-copper/10", text: "text-copper-light", border: "border-copper/40" },
-  CONTACTED: { bg: "bg-teal/10", text: "text-teal-light", border: "border-teal/40" },
-  NO_ANSWER: { bg: "bg-muted/10", text: "text-muted", border: "border-border" },
-  APPOINTMENT_BOOKING: { bg: "bg-gold/10", text: "text-gold", border: "border-gold/40" },
-  SOLD: { bg: "bg-green/10", text: "text-green-light", border: "border-green/40" },
-  NOT_INTERESTED: { bg: "bg-muted/5", text: "text-muted", border: "border-border" },
+  NEW: { bg: "bg-copper/20", text: "text-copper", border: "border-transparent" },
+  CONTACTED: { bg: "bg-teal/20", text: "text-teal-light", border: "border-transparent" },
+  NO_ANSWER: { bg: "bg-muted/20", text: "text-muted", border: "border-transparent" },
+  APPOINTMENT_BOOKING: { bg: "bg-gold/20", text: "text-gold", border: "border-transparent" },
+  SOLD: { bg: "bg-green/20", text: "text-green-light", border: "border-transparent" },
+  NOT_INTERESTED: { bg: "bg-red/20", text: "text-red-light", border: "border-transparent" },
 };

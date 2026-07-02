@@ -38,14 +38,16 @@ export default function LoginPage() {
   return (
     <div className="flex flex-1 items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-center text-3xl font-semibold uppercase tracking-wide text-copper-light">
+        <h1 className="font-condensed mb-1 text-center text-3xl font-extrabold tracking-wide text-copper uppercase">
           Tier 1 Lead System
         </h1>
         <p className="mb-8 text-center text-sm text-muted">Sign in to continue</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-border bg-surface p-6">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-[10px] border border-border bg-surface p-6">
           <div>
-            <label className="mb-1 block text-xs uppercase tracking-wide text-muted">Email</label>
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              Email
+            </label>
             <Input
               type="email"
               required
@@ -55,7 +57,9 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs uppercase tracking-wide text-muted">Password</label>
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              Password
+            </label>
             <Input
               type="password"
               required
@@ -65,7 +69,7 @@ export default function LoginPage() {
             />
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-red-light">{error}</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
