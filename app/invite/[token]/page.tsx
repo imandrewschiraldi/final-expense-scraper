@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { db } from "@/lib/db";
 import { hashInviteToken } from "@/lib/invite";
 import { AcceptInviteForm } from "@/components/agent/AcceptInviteForm";
@@ -14,9 +15,14 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   return (
     <div className="flex flex-1 items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <h1 className="font-condensed mb-1 text-center text-3xl font-extrabold tracking-wide text-copper uppercase">
-          Agent Accelerator
-        </h1>
+        <Image
+          src="/agent-accelerator-full-logo.jpg"
+          alt="Tier 1 Financial — Agent Accelerator"
+          width={1320}
+          height={492}
+          className="mx-auto mb-3 h-28 w-auto"
+          priority
+        />
 
         {isValid ? (
           <>

@@ -79,7 +79,7 @@ export function AcceptInviteForm({ token }: { token: string }) {
 
       {error && <p className="text-sm text-red-light">{error}</p>}
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" variant="secondary" className="w-full" disabled={loading}>
         {loading ? "Setting password..." : "Set Password & Sign In"}
       </Button>
     </form>

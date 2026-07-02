@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -38,9 +39,14 @@ export default function LoginPage() {
   return (
     <div className="flex flex-1 items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <h1 className="font-condensed mb-1 text-center text-3xl font-extrabold tracking-wide text-copper uppercase">
-          Agent Accelerator
-        </h1>
+        <Image
+          src="/agent-accelerator-full-logo.jpg"
+          alt="Tier 1 Financial — Agent Accelerator"
+          width={1320}
+          height={492}
+          className="mx-auto mb-3 h-28 w-auto"
+          priority
+        />
         <p className="mb-8 text-center text-sm text-muted">Sign in to continue</p>
 
         <form onSubmit={handleSubmit} className="space-y-4 rounded-[10px] border border-border bg-surface p-6">
@@ -71,7 +77,7 @@ export default function LoginPage() {
 
           {error && <p className="text-sm text-red-light">{error}</p>}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" variant="secondary" className="w-full" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
