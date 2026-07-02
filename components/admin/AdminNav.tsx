@@ -19,19 +19,22 @@ export function AdminNav() {
 
   return (
     <header className="sticky top-0 z-50 bg-black">
-      {/* Brand row: logo + sign out, same layout on mobile and desktop */}
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 border-b-2 border-copper px-4 py-3 sm:px-6">
-        <Link href="/admin/dashboard" className="block min-w-0 shrink-0">
-          <Image
-            src="/agent-accelerator-full-logo.jpg"
-            alt="Tier 1 Financial — Agent Accelerator"
-            width={1320}
-            height={492}
-            className="h-12 w-auto sm:h-16"
-            priority
-          />
+      {/* Brand row: logo / Agent Accelerator wordmark centered / sign out */}
+      <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-2 border-b-2 border-copper px-3 py-3 sm:gap-3 sm:px-6">
+        <Link href="/admin/dashboard" className="block shrink-0 justify-self-start">
+          <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-9 w-auto sm:h-14" priority />
         </Link>
-        <SignOutButton />
+        <Image
+          src="/agent-accelerator-wordmark.jpg"
+          alt="Agent Accelerator"
+          width={841}
+          height={95}
+          className="h-4 w-auto justify-self-center sm:h-9"
+          priority
+        />
+        <div className="justify-self-end">
+          <SignOutButton />
+        </div>
       </div>
 
       <nav className="mx-auto flex max-w-7xl flex-wrap justify-center gap-2.5 px-6 py-2.5">
