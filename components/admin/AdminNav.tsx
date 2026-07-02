@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/cn";
@@ -19,9 +20,9 @@ export function AdminNav() {
   return (
     <header className="sticky top-0 z-50 border-b-2 border-copper bg-black">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-3.5">
-        <span className="font-condensed text-xl font-extrabold uppercase tracking-wide text-copper">
-          Tier 1 <span className="text-gold">Admin</span>
-        </span>
+        <Link href="/admin/dashboard" className="block">
+          <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-[46px] w-auto" priority />
+        </Link>
         <nav className="flex flex-wrap gap-2.5">
           {links.map((link) => {
             const active = pathname.startsWith(link.href);
