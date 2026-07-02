@@ -42,6 +42,43 @@ export async function batchAssignLeads(leadIds: string[], agentId: string) {
   return { assigned: result, requested: leadIds.length };
 }
 
+export async function batchAssignByFilter(state: string, agentId: string, count: number) {
+  const agent = await db.user.findUnique({ where: { id: agentId } });
+  if (!agent || agent.role !== "AGENT") {
+    throw new Error("Agent not found");
+  }
+
+  const assigned = await db.$transaction(async (tx) => {
+    const leads = await tx.lead.findMany({
+      where: { state, assignedAgentId: null, isArchived: false },
+      orderBy: { createdAt: "asc" },
+      take: count,
+      select: { id: true },
+    });
+
+    if (leads.length === 0) {
+      return 0;
+    }
+
+    await tx.lead.updateMany({
+      where: { id: { in: leads.map((l) => l.id) } },
+      data: { assignedAgentId: agentId, assignedAt: new Date() },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId: agentId,
+        type: "LEADS_ASSIGNED",
+        payload: { count: leads.length },
+      },
+    });
+
+    return leads.length;
+  });
+
+  return { assigned, requested: count };
+}
+
 export async function runWeeklyAutoAssignment(weekOf: Date = new Date()) {
   const mondayOf = getMondayOf(weekOf);
 
