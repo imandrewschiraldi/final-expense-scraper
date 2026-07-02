@@ -16,7 +16,7 @@ const barlow = Barlow({
 });
 
 export const metadata: Metadata = {
-  title: "Tier 1 Lead System",
+  title: "Agent Accelerator",
   description: "Final expense lead management for admins and agents",
 };
 

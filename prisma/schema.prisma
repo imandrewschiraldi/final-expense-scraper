@@ -43,6 +43,7 @@ model User {
   imports           Import[]
   notifications     Notification[]
   assignmentFlags   AssignmentRunFlag[]
+  trainingProgress  TrainingProgress[]
 
   @@map("users")
 }
@@ -134,4 +135,47 @@ model Notification {
 
   @@index([userId, read])
   @@map("notifications")
+}
+
+model TrainingModule {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons TrainingLesson[]
+
+  @@index([order])
+  @@map("training_modules")
+}
+
+model TrainingLesson {
+  id          String   @id @default(cuid())
+  moduleId    String
+  module      TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  videoUrl    String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  progress TrainingProgress[]
+
+  @@index([moduleId, order])
+  @@map("training_lessons")
+}
+
+model TrainingProgress {
+  id          String         @id @default(cuid())
+  agentId     String
+  agent       User           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      TrainingLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime       @default(now())
+
+  @@unique([agentId, lessonId])
+  @@map("training_progress")
 }
