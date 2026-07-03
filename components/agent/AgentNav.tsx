@@ -9,6 +9,7 @@ import { NotificationBell } from "@/components/agent/NotificationBell";
 
 const links = [
   { href: "/agent/dashboard", label: "My Leads" },
+  { href: "/agent/vault", label: "Vault" },
   { href: "/agent/training", label: "Training" },
 ];
 

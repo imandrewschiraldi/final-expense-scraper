@@ -67,6 +67,7 @@ export default function ImportLeadsPage() {
   const [previewFilename, setPreviewFilename] = useState<string>("");
   const [mapping, setMapping] = useState<MappingState | null>(null);
   const [leadType, setLeadType] = useState<LeadType | "">("");
+  const [destination, setDestination] = useState<"unassigned" | "vault">("unassigned");
 
   async function handleFilesChosen(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -91,10 +92,16 @@ export default function ImportLeadsPage() {
     return nameOk && !!m.phoneField && !!m.dobField && !!m.stateField;
   }
 
-  async function importOneFile(file: File, columnMapping: MappingState, selectedLeadType: LeadType): Promise<FileResult> {
+  async function importOneFile(
+    file: File,
+    columnMapping: MappingState,
+    selectedLeadType: LeadType,
+    selectedDestination: "unassigned" | "vault",
+  ): Promise<FileResult> {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("leadType", selectedLeadType);
+    formData.append("destination", selectedDestination);
     formData.append(
       "mapping",
       JSON.stringify({
@@ -141,7 +148,7 @@ export default function ImportLeadsPage() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       setProgress({ index: i + 1, total: files.length, filename: file.name });
-      const result = await importOneFile(file, mapping, leadType);
+      const result = await importOneFile(file, mapping, leadType, destination);
       results.push(result);
       setFileResults([...results]);
     }
@@ -152,6 +159,7 @@ export default function ImportLeadsPage() {
     setHeaders(null);
     setMapping(null);
     setLeadType("");
+    setDestination("unassigned");
   }
 
   const totals = fileResults?.reduce(
@@ -207,6 +215,26 @@ export default function ImportLeadsPage() {
               than one.
             </span>
           </label>
+
+          <div>
+            <span className="mb-1 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
+              Destination
+            </span>
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="radio"
+                  checked={destination === "unassigned"}
+                  onChange={() => setDestination("unassigned")}
+                />
+                Unassigned pool (available for normal assignment)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input type="radio" checked={destination === "vault"} onChange={() => setDestination("vault")} />
+                Vault (shared pool every agent can call)
+              </label>
+            </div>
+          </div>
 
           <input
             ref={fileRef}

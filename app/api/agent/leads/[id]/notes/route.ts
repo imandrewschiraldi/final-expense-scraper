@@ -14,7 +14,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Note body is required" }, { status: 400 });
   }
 
-  const lead = await db.lead.findFirst({ where: { id, assignedAgentId: guard.session.user.id } });
+  const lead = await db.lead.findFirst({
+    where: { id, OR: [{ assignedAgentId: guard.session.user.id }, { isVaulted: true }] },
+  });
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }

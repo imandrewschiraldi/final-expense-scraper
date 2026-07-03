@@ -33,8 +33,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const destinationRaw = formData.get("destination");
+  const destination = destinationRaw === "vault" ? "vault" : "unassigned";
+
   const content = await file.text();
-  const result = await importLeadsFromCsv(content, guard.session.user.id, file.name, leadTypeRaw, mapping);
+  const result = await importLeadsFromCsv(content, guard.session.user.id, file.name, leadTypeRaw, mapping, destination);
 
   return NextResponse.json(result);
 }

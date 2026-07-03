@@ -189,6 +189,7 @@ export async function importLeadsFromCsv(
   filename: string,
   leadType: LeadType,
   mapping?: ColumnMapping,
+  destination: "unassigned" | "vault" = "unassigned",
 ) {
   const { rows, errors } = parseLeadsCsv(fileContent, mapping);
   const duplicates: DuplicateDetail[] = [];
@@ -259,6 +260,8 @@ export async function importLeadsFromCsv(
     },
   });
 
+  const isVault = destination === "vault";
+
   for (let i = 0; i < uniqueRows.length; i += IMPORT_BATCH_SIZE) {
     const chunk = uniqueRows.slice(i, i + IMPORT_BATCH_SIZE);
     await db.lead.createMany({
@@ -269,6 +272,8 @@ export async function importLeadsFromCsv(
         dateOfBirth: row.dateOfBirth,
         state: row.state,
         leadType,
+        isVaulted: isVault,
+        vaultOrigin: isVault,
         sourceImportId: importRecord.id,
       })),
     });

@@ -20,6 +20,8 @@ export async function GET(req: NextRequest) {
   // "true" / "false" filters to just that archive state; "any" (or omitted
   // in contexts that pass it explicitly) shows both.
   const archivedParam = searchParams.get("archived");
+  const isVaultedParam = searchParams.get("isVaulted");
+  const vaultOriginParam = searchParams.get("vaultOrigin");
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
 
   const where: Prisma.LeadWhereInput =
@@ -30,6 +32,8 @@ export async function GET(req: NextRequest) {
   if (leadType && isLeadType(leadType)) where.leadType = leadType;
   if (unassignedOnly) where.assignedAgentId = null;
   else if (agentId) where.assignedAgentId = agentId;
+  if (isVaultedParam === "true" || isVaultedParam === "false") where.isVaulted = isVaultedParam === "true";
+  if (vaultOriginParam === "true" || vaultOriginParam === "false") where.vaultOrigin = vaultOriginParam === "true";
 
   const [leads, total] = await Promise.all([
     db.lead.findMany({
@@ -50,16 +54,17 @@ export async function DELETE(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json().catch(() => ({}));
-  const { ids, state, leadType, status } = body as {
+  const { ids, state, leadType, status, vaultOrigin } = body as {
     ids?: string[];
     state?: string;
     leadType?: string;
     status?: string;
+    vaultOrigin?: boolean;
   };
 
   // Require at least one explicit filter — never allow a bodyless call to
   // wipe every lead in the system.
-  if ((!ids || ids.length === 0) && !state && !leadType && !status) {
+  if ((!ids || ids.length === 0) && !state && !leadType && !status && vaultOrigin === undefined) {
     return NextResponse.json({ error: "No leads specified to delete" }, { status: 400 });
   }
 
@@ -70,6 +75,7 @@ export async function DELETE(req: NextRequest) {
     if (state) where.state = state;
     if (leadType && isLeadType(leadType)) where.leadType = leadType;
     if (status && LEAD_STATUSES.includes(status as LeadStatus)) where.status = status as LeadStatus;
+    if (vaultOrigin !== undefined) where.vaultOrigin = vaultOrigin;
   }
 
   const result = await db.lead.deleteMany({ where });

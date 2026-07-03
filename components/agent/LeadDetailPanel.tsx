@@ -34,6 +34,7 @@ type Lead = {
   status: LeadStatus;
   leadType: LeadType;
   isArchived: boolean;
+  isVaulted: boolean;
   notes: Note[];
 };
 
@@ -45,15 +46,27 @@ type Navigation = {
   filterQuery: string;
 };
 
-export function LeadDetailPanel({ lead: initialLead, navigation }: { lead: Lead; navigation: Navigation }) {
+export function LeadDetailPanel({
+  lead: initialLead,
+  navigation,
+  basePath = "/agent/leads",
+  backHref = "/agent/dashboard",
+  backLabel = "Back to My Leads",
+}: {
+  lead: Lead;
+  navigation: Navigation;
+  basePath?: string;
+  backHref?: string;
+  backLabel?: string;
+}) {
   const router = useRouter();
   const [lead, setLead] = useState(initialLead);
   const [noteBody, setNoteBody] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const prevHref = navigation.prevId ? `/agent/leads/${navigation.prevId}?${navigation.filterQuery}` : null;
-  const nextHref = navigation.nextId ? `/agent/leads/${navigation.nextId}?${navigation.filterQuery}` : null;
+  const prevHref = navigation.prevId ? `${basePath}/${navigation.prevId}?${navigation.filterQuery}` : null;
+  const nextHref = navigation.nextId ? `${basePath}/${navigation.nextId}?${navigation.filterQuery}` : null;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -86,7 +99,7 @@ export function LeadDetailPanel({ lead: initialLead, navigation }: { lead: Lead;
       setError(data.error ?? "Failed to update status");
       return;
     }
-    setLead((prev) => ({ ...prev, status: data.lead.status, isArchived: data.lead.isArchived }));
+    setLead((prev) => ({ ...prev, status: data.lead.status, isArchived: data.lead.isArchived, isVaulted: data.lead.isVaulted }));
     router.refresh();
   }
 
@@ -109,8 +122,8 @@ export function LeadDetailPanel({ lead: initialLead, navigation }: { lead: Lead;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Link href={`/agent/dashboard`} className="text-sm text-muted hover:text-foreground">
-          &larr; Back to My Leads
+        <Link href={backHref} className="text-sm text-muted hover:text-foreground">
+          &larr; {backLabel}
         </Link>
         <div className="flex items-center gap-3">
           {navigation.position && (
@@ -142,6 +155,13 @@ export function LeadDetailPanel({ lead: initialLead, navigation }: { lead: Lead;
           </div>
           <StatusBadge status={lead.status} />
         </CardHeader>
+
+        {lead.isVaulted && (
+          <Callout variant="gold" className="mb-4">
+            This is a shared Vault lead — any agent can call it. Marking it Appointment Booked, Not
+            Interested, or Sold will claim it for you and remove it from the shared pool.
+          </Callout>
+        )}
 
         {lead.isArchived ? (
           <p className="rounded-[10px] border border-border bg-surface2 p-3 text-sm text-muted">

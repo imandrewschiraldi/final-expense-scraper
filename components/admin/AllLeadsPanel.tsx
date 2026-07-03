@@ -21,6 +21,7 @@ type Lead = {
   leadType: LeadType;
   status: LeadStatus;
   isArchived: boolean;
+  isVaulted: boolean;
   assignedAgent: { id: string; name: string } | null;
 };
 
@@ -31,6 +32,8 @@ export function AllLeadsPanel() {
   const [statusFilter, setStatusFilter] = useState("");
   const [leadTypeFilter, setLeadTypeFilter] = useState("");
   const [archivedFilter, setArchivedFilter] = useState<"any" | "true" | "false">("any");
+  const [vaultFilter, setVaultFilter] = useState<"any" | "true" | "false">("any");
+  const [moving, setMoving] = useState(false);
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
@@ -68,6 +71,7 @@ export function AllLeadsPanel() {
       if (stateFilter) params.set("state", stateFilter);
       if (statusFilter) params.set("status", statusFilter);
       if (leadTypeFilter) params.set("leadType", leadTypeFilter);
+      if (vaultFilter !== "any") params.set("isVaulted", vaultFilter);
       const res = await fetch(`/api/admin/leads?${params.toString()}`);
       const data = await res.json();
       setLeads(data.leads);
@@ -76,7 +80,7 @@ export function AllLeadsPanel() {
     } finally {
       setLoading(false);
     }
-  }, [page, stateFilter, statusFilter, leadTypeFilter, archivedFilter]);
+  }, [page, stateFilter, statusFilter, leadTypeFilter, archivedFilter, vaultFilter]);
 
   useEffect(() => {
     loadLeads();
@@ -144,6 +148,27 @@ export function AllLeadsPanel() {
       loadStateCounts();
     } else {
       setMessage(data.error ?? "Delete failed");
+    }
+  }
+
+  async function moveSelectedToVault() {
+    if (selected.size === 0) return;
+    if (!window.confirm(`Move ${selected.size} selected lead(s) into the shared Vault pool?`)) return;
+
+    setMoving(true);
+    setMessage(null);
+    const res = await fetch("/api/admin/leads/move-to-vault", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [...selected] }),
+    });
+    const data = await res.json();
+    setMoving(false);
+    if (res.ok) {
+      setMessage(`Moved ${data.moved} lead(s) into the vault.`);
+      loadLeads();
+    } else {
+      setMessage(data.error ?? "Move failed");
     }
   }
 
@@ -264,18 +289,43 @@ export function AllLeadsPanel() {
               <option value="true">Archived Only</option>
             </Select>
           </div>
+          <div className="w-44">
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              Vault
+            </label>
+            <Select
+              value={vaultFilter}
+              onChange={(e) => {
+                setVaultFilter(e.target.value as "any" | "true" | "false");
+                setPage(1);
+              }}
+            >
+              <option value="any">Any</option>
+              <option value="true">In Vault</option>
+              <option value="false">Not in Vault</option>
+            </Select>
+          </div>
         </div>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>{total.toLocaleString()} Lead(s)</CardTitle>
-          <Button variant="danger" onClick={deleteSelected} disabled={selected.size === 0 || loading}>
-            Delete Selected ({selected.size})
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={moveSelectedToVault} disabled={selected.size === 0 || moving}>
+              Move Selected to Vault ({selected.size})
+            </Button>
+            <Button variant="danger" onClick={deleteSelected} disabled={selected.size === 0 || loading}>
+              Delete Selected ({selected.size})
+            </Button>
+          </div>
         </CardHeader>
 
         {message && <p className="mb-3 text-sm text-teal-light">{message}</p>}
+        <p className="mb-3 text-xs text-muted">
+          &quot;Move Selected to Vault&quot; only affects unassigned leads — any selected leads already assigned
+          to an agent are skipped.
+        </p>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -295,6 +345,7 @@ export function AllLeadsPanel() {
                 <th className="py-2 pr-4">Type</th>
                 <th className="py-2 pr-4">Status</th>
                 <th className="py-2 pr-4">Agent</th>
+                <th className="py-2 pr-4">Vault</th>
               </tr>
             </thead>
             <tbody>
@@ -314,11 +365,12 @@ export function AllLeadsPanel() {
                     <StatusBadge status={lead.status} />
                   </td>
                   <td className="py-2 pr-4 text-muted">{lead.assignedAgent?.name ?? "Unassigned"}</td>
+                  <td className="py-2 pr-4 text-muted">{lead.isVaulted ? "Yes" : "—"}</td>
                 </tr>
               ))}
               {leads.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={8} className="py-4 text-muted">
+                  <td colSpan={9} className="py-4 text-muted">
                     No leads match these filters.
                   </td>
                 </tr>

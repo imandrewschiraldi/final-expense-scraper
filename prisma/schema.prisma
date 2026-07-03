@@ -63,6 +63,8 @@ model Lead {
   leadType        LeadType   @default(VETERANS_FINAL_EXPENSE)
   status          LeadStatus @default(NEW)
   isArchived      Boolean    @default(false)
+  isVaulted       Boolean    @default(false)
+  vaultOrigin     Boolean    @default(false)
   assignedAgentId String?
   assignedAgent   User?      @relation("AssignedLeads", fields: [assignedAgentId], references: [id])
   assignedAt      DateTime?
@@ -79,6 +81,8 @@ model Lead {
   @@index([isArchived])
   @@index([assignedAgentId, status])
   @@index([leadType])
+  @@index([isVaulted])
+  @@index([vaultOrigin, status])
   @@map("leads")
 }
 

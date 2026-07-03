@@ -11,6 +11,7 @@ const links = [
   { href: "/admin/leads/all", label: "All Leads" },
   { href: "/admin/leads/import", label: "Import Leads" },
   { href: "/admin/leads/assign", label: "Assign Leads" },
+  { href: "/admin/leads/vault", label: "Vault" },
   { href: "/admin/agents", label: "Agents" },
   { href: "/admin/training", label: "Training" },
 ];
