@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/apiAuth";
 import { importLeadsFromCsv, type ColumnMapping } from "@/lib/csv";
+import { isLeadType } from "@/lib/leadType";
 
 // Importing tens of thousands of rows takes longer than the default
 // serverless timeout — give it as much room as the plan allows.
@@ -17,6 +18,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
   }
 
+  const leadTypeRaw = formData.get("leadType");
+  if (typeof leadTypeRaw !== "string" || !isLeadType(leadTypeRaw)) {
+    return NextResponse.json({ error: "Missing or invalid lead type" }, { status: 400 });
+  }
+
   const mappingRaw = formData.get("mapping");
   let mapping: ColumnMapping | undefined;
   if (typeof mappingRaw === "string" && mappingRaw.length > 0) {
@@ -28,7 +34,7 @@ export async function POST(req: NextRequest) {
   }
 
   const content = await file.text();
-  const result = await importLeadsFromCsv(content, guard.session.user.id, file.name, mapping);
+  const result = await importLeadsFromCsv(content, guard.session.user.id, file.name, leadTypeRaw, mapping);
 
   return NextResponse.json(result);
 }

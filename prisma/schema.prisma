@@ -24,6 +24,11 @@ enum NotificationType {
   LEADS_ASSIGNED
 }
 
+enum LeadType {
+  VETERANS_FINAL_EXPENSE
+  MORTGAGE_PROTECTION
+}
+
 model User {
   id                    String    @id @default(cuid())
   email                 String    @unique
@@ -55,6 +60,7 @@ model Lead {
   phone           String
   dateOfBirth     DateTime
   state           String
+  leadType        LeadType   @default(VETERANS_FINAL_EXPENSE)
   status          LeadStatus @default(NEW)
   isArchived      Boolean    @default(false)
   assignedAgentId String?
@@ -72,6 +78,7 @@ model Lead {
   @@index([assignedAgentId])
   @@index([isArchived])
   @@index([assignedAgentId, status])
+  @@index([leadType])
   @@map("leads")
 }
 
@@ -94,6 +101,7 @@ model Import {
   uploadedBy   User     @relation(fields: [uploadedById], references: [id])
   filename     String
   rowCount     Int
+  leadType     LeadType @default(VETERANS_FINAL_EXPENSE)
   createdAt    DateTime @default(now())
 
   leads Lead[]

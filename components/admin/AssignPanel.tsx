@@ -6,9 +6,18 @@ import { Input, Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { format } from "date-fns";
 import { formatPhone } from "@/lib/formatPhone";
+import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 
 type Agent = { id: string; name: string; licensedStates: string[] };
-type Lead = { id: string; firstName: string; lastName: string; phone: string; state: string; dateOfBirth: string };
+type Lead = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  state: string;
+  dateOfBirth: string;
+  leadType: LeadType;
+};
 
 export function AssignPanel({
   stateOptions,
@@ -183,6 +192,7 @@ export function AssignPanel({
                 <th className="py-2 pr-4">Name</th>
                 <th className="py-2 pr-4">Phone</th>
                 <th className="py-2 pr-4">DOB</th>
+                <th className="py-2 pr-4">Type</th>
               </tr>
             </thead>
             <tbody>
@@ -196,11 +206,12 @@ export function AssignPanel({
                   </td>
                   <td className="py-2 pr-4 text-muted">{formatPhone(lead.phone)}</td>
                   <td className="py-2 pr-4 text-muted">{format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}</td>
+                  <td className="py-2 pr-4 text-muted">{LEAD_TYPE_LABELS[lead.leadType]}</td>
                 </tr>
               ))}
               {leads.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={4} className="py-4 text-muted">
+                  <td colSpan={5} className="py-4 text-muted">
                     No unassigned leads in this state.
                   </td>
                 </tr>

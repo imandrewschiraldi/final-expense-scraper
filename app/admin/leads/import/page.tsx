@@ -4,6 +4,7 @@ import { useRef, useState, FormEvent, ChangeEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { sniffCsvHeaders } from "@/lib/csvHeaders";
+import { LEAD_TYPES, LEAD_TYPE_LABELS, type LeadType } from "@/lib/leadType";
 
 type ImportResult = {
   imported: number;
@@ -65,6 +66,7 @@ export default function ImportLeadsPage() {
   const [headers, setHeaders] = useState<string[] | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>("");
   const [mapping, setMapping] = useState<MappingState | null>(null);
+  const [leadType, setLeadType] = useState<LeadType | "">("");
 
   async function handleFilesChosen(e: ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -89,9 +91,10 @@ export default function ImportLeadsPage() {
     return nameOk && !!m.phoneField && !!m.dobField && !!m.stateField;
   }
 
-  async function importOneFile(file: File, columnMapping: MappingState): Promise<FileResult> {
+  async function importOneFile(file: File, columnMapping: MappingState, selectedLeadType: LeadType): Promise<FileResult> {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("leadType", selectedLeadType);
     formData.append(
       "mapping",
       JSON.stringify({
@@ -125,6 +128,10 @@ export default function ImportLeadsPage() {
       setError("Finish mapping every column before importing.");
       return;
     }
+    if (!leadType) {
+      setError("Select a lead type before importing.");
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -134,7 +141,7 @@ export default function ImportLeadsPage() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       setProgress({ index: i + 1, total: files.length, filename: file.name });
-      const result = await importOneFile(file, mapping);
+      const result = await importOneFile(file, mapping, leadType);
       results.push(result);
       setFileResults([...results]);
     }
@@ -144,6 +151,7 @@ export default function ImportLeadsPage() {
     if (fileRef.current) fileRef.current.value = "";
     setHeaders(null);
     setMapping(null);
+    setLeadType("");
   }
 
   const totals = fileResults?.reduce(
@@ -176,6 +184,30 @@ export default function ImportLeadsPage() {
           multiple CSV files at once — they'll be imported one after another.
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
+              Lead Type
+            </span>
+            <select
+              value={leadType}
+              onChange={(e) => setLeadType(e.target.value as LeadType)}
+              disabled={loading}
+              required
+              className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-copper-dim focus:outline-none disabled:opacity-50"
+            >
+              <option value="">Select lead type...</option>
+              {LEAD_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {LEAD_TYPE_LABELS[t]}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-muted">
+              Every file in this batch is imported as this lead type. Import types separately if you have more
+              than one.
+            </span>
+          </label>
+
           <input
             ref={fileRef}
             type="file"
@@ -259,7 +291,7 @@ export default function ImportLeadsPage() {
             </div>
           )}
 
-          <Button type="submit" disabled={loading || !mappingIsComplete(mapping)}>
+          <Button type="submit" disabled={loading || !leadType || !mappingIsComplete(mapping)}>
             {loading ? "Importing..." : "Import Leads"}
           </Button>
         </form>

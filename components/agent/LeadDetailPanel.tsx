@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Callout } from "@/components/ui/Callout";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
+import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 import { cn } from "@/lib/cn";
 import { formatPhone } from "@/lib/formatPhone";
 
@@ -31,6 +32,7 @@ type Lead = {
   state: string;
   dateOfBirth: string;
   status: LeadStatus;
+  leadType: LeadType;
   isArchived: boolean;
   notes: Note[];
 };
@@ -134,7 +136,8 @@ export function LeadDetailPanel({ lead: initialLead, navigation }: { lead: Lead;
               {lead.firstName} {lead.lastName}
             </CardTitle>
             <p className="mt-1 text-sm text-muted">
-              {formatPhone(lead.phone)} &middot; {lead.state} &middot; DOB {format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}
+              {formatPhone(lead.phone)} &middot; {lead.state} &middot; DOB{" "}
+              {format(new Date(lead.dateOfBirth), "MM/dd/yyyy")} &middot; {LEAD_TYPE_LABELS[lead.leadType]}
             </p>
           </div>
           <StatusBadge status={lead.status} />

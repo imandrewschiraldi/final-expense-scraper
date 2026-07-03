@@ -1,6 +1,7 @@
 import Papa from "papaparse";
 import { db } from "@/lib/db";
 import { resolveStateCode } from "@/lib/usStates";
+import type { LeadType } from "@/lib/leadType";
 
 export type ParsedLeadRow = {
   line: number;
@@ -186,6 +187,7 @@ export async function importLeadsFromCsv(
   fileContent: string,
   uploadedById: string,
   filename: string,
+  leadType: LeadType,
   mapping?: ColumnMapping,
 ) {
   const { rows, errors } = parseLeadsCsv(fileContent, mapping);
@@ -253,6 +255,7 @@ export async function importLeadsFromCsv(
       filename,
       uploadedById,
       rowCount: uniqueRows.length,
+      leadType,
     },
   });
 
@@ -265,6 +268,7 @@ export async function importLeadsFromCsv(
         phone: row.phone,
         dateOfBirth: row.dateOfBirth,
         state: row.state,
+        leadType,
         sourceImportId: importRecord.id,
       })),
     });

@@ -5,6 +5,7 @@ import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { buildAgentLeadsWhere, AGENT_LEADS_ORDER_BY } from "@/lib/agentLeads";
 import { LEAD_STATUS_LABELS } from "@/lib/leadStatus";
+import { LEAD_TYPE_LABELS } from "@/lib/leadType";
 import { formatPhone } from "@/lib/formatPhone";
 
 export async function GET(req: NextRequest) {
@@ -27,6 +28,7 @@ export async function GET(req: NextRequest) {
       Phone: formatPhone(lead.phone),
       State: lead.state,
       "Date of Birth": format(lead.dateOfBirth, "MM/dd/yyyy"),
+      "Lead Type": LEAD_TYPE_LABELS[lead.leadType],
       Status: LEAD_STATUS_LABELS[lead.status],
       "Assigned At": lead.assignedAt ? format(lead.assignedAt, "MM/dd/yyyy") : "",
     })),

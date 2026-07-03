@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
+import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 import { formatPhone } from "@/lib/formatPhone";
 
 type Lead = {
@@ -17,6 +18,12 @@ type Lead = {
   state: string;
   dateOfBirth: string;
   status: LeadStatus;
+  leadType: LeadType;
+};
+
+const LEAD_TYPE_SHORT_LABELS: Record<LeadType, string> = {
+  VETERANS_FINAL_EXPENSE: "VFE",
+  MORTGAGE_PROTECTION: "MP",
 };
 
 const ACTIVE_TABS: { value: LeadStatus | "ALL"; label: string }[] = [
@@ -107,13 +114,14 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">State</th>
               <th className="px-4 py-3">DOB</th>
+              <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Status</th>
             </tr>
           </thead>
           <tbody>
             {!loading && leads.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-muted">
+                <td colSpan={6} className="px-4 py-6 text-center text-muted">
                   No leads here.
                 </td>
               </tr>
@@ -128,6 +136,9 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
                 <td className="px-4 py-3 text-muted">{formatPhone(lead.phone)}</td>
                 <td className="px-4 py-3 text-muted">{lead.state}</td>
                 <td className="px-4 py-3 text-muted">{format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}</td>
+                <td className="px-4 py-3 text-muted" title={LEAD_TYPE_LABELS[lead.leadType]}>
+                  {LEAD_TYPE_SHORT_LABELS[lead.leadType]}
+                </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={lead.status} />
                 </td>
