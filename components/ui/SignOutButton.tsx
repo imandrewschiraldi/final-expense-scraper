@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 export function SignOutButton() {
   return (
     <Button
-      variant="ghost"
+      variant="secondary"
       aria-label="Sign Out"
       className="gap-2 px-3 sm:px-4"
       onClick={() => signOut({ callbackUrl: "/login" })}
