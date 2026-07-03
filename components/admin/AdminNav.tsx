@@ -21,13 +21,11 @@ export function AdminNav() {
     <header className="sticky top-0 z-50 bg-black">
       {/* Brand row: logo / Agent Accelerator wordmark centered / sign out */}
       <div className="border-b-2 border-copper">
-        {/* Small/medium screens: logo + sign out on one line, wordmark on its own line below.
-            Stays in this layout through lg because the full-size wordmark next to the logo
-            and sign out button doesn't fit on one line until there's real room (xl+). */}
-        <div className="xl:hidden">
+        {/* Small screens: logo + sign out on one line, wordmark on its own line below. */}
+        <div className="lg:hidden">
           <div className="flex items-center justify-between gap-2 px-1.5 pt-2.5">
             <Link href="/admin/dashboard" className="block shrink-0">
-              <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-9 w-auto sm:h-12" priority />
+              <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-9 w-auto sm:h-11" priority />
             </Link>
             <SignOutButton />
           </div>
@@ -36,22 +34,23 @@ export function AdminNav() {
             alt="Agent Accelerator"
             width={841}
             height={95}
-            className="mx-auto mt-1 mb-2.5 block h-8 w-auto sm:h-12"
+            className="mx-auto mt-1 mb-2.5 block h-7 w-auto sm:h-9"
             priority
           />
         </div>
 
-        {/* xl and up: logo / wordmark centered / sign out, one line */}
-        <div className="mx-auto hidden max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 py-3 xl:grid">
+        {/* lg and up: logo / wordmark centered / sign out, one line — logo height and
+            padding match the script tool's header (46px logo, 14px/28px padding) */}
+        <div className="mx-auto hidden max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-7 py-3.5 lg:grid">
           <Link href="/admin/dashboard" className="block shrink-0 justify-self-start">
-            <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-14 w-auto" priority />
+            <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-[46px] w-auto" priority />
           </Link>
           <Image
             src="/agent-accelerator-wordmark.jpg"
             alt="Agent Accelerator"
             width={841}
             height={95}
-            className="h-[72px] w-auto justify-self-center"
+            className="h-11 w-auto justify-self-center"
             priority
           />
           <div className="justify-self-end">
