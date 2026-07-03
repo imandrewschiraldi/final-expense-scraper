@@ -152,16 +152,16 @@ export function VaultAdminPanel() {
         </CardHeader>
         <div className="space-y-3 text-sm text-muted">
           <p>
-            The Vault is a shared lead pool, open to every agent for their first eight (8) weeks. All agents
-            draw from the same pool and are expected to work it accordingly.
+            The Vault is a shared lead source, open to every agent for their first eight (8) weeks. All agents
+            draw from the same vault and are expected to work it accordingly.
           </p>
           <p>
             <span className="font-bold text-white">Every lead must be dispositioned when dialed.</span> A
-            disposition is not optional — it is the price of access to this pool.
+            disposition is not optional — it is the price to access this vault.
           </p>
           <ul className="ml-4 list-disc space-y-1">
-            <li>Leads marked <span className="font-semibold text-white">Sold</span> or{" "}
-              <span className="font-semibold text-white">Not Interested</span> are removed from the vault
+            <li>Leads marked <span className="font-semibold text-green-light">Sold</span> or{" "}
+              <span className="font-semibold text-red-light">Not Interested</span> are removed from the vault
               immediately.</li>
             <li>Leads marked <span className="font-semibold text-white">Appointment Booked</span> that are not
               marked Sold within 14 days are automatically returned to the vault.</li>
