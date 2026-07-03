@@ -6,7 +6,7 @@ type CalloutVariant = "teal" | "green" | "gold" | "blue" | "red";
 const variants: Record<CalloutVariant, string> = {
   teal: "bg-teal/[0.08] border-teal text-teal-light",
   green: "bg-green/[0.06] border-green text-white",
-  gold: "bg-gold/[0.07] border-gold text-gold",
+  gold: "bg-copper/[0.07] border-copper text-copper",
   blue: "bg-blue/[0.07] border-blue text-blue-light",
   red: "bg-red/10 border-red text-red-light",
 };

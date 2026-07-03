@@ -55,7 +55,7 @@ export function NotificationBell() {
         </svg>
         <span className="hidden sm:inline">Notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-xs font-bold text-black">
+          <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-copper text-xs font-bold text-black">
             {unreadCount}
           </span>
         )}

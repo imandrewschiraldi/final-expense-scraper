@@ -13,7 +13,7 @@ export function StatCard({
     copper: "text-copper",
     teal: "text-teal-light",
     green: "text-green-light",
-    gold: "text-gold",
+    gold: "text-copper",
     red: "text-red-light",
   }[accent];
 

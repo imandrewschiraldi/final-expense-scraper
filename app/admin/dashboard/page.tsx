@@ -54,7 +54,7 @@ export default async function AdminDashboardPage({
               <tr className="font-condensed border-b border-border text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
                 <th className="py-2 pr-4">Agent</th>
                 <th className="py-2 pr-4 text-teal-light">Contacted</th>
-                <th className="py-2 pr-4 text-gold">Appt. Booking</th>
+                <th className="py-2 pr-4 text-copper">Appt. Booking</th>
                 <th className="py-2 pr-4 text-green-light">Sold</th>
                 <th className="py-2 pr-4 text-red-light">Not Interested</th>
               </tr>
