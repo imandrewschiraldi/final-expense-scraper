@@ -23,7 +23,7 @@ export function AgentNav({ agentName }: { agentName: string }) {
         <div className="lg:hidden">
           <div className="flex items-center justify-between gap-2 px-1.5 pt-2.5">
             <Link href="/agent/dashboard" className="block shrink-0">
-              <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-9 w-auto sm:h-11" priority />
+              <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-9 w-auto sm:h-11" priority />
             </Link>
             <div className="flex shrink-0 items-center gap-1.5">
               <NotificationBell />
@@ -44,7 +44,7 @@ export function AgentNav({ agentName }: { agentName: string }) {
             padding match the script tool's header (46px logo, 14px/28px padding) */}
         <div className="mx-auto hidden max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-7 py-3.5 lg:grid">
           <Link href="/agent/dashboard" className="block shrink-0 justify-self-start">
-            <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1668} height={593} className="h-[46px] w-auto" priority />
+            <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-[46px] w-auto" priority />
           </Link>
           <Image
             src="/agent-accelerator-wordmark.jpg"
