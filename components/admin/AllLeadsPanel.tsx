@@ -49,15 +49,24 @@ export function AllLeadsPanel() {
 
   const [unassignedTotal, setUnassignedTotal] = useState(0);
   const [assignedTotal, setAssignedTotal] = useState(0);
+  const [vaultTotal, setVaultTotal] = useState(0);
 
   const loadAssignmentSummary = useCallback(async () => {
-    const [unassignedRes, allRes] = await Promise.all([
-      fetch("/api/admin/leads?archived=any&unassignedOnly=true&page=1"),
-      fetch("/api/admin/leads?archived=any&page=1"),
+    // Unassigned/Assigned counts exclude vault leads — the vault is tracked
+    // separately since it isn't "owned" by anyone until an agent claims it.
+    const [unassignedRes, nonVaultRes, vaultRes] = await Promise.all([
+      fetch("/api/admin/leads?archived=any&unassignedOnly=true&isVaulted=false&page=1"),
+      fetch("/api/admin/leads?archived=any&isVaulted=false&page=1"),
+      fetch("/api/admin/leads?archived=any&isVaulted=true&page=1"),
     ]);
-    const [unassignedData, allData] = await Promise.all([unassignedRes.json(), allRes.json()]);
+    const [unassignedData, nonVaultData, vaultData] = await Promise.all([
+      unassignedRes.json(),
+      nonVaultRes.json(),
+      vaultRes.json(),
+    ]);
     setUnassignedTotal(unassignedData.total);
-    setAssignedTotal(allData.total - unassignedData.total);
+    setAssignedTotal(nonVaultData.total - unassignedData.total);
+    setVaultTotal(vaultData.total);
   }, []);
 
   useEffect(() => {
@@ -252,6 +261,7 @@ export function AllLeadsPanel() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Unassigned Leads" value={unassignedTotal} accent="copper" />
         <StatCard label="Assigned Leads" value={assignedTotal} accent="teal" />
+        <StatCard label="Vault Leads" value={vaultTotal} accent="copper" />
       </div>
 
       <Card>
