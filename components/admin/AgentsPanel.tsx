@@ -233,7 +233,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                   <td className="py-2 pr-4 text-white">{agent.leadCount.toLocaleString()}</td>
                   <td className="py-2 pr-4">
                     {!agent.inviteAccepted ? (
-                      <span className="text-gold">Invited (pending)</span>
+                      <span className="text-copper">Invited (pending)</span>
                     ) : (
                       <span className={agent.active ? "text-green-light" : "text-muted"}>
                         {agent.active ? "Active" : "Inactive"}
