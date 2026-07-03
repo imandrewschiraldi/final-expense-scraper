@@ -7,7 +7,7 @@ export default async function AssignLeadsPage() {
   const [stateCounts, agents] = await Promise.all([
     db.lead.groupBy({
       by: ["state"],
-      where: { assignedAgentId: null, isArchived: false },
+      where: { assignedAgentId: null, isArchived: false, isVaulted: false },
       _count: true,
       orderBy: { state: "asc" },
     }),

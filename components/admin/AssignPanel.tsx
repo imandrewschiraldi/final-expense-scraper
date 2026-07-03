@@ -42,7 +42,7 @@ export function AssignPanel({
     async function loadLeads() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/admin/leads?state=${state}&unassignedOnly=true&page=${page}`);
+        const res = await fetch(`/api/admin/leads?state=${state}&unassignedOnly=true&isVaulted=false&page=${page}`);
         const data = await res.json();
         setLeads(data.leads);
         setTotal(data.total);

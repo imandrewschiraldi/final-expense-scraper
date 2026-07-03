@@ -19,6 +19,7 @@ export async function batchAssignLeads(leadIds: string[], agentId: string) {
         id: { in: leadIds },
         assignedAgentId: null,
         isArchived: false,
+        isVaulted: false,
       },
       data: {
         assignedAgentId: agentId,
@@ -50,7 +51,7 @@ export async function batchAssignByFilter(state: string, agentId: string, count:
 
   const assigned = await db.$transaction(async (tx) => {
     const leads = await tx.lead.findMany({
-      where: { state, assignedAgentId: null, isArchived: false },
+      where: { state, assignedAgentId: null, isArchived: false, isVaulted: false },
       orderBy: { createdAt: "asc" },
       take: count,
       select: { id: true },
@@ -117,6 +118,7 @@ export async function runWeeklyAutoAssignment(weekOf: Date = new Date()) {
         where: {
           assignedAgentId: null,
           isArchived: false,
+          isVaulted: false,
           state: { in: agent.licensedStates },
         },
         orderBy: { createdAt: "asc" },
