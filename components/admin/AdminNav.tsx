@@ -8,6 +8,7 @@ import { SignOutButton } from "@/components/ui/SignOutButton";
 
 const links = [
   { href: "/admin/dashboard", label: "Dashboard" },
+  { href: "/admin/leads/all", label: "All Leads" },
   { href: "/admin/leads/import", label: "Import Leads" },
   { href: "/admin/leads/assign", label: "Assign Leads" },
   { href: "/admin/agents", label: "Agents" },
