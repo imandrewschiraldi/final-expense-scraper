@@ -148,12 +148,33 @@ export function VaultAdminPanel() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Vault Pool</CardTitle>
+          <CardTitle>Vault Instructions</CardTitle>
         </CardHeader>
-        <p className="text-sm text-muted">
-          <span className="text-2xl font-extrabold text-copper">{vaultTotal?.toLocaleString() ?? "…"}</span>{" "}
-          lead(s) currently sitting in the shared vault, open to every agent.
-        </p>
+        <div className="space-y-3 text-sm text-muted">
+          <p>
+            The Vault is a shared lead pool, open to every agent for their first eight (8) weeks. All agents
+            draw from the same pool and are expected to work it accordingly.
+          </p>
+          <p>
+            <span className="font-bold text-white">Every lead must be dispositioned when dialed.</span> A
+            disposition is not optional — it is the price of access to this pool.
+          </p>
+          <ul className="ml-4 list-disc space-y-1">
+            <li>Leads marked <span className="font-semibold text-white">Sold</span> or{" "}
+              <span className="font-semibold text-white">Not Interested</span> are removed from the vault
+              immediately.</li>
+            <li>Leads marked <span className="font-semibold text-white">Appointment Booked</span> that are not
+              marked Sold within 14 days are automatically returned to the vault.</li>
+          </ul>
+          <p className="font-semibold text-white">
+            This is a privilege, not a right. Any agent found contacting leads without dispositioning them
+            will have their Vault access revoked.
+          </p>
+          <p className="border-t border-border pt-3">
+            <span className="text-2xl font-extrabold text-copper">{vaultTotal?.toLocaleString() ?? "…"}</span>{" "}
+            lead(s) currently sitting in the shared vault.
+          </p>
+        </div>
       </Card>
 
       <Card>
