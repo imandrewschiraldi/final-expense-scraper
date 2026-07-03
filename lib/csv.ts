@@ -96,7 +96,7 @@ export function parseLeadsCsv(fileContent: string): CsvParseResult {
   return { rows, errors };
 }
 
-const IMPORT_BATCH_SIZE = 1000;
+const IMPORT_BATCH_SIZE = 5000;
 
 export async function importLeadsFromCsv(
   fileContent: string,
@@ -109,9 +109,21 @@ export async function importLeadsFromCsv(
     return { imported: 0, skippedDuplicates: 0, errors };
   }
 
+  // Drop duplicate phone numbers within this file itself (keep the first
+  // occurrence) before checking against what's already in the database —
+  // otherwise two copies of the same lead in one file both pass the
+  // against-database check and both get inserted.
+  const seenInFile = new Set<string>();
+  const dedupedRows: ParsedLeadRow[] = [];
+  for (const row of rows) {
+    if (seenInFile.has(row.phone)) continue;
+    seenInFile.add(row.phone);
+    dedupedRows.push(row);
+  }
+
   const existingPhones = new Set<string>();
-  for (let i = 0; i < rows.length; i += IMPORT_BATCH_SIZE) {
-    const chunk = rows.slice(i, i + IMPORT_BATCH_SIZE).map((r) => r.phone);
+  for (let i = 0; i < dedupedRows.length; i += IMPORT_BATCH_SIZE) {
+    const chunk = dedupedRows.slice(i, i + IMPORT_BATCH_SIZE).map((r) => r.phone);
     const existing = await db.lead.findMany({
       where: { phone: { in: chunk } },
       select: { phone: true },
@@ -119,7 +131,7 @@ export async function importLeadsFromCsv(
     existing.forEach((l) => existingPhones.add(l.phone));
   }
 
-  const uniqueRows = rows.filter((r) => !existingPhones.has(r.phone));
+  const uniqueRows = dedupedRows.filter((r) => !existingPhones.has(r.phone));
   const skippedDuplicates = rows.length - uniqueRows.length;
 
   if (uniqueRows.length === 0) {
