@@ -58,11 +58,49 @@ const STATE_CODE_BY_NAME: Map<string, string> = new Map(
   US_STATES.map((s) => [s.name.toLowerCase(), s.code]),
 );
 
+function levenshteinDistance(a: string, b: string): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+// Catches misspellings of a full state name (e.g. "Flordia", "Califronia",
+// "Massachusets") by finding the closest known state name, as long as it's
+// close enough that it's very unlikely to be a coincidence. Short names
+// tolerate 1 typo, longer names tolerate 2.
+function fuzzyMatchStateName(cleaned: string): string | null {
+  const lower = cleaned.toLowerCase();
+  if (lower.length < 4) return null;
+
+  let best: { code: string; distance: number; nameLength: number } | null = null;
+  for (const s of US_STATES) {
+    const name = s.name.toLowerCase();
+    const distance = levenshteinDistance(lower, name);
+    if (!best || distance < best.distance) {
+      best = { code: s.code, distance, nameLength: name.length };
+    }
+  }
+  if (!best) return null;
+
+  const threshold = best.nameLength <= 6 ? 1 : 2;
+  return best.distance <= threshold ? best.code : null;
+}
+
 /**
  * Resolves a state value from messy real-world CSV data — full names,
- * abbreviations, any casing, stray punctuation/whitespace — to a proper
- * two-letter code. Returns null only when the value doesn't match any
- * known state at all (e.g. blank, or complete garbage).
+ * abbreviations, any casing, stray punctuation/whitespace, or close
+ * misspellings of a full name — to a proper two-letter code. Returns
+ * null only when the value doesn't match any known state at all (e.g.
+ * blank, or complete garbage).
  */
 export function resolveStateCode(raw: string | undefined | null): string | null {
   if (!raw) return null;
@@ -75,5 +113,5 @@ export function resolveStateCode(raw: string | undefined | null): string | null 
   const byName = STATE_CODE_BY_NAME.get(cleaned.toLowerCase());
   if (byName) return byName;
 
-  return null;
+  return fuzzyMatchStateName(cleaned);
 }
