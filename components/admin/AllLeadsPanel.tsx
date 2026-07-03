@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Input";
+import { Input, Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { format } from "date-fns";
@@ -50,6 +50,7 @@ export function AllLeadsPanel() {
   const [mergeTo, setMergeTo] = useState("");
   const [merging, setMerging] = useState(false);
   const [mergeMessage, setMergeMessage] = useState<string | null>(null);
+  const [mergeSearch, setMergeSearch] = useState("");
 
   const loadStateCounts = useCallback(async () => {
     const res = await fetch("/api/admin/leads/states");
@@ -176,6 +177,23 @@ export function AllLeadsPanel() {
     const next = new Set(mergeFrom);
     if (next.has(state)) next.delete(state);
     else next.add(state);
+    setMergeFrom(next);
+  }
+
+  const filteredMergeStates = mergeSearch.trim()
+    ? stateCounts.filter((s) => s.state.toLowerCase().includes(mergeSearch.trim().toLowerCase()))
+    : stateCounts;
+
+  const allShownSelected =
+    filteredMergeStates.length > 0 && filteredMergeStates.every((s) => mergeFrom.has(s.state));
+
+  function toggleAllShown() {
+    const next = new Set(mergeFrom);
+    if (allShownSelected) {
+      filteredMergeStates.forEach((s) => next.delete(s.state));
+    } else {
+      filteredMergeStates.forEach((s) => next.add(s.state));
+    }
     setMergeFrom(next);
   }
 
@@ -430,13 +448,36 @@ export function AllLeadsPanel() {
 
         {mergeMessage && <p className="mb-3 text-sm text-teal-light">{mergeMessage}</p>}
 
+        <div className="mb-3 flex flex-wrap items-end gap-3">
+          <div className="w-64">
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              Search state values
+            </label>
+            <Input
+              value={mergeSearch}
+              onChange={(e) => setMergeSearch(e.target.value)}
+              placeholder="e.g. Fl"
+            />
+          </div>
+          <Button
+            variant="secondary"
+            onClick={toggleAllShown}
+            disabled={filteredMergeStates.length === 0}
+          >
+            {allShownSelected ? "Deselect" : "Select"} All Shown ({filteredMergeStates.length})
+          </Button>
+        </div>
+
         <div className="mb-4 grid max-h-56 grid-cols-2 gap-1.5 overflow-y-auto rounded-lg border border-border bg-surface p-3 sm:grid-cols-3">
-          {stateCounts.map((s) => (
+          {filteredMergeStates.map((s) => (
             <label key={s.state} className="flex items-center gap-2 text-sm text-muted">
               <input type="checkbox" checked={mergeFrom.has(s.state)} onChange={() => toggleMergeFrom(s.state)} />
               {s.state} ({s.count.toLocaleString()})
             </label>
           ))}
+          {filteredMergeStates.length === 0 && (
+            <p className="col-span-full py-2 text-sm text-muted">No state values match &quot;{mergeSearch}&quot;.</p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-end gap-4">
