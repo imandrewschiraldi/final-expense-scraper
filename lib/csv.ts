@@ -1,13 +1,22 @@
 import Papa from "papaparse";
 import { db } from "@/lib/db";
-import { US_STATE_CODES } from "@/lib/usStates";
+import { resolveStateCode } from "@/lib/usStates";
 
 export type ParsedLeadRow = {
+  line: number;
   firstName: string;
   lastName: string;
   phone: string;
   dateOfBirth: Date;
   state: string;
+};
+
+export type DuplicateDetail = {
+  line: number;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  reason: "in_file" | "already_imported";
 };
 
 export type CsvParseResult = {
@@ -42,6 +51,52 @@ function splitName(fullName: string): { firstName: string; lastName: string } {
 
 function normalizePhone(raw: string) {
   return raw.replace(/[^\d+]/g, "");
+}
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+function twoDigitYearToFour(yy: number): number {
+  // Leads are adults, so a 2-digit year almost always means "1900s" —
+  // only treat it as 2000s if that would still land in the past.
+  const asTwoThousands = 2000 + yy;
+  return asTwoThousands <= CURRENT_YEAR ? asTwoThousands : 1900 + yy;
+}
+
+/**
+ * Parses a date of birth from messy real-world CSV data. Tries several
+ * common formats (M/D/YYYY, M/D/YY, YYYY-MM-DD, M-D-YYYY, M.D.YYYY)
+ * before falling back to native Date parsing. Returns null if nothing
+ * works.
+ */
+function parseFlexibleDate(raw: string): Date | null {
+  const value = raw.trim();
+  if (!value) return null;
+
+  const slashOrDash = value.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2}|\d{4})$/);
+  if (slashOrDash) {
+    const [, m, d, y] = slashOrDash;
+    const month = Number(m);
+    const day = Number(d);
+    const year = y.length === 2 ? twoDigitYearToFour(Number(y)) : Number(y);
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+      return date;
+    }
+  }
+
+  const isoLike = value.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$/);
+  if (isoLike) {
+    const [, y, m, d] = isoLike;
+    const date = new Date(Number(y), Number(m) - 1, Number(d));
+    if (date.getFullYear() === Number(y) && date.getMonth() === Number(m) - 1 && date.getDate() === Number(d)) {
+      return date;
+    }
+  }
+
+  const native = new Date(value);
+  if (!Number.isNaN(native.getTime())) return native;
+
+  return null;
 }
 
 export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): CsvParseResult {
@@ -87,12 +142,14 @@ export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): Csv
       firstName = split.firstName;
       lastName = split.lastName;
     }
-
+    // A missing/unparseable name shouldn't block an otherwise-dialable
+    // lead — fall back to a placeholder instead of rejecting the row.
     if (!firstName) {
-      errors.push({ line, message: "Missing name" });
-      return;
+      firstName = "Unknown";
     }
 
+    // Phone is the one field that actually blocks import: we can't call a
+    // lead without a valid 10-digit number.
     if (!phoneRaw) {
       errors.push({ line, message: "Missing phone" });
       return;
@@ -103,23 +160,21 @@ export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): Csv
       return;
     }
 
-    if (!dobRaw) {
-      errors.push({ line, message: "Missing date of birth" });
-      return;
-    }
-    const dateOfBirth = new Date(dobRaw);
-    if (Number.isNaN(dateOfBirth.getTime())) {
-      errors.push({ line, message: `Invalid date of birth: ${dobRaw}` });
-      return;
-    }
-
-    const state = stateRaw?.trim().toUpperCase() ?? "";
-    if (!US_STATE_CODES.has(state)) {
-      errors.push({ line, message: `Invalid state: ${stateRaw}` });
+    // Date of birth has to be a real date since it's stored as one, but
+    // we try hard to parse whatever format shows up before giving up.
+    const dateOfBirth = dobRaw ? parseFlexibleDate(dobRaw) : null;
+    if (!dateOfBirth) {
+      errors.push({ line, message: dobRaw ? `Invalid date of birth: ${dobRaw}` : "Missing date of birth" });
       return;
     }
 
-    rows.push({ firstName, lastName, phone, dateOfBirth, state });
+    // State: accept abbreviations or full names in any casing. Only
+    // falls back to storing the raw value when it's totally unrecognized
+    // (e.g. a typo) rather than rejecting the row.
+    const resolvedState = resolveStateCode(stateRaw);
+    const state = resolvedState ?? stateRaw?.trim().toUpperCase() ?? "";
+
+    rows.push({ line, firstName, lastName, phone, dateOfBirth, state });
   });
 
   return { rows, errors };
@@ -134,38 +189,63 @@ export async function importLeadsFromCsv(
   mapping?: ColumnMapping,
 ) {
   const { rows, errors } = parseLeadsCsv(fileContent, mapping);
+  const duplicates: DuplicateDetail[] = [];
 
   if (rows.length === 0) {
-    return { imported: 0, skippedDuplicates: 0, errors };
+    return { imported: 0, skippedDuplicates: 0, errors, duplicates };
   }
 
   // Drop duplicate phone numbers within this file itself (keep the first
   // occurrence) before checking against what's already in the database —
   // otherwise two copies of the same lead in one file both pass the
   // against-database check and both get inserted.
-  const seenInFile = new Set<string>();
+  const seenInFile = new Map<string, ParsedLeadRow>();
   const dedupedRows: ParsedLeadRow[] = [];
   for (const row of rows) {
-    if (seenInFile.has(row.phone)) continue;
-    seenInFile.add(row.phone);
+    const firstSeen = seenInFile.get(row.phone);
+    if (firstSeen) {
+      duplicates.push({
+        line: row.line,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        phone: row.phone,
+        reason: "in_file",
+      });
+      continue;
+    }
+    seenInFile.set(row.phone, row);
     dedupedRows.push(row);
   }
 
-  const existingPhones = new Set<string>();
+  const existingPhones = new Map<string, { firstName: string; lastName: string }>();
   for (let i = 0; i < dedupedRows.length; i += IMPORT_BATCH_SIZE) {
     const chunk = dedupedRows.slice(i, i + IMPORT_BATCH_SIZE).map((r) => r.phone);
     const existing = await db.lead.findMany({
       where: { phone: { in: chunk } },
-      select: { phone: true },
+      select: { phone: true, firstName: true, lastName: true },
     });
-    existing.forEach((l) => existingPhones.add(l.phone));
+    existing.forEach((l) => existingPhones.set(l.phone, { firstName: l.firstName, lastName: l.lastName }));
   }
 
-  const uniqueRows = dedupedRows.filter((r) => !existingPhones.has(r.phone));
-  const skippedDuplicates = rows.length - uniqueRows.length;
+  const uniqueRows: ParsedLeadRow[] = [];
+  for (const row of dedupedRows) {
+    if (existingPhones.has(row.phone)) {
+      duplicates.push({
+        line: row.line,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        phone: row.phone,
+        reason: "already_imported",
+      });
+      continue;
+    }
+    uniqueRows.push(row);
+  }
+
+  const skippedDuplicates = duplicates.length;
 
   if (uniqueRows.length === 0) {
-    return { imported: 0, skippedDuplicates, errors };
+    return { imported: 0, skippedDuplicates, errors, duplicates };
   }
 
   const importRecord = await db.import.create({
@@ -190,5 +270,5 @@ export async function importLeadsFromCsv(
     });
   }
 
-  return { imported: uniqueRows.length, skippedDuplicates, errors };
+  return { imported: uniqueRows.length, skippedDuplicates, errors, duplicates };
 }

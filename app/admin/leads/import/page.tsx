@@ -9,6 +9,7 @@ type ImportResult = {
   imported: number;
   skippedDuplicates: number;
   errors: { line: number; message: string }[];
+  duplicates: { line: number; firstName: string; lastName: string; phone: string; reason: "in_file" | "already_imported" }[];
 };
 
 type FileResult = {
@@ -307,6 +308,24 @@ export default function ImportLeadsPage() {
                             </li>
                           ))}
                         </ul>
+                      )}
+                      {f.result.duplicates.length > 0 && (
+                        <details className="mt-1">
+                          <summary className="cursor-pointer text-xs text-teal-light hover:underline">
+                            Show which {f.result.duplicates.length} row(s) were treated as duplicates
+                          </summary>
+                          <ul className="mt-1 max-h-48 space-y-0.5 overflow-y-auto text-xs text-muted">
+                            {f.result.duplicates.slice(0, 500).map((d, j) => (
+                              <li key={j}>
+                                Line {d.line}: {d.firstName} {d.lastName} — {d.phone} (
+                                {d.reason === "in_file"
+                                  ? "repeated within this file"
+                                  : "phone already exists in the database"}
+                                )
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
                       )}
                     </>
                   ) : (

@@ -53,3 +53,27 @@ export const US_STATES = [
 ] as const;
 
 export const US_STATE_CODES: Set<string> = new Set(US_STATES.map((s) => s.code));
+
+const STATE_CODE_BY_NAME: Map<string, string> = new Map(
+  US_STATES.map((s) => [s.name.toLowerCase(), s.code]),
+);
+
+/**
+ * Resolves a state value from messy real-world CSV data — full names,
+ * abbreviations, any casing, stray punctuation/whitespace — to a proper
+ * two-letter code. Returns null only when the value doesn't match any
+ * known state at all (e.g. blank, or complete garbage).
+ */
+export function resolveStateCode(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  const cleaned = raw.trim().replace(/[.,]/g, "");
+  if (!cleaned) return null;
+
+  const upper = cleaned.toUpperCase();
+  if (US_STATE_CODES.has(upper)) return upper;
+
+  const byName = STATE_CODE_BY_NAME.get(cleaned.toLowerCase());
+  if (byName) return byName;
+
+  return null;
+}
