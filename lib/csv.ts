@@ -15,8 +15,21 @@ export type CsvParseResult = {
   errors: { line: number; message: string }[];
 };
 
+// Lets an admin explicitly tell us which column in their CSV is which,
+// instead of us guessing based on common header names. Field values are
+// the raw header text as it appears in the file.
+export type ColumnMapping = {
+  nameMode: "single" | "split";
+  nameField?: string;
+  firstNameField?: string;
+  lastNameField?: string;
+  phoneField: string;
+  dobField: string;
+  stateField: string;
+};
+
 function normalizeHeader(header: string) {
-  return header.trim().toLowerCase().replace(/[\s_]+/g, " ");
+  return header.replace(/^\uFEFF/, "").trim().toLowerCase().replace(/[\s_]+/g, " ");
 }
 
 function splitName(fullName: string): { firstName: string; lastName: string } {
@@ -31,7 +44,7 @@ function normalizePhone(raw: string) {
   return raw.replace(/[^\d+]/g, "");
 }
 
-export function parseLeadsCsv(fileContent: string): CsvParseResult {
+export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): CsvParseResult {
   const parsed = Papa.parse<Record<string, string>>(fileContent, {
     header: true,
     skipEmptyLines: true,
@@ -41,15 +54,31 @@ export function parseLeadsCsv(fileContent: string): CsvParseResult {
   const rows: ParsedLeadRow[] = [];
   const errors: { line: number; message: string }[] = [];
 
+  const m = mapping
+    ? {
+        nameMode: mapping.nameMode,
+        nameField: mapping.nameField ? normalizeHeader(mapping.nameField) : undefined,
+        firstNameField: mapping.firstNameField ? normalizeHeader(mapping.firstNameField) : undefined,
+        lastNameField: mapping.lastNameField ? normalizeHeader(mapping.lastNameField) : undefined,
+        phoneField: normalizeHeader(mapping.phoneField),
+        dobField: normalizeHeader(mapping.dobField),
+        stateField: normalizeHeader(mapping.stateField),
+      }
+    : null;
+
   parsed.data.forEach((record, index) => {
     const line = index + 2; // header row + 1-indexing
 
-    const name = record["name"] ?? record["full name"];
-    const firstNameField = record["first name"];
-    const lastNameField = record["last name"];
-    const phoneRaw = record["phone"] ?? record["phone number"];
-    const dobRaw = record["date of birth"] ?? record["dob"];
-    const stateRaw = record["state"];
+    const name = m
+      ? m.nameMode === "single"
+        ? record[m.nameField ?? ""]
+        : undefined
+      : (record["name"] ?? record["full name"]);
+    const firstNameField = m ? (m.nameMode === "split" ? record[m.firstNameField ?? ""] : undefined) : record["first name"];
+    const lastNameField = m ? (m.nameMode === "split" ? record[m.lastNameField ?? ""] : undefined) : record["last name"];
+    const phoneRaw = m ? record[m.phoneField] : (record["phone"] ?? record["phone number"]);
+    const dobRaw = m ? record[m.dobField] : (record["date of birth"] ?? record["dob"]);
+    const stateRaw = m ? record[m.stateField] : record["state"];
 
     let firstName = firstNameField?.trim() ?? "";
     let lastName = lastNameField?.trim() ?? "";
@@ -102,8 +131,9 @@ export async function importLeadsFromCsv(
   fileContent: string,
   uploadedById: string,
   filename: string,
+  mapping?: ColumnMapping,
 ) {
-  const { rows, errors } = parseLeadsCsv(fileContent);
+  const { rows, errors } = parseLeadsCsv(fileContent, mapping);
 
   if (rows.length === 0) {
     return { imported: 0, skippedDuplicates: 0, errors };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/apiAuth";
-import { importLeadsFromCsv } from "@/lib/csv";
+import { importLeadsFromCsv, type ColumnMapping } from "@/lib/csv";
 
 // Importing tens of thousands of rows takes longer than the default
 // serverless timeout — give it as much room as the plan allows.
@@ -17,8 +17,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
   }
 
+  const mappingRaw = formData.get("mapping");
+  let mapping: ColumnMapping | undefined;
+  if (typeof mappingRaw === "string" && mappingRaw.length > 0) {
+    try {
+      mapping = JSON.parse(mappingRaw) as ColumnMapping;
+    } catch {
+      return NextResponse.json({ error: "Invalid column mapping" }, { status: 400 });
+    }
+  }
+
   const content = await file.text();
-  const result = await importLeadsFromCsv(content, guard.session.user.id, file.name);
+  const result = await importLeadsFromCsv(content, guard.session.user.id, file.name, mapping);
 
   return NextResponse.json(result);
 }
