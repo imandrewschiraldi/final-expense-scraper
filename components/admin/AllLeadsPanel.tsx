@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { StatCard } from "@/components/admin/StatCard";
 import { format } from "date-fns";
 import { formatPhone } from "@/lib/formatPhone";
 import { LEAD_TYPE_LABELS, LEAD_TYPES, LeadType } from "@/lib/leadType";
@@ -45,6 +46,23 @@ export function AllLeadsPanel() {
   const [stateCounts, setStateCounts] = useState<StateCount[]>([]);
   const [deleteStateValue, setDeleteStateValue] = useState("");
   const [deleting, setDeleting] = useState(false);
+
+  const [unassignedTotal, setUnassignedTotal] = useState(0);
+  const [assignedTotal, setAssignedTotal] = useState(0);
+
+  const loadAssignmentSummary = useCallback(async () => {
+    const [unassignedRes, allRes] = await Promise.all([
+      fetch("/api/admin/leads?archived=any&unassignedOnly=true&page=1"),
+      fetch("/api/admin/leads?archived=any&page=1"),
+    ]);
+    const [unassignedData, allData] = await Promise.all([unassignedRes.json(), allRes.json()]);
+    setUnassignedTotal(unassignedData.total);
+    setAssignedTotal(allData.total - unassignedData.total);
+  }, []);
+
+  useEffect(() => {
+    loadAssignmentSummary();
+  }, [loadAssignmentSummary]);
 
   const [mergeFrom, setMergeFrom] = useState<Set<string>>(new Set());
   const [mergeTo, setMergeTo] = useState("");
@@ -120,6 +138,7 @@ export function AllLeadsPanel() {
       setPage(1);
       loadLeads();
       loadStateCounts();
+      loadAssignmentSummary();
     } else {
       setMessage(data.error ?? "Delete failed");
     }
@@ -147,6 +166,7 @@ export function AllLeadsPanel() {
       setPage(1);
       loadLeads();
       loadStateCounts();
+      loadAssignmentSummary();
     } else {
       setMessage(data.error ?? "Delete failed");
     }
@@ -229,6 +249,11 @@ export function AllLeadsPanel() {
 
   return (
     <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard label="Unassigned Leads" value={unassignedTotal} accent="copper" />
+        <StatCard label="Assigned Leads" value={assignedTotal} accent="teal" />
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Filters</CardTitle>
