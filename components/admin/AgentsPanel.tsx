@@ -105,16 +105,20 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
     setAgents((prev) => [...prev, { ...data.agent, leadCount: 0 }]);
     setForm({ name: "", email: "", licensedStates: [] });
     setShowForm(false);
+    if (data.warning) {
+      setResendMessage({ id: data.agent.id, text: data.warning });
+    }
   }
 
   async function resendInvite(agent: Agent) {
     setResendingId(agent.id);
     setResendMessage(null);
     const res = await fetch(`/api/admin/agents/${agent.id}/resend-invite`, { method: "POST" });
+    const data = await res.json();
     setResendingId(null);
     setResendMessage({
       id: agent.id,
-      text: res.ok ? `Invite resent to ${agent.email}.` : "Failed to resend invite.",
+      text: res.ok ? `Invite resent to ${agent.email}.` : (data.error ?? "Failed to resend invite."),
     });
   }
 

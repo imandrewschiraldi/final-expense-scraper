@@ -13,7 +13,14 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Agent not found" }, { status: 404 });
   }
 
-  await createAndSendInvite(agent);
+  try {
+    await createAndSendInvite(agent);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to send invite email" },
+      { status: 502 },
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

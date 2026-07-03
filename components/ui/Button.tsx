@@ -4,8 +4,8 @@ import { cn } from "@/lib/cn";
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "success";
 
 const variants: Record<Variant, string> = {
-  // Gold — key actions (create, save, submit, assign)
-  primary: "bg-transparent text-gold border-[1.5px] border-gold hover:bg-gold hover:text-black",
+  // Copper — key actions (create, save, submit, assign)
+  primary: "bg-transparent text-copper border-[1.5px] border-copper hover:bg-copper hover:text-black",
   // Copper — secondary actions, matches the script tool's default button treatment
   secondary: "bg-transparent text-copper border-[1.5px] border-copper hover:bg-copper hover:text-black",
   // Subtle outline for low-emphasis actions

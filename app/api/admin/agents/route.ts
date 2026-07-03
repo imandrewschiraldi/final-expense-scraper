@@ -60,7 +60,19 @@ export async function POST(req: NextRequest) {
     select: { id: true, name: true, email: true, licensedStates: true, active: true },
   });
 
-  await createAndSendInvite(agent);
+  try {
+    await createAndSendInvite(agent);
+  } catch (err) {
+    return NextResponse.json(
+      {
+        agent: { ...agent, inviteAccepted: false },
+        warning: `Agent was created, but the invite email failed to send: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }. Use "Resend Invite" once this is fixed.`,
+      },
+      { status: 201 },
+    );
+  }
 
   return NextResponse.json({ agent: { ...agent, inviteAccepted: false } }, { status: 201 });
 }
