@@ -32,7 +32,7 @@ export default async function AgentDashboardPage() {
 
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="New" value={counts.NEW ?? 0} accent="copper" />
-        <StatCard label="Contacted" value={counts.CONTACTED ?? 0} accent="teal" />
+        <StatCard label="Contacted" value={counts.CONTACTED ?? 0} accent="orange" />
         <StatCard label="Appointment Booked" value={counts.APPOINTMENT_BOOKING ?? 0} accent="gold" />
         <StatCard label="Sold" value={counts.SOLD ?? 0} accent="green" />
       </div>

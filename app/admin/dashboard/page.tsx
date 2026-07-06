@@ -34,7 +34,7 @@ export default async function AdminDashboardPage({
       <DashboardFilters agents={agents} />
 
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Contacted" value={stats.totals.CONTACTED} accent="teal" />
+        <StatCard label="Contacted" value={stats.totals.CONTACTED} accent="orange" />
         <StatCard label="Appointment Booked" value={stats.totals.APPOINTMENT_BOOKING} accent="gold" />
         <StatCard label="Sold" value={stats.totals.SOLD} accent="green" />
         <StatCard label="Not Interested" value={stats.totals.NOT_INTERESTED} accent="red" />
@@ -53,7 +53,7 @@ export default async function AdminDashboardPage({
             <thead>
               <tr className="font-condensed border-b border-border text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
                 <th className="py-2 pr-4">Agent</th>
-                <th className="py-2 pr-4 text-teal-light">Contacted</th>
+                <th className="py-2 pr-4 text-orange-light">Contacted</th>
                 <th className="py-2 pr-4 text-gold">Appt. Booked</th>
                 <th className="py-2 pr-4 text-green-light">Sold</th>
                 <th className="py-2 pr-4 text-red-light">Not Interested</th>

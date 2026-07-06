@@ -209,9 +209,9 @@ export function LeadDetailPanel({
         <div className="space-y-3">
           {lead.notes.length === 0 && <p className="text-sm text-muted">No notes yet.</p>}
           {lead.notes.map((note) => (
-            <Callout key={note.id} variant="teal">
+            <Callout key={note.id} variant="orange">
               <p className="text-white">{note.body}</p>
-              <p className="mt-1 text-xs text-teal-light">
+              <p className="mt-1 text-xs text-orange-light">
                 {note.author.name} &middot; {format(new Date(note.createdAt), "MMM d, yyyy h:mm a")}
               </p>
             </Callout>

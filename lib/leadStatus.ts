@@ -33,7 +33,7 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
 
 export const LEAD_STATUS_COLORS: Record<LeadStatus, { bg: string; text: string; border: string }> = {
   NEW: { bg: "bg-copper/20", text: "text-copper", border: "border-transparent" },
-  CONTACTED: { bg: "bg-teal/20", text: "text-teal-light", border: "border-transparent" },
+  CONTACTED: { bg: "bg-orange/20", text: "text-orange-light", border: "border-transparent" },
   NO_ANSWER: { bg: "bg-muted/20", text: "text-muted", border: "border-transparent" },
   APPOINTMENT_BOOKING: { bg: "bg-gold/20", text: "text-gold", border: "border-transparent" },
   SOLD: { bg: "bg-green/20", text: "text-green-light", border: "border-transparent" },

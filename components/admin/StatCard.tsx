@@ -7,11 +7,11 @@ export function StatCard({
 }: {
   label: string;
   value: number;
-  accent: "copper" | "teal" | "green" | "gold" | "red";
+  accent: "copper" | "orange" | "green" | "gold" | "red";
 }) {
   const accentClass = {
     copper: "text-copper",
-    teal: "text-teal-light",
+    orange: "text-orange-light",
     green: "text-green-light",
     gold: "text-gold",
     red: "text-red-light",

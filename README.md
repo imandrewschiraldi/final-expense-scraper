@@ -9,7 +9,7 @@ shared pool or each other's leads.
 - Next.js 16 (App Router) + TypeScript
 - PostgreSQL via Supabase, accessed through Prisma 7 with the `pg` driver adapter
 - NextAuth (credentials login, JWT sessions, role-based route guards)
-- Tailwind CSS, theme matched to Tier 1's script tool (black background, copper/teal/green/gold/red palette, Barlow + Barlow Condensed)
+- Tailwind CSS, theme matched to Tier 1 Financial branding (black background, copper/orange/green/gold/red palette, Barlow + Barlow Condensed)
 - Deployed on Vercel; weekly auto-assignment runs via Vercel Cron
 
 ## Local setup

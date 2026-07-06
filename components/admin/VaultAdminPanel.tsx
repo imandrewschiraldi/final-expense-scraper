@@ -194,7 +194,7 @@ export function VaultAdminPanel() {
           automatically — review them here and either delete them for good or send them back in.
         </p>
 
-        {message && <p className="mb-3 text-sm text-teal-light">{message}</p>}
+        {message && <p className="mb-3 text-sm text-orange-light">{message}</p>}
 
         <div className="mb-3 flex gap-2">
           <Button variant="secondary" onClick={resetSelected} disabled={selected.size === 0 || loading}>

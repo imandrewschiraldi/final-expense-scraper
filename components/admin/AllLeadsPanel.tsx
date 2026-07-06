@@ -260,7 +260,7 @@ export function AllLeadsPanel() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Unassigned Leads" value={unassignedTotal} accent="copper" />
-        <StatCard label="Assigned Leads" value={assignedTotal} accent="teal" />
+        <StatCard label="Assigned Leads" value={assignedTotal} accent="orange" />
         <StatCard label="Vault Leads" value={vaultTotal} accent="copper" />
       </div>
 
@@ -374,7 +374,7 @@ export function AllLeadsPanel() {
           </div>
         </CardHeader>
 
-        {message && <p className="mb-3 text-sm text-teal-light">{message}</p>}
+        {message && <p className="mb-3 text-sm text-orange-light">{message}</p>}
         <p className="mb-3 text-xs text-muted">
           &quot;Move Selected to Vault&quot; only affects unassigned leads — any selected leads already assigned
           to an agent are skipped.
@@ -481,7 +481,7 @@ export function AllLeadsPanel() {
           it does not delete anything.
         </p>
 
-        {mergeMessage && <p className="mb-3 text-sm text-teal-light">{mergeMessage}</p>}
+        {mergeMessage && <p className="mb-3 text-sm text-orange-light">{mergeMessage}</p>}
 
         <div className="mb-3 flex flex-wrap items-end gap-3">
           <div className="w-64">

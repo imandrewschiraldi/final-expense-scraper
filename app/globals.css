@@ -12,18 +12,18 @@
   --copper: #c87941;
   --copper-dim: #7a4a26;
   --copper-glow: rgba(200, 121, 65, 0.12);
-  --teal: #20b2aa;
-  --teal-light: #7fdbda;
-  --teal-lighter: #a8efee;
+  --orange: #f97316;
+  --orange-light: #fdba74;
+  --orange-lighter: #fed7aa;
   --green: #27ae60;
   --green-light: #7dff7d;
   --red: #c0392b;
   --red-light: #ff6b6b;
   --red-lighter: #ff9090;
   --amber: #d68910;
-  --blue: #2980b9;
-  --blue-light: #74b9ff;
-  --gold: #d4af37;
+  --blue: #d18a4f;
+  --blue-light: #f3bd8e;
+  --gold: #e8a33d;
   --radius: 10px;
 }
 
@@ -39,9 +39,9 @@
   --color-copper: var(--copper);
   --color-copper-dim: var(--copper-dim);
   --color-copper-glow: var(--copper-glow);
-  --color-teal: var(--teal);
-  --color-teal-light: var(--teal-light);
-  --color-teal-lighter: var(--teal-lighter);
+  --color-orange: var(--orange);
+  --color-orange-light: var(--orange-light);
+  --color-orange-lighter: var(--orange-lighter);
   --color-green: var(--green);
   --color-green-light: var(--green-light);
   --color-red: var(--red);

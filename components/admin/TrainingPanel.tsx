@@ -130,7 +130,7 @@ function LessonRow({
       <div>
         <p className="text-sm font-semibold text-white">{lesson.title}</p>
         {lesson.description && <p className="mt-1 text-xs text-muted">{lesson.description}</p>}
-        <p className="mt-1 truncate text-xs text-teal-light">{lesson.videoUrl}</p>
+        <p className="mt-1 truncate text-xs text-orange-light">{lesson.videoUrl}</p>
       </div>
       <div className="flex shrink-0 gap-1">
         <Button variant="ghost" onClick={() => onMove(lesson.id, "up")}>

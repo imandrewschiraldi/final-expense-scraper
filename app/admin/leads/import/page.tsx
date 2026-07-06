@@ -185,9 +185,9 @@ export default function ImportLeadsPage() {
           <CardTitle>Upload CSV</CardTitle>
         </CardHeader>
         <p className="mb-4 text-sm text-muted">
-          Columns expected: <span className="text-teal-light">Name</span> (or First Name / Last Name),{" "}
-          <span className="text-teal-light">Phone</span>, <span className="text-teal-light">Date of Birth</span>,{" "}
-          <span className="text-teal-light">State</span>. Rows with a phone number already in the system (or
+          Columns expected: <span className="text-orange-light">Name</span> (or First Name / Last Name),{" "}
+          <span className="text-orange-light">Phone</span>, <span className="text-orange-light">Date of Birth</span>,{" "}
+          <span className="text-orange-light">State</span>. Rows with a phone number already in the system (or
           already in another file you're uploading in the same batch) are skipped as duplicates. You can select
           multiple CSV files at once — they'll be imported one after another.
         </p>
@@ -371,7 +371,7 @@ export default function ImportLeadsPage() {
                       )}
                       {f.result.duplicates.length > 0 && (
                         <details className="mt-1">
-                          <summary className="cursor-pointer text-xs text-teal-light hover:underline">
+                          <summary className="cursor-pointer text-xs text-orange-light hover:underline">
                             Show which {f.result.duplicates.length} row(s) were treated as duplicates
                           </summary>
                           <ul className="mt-1 max-h-48 space-y-0.5 overflow-y-auto text-xs text-muted">

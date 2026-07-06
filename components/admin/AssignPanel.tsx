@@ -176,7 +176,7 @@ export function AssignPanel({
           </Button>
         </CardHeader>
 
-        {message && <p className="mb-3 text-sm text-teal-light">{message}</p>}
+        {message && <p className="mb-3 text-sm text-orange-light">{message}</p>}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">

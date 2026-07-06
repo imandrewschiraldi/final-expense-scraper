@@ -37,7 +37,7 @@ function StateMultiSelect({
         <div className="flex gap-2">
           <button
             type="button"
-            className="text-xs text-teal-light hover:underline"
+            className="text-xs text-orange-light hover:underline"
             onClick={() => onChange(US_STATES.map((s) => s.code))}
           >
             Select all
@@ -220,7 +220,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                       </div>
                     ) : (
                       <button
-                        className="text-teal-light hover:underline"
+                        className="text-orange-light hover:underline"
                         onClick={() => {
                           setEditingId(agent.id);
                           setEditStates(agent.licensedStates);
@@ -257,7 +257,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                         </Button>
                       </div>
                       {resendMessage?.id === agent.id && (
-                        <span className="text-xs text-teal-light">{resendMessage.text}</span>
+                        <span className="text-xs text-orange-light">{resendMessage.text}</span>
                       )}
                     </div>
                   </td>

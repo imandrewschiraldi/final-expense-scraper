@@ -66,7 +66,7 @@ export function NotificationBell() {
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={cn("rounded-lg p-2 text-sm", !n.read && "bg-teal/10")}
+              className={cn("rounded-lg p-2 text-sm", !n.read && "bg-orange/10")}
             >
               <p className="text-white">
                 {n.payload?.count ?? ""} new lead{n.payload?.count === 1 ? "" : "s"} assigned to you
