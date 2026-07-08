@@ -22,7 +22,7 @@ const STATUS_OPTIONS: LeadStatus[] = [
   "NOT_INTERESTED",
 ];
 
-type Note = { id: string; body: string; createdAt: string; author: { name: string } };
+type Note = { id: string; body: string; createdAt: string; author: { name: string } | null };
 
 type Lead = {
   id: string;
@@ -212,7 +212,7 @@ export function LeadDetailPanel({
             <Callout key={note.id} variant="teal">
               <p className="text-white">{note.body}</p>
               <p className="mt-1 text-xs text-teal-light">
-                {note.author.name} &middot; {format(new Date(note.createdAt), "MMM d, yyyy h:mm a")}
+                {note.author?.name ?? "Former Agent"} &middot; {format(new Date(note.createdAt), "MMM d, yyyy h:mm a")}
               </p>
             </Callout>
           ))}

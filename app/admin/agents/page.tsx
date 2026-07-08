@@ -14,6 +14,7 @@ export default async function AgentsPage() {
       licensedStates: true,
       active: true,
       passwordHash: true,
+      createdAt: true,
       _count: { select: { assignedLeads: true } },
     },
   });
@@ -30,6 +31,7 @@ export default async function AgentsPage() {
           active: a.active,
           inviteAccepted: a.passwordHash !== null,
           leadCount: a._count.assignedLeads,
+          createdAt: a.createdAt.toISOString(),
         }))}
       />
     </div>

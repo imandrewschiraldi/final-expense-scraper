@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
+import { agentHasVaultAccess } from "@/lib/vault";
 import { Prisma } from "@prisma/client";
 
 const PAGE_SIZE = 50;
@@ -8,6 +9,10 @@ const PAGE_SIZE = 50;
 export async function GET(req: NextRequest) {
   const guard = await requireAgent();
   if ("error" in guard) return guard.error;
+
+  if (!(await agentHasVaultAccess(guard.session.user.id))) {
+    return NextResponse.json({ error: "Vault access has expired for this agent" }, { status: 403 });
+  }
 
   const { searchParams } = new URL(req.url);
   const state = searchParams.get("state");

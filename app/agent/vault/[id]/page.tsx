@@ -1,5 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { hasVaultAccess } from "@/lib/vault";
 import { LeadDetailPanel } from "@/components/agent/LeadDetailPanel";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +15,15 @@ export default async function VaultLeadDetailPage({
 }) {
   const { id } = await params;
   const filters = await searchParams;
+
+  const session = await auth();
+  const agent = session?.user.id
+    ? await db.user.findUnique({ where: { id: session.user.id }, select: { createdAt: true } })
+    : null;
+
+  if (!agent || !hasVaultAccess(agent.createdAt)) {
+    redirect("/agent/dashboard");
+  }
 
   // If another agent claimed this lead moments ago it's no longer vaulted
   // and this 404s — an acceptable edge case for a shared pool.

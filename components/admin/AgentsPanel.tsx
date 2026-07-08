@@ -15,7 +15,16 @@ type Agent = {
   active: boolean;
   inviteAccepted: boolean;
   leadCount: number;
+  createdAt: string;
 };
+
+const VAULT_ACCESS_WEEKS = 8;
+
+function vaultAccessLabel(createdAt: string): string {
+  const cutoff = new Date(createdAt).getTime() + VAULT_ACCESS_WEEKS * 7 * 24 * 60 * 60 * 1000;
+  const daysLeft = Math.ceil((cutoff - Date.now()) / (24 * 60 * 60 * 1000));
+  return daysLeft > 0 ? `${daysLeft} day(s) left` : "Expired";
+}
 
 function StateMultiSelect({
   value,
@@ -82,6 +91,8 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
   const [editStates, setEditStates] = useState<string[]>([]);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resendMessage, setResendMessage] = useState<{ id: string; text: string } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<{ id: string; text: string } | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", licensedStates: [] as string[] });
@@ -146,6 +157,21 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
     }
   }
 
+  async function deleteAgent(agent: Agent) {
+    if (!window.confirm(`Permanently delete ${agent.name}? This can't be undone.`)) return;
+
+    setDeletingId(agent.id);
+    setDeleteError(null);
+    const res = await fetch(`/api/admin/agents/${agent.id}`, { method: "DELETE" });
+    const data = await res.json();
+    setDeletingId(null);
+    if (res.ok) {
+      setAgents((prev) => prev.filter((a) => a.id !== agent.id));
+    } else {
+      setDeleteError({ id: agent.id, text: data.error ?? "Failed to delete agent" });
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -196,6 +222,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                 <th className="py-2 pr-4">Email</th>
                 <th className="py-2 pr-4">Licensed States</th>
                 <th className="py-2 pr-4">Assigned Leads</th>
+                <th className="py-2 pr-4">Vault Access</th>
                 <th className="py-2 pr-4">Status</th>
                 <th className="py-2 pr-4"></th>
               </tr>
@@ -231,6 +258,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                     )}
                   </td>
                   <td className="py-2 pr-4 text-white">{agent.leadCount.toLocaleString()}</td>
+                  <td className="py-2 pr-4 text-muted">{vaultAccessLabel(agent.createdAt)}</td>
                   <td className="py-2 pr-4">
                     {!agent.inviteAccepted ? (
                       <span className="text-copper">Invited (pending)</span>
@@ -255,9 +283,21 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                         <Button variant="ghost" onClick={() => toggleActive(agent)}>
                           {agent.active ? "Deactivate" : "Activate"}
                         </Button>
+                        {!agent.active && (
+                          <Button
+                            variant="danger"
+                            onClick={() => deleteAgent(agent)}
+                            disabled={deletingId === agent.id}
+                          >
+                            {deletingId === agent.id ? "Deleting..." : "Delete"}
+                          </Button>
+                        )}
                       </div>
                       {resendMessage?.id === agent.id && (
                         <span className="text-xs text-teal-light">{resendMessage.text}</span>
+                      )}
+                      {deleteError?.id === agent.id && (
+                        <span className="text-xs text-red-light">{deleteError.text}</span>
                       )}
                     </div>
                   </td>

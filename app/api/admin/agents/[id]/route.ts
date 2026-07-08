@@ -26,3 +26,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   return NextResponse.json({ agent });
 }
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard.error;
+
+  const { id } = await params;
+
+  const agent = await db.user.findUnique({ where: { id } });
+  if (!agent || agent.role !== "AGENT") {
+    return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+  }
+  if (agent.active) {
+    return NextResponse.json({ error: "Deactivate this agent before deleting them" }, { status: 400 });
+  }
+
+  // Leads assigned to this agent fall back to unassigned (SET NULL); notes
+  // they authored are kept but lose attribution (SET NULL) — deleting the
+  // agent doesn't erase lead history.
+  await db.user.delete({ where: { id } });
+
+  return NextResponse.json({ deleted: true });
+}

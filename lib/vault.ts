@@ -14,6 +14,21 @@ export function isVaultExitStatus(status: LeadStatus) {
 // within this many days get released back into the shared pool.
 export const VAULT_REVERT_DAYS = 14;
 
+// The Vault is only open to an agent for their first 8 weeks on the team —
+// after that their access is revoked, both in the nav and at the API level.
+export const VAULT_ACCESS_WEEKS = 8;
+
+export function hasVaultAccess(agentCreatedAt: Date, now: Date = new Date()) {
+  const msSinceCreation = now.getTime() - agentCreatedAt.getTime();
+  return msSinceCreation < VAULT_ACCESS_WEEKS * 7 * 24 * 60 * 60 * 1000;
+}
+
+export async function agentHasVaultAccess(agentId: string, now: Date = new Date()) {
+  const agent = await db.user.findUnique({ where: { id: agentId }, select: { createdAt: true } });
+  if (!agent) return false;
+  return hasVaultAccess(agent.createdAt, now);
+}
+
 /**
  * Given a lead's current vault state and the status an agent is setting,
  * returns the full set of fields to update. Centralized so the agent PATCH

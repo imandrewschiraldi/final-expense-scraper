@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
+import { agentHasVaultAccess } from "@/lib/vault";
+import { Prisma } from "@prisma/client";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAgent();
@@ -14,8 +16,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Note body is required" }, { status: 400 });
   }
 
+  const agentId = guard.session.user.id;
+  const canAccessVault = await agentHasVaultAccess(agentId);
+  const or: Prisma.LeadWhereInput[] = [{ assignedAgentId: agentId }];
+  if (canAccessVault) or.push({ isVaulted: true });
+
   const lead = await db.lead.findFirst({
-    where: { id, OR: [{ assignedAgentId: guard.session.user.id }, { isVaulted: true }] },
+    where: { id, OR: or },
   });
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });

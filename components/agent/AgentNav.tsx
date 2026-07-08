@@ -7,14 +7,14 @@ import { cn } from "@/lib/cn";
 import { SignOutButton } from "@/components/ui/SignOutButton";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 
-const links = [
-  { href: "/agent/dashboard", label: "My Leads" },
-  { href: "/agent/vault", label: "Vault" },
-  { href: "/agent/training", label: "Training" },
-];
-
-export function AgentNav({ agentName }: { agentName: string }) {
+export function AgentNav({ agentName, showVault }: { agentName: string; showVault: boolean }) {
   const pathname = usePathname();
+
+  const links = [
+    { href: "/agent/dashboard", label: "My Leads" },
+    ...(showVault ? [{ href: "/agent/vault", label: "Vault" }] : []),
+    { href: "/agent/training", label: "Training" },
+  ];
 
   return (
     <header className="sticky top-0 z-50 bg-black">

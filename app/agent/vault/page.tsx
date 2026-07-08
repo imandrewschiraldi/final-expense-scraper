@@ -1,9 +1,22 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { hasVaultAccess } from "@/lib/vault";
 import { VaultLeadList } from "@/components/agent/VaultLeadList";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
 
-export default function VaultPage() {
+export default async function VaultPage() {
+  const session = await auth();
+  const agent = session?.user.id
+    ? await db.user.findUnique({ where: { id: session.user.id }, select: { createdAt: true } })
+    : null;
+
+  if (!agent || !hasVaultAccess(agent.createdAt)) {
+    redirect("/agent/dashboard");
+  }
+
   return (
     <div>
       <h1 className="mb-2 text-2xl font-extrabold tracking-wide text-white uppercase">Vault</h1>

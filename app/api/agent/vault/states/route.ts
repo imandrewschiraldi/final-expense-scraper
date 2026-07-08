@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
+import { agentHasVaultAccess } from "@/lib/vault";
 
 export async function GET() {
   const guard = await requireAgent();
   if ("error" in guard) return guard.error;
+
+  if (!(await agentHasVaultAccess(guard.session.user.id))) {
+    return NextResponse.json({ error: "Vault access has expired for this agent" }, { status: 403 });
+  }
 
   const grouped = await db.lead.groupBy({
     by: ["state"],

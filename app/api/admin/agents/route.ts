@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       role: "AGENT",
       licensedStates: licensedStates?.map((s) => s.toUpperCase()) ?? [],
     },
-    select: { id: true, name: true, email: true, licensedStates: true, active: true },
+    select: { id: true, name: true, email: true, licensedStates: true, active: true, createdAt: true },
   });
 
   try {
