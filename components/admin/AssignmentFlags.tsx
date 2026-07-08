@@ -19,6 +19,7 @@ const REASON_LABELS: Record<string, string> = {
   no_available_leads_in_licensed_states: "No leads available in licensed states",
   partial_leads_available: "Only partial leads available",
   no_licensed_states: "Agent has no licensed states configured",
+  new_lead_eligibility_expired: "Past their 6-week new-lead window",
 };
 
 export function AssignmentFlags({ runs }: { runs: Run[] }) {

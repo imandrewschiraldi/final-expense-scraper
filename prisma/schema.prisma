@@ -65,6 +65,7 @@ model Lead {
   isArchived      Boolean    @default(false)
   isVaulted       Boolean    @default(false)
   vaultOrigin     Boolean    @default(false)
+  wasRecycled     Boolean    @default(false)
   assignedAgentId String?
   assignedAgent   User?      @relation("AssignedLeads", fields: [assignedAgentId], references: [id])
   assignedAt      DateTime?
@@ -83,6 +84,7 @@ model Lead {
   @@index([leadType])
   @@index([isVaulted])
   @@index([vaultOrigin, status])
+  @@index([wasRecycled])
   @@map("leads")
 }
 
