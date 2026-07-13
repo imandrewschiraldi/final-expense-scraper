@@ -3,7 +3,7 @@ import { LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
 
 export function buildAgentLeadsWhere(
   agentId: string,
-  filters: { status?: string | null; archived?: boolean },
+  filters: { status?: string | null; archived?: boolean; state?: string | null },
 ): Prisma.LeadWhereInput {
   const status = filters.status as LeadStatus | null | undefined;
 
@@ -11,6 +11,7 @@ export function buildAgentLeadsWhere(
     assignedAgentId: agentId,
     isArchived: filters.archived ?? false,
     ...(status && LEAD_STATUSES.includes(status) ? { status } : {}),
+    ...(filters.state ? { state: filters.state } : {}),
   };
 }
 

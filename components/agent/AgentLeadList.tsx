@@ -5,6 +5,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
@@ -34,12 +35,15 @@ const ACTIVE_TABS: { value: LeadStatus | "ALL"; label: string }[] = [
   { value: "APPOINTMENT_BOOKING", label: LEAD_STATUS_LABELS.APPOINTMENT_BOOKING },
 ];
 
-function buildFilterParams(tab: LeadStatus | "ALL", archiveView: boolean) {
+function buildFilterParams(tab: LeadStatus | "ALL", archiveView: boolean, state: string) {
   const params = new URLSearchParams();
   if (archiveView) {
     params.set("archived", "true");
   } else if (tab !== "ALL") {
     params.set("status", tab);
+  }
+  if (state) {
+    params.set("state", state);
   }
   return params;
 }
@@ -47,11 +51,25 @@ function buildFilterParams(tab: LeadStatus | "ALL", archiveView: boolean) {
 export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
   const [tab, setTab] = useState<LeadStatus | "ALL">("ALL");
   const [archiveView, setArchiveView] = useState(false);
+  const [stateFilter, setStateFilter] = useState("");
+  const [stateOptions, setStateOptions] = useState<{ state: string; count: number }[]>([]);
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [loading, setLoading] = useState(false);
 
-  const filterParams = buildFilterParams(tab, archiveView);
+  const filterParams = buildFilterParams(tab, archiveView, stateFilter);
   const filterQuery = filterParams.toString();
+
+  useEffect(() => {
+    async function loadStates() {
+      const res = await fetch("/api/agent/leads/states");
+      if (res.ok) {
+        const data = await res.json();
+        setStateOptions(data.states);
+      }
+    }
+
+    loadStates();
+  }, []);
 
   useEffect(() => {
     async function loadLeads() {
@@ -91,6 +109,18 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
           ))}
         </div>
         <div className="flex items-center gap-2">
+          <Select
+            value={stateFilter}
+            onChange={(e) => setStateFilter(e.target.value)}
+            className="w-40"
+          >
+            <option value="">All States</option>
+            {stateOptions.map((s) => (
+              <option key={s.state} value={s.state}>
+                {s.state} ({s.count.toLocaleString()})
+              </option>
+            ))}
+          </Select>
           <a href={`/api/agent/leads/export?${filterQuery}`}>
             <Button variant="secondary">Export CSV</Button>
           </a>

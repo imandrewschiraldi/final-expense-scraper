@@ -10,9 +10,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const archived = searchParams.get("archived") === "true";
+  const state = searchParams.get("state");
 
   const leads = await db.lead.findMany({
-    where: buildAgentLeadsWhere(guard.session.user.id, { status, archived }),
+    where: buildAgentLeadsWhere(guard.session.user.id, { status, archived, state }),
     orderBy: AGENT_LEADS_ORDER_BY,
   });
 
