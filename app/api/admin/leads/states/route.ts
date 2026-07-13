@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 
@@ -7,12 +7,16 @@ import { db } from "@/lib/db";
 // to surface messy/duplicate values (e.g. "FL" vs "Florida" vs "fl") left
 // over from imports done before state normalization existed, so an admin
 // can find and merge them.
-export async function GET() {
+export async function GET(req: NextRequest) {
   const guard = await requireAdmin();
   if ("error" in guard) return guard.error;
 
+  const { searchParams } = new URL(req.url);
+  const isVaultedParam = searchParams.get("isVaulted");
+
   const grouped = await db.lead.groupBy({
     by: ["state"],
+    where: isVaultedParam === "true" || isVaultedParam === "false" ? { isVaulted: isVaultedParam === "true" } : {},
     _count: { _all: true },
   });
 

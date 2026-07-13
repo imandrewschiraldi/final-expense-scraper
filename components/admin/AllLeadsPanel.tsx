@@ -47,6 +47,24 @@ export function AllLeadsPanel() {
   const [deleteStateValue, setDeleteStateValue] = useState("");
   const [deleting, setDeleting] = useState(false);
 
+  const [vaultStateCounts, setVaultStateCounts] = useState<StateCount[]>([]);
+  const [unvaultStateValue, setUnvaultStateValue] = useState("");
+  const [unvaulting, setUnvaulting] = useState(false);
+  const [unvaultMessage, setUnvaultMessage] = useState<string | null>(null);
+
+  const loadVaultStateCounts = useCallback(async () => {
+    const res = await fetch("/api/admin/leads/states?isVaulted=true");
+    if (res.ok) {
+      const data = await res.json();
+      setVaultStateCounts(data.states);
+      setUnvaultStateValue((prev) => prev || data.states[0]?.state || "");
+    }
+  }, []);
+
+  useEffect(() => {
+    loadVaultStateCounts();
+  }, [loadVaultStateCounts]);
+
   const [unassignedTotal, setUnassignedTotal] = useState(0);
   const [assignedTotal, setAssignedTotal] = useState(0);
   const [vaultTotal, setVaultTotal] = useState(0);
@@ -197,8 +215,38 @@ export function AllLeadsPanel() {
     if (res.ok) {
       setMessage(`Moved ${data.moved} lead(s) into the vault.`);
       loadLeads();
+      loadAssignmentSummary();
+      loadVaultStateCounts();
     } else {
       setMessage(data.error ?? "Move failed");
+    }
+  }
+
+  async function removeFromVaultByState() {
+    if (!unvaultStateValue) return;
+    const count = vaultStateCounts.find((s) => s.state === unvaultStateValue)?.count ?? 0;
+    const confirmed = window.confirm(
+      `Remove ALL ${count.toLocaleString()} lead(s) with state "${unvaultStateValue}" from the Vault and return them to the unassigned pool?`,
+    );
+    if (!confirmed) return;
+
+    setUnvaulting(true);
+    setUnvaultMessage(null);
+    const res = await fetch("/api/admin/leads/remove-from-vault", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state: unvaultStateValue }),
+    });
+    const data = await res.json();
+    setUnvaulting(false);
+    if (res.ok) {
+      setUnvaultMessage(`Removed ${data.removed.toLocaleString()} lead(s) with state "${unvaultStateValue}" from the vault.`);
+      setPage(1);
+      loadLeads();
+      loadAssignmentSummary();
+      loadVaultStateCounts();
+    } else {
+      setUnvaultMessage(data.error ?? "Remove from vault failed");
     }
   }
 
@@ -466,6 +514,39 @@ export function AllLeadsPanel() {
           </div>
           <Button variant="danger" onClick={deleteByState} disabled={deleting || !deleteStateValue}>
             Delete All in &quot;{deleteStateValue}&quot;
+          </Button>
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Remove Leads From Vault by State</CardTitle>
+        </CardHeader>
+        <p className="mb-3 text-sm text-muted">
+          Pulls every lead with the state you pick out of the shared Vault and drops them back into the
+          regular unassigned pool, where they become assignable again. Doesn&apos;t delete anything.
+        </p>
+        {unvaultMessage && <p className="mb-3 text-sm text-teal-light">{unvaultMessage}</p>}
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="w-56">
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              State value
+            </label>
+            <Select value={unvaultStateValue} onChange={(e) => setUnvaultStateValue(e.target.value)}>
+              {vaultStateCounts.length === 0 && <option value="">No leads currently in vault</option>}
+              {vaultStateCounts.map((s) => (
+                <option key={s.state} value={s.state}>
+                  {s.state} ({s.count.toLocaleString()})
+                </option>
+              ))}
+            </Select>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={removeFromVaultByState}
+            disabled={unvaulting || !unvaultStateValue || vaultStateCounts.length === 0}
+          >
+            Remove All &quot;{unvaultStateValue}&quot; From Vault
           </Button>
         </div>
       </Card>
