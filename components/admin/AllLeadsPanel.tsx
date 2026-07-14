@@ -132,6 +132,8 @@ export function AllLeadsPanel() {
     loadLeads();
   }, [loadLeads]);
 
+  const [selectingAll, setSelectingAll] = useState(false);
+
   function toggle(id: string) {
     const next = new Set(selected);
     if (next.has(id)) next.delete(id);
@@ -139,8 +141,28 @@ export function AllLeadsPanel() {
     setSelected(next);
   }
 
+  async function selectAllMatchingFilters() {
+    setSelectingAll(true);
+    try {
+      const params = new URLSearchParams({ archived: archivedFilter, idsOnly: "true" });
+      if (stateFilter) params.set("state", stateFilter);
+      if (statusFilter) params.set("status", statusFilter);
+      if (leadTypeFilter) params.set("leadType", leadTypeFilter);
+      if (vaultFilter !== "any") params.set("isVaulted", vaultFilter);
+      const res = await fetch(`/api/admin/leads?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelected(new Set(data.ids));
+      }
+    } finally {
+      setSelectingAll(false);
+    }
+  }
+
+  const allOnPageSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
+
   function toggleAllOnPage() {
-    if (selected.size === leads.length) {
+    if (allOnPageSelected) {
       setSelected(new Set());
     } else {
       setSelected(new Set(leads.map((l) => l.id)));
@@ -412,20 +434,27 @@ export function AllLeadsPanel() {
       <Card>
         <CardHeader>
           <CardTitle>{total.toLocaleString()} Lead(s)</CardTitle>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" onClick={selectAllMatchingFilters} disabled={selectingAll || total === 0}>
+              {selectingAll ? "Selecting..." : `Select All ${total.toLocaleString()}`}
+            </Button>
+            <Button variant="ghost" onClick={() => setSelected(new Set())} disabled={selected.size === 0}>
+              Clear Selection
+            </Button>
             <Button variant="secondary" onClick={moveSelectedToVault} disabled={selected.size === 0 || moving}>
-              Move Selected to Vault ({selected.size})
+              Move Selected to Vault ({selected.size.toLocaleString()})
             </Button>
             <Button variant="danger" onClick={deleteSelected} disabled={selected.size === 0 || loading}>
-              Delete Selected ({selected.size})
+              Delete Selected ({selected.size.toLocaleString()})
             </Button>
           </div>
         </CardHeader>
 
         {message && <p className="mb-3 text-sm text-teal-light">{message}</p>}
         <p className="mb-3 text-xs text-muted">
-          &quot;Move Selected to Vault&quot; only affects unassigned leads — any selected leads already assigned
-          to an agent are skipped.
+          &quot;Select All&quot; selects every lead matching your current filters, not just the 50 shown on this
+          page. &quot;Move Selected to Vault&quot; only affects unassigned leads — any selected leads already
+          assigned to an agent are skipped.
         </p>
 
         <div className="overflow-x-auto">
@@ -435,7 +464,7 @@ export function AllLeadsPanel() {
                 <th className="py-2 pr-4">
                   <input
                     type="checkbox"
-                    checked={leads.length > 0 && selected.size === leads.length}
+                    checked={allOnPageSelected}
                     onChange={toggleAllOnPage}
                   />
                 </th>

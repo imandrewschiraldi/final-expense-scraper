@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
   const archivedParam = searchParams.get("archived");
   const isVaultedParam = searchParams.get("isVaulted");
   const vaultOriginParam = searchParams.get("vaultOrigin");
+  const idsOnly = searchParams.get("idsOnly") === "true";
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
 
   const where: Prisma.LeadWhereInput =
@@ -34,6 +35,13 @@ export async function GET(req: NextRequest) {
   else if (agentId) where.assignedAgentId = agentId;
   if (isVaultedParam === "true" || isVaultedParam === "false") where.isVaulted = isVaultedParam === "true";
   if (vaultOriginParam === "true" || vaultOriginParam === "false") where.vaultOrigin = vaultOriginParam === "true";
+
+  // Used by "Select All" bulk actions — returns every matching id (no
+  // pagination) instead of a page of full lead records.
+  if (idsOnly) {
+    const allLeads = await db.lead.findMany({ where, select: { id: true } });
+    return NextResponse.json({ ids: allLeads.map((l) => l.id) });
+  }
 
   const [leads, total] = await Promise.all([
     db.lead.findMany({
