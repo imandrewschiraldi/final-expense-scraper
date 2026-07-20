@@ -1,10 +1,6 @@
 {
   "crons": [
     {
-      "path": "/api/cron/weekly-assign",
-      "schedule": "0 13 * * 1"
-    },
-    {
       "path": "/api/cron/vault-revert",
       "schedule": "0 14 * * *"
     },
