@@ -7,6 +7,19 @@ import { cn } from "@/lib/cn";
 import { SignOutButton } from "@/components/ui/SignOutButton";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 
+function ExternalNavLink({ link }: { link: { href: string; label: string } }) {
+  return (
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-condensed rounded-lg border-[1.5px] border-copper-dim px-4 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper hover:text-foreground"
+    >
+      {link.label}
+    </a>
+  );
+}
+
 export function AgentNav({ agentName, showVault }: { agentName: string; showVault: boolean }) {
   const pathname = usePathname();
 
@@ -16,10 +29,11 @@ export function AgentNav({ agentName, showVault }: { agentName: string; showVaul
     { href: "/agent/training", label: "Training" },
   ];
 
-  const externalLinks = [
-    { href: "https://tier1financialscripts.org/", label: "Scripts" },
-    { href: "https://tier1financial-commissioncalculator.netlify.app/", label: "Commission Calculator" },
-  ];
+  const scriptsLink = { href: "https://tier1financialscripts.org/", label: "Scripts" };
+  const commissionCalculatorLink = {
+    href: "https://tier1financial-commissioncalculator.netlify.app/",
+    label: "Commission Calculator",
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-black">
@@ -69,6 +83,7 @@ export function AgentNav({ agentName, showVault }: { agentName: string; showVaul
       </div>
 
       <nav className="mx-auto flex max-w-5xl flex-wrap justify-center gap-2.5 px-6 py-2.5">
+        <ExternalNavLink link={scriptsLink} />
         {links.map((link) => {
           const active = pathname.startsWith(link.href);
           return (
@@ -86,17 +101,7 @@ export function AgentNav({ agentName, showVault }: { agentName: string; showVaul
             </Link>
           );
         })}
-        {externalLinks.map((link) => (
-          <a
-            key={link.href}
-            href={link.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-condensed rounded-lg border-[1.5px] border-copper-dim px-4 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper hover:text-foreground"
-          >
-            {link.label}
-          </a>
-        ))}
+        <ExternalNavLink link={commissionCalculatorLink} />
       </nav>
     </header>
   );
