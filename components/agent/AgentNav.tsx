@@ -16,6 +16,11 @@ export function AgentNav({ agentName, showVault }: { agentName: string; showVaul
     { href: "/agent/training", label: "Training" },
   ];
 
+  const externalLinks = [
+    { href: "https://tier1financialscripts.org/", label: "Scripts" },
+    { href: "https://tier1financial-commissioncalculator.netlify.app/", label: "Commission Calculator" },
+  ];
+
   return (
     <header className="sticky top-0 z-50 bg-black">
       {/* Brand row: logo / Agent Accelerator wordmark centered / actions */}
@@ -81,6 +86,17 @@ export function AgentNav({ agentName, showVault }: { agentName: string; showVaul
             </Link>
           );
         })}
+        {externalLinks.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-condensed rounded-lg border-[1.5px] border-copper-dim px-4 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper hover:text-foreground"
+          >
+            {link.label}
+          </a>
+        ))}
       </nav>
     </header>
   );
