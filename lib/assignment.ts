@@ -23,8 +23,12 @@ export function getMondayOf(date: Date) {
   return startOfWeek(date, { weekStartsOn: 1 });
 }
 
-export function hasNewLeadEligibility(agentCreatedAt: Date, now: Date = new Date()) {
-  const msSinceCreation = now.getTime() - agentCreatedAt.getTime();
+export function hasNewLeadEligibility(
+  agent: { createdAt: Date; assignmentEnabled: boolean },
+  now: Date = new Date(),
+) {
+  if (!agent.assignmentEnabled) return false;
+  const msSinceCreation = now.getTime() - agent.createdAt.getTime();
   return msSinceCreation < NEW_LEAD_ASSIGNMENT_WEEKS * 7 * 24 * 60 * 60 * 1000;
 }
 
@@ -172,7 +176,7 @@ export async function runWeeklyAutoAssignment(weekOf: Date = new Date()) {
       continue;
     }
 
-    if (!hasNewLeadEligibility(agent.createdAt, now)) {
+    if (!hasNewLeadEligibility(agent, now)) {
       await db.assignmentRunFlag.create({
         data: {
           assignmentRunId: assignmentRun.id,

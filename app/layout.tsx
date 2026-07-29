@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow_Condensed, Barlow } from "next/font/google";
 import { Providers } from "./providers";
+import { MyProfileWidget } from "@/components/shared/MyProfileWidget";
 import "./globals.css";
 
 const barlowCondensed = Barlow_Condensed({
@@ -28,7 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${barlowCondensed.variable} ${barlow.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <MyProfileWidget />
+        </Providers>
       </body>
     </html>
   );

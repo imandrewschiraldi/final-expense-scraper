@@ -4,8 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { cn } from "@/lib/cn";
-import { US_STATES } from "@/lib/usStates";
+import { StateMultiSelect } from "@/components/shared/StateMultiSelect";
 
 type Agent = {
   id: string;
@@ -13,6 +12,9 @@ type Agent = {
   email: string;
   licensedStates: string[];
   active: boolean;
+  compLevel: string | null;
+  vaultEnabled: boolean;
+  assignmentEnabled: boolean;
   inviteAccepted: boolean;
   leadCount: number;
   createdAt: string;
@@ -20,70 +22,13 @@ type Agent = {
 
 const VAULT_ACCESS_WEEKS = 8;
 
-function vaultAccessLabel(createdAt: string): string {
+function vaultAccessLabel(createdAt: string, vaultEnabled: boolean): string {
+  if (!vaultEnabled) return "Off (manual)";
   const cutoff = new Date(createdAt).getTime() + VAULT_ACCESS_WEEKS * 7 * 24 * 60 * 60 * 1000;
   const daysLeft = Math.ceil((cutoff - Date.now()) / (24 * 60 * 60 * 1000));
   return daysLeft > 0 ? `${daysLeft} day(s) left` : "Expired";
 }
 
-function StateMultiSelect({
-  value,
-  onChange,
-}: {
-  value: string[];
-  onChange: (states: string[]) => void;
-}) {
-  function toggle(code: string) {
-    onChange(value.includes(code) ? value.filter((c) => c !== code) : [...value, code]);
-  }
-
-  return (
-    <div className="w-full rounded-lg border border-border bg-surface p-2">
-      <div className="mb-2 flex items-center justify-between gap-2 px-1">
-        <span className="text-xs text-muted">
-          {value.length === 0 ? "No states selected" : `${value.length} selected`}
-        </span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="text-xs text-teal-light hover:underline"
-            onClick={() => onChange(US_STATES.map((s) => s.code))}
-          >
-            Select all
-          </button>
-          <button
-            type="button"
-            className="text-xs text-muted hover:underline"
-            onClick={() => onChange([])}
-          >
-            Clear
-          </button>
-        </div>
-      </div>
-      <div className="grid max-h-48 grid-cols-4 gap-1.5 overflow-y-auto p-1 sm:grid-cols-6">
-        {US_STATES.map((s) => {
-          const active = value.includes(s.code);
-          return (
-            <button
-              type="button"
-              key={s.code}
-              title={s.name}
-              onClick={() => toggle(s.code)}
-              className={cn(
-                "font-condensed rounded-md border-[1.5px] px-1 py-1.5 text-[12px] font-bold tracking-[0.03em] uppercase transition-colors",
-                active
-                  ? "border-copper bg-copper text-black"
-                  : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
-              )}
-            >
-              {s.code}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
   const [agents, setAgents] = useState(initialAgents);
@@ -93,6 +38,8 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
   const [resendMessage, setResendMessage] = useState<{ id: string; text: string } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<{ id: string; text: string } | null>(null);
+  const [compLevelDrafts, setCompLevelDrafts] = useState<Record<string, string>>({});
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", licensedStates: [] as string[] });
@@ -154,6 +101,47 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
     });
     if (res.ok) {
       setAgents((prev) => prev.map((a) => (a.id === agent.id ? { ...a, active: !a.active } : a)));
+    }
+  }
+
+  async function toggleVaultEnabled(agent: Agent) {
+    setTogglingId(agent.id);
+    const res = await fetch(`/api/admin/agents/${agent.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vaultEnabled: !agent.vaultEnabled }),
+    });
+    setTogglingId(null);
+    if (res.ok) {
+      setAgents((prev) => prev.map((a) => (a.id === agent.id ? { ...a, vaultEnabled: !a.vaultEnabled } : a)));
+    }
+  }
+
+  async function toggleAssignmentEnabled(agent: Agent) {
+    setTogglingId(agent.id);
+    const res = await fetch(`/api/admin/agents/${agent.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignmentEnabled: !agent.assignmentEnabled }),
+    });
+    setTogglingId(null);
+    if (res.ok) {
+      setAgents((prev) =>
+        prev.map((a) => (a.id === agent.id ? { ...a, assignmentEnabled: !a.assignmentEnabled } : a)),
+      );
+    }
+  }
+
+  async function saveCompLevel(agentId: string) {
+    const compLevel = compLevelDrafts[agentId]?.trim() ?? "";
+    const res = await fetch(`/api/admin/agents/${agentId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ compLevel: compLevel === "" ? null : compLevel }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAgents((prev) => prev.map((a) => (a.id === agentId ? { ...a, compLevel: data.agent.compLevel } : a)));
     }
   }
 
@@ -221,6 +209,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                 <th className="py-2 pr-4">Name</th>
                 <th className="py-2 pr-4">Email</th>
                 <th className="py-2 pr-4">Licensed States</th>
+                <th className="py-2 pr-4">Comp Level</th>
                 <th className="py-2 pr-4">Assigned Leads</th>
                 <th className="py-2 pr-4">Vault Access</th>
                 <th className="py-2 pr-4">Status</th>
@@ -257,8 +246,18 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                       </button>
                     )}
                   </td>
+                  <td className="py-2 pr-4">
+                    <input
+                      type="text"
+                      placeholder="—"
+                      className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-sm text-white placeholder:text-muted focus:border-copper focus:outline-none"
+                      value={compLevelDrafts[agent.id] ?? agent.compLevel ?? ""}
+                      onChange={(e) => setCompLevelDrafts((prev) => ({ ...prev, [agent.id]: e.target.value }))}
+                      onBlur={() => saveCompLevel(agent.id)}
+                    />
+                  </td>
                   <td className="py-2 pr-4 text-white">{agent.leadCount.toLocaleString()}</td>
-                  <td className="py-2 pr-4 text-muted">{vaultAccessLabel(agent.createdAt)}</td>
+                  <td className="py-2 pr-4 text-muted">{vaultAccessLabel(agent.createdAt, agent.vaultEnabled)}</td>
                   <td className="py-2 pr-4">
                     {!agent.inviteAccepted ? (
                       <span className="text-copper">Invited (pending)</span>
@@ -282,6 +281,20 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                         )}
                         <Button variant="ghost" onClick={() => toggleActive(agent)}>
                           {agent.active ? "Deactivate" : "Activate"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => toggleAssignmentEnabled(agent)}
+                          disabled={togglingId === agent.id}
+                        >
+                          {agent.assignmentEnabled ? "Turn Off Assign" : "Turn On Assign"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => toggleVaultEnabled(agent)}
+                          disabled={togglingId === agent.id}
+                        >
+                          {agent.vaultEnabled ? "Turn Off Vault" : "Turn On Vault"}
                         </Button>
                         {!agent.active && (
                           <Button

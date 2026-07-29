@@ -8,10 +8,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json();
-  const { name, licensedStates, active } = body as {
+  const { name, licensedStates, active, compLevel, vaultEnabled, assignmentEnabled } = body as {
     name?: string;
     licensedStates?: string[];
     active?: boolean;
+    compLevel?: string | null;
+    vaultEnabled?: boolean;
+    assignmentEnabled?: boolean;
   };
 
   const agent = await db.user.update({
@@ -20,8 +23,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(name !== undefined ? { name } : {}),
       ...(licensedStates !== undefined ? { licensedStates: licensedStates.map((s) => s.toUpperCase()) } : {}),
       ...(active !== undefined ? { active } : {}),
+      ...(compLevel !== undefined ? { compLevel } : {}),
+      ...(vaultEnabled !== undefined ? { vaultEnabled } : {}),
+      ...(assignmentEnabled !== undefined ? { assignmentEnabled } : {}),
     },
-    select: { id: true, name: true, email: true, licensedStates: true, active: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      licensedStates: true,
+      active: true,
+      compLevel: true,
+      vaultEnabled: true,
+      assignmentEnabled: true,
+    },
   });
 
   return NextResponse.json({ agent });

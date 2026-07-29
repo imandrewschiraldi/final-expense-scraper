@@ -18,10 +18,13 @@ export default async function VaultLeadDetailPage({
 
   const session = await auth();
   const agent = session?.user.id
-    ? await db.user.findUnique({ where: { id: session.user.id }, select: { createdAt: true } })
+    ? await db.user.findUnique({
+        where: { id: session.user.id },
+        select: { createdAt: true, vaultEnabled: true },
+      })
     : null;
 
-  if (!agent || !hasVaultAccess(agent.createdAt)) {
+  if (!agent || !hasVaultAccess(agent)) {
     redirect("/agent/dashboard");
   }
 

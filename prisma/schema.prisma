@@ -42,6 +42,10 @@ model User {
   role                  Role      @default(AGENT)
   licensedStates        String[]  @default([])
   active                Boolean   @default(true)
+  profileImageUrl       String?
+  compLevel             String?
+  vaultEnabled          Boolean   @default(true)
+  assignmentEnabled     Boolean   @default(true)
   inviteTokenHash       String?   @unique
   inviteTokenExpiresAt  DateTime?
   invitedAt             DateTime?

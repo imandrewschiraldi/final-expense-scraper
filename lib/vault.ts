@@ -18,15 +18,19 @@ export const VAULT_REVERT_DAYS = 14;
 // after that their access is revoked, both in the nav and at the API level.
 export const VAULT_ACCESS_WEEKS = 8;
 
-export function hasVaultAccess(agentCreatedAt: Date, now: Date = new Date()) {
-  const msSinceCreation = now.getTime() - agentCreatedAt.getTime();
+export function hasVaultAccess(
+  agent: { createdAt: Date; vaultEnabled: boolean },
+  now: Date = new Date(),
+) {
+  if (!agent.vaultEnabled) return false;
+  const msSinceCreation = now.getTime() - agent.createdAt.getTime();
   return msSinceCreation < VAULT_ACCESS_WEEKS * 7 * 24 * 60 * 60 * 1000;
 }
 
 export async function agentHasVaultAccess(agentId: string, now: Date = new Date()) {
-  const agent = await db.user.findUnique({ where: { id: agentId }, select: { createdAt: true } });
+  const agent = await db.user.findUnique({ where: { id: agentId }, select: { createdAt: true, vaultEnabled: true } });
   if (!agent) return false;
-  return hasVaultAccess(agent.createdAt, now);
+  return hasVaultAccess(agent, now);
 }
 
 /**

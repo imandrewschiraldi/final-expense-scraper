@@ -8,8 +8,11 @@ export default async function AgentLayout({ children }: { children: React.ReactN
 
   let showVault = false;
   if (session?.user.id) {
-    const agent = await db.user.findUnique({ where: { id: session.user.id }, select: { createdAt: true } });
-    showVault = agent ? hasVaultAccess(agent.createdAt) : false;
+    const agent = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { createdAt: true, vaultEnabled: true },
+    });
+    showVault = agent ? hasVaultAccess(agent) : false;
   }
 
   return (
