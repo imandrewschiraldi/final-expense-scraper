@@ -59,7 +59,6 @@ model User {
   assignmentFlags   AssignmentRunFlag[]
   trainingProgress  TrainingProgress[]
   policies          Policy[]            @relation("AgentPolicies")
-  uploadedResources Resource[]
   dashboardLayoutEdits DashboardLayout[]
 
   @@map("users")
@@ -208,30 +207,6 @@ model TrainingProgress {
 }
 
 // --- Agent Portal ---
-
-model LeadVendor {
-  id          String   @id @default(cuid())
-  name        String
-  website     String?
-  contactInfo String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("lead_vendors")
-}
-
-model Resource {
-  id           String   @id @default(cuid())
-  title        String
-  description  String?
-  fileUrl      String
-  uploadedById String?
-  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-
-  @@map("resources")
-}
 
 // Book of Business: a sold policy, "Submitted" (= pending with the carrier)
 // until an agent flips it to "Issued" once the carrier approves it. leadId is

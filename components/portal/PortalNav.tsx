@@ -11,8 +11,6 @@ const tabs = [
   { href: "/portal/dashboard", label: "Dashboard" },
   { href: "/portal/leaderboard", label: "Leaderboard" },
   { href: "/portal/book-of-business", label: "Book of Business" },
-  // Leads vendor directory and Resources tabs are temporarily removed —
-  // the pages/API/schema are still there, just unlinked from the nav.
 ];
 
 export function PortalNav({ role, name }: { role: "ADMIN" | "AGENT"; name: string }) {
