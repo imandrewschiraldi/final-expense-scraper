@@ -14,7 +14,11 @@ function sanitizeDates<T>(value: T): T {
   if (Array.isArray(value)) {
     return value.map((v) => sanitizeDates(v)) as unknown as T;
   }
-  if (value && typeof value === "object") {
+  // Only recurse into plain objects (Prisma's row/result shapes). Anything
+  // with its own constructor — Decimal, Buffer, etc. — gets reconstructed
+  // as a bare {} by the loop below, which silently strips it of the
+  // methods (like Decimal's numeric coercion) callers depend on.
+  if (value && typeof value === "object" && value.constructor === Object) {
     const out: Record<string, unknown> = {};
     for (const [key, v] of Object.entries(value)) {
       out[key] = sanitizeDates(v);

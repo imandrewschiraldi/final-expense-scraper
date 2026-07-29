@@ -1,10 +1,15 @@
-import { ComingSoon } from "@/components/portal/ComingSoon";
+import { auth } from "@/lib/auth";
+import { LeaderboardPanel } from "@/components/portal/LeaderboardPanel";
 
-export default function PortalLeaderboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PortalLeaderboardPage() {
+  const session = await auth();
+
   return (
-    <ComingSoon
-      title="Leaderboard"
-      description="Agents ranked by annual premium on issued business, with Daily / Week-to-Date / Month-to-Date / Year-to-Date filters. Visible to the whole team."
-    />
+    <div>
+      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Leaderboard</h1>
+      <LeaderboardPanel isAdmin={session?.user.role === "ADMIN"} />
+    </div>
   );
 }

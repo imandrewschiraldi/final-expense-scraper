@@ -42,6 +42,10 @@ model User {
   role                  Role      @default(AGENT)
   licensedStates        String[]  @default([])
   active                Boolean   @default(true)
+  profileImageUrl       String?
+  compLevel             String?
+  vaultEnabled          Boolean   @default(true)
+  assignmentEnabled     Boolean   @default(true)
   inviteTokenHash       String?   @unique
   inviteTokenExpiresAt  DateTime?
   invitedAt             DateTime?
@@ -55,7 +59,7 @@ model User {
   assignmentFlags   AssignmentRunFlag[]
   trainingProgress  TrainingProgress[]
   policies          Policy[]            @relation("AgentPolicies")
-  uploadedResources Resource[]
+  dashboardLayoutEdits DashboardLayout[]
 
   @@map("users")
 }
@@ -204,30 +208,6 @@ model TrainingProgress {
 
 // --- Agent Portal ---
 
-model LeadVendor {
-  id          String   @id @default(cuid())
-  name        String
-  website     String?
-  contactInfo String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("lead_vendors")
-}
-
-model Resource {
-  id           String   @id @default(cuid())
-  title        String
-  description  String?
-  fileUrl      String
-  uploadedById String?
-  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-
-  @@map("resources")
-}
-
 // Book of Business: a sold policy, "Submitted" (= pending with the carrier)
 // until an agent flips it to "Issued" once the carrier approves it. leadId is
 // optional — plenty of sales come from leads bought outside this system, so
@@ -257,4 +237,17 @@ model Policy {
   @@index([submittedAt])
   @@index([issuedAt])
   @@map("policies")
+}
+
+// Singleton: the admin-designed widget grid shared by every agent's personal
+// Dashboard tab (filled with their own numbers) and the Leaderboard's team
+// section (filled with team-wide numbers). One row only.
+model DashboardLayout {
+  id          String   @id @default(cuid())
+  widgets     Json
+  updatedById String?
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+  updatedAt   DateTime @updatedAt
+
+  @@map("dashboard_layouts")
 }

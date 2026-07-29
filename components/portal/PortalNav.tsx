@@ -11,8 +11,6 @@ const tabs = [
   { href: "/portal/dashboard", label: "Dashboard" },
   { href: "/portal/leaderboard", label: "Leaderboard" },
   { href: "/portal/book-of-business", label: "Book of Business" },
-  { href: "/portal/leads", label: "Leads" },
-  { href: "/portal/resources", label: "Resources" },
 ];
 
 export function PortalNav({ role, name }: { role: "ADMIN" | "AGENT"; name: string }) {

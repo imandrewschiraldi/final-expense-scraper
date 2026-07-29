@@ -1,10 +1,15 @@
-import { ComingSoon } from "@/components/portal/ComingSoon";
+import { auth } from "@/lib/auth";
+import { DashboardClient } from "@/components/portal/DashboardClient";
 
-export default function PortalDashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PortalDashboardPage() {
+  const session = await auth();
+
   return (
-    <ComingSoon
-      title="Dashboard"
-      description="Team-wide submitted and issued business, with Daily / Week-to-Date / Month-to-Date / Year-to-Date filters."
-    />
+    <div>
+      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Dashboard</h1>
+      <DashboardClient scope="personal" isAdmin={session?.user.role === "ADMIN"} />
+    </div>
   );
 }
