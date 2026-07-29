@@ -39,6 +39,7 @@ function formatCurrency(value: string | number) {
 export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [soldLeads, setSoldLeads] = useState<SoldLead[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -48,16 +49,28 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
 
   useEffect(() => {
     fetch("/api/portal/policies?mine=true")
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error ?? `Failed to load policies (${res.status})`);
+        }
+        return res.json();
+      })
       .then((data) => {
         setPolicies(data.policies ?? []);
+        setLoading(false);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        setLoadError(err instanceof Error ? err.message : "Failed to load your book of business.");
         setLoading(false);
       });
 
     if (isAgent) {
       fetch("/api/agent/leads?archived=true&status=SOLD")
-        .then((res) => res.json())
-        .then((data) => setSoldLeads(data.leads ?? []));
+        .then((res) => (res.ok ? res.json() : { leads: [] }))
+        .then((data) => setSoldLeads(data.leads ?? []))
+        .catch(() => setSoldLeads([]));
     }
   }, [isAgent]);
 
@@ -192,6 +205,8 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
           </div>
         )}
 
+        {loadError && <p className="mb-3 text-sm text-red-light">{loadError}</p>}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
@@ -207,7 +222,7 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {!loading && policies.length === 0 && (
+              {!loading && !loadError && policies.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-6 text-center text-muted">
                     No deals submitted yet.
