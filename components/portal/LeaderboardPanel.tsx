@@ -41,12 +41,24 @@ export function LeaderboardPanel({ isAdmin }: { isAdmin: boolean }) {
   const [range, setRange] = useState<DateRange>("mtd");
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/portal/leaderboard?range=${range}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error ?? `Failed to load leaderboard (${res.status})`);
+        }
+        return res.json();
+      })
       .then((data) => {
         setRankings(data.rankings ?? []);
+        setLoading(false);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        setLoadError(err instanceof Error ? err.message : "Failed to load leaderboard.");
         setLoading(false);
       });
   }, [range]);
@@ -64,6 +76,8 @@ export function LeaderboardPanel({ isAdmin }: { isAdmin: boolean }) {
 
         {loading ? (
           <p className="text-sm text-muted">Loading...</p>
+        ) : loadError ? (
+          <p className="text-sm text-red-light">{loadError}</p>
         ) : top3.length === 0 ? (
           <p className="text-sm text-muted">No issued business yet for this period.</p>
         ) : (

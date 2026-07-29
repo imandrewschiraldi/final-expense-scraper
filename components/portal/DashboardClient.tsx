@@ -22,16 +22,28 @@ export function DashboardClient({
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [data, setData] = useState<Record<string, WidgetData>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/portal/dashboard?scope=${scope}&range=${range}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error ?? `Failed to load dashboard (${res.status})`);
+        }
+        return res.json();
+      })
       .then((json) => {
         setWidgets(json.widgets ?? []);
         setData(json.data ?? {});
+        setLoading(false);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        setLoadError(err instanceof Error ? err.message : "Failed to load dashboard.");
         setLoading(false);
       });
   }, [scope, range]);
@@ -76,6 +88,8 @@ export function DashboardClient({
 
       {loading ? (
         <p className="text-sm text-muted">Loading...</p>
+      ) : loadError ? (
+        <p className="text-sm text-red-light">{loadError}</p>
       ) : (
         <DashboardGrid widgets={widgets} data={data} editable={editing} onWidgetsChange={setWidgets} />
       )}
