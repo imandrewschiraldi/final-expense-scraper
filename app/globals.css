@@ -54,6 +54,7 @@
 
   --font-condensed: var(--font-barlow-condensed);
   --font-sans: var(--font-barlow);
+  --font-scoreboard: var(--font-scoreboard);
 }
 
 body {
@@ -70,6 +71,11 @@ h3,
 h4,
 .font-condensed {
   font-family: var(--font-barlow-condensed), Arial, Helvetica, sans-serif;
+}
+
+.font-scoreboard {
+  font-family: var(--font-scoreboard), "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 ::selection {

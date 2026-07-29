@@ -1,10 +1,15 @@
-import { ComingSoon } from "@/components/portal/ComingSoon";
+import { auth } from "@/lib/auth";
+import { BookOfBusinessPanel } from "@/components/portal/BookOfBusinessPanel";
 
-export default function PortalBookOfBusinessPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PortalBookOfBusinessPage() {
+  const session = await auth();
+
   return (
-    <ComingSoon
-      title="Book of Business"
-      description="View all your submitted and issued policies in one place, and submit new deals after you sell them — linked to an existing lead, or entered manually for leads bought elsewhere."
-    />
+    <div>
+      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Book of Business</h1>
+      <BookOfBusinessPanel isAgent={session?.user.role === "AGENT"} />
+    </div>
   );
 }

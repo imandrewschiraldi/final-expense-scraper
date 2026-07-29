@@ -60,6 +60,7 @@ model User {
   trainingProgress  TrainingProgress[]
   policies          Policy[]            @relation("AgentPolicies")
   uploadedResources Resource[]
+  dashboardLayoutEdits DashboardLayout[]
 
   @@map("users")
 }
@@ -261,4 +262,17 @@ model Policy {
   @@index([submittedAt])
   @@index([issuedAt])
   @@map("policies")
+}
+
+// Singleton: the admin-designed widget grid shared by every agent's personal
+// Dashboard tab (filled with their own numbers) and the Leaderboard's team
+// section (filled with team-wide numbers). One row only.
+model DashboardLayout {
+  id          String   @id @default(cuid())
+  widgets     Json
+  updatedById String?
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+  updatedAt   DateTime @updatedAt
+
+  @@map("dashboard_layouts")
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Barlow_Condensed, Barlow } from "next/font/google";
+import { Barlow_Condensed, Barlow, Orbitron } from "next/font/google";
 import { Providers } from "./providers";
 import { MyProfileWidget } from "@/components/shared/MyProfileWidget";
 import "./globals.css";
@@ -16,6 +16,13 @@ const barlow = Barlow({
   weight: ["300", "400", "500", "600"],
 });
 
+// Digital-scoreboard look for the Dashboard/Leaderboard metric tiles.
+const orbitron = Orbitron({
+  variable: "--font-scoreboard",
+  subsets: ["latin"],
+  weight: ["600", "700", "900"],
+});
+
 export const metadata: Metadata = {
   title: "Agent Accelerator",
   description: "Final expense lead management for admins and agents",
@@ -27,7 +34,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${barlowCondensed.variable} ${barlow.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col">
         <Providers>
           {children}
