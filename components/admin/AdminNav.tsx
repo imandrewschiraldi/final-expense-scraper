@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { SignOutButton } from "@/components/ui/SignOutButton";
 
 const links = [
+  { href: "/portal", label: "Portal" },
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/leads/all", label: "All Leads" },
   { href: "/admin/leads/import", label: "Import Leads" },

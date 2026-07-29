@@ -29,6 +29,11 @@ enum LeadType {
   MORTGAGE_PROTECTION
 }
 
+enum PolicyStatus {
+  SUBMITTED
+  ISSUED
+}
+
 model User {
   id                    String    @id @default(cuid())
   email                 String    @unique
@@ -49,6 +54,8 @@ model User {
   notifications     Notification[]
   assignmentFlags   AssignmentRunFlag[]
   trainingProgress  TrainingProgress[]
+  policies          Policy[]            @relation("AgentPolicies")
+  uploadedResources Resource[]
 
   @@map("users")
 }
@@ -74,7 +81,8 @@ model Lead {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  notes LeadNote[]
+  notes    LeadNote[]
+  policies Policy[]
 
   @@index([state])
   @@index([status])
@@ -192,4 +200,61 @@ model TrainingProgress {
 
   @@unique([agentId, lessonId])
   @@map("training_progress")
+}
+
+// --- Agent Portal ---
+
+model LeadVendor {
+  id          String   @id @default(cuid())
+  name        String
+  website     String?
+  contactInfo String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("lead_vendors")
+}
+
+model Resource {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  fileUrl      String
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@map("resources")
+}
+
+// Book of Business: a sold policy, "Submitted" (= pending with the carrier)
+// until an agent flips it to "Issued" once the carrier approves it. leadId is
+// optional — plenty of sales come from leads bought outside this system, so
+// the client fields are always stored directly on the Policy rather than only
+// derived from the linked Lead.
+model Policy {
+  id               String       @id @default(cuid())
+  agentId          String?
+  agent            User?        @relation("AgentPolicies", fields: [agentId], references: [id], onDelete: SetNull)
+  leadId           String?
+  lead             Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  clientName       String
+  clientPhone      String?
+  state            String?
+  carrier          String
+  product          String?
+  annualPremium    Decimal      @db.Decimal(10, 2)
+  status           PolicyStatus @default(SUBMITTED)
+  submittedAt      DateTime     @default(now())
+  issuedAt         DateTime?
+  discordMessageId String?      @unique
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([agentId])
+  @@index([status])
+  @@index([submittedAt])
+  @@index([issuedAt])
+  @@map("policies")
 }

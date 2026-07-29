@@ -22,3 +22,13 @@ export async function requireAgent() {
   }
   return { session } as const;
 }
+
+// Portal features (Dashboard, Leaderboard, Leads, Resources) are shared
+// between both roles — everyone on the team can see them.
+export async function requireAnyRole() {
+  const session = await auth();
+  if (!session) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) } as const;
+  }
+  return { session } as const;
+}
