@@ -101,13 +101,20 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
 
   const items = NAV_ITEMS.filter((item) => item.roles.includes(role) && (!item.requiresVault || profile?.hasVaultAccess));
 
+  // Scripts and Commission Calculator embed a third-party tool that draws its
+  // own copper rule under its own header at that header's natural height —
+  // match it exactly (== HEADER_HEIGHT) so our half of the line lines up with
+  // theirs instead of appearing as two lines at different heights.
+  const isEmbeddedToolPage = pathname === "/portal/scripts" || pathname === "/portal/commission-calculator";
+  const dividerTop = isEmbeddedToolPage ? HEADER_HEIGHT : DIVIDER_TOP;
+
   return (
     <>
       {/* One continuous copper line under the header, spanning the full
           viewport width (not just the sidebar) regardless of monitor size
           or collapse state — the header row height is fixed so this never
           shifts when the sidebar toggles. */}
-      <div className="pointer-events-none fixed inset-x-0 z-50 h-0.5 bg-copper" style={{ top: DIVIDER_TOP }} />
+      <div className="pointer-events-none fixed inset-x-0 z-50 h-0.5 bg-copper" style={{ top: dividerTop }} />
       <aside
         className={cn(
           "sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out",
