@@ -5,7 +5,7 @@ import { PersonalKpiData } from "@/lib/personalDashboardShared";
 
 export * from "@/lib/personalDashboardShared";
 
-type WindowMetrics = {
+export type WindowMetrics = {
   submittedAP: number;
   submittedCount: number;
   issuedAP: number;
@@ -15,11 +15,12 @@ type WindowMetrics = {
   avgCaseSize: number;
 };
 
-async function metricsForWindow(userId: string, window: { gte?: Date; lt?: Date }): Promise<WindowMetrics> {
+/** `agentId: null` scopes org-wide instead of to one agent — shared by the personal and organization dashboards. */
+export async function metricsForWindow(agentId: string | null, window: { gte?: Date; lt?: Date }): Promise<WindowMetrics> {
   const hasBound = window.gte !== undefined || window.lt !== undefined;
   const statusGroups = await db.policy.groupBy({
     by: ["status"],
-    where: { agentId: userId, ...(hasBound ? { submittedAt: window } : {}) },
+    where: { ...(agentId ? { agentId } : {}), ...(hasBound ? { submittedAt: window } : {}) },
     _sum: { annualPremium: true },
     _count: { _all: true },
   });

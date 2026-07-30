@@ -76,7 +76,6 @@ model User {
   assignmentFlags   AssignmentRunFlag[]
   trainingProgress  TrainingProgress[]
   policies          Policy[]            @relation("AgentPolicies")
-  dashboardLayoutEdits DashboardLayout[]
   goals             Goal[]
   policyStatusChanges PolicyStatusHistory[] @relation("PolicyStatusChangedBy")
 
@@ -294,17 +293,4 @@ model Goal {
 
   @@index([userId, periodEnd])
   @@map("goals")
-}
-
-// Singleton: the admin-designed widget grid shared by every agent's personal
-// Dashboard tab (filled with their own numbers) and the Leaderboard's team
-// section (filled with team-wide numbers). One row only.
-model DashboardLayout {
-  id          String   @id @default(cuid())
-  widgets     Json
-  updatedById String?
-  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
-  updatedAt   DateTime @updatedAt
-
-  @@map("dashboard_layouts")
 }

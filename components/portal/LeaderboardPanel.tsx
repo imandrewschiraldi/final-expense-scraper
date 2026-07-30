@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Crown, Radio } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { DashboardClient } from "@/components/portal/DashboardClient";
 import { useCountUp } from "@/lib/useCountUp";
 
 const POLL_MS = 20000;
@@ -45,7 +44,7 @@ function Avatar({ url, name, size }: { url: string | null; name: string; size: n
   );
 }
 
-export function LeaderboardPanel({ isAdmin }: { isAdmin: boolean }) {
+export function LeaderboardPanel() {
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -152,10 +151,6 @@ export function LeaderboardPanel({ isAdmin }: { isAdmin: boolean }) {
             )}
           </>
         )}
-      </div>
-
-      <div>
-        <DashboardClient scope="team" isAdmin={isAdmin} heading="Team Dashboard" />
       </div>
     </div>
   );
