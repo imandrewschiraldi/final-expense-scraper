@@ -13,7 +13,7 @@ export function EmbeddedTool({ title, src }: { title: string; src: string }) {
         href={src}
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute top-3 right-3 flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-semibold text-muted backdrop-blur-sm transition-colors hover:text-white"
+        className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-semibold text-muted backdrop-blur-sm transition-colors hover:text-white"
       >
         <ExternalLink className="h-3.5 w-3.5" />
         Open in New Tab

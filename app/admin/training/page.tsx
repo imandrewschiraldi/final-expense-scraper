@@ -11,7 +11,7 @@ export default async function AdminTrainingPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Training</h1>
+      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Training</h1>
       <TrainingPanel
         initialModules={modules.map((m) => ({
           ...m,

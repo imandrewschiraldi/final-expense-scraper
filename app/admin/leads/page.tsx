@@ -26,7 +26,7 @@ const SECTIONS = [
 export default function LeadsPage() {
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Leads</h1>
+      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Leads</h1>
       <div className="grid gap-4 sm:grid-cols-3">
         {SECTIONS.map((section) => {
           const Icon = section.icon;
