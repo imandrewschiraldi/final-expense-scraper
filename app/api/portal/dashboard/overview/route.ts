@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { computePersonalKpis, activeGoalsFor, recentWinsFor } from "@/lib/personalDashboard";
-import {
-  ANALYTICS_RANGES,
-  AnalyticsRange,
-  computeProductionTimeline,
-  computeCarrierAnalytics,
-  computeProductAnalytics,
-  computePolicyStatusAnalytics,
-} from "@/lib/productionAnalytics";
+import { DASHBOARD_RANGES, DashboardRange } from "@/lib/dashboardRange";
+import { computeProductionTimeline, computeCarrierAnalytics, computeProductAnalytics, computePolicyStatusAnalytics } from "@/lib/productionAnalytics";
 
 export async function GET(req: NextRequest) {
   const guard = await requireAnyRole();
@@ -17,12 +11,12 @@ export async function GET(req: NextRequest) {
   const userId = guard.session.user.id;
   const { searchParams } = new URL(req.url);
   const rangeParam = searchParams.get("range");
-  const range: AnalyticsRange = ANALYTICS_RANGES.includes(rangeParam as AnalyticsRange)
-    ? (rangeParam as AnalyticsRange)
+  const range: DashboardRange = DASHBOARD_RANGES.includes(rangeParam as DashboardRange)
+    ? (rangeParam as DashboardRange)
     : "monthly";
 
   const [kpis, goals, recentWins, timeline, carriers, products, statusAnalytics] = await Promise.all([
-    computePersonalKpis(userId),
+    computePersonalKpis(userId, range),
     activeGoalsFor(userId),
     recentWinsFor(userId),
     computeProductionTimeline(userId, range),
@@ -35,6 +29,6 @@ export async function GET(req: NextRequest) {
     kpis,
     goals,
     recentWins,
-    analytics: { timeline, range, carriers, products, statusAnalytics },
+    analytics: { timeline, carriers, products, statusAnalytics },
   });
 }

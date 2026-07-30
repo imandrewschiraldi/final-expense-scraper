@@ -1,15 +1,13 @@
 import { db } from "@/lib/db";
 import { startOfDay, startOfWeek, startOfMonth, startOfYear, subDays, subWeeks, subMonths, format } from "date-fns";
-import { AnalyticsRange } from "@/lib/productionAnalyticsShared";
+import { DashboardRange } from "@/lib/dashboardRange";
 import { PRODUCTS } from "@/lib/products";
-
-export * from "@/lib/productionAnalyticsShared";
 
 const POLICY_STATUSES = ["SUBMITTED", "ISSUED", "CHARGEBACK"] as const;
 
 type Bucket = "daily" | "weekly" | "monthly";
 
-function windowFor(range: AnalyticsRange, now: Date): { since: Date | null; bucket: Bucket } {
+function windowFor(range: DashboardRange, now: Date): { since: Date | null; bucket: Bucket } {
   switch (range) {
     case "daily":
       return { since: subDays(startOfDay(now), 29), bucket: "daily" };
@@ -42,7 +40,7 @@ function bucketKey(date: Date, bucket: Bucket): { key: string; label: string } {
 }
 
 /** Single Production Timeline chart backing the whole analytics section. */
-export async function computeProductionTimeline(userId: string, range: AnalyticsRange, now: Date = new Date()) {
+export async function computeProductionTimeline(userId: string, range: DashboardRange, now: Date = new Date()) {
   const { since, bucket } = windowFor(range, now);
   const policies = await db.policy.findMany({
     where: { agentId: userId, ...(since ? { submittedAt: { gte: since } } : {}) },
@@ -64,7 +62,7 @@ export async function computeProductionTimeline(userId: string, range: Analytics
 }
 
 /** Carrier Analytics: distribution, top carrier, avg premium per carrier. */
-export async function computeCarrierAnalytics(userId: string, range: AnalyticsRange, now: Date = new Date()) {
+export async function computeCarrierAnalytics(userId: string, range: DashboardRange, now: Date = new Date()) {
   const { since } = windowFor(range, now);
   const policies = await db.policy.findMany({
     where: { agentId: userId, ...(since ? { submittedAt: { gte: since } } : {}) },
@@ -85,7 +83,7 @@ export async function computeCarrierAnalytics(userId: string, range: AnalyticsRa
 }
 
 /** Product Analytics: fixed product list/order, zero-filled when unused. */
-export async function computeProductAnalytics(userId: string, range: AnalyticsRange, now: Date = new Date()) {
+export async function computeProductAnalytics(userId: string, range: DashboardRange, now: Date = new Date()) {
   const { since } = windowFor(range, now);
   const policies = await db.policy.findMany({
     where: { agentId: userId, ...(since ? { submittedAt: { gte: since } } : {}) },
@@ -108,7 +106,7 @@ export async function computeProductAnalytics(userId: string, range: AnalyticsRa
 }
 
 /** Policy Status Analytics: Submitted/Issued/Chargeback breakdown + conversion rate. */
-export async function computePolicyStatusAnalytics(userId: string, range: AnalyticsRange, now: Date = new Date()) {
+export async function computePolicyStatusAnalytics(userId: string, range: DashboardRange, now: Date = new Date()) {
   const { since } = windowFor(range, now);
   const policies = await db.policy.findMany({
     where: { agentId: userId, ...(since ? { submittedAt: { gte: since } } : {}) },
