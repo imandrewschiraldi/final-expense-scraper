@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
+import { checkAndAwardGoals } from "@/lib/personalDashboard";
+import { PolicyStatus } from "@prisma/client";
+
+const POLICY_STATUSES: PolicyStatus[] = [
+  "SUBMITTED",
+  "PENDING",
+  "ISSUED",
+  "PLACED",
+  "CANCELED",
+  "LAPSED",
+  "DECLINED",
+  "CHARGEBACK",
+];
 
 export async function GET(req: NextRequest) {
   const guard = await requireAnyRole();
@@ -31,7 +44,7 @@ export async function POST(req: NextRequest) {
     carrier?: string;
     product?: string;
     annualPremium?: number;
-    status?: "SUBMITTED" | "ISSUED";
+    status?: PolicyStatus;
   };
 
   if (!clientName?.trim() || !carrier?.trim() || !annualPremium || annualPremium <= 0) {
@@ -50,6 +63,7 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date();
+  const resolvedStatus = status && POLICY_STATUSES.includes(status) ? status : "SUBMITTED";
   const policy = await db.policy.create({
     data: {
       agentId: guard.session.user.id,
@@ -60,10 +74,17 @@ export async function POST(req: NextRequest) {
       carrier: carrier.trim(),
       product: product?.trim() || null,
       annualPremium,
-      status: status === "ISSUED" ? "ISSUED" : "SUBMITTED",
-      issuedAt: status === "ISSUED" ? now : null,
+      status: resolvedStatus,
+      issuedAt: resolvedStatus === "ISSUED" ? now : null,
     },
   });
+
+  await db.policyStatusHistory.create({
+    data: { policyId: policy.id, fromStatus: null, toStatus: resolvedStatus, changedById: guard.session.user.id },
+  });
+  if (guard.session.user.id) {
+    await checkAndAwardGoals(guard.session.user.id);
+  }
 
   return NextResponse.json({ policy }, { status: 201 });
 }
