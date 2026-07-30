@@ -39,11 +39,11 @@ function bucketKey(date: Date, bucket: Bucket): { key: string; label: string } {
   }
 }
 
-/** Single Production Timeline chart backing the whole analytics section. */
-export async function computeProductionTimeline(userId: string, range: DashboardRange, now: Date = new Date()) {
+/** Single Production Timeline chart backing the whole analytics section. `agentId: null` means org-wide (no agent filter). */
+export async function computeProductionTimeline(agentId: string | null, range: DashboardRange, now: Date = new Date()) {
   const { since, bucket } = windowFor(range, now);
   const policies = await db.policy.findMany({
-    where: { agentId: userId, ...(since ? { submittedAt: { gte: since } } : {}) },
+    where: { ...(agentId ? { agentId } : {}), ...(since ? { submittedAt: { gte: since } } : {}) },
     select: { annualPremium: true, submittedAt: true },
   });
 
@@ -61,11 +61,11 @@ export async function computeProductionTimeline(userId: string, range: Dashboard
     .map(([, v]) => v);
 }
 
-/** Carrier Analytics: distribution, top carrier, avg premium per carrier. */
-export async function computeCarrierAnalytics(userId: string, range: DashboardRange, now: Date = new Date()) {
+/** Carrier Analytics: distribution, top carrier, avg premium per carrier. `agentId: null` means org-wide. */
+export async function computeCarrierAnalytics(agentId: string | null, range: DashboardRange, now: Date = new Date()) {
   const { since } = windowFor(range, now);
   const policies = await db.policy.findMany({
-    where: { agentId: userId, ...(since ? { submittedAt: { gte: since } } : {}) },
+    where: { ...(agentId ? { agentId } : {}), ...(since ? { submittedAt: { gte: since } } : {}) },
     select: { annualPremium: true, carrier: true },
   });
 
@@ -82,11 +82,11 @@ export async function computeCarrierAnalytics(userId: string, range: DashboardRa
     .sort((a, b) => b.ap - a.ap);
 }
 
-/** Product Analytics: fixed product list/order, zero-filled when unused. */
-export async function computeProductAnalytics(userId: string, range: DashboardRange, now: Date = new Date()) {
+/** Product Analytics: fixed product list/order, zero-filled when unused. `agentId: null` means org-wide. */
+export async function computeProductAnalytics(agentId: string | null, range: DashboardRange, now: Date = new Date()) {
   const { since } = windowFor(range, now);
   const policies = await db.policy.findMany({
-    where: { agentId: userId, ...(since ? { submittedAt: { gte: since } } : {}) },
+    where: { ...(agentId ? { agentId } : {}), ...(since ? { submittedAt: { gte: since } } : {}) },
     select: { annualPremium: true, product: true },
   });
 
@@ -105,11 +105,11 @@ export async function computeProductAnalytics(userId: string, range: DashboardRa
   });
 }
 
-/** Policy Status Analytics: Submitted/Issued/Chargeback breakdown + conversion rate. */
-export async function computePolicyStatusAnalytics(userId: string, range: DashboardRange, now: Date = new Date()) {
+/** Policy Status Analytics: Submitted/Issued/Chargeback breakdown + conversion rate. `agentId: null` means org-wide. */
+export async function computePolicyStatusAnalytics(agentId: string | null, range: DashboardRange, now: Date = new Date()) {
   const { since } = windowFor(range, now);
   const policies = await db.policy.findMany({
-    where: { agentId: userId, ...(since ? { submittedAt: { gte: since } } : {}) },
+    where: { ...(agentId ? { agentId } : {}), ...(since ? { submittedAt: { gte: since } } : {}) },
     select: { status: true },
   });
 
