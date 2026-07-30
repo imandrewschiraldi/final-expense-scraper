@@ -8,7 +8,7 @@ import { ExternalLink } from "lucide-react";
  * the top without covering any of that. */
 export function EmbeddedTool({ title, src }: { title: string; src: string }) {
   return (
-    <div className="relative -mx-6 -my-8 h-screen lg:-mx-10">
+    <div className="relative -mx-6 -mt-2 -mb-8 h-screen lg:-mx-10">
       <iframe src={src} title={title} className="h-full w-full border-0" />
       <a
         href={src}
