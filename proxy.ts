@@ -18,7 +18,7 @@ export default auth((req) => {
   }
 
   if (isAgentRoute && role !== "AGENT" && role !== "MANAGER") {
-    return NextResponse.redirect(new URL("/admin/dashboard", nextUrl));
+    return NextResponse.redirect(new URL("/admin/leads", nextUrl));
   }
 });
 

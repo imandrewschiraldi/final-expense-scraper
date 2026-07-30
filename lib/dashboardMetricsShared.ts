@@ -1,4 +1,4 @@
-import { startOfDay, startOfMonth, startOfYear, startOfWeek } from "date-fns";
+import { startOfDay, startOfMonth, startOfYear, startOfWeek, subDays, subWeeks, subMonths, subYears } from "date-fns";
 
 export const DATE_RANGES = ["daily", "wtd", "mtd", "ytd"] as const;
 export type DateRange = (typeof DATE_RANGES)[number];
@@ -21,6 +21,33 @@ export function rangeStart(range: DateRange, now: Date = new Date()): Date {
     case "ytd":
       return startOfYear(now);
   }
+}
+
+function periodBack(date: Date, range: DateRange): Date {
+  switch (range) {
+    case "daily":
+      return subDays(date, 1);
+    case "wtd":
+      return subWeeks(date, 1);
+    case "mtd":
+      return subMonths(date, 1);
+    case "ytd":
+      return subYears(date, 1);
+  }
+}
+
+/**
+ * The comparable prior window for a range — same elapsed time into the
+ * period, one period back (e.g. "8 days into this month" vs "8 days into
+ * last month"), not the full prior period. Keeps the KPI-card delta fair
+ * against a range that's still in progress.
+ */
+export function comparisonWindow(range: DateRange, now: Date = new Date()): { start: Date; end: Date } {
+  const currentStart = rangeStart(range, now);
+  const elapsedMs = now.getTime() - currentStart.getTime();
+  const start = periodBack(currentStart, range);
+  const end = new Date(start.getTime() + elapsedMs);
+  return { start, end };
 }
 
 export const METRICS = [

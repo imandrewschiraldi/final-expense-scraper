@@ -1,37 +1,37 @@
 import { startOfDay } from "date-fns";
 import { db } from "@/lib/db";
-import { DateRange, MetricKey, rangeStart } from "@/lib/dashboardMetricsShared";
+import { DateRange, MetricKey, rangeStart, comparisonWindow } from "@/lib/dashboardMetricsShared";
 
 export * from "@/lib/dashboardMetricsShared";
 
 type Scope = { agentId: string } | { agentId?: undefined };
+type Window = { gte: Date; lt?: Date };
 
-async function submittedAgg(scope: Scope, since: Date) {
+async function submittedAgg(scope: Scope, window: Window) {
   return db.policy.aggregate({
-    where: { ...scope, submittedAt: { gte: since } },
+    where: { ...scope, submittedAt: window },
     _count: { _all: true },
     _sum: { annualPremium: true },
   });
 }
 
-async function issuedAgg(scope: Scope, since: Date) {
+async function issuedAgg(scope: Scope, window: Window) {
   return db.policy.aggregate({
-    where: { ...scope, status: "ISSUED", issuedAt: { gte: since } },
+    where: { ...scope, status: "ISSUED", issuedAt: window },
     _count: { _all: true },
     _sum: { annualPremium: true },
   });
 }
 
-export async function computeMetrics(scope: Scope, range: DateRange, now: Date = new Date()) {
-  const since = rangeStart(range, now);
-  const [submitted, issued] = await Promise.all([submittedAgg(scope, since), issuedAgg(scope, since)]);
+async function metricsForWindow(scope: Scope, window: Window): Promise<Record<MetricKey, number>> {
+  const [submitted, issued] = await Promise.all([submittedAgg(scope, window), issuedAgg(scope, window)]);
 
   const submittedCount = submitted._count._all;
   const submittedAP = Number(submitted._sum.annualPremium ?? 0);
   const issuedCount = issued._count._all;
   const issuedAP = Number(issued._sum.annualPremium ?? 0);
 
-  const values: Record<MetricKey, number> = {
+  return {
     submittedCount,
     submittedAP,
     issuedCount,
@@ -39,8 +39,16 @@ export async function computeMetrics(scope: Scope, range: DateRange, now: Date =
     conversionRate: submittedCount > 0 ? issuedCount / submittedCount : 0,
     avgIssuedPremium: issuedCount > 0 ? issuedAP / issuedCount : 0,
   };
+}
 
-  return values;
+export async function computeMetrics(scope: Scope, range: DateRange, now: Date = new Date()) {
+  return metricsForWindow(scope, { gte: rangeStart(range, now) });
+}
+
+/** The comparable prior-period values, for the KPI card trend deltas. */
+export async function computePreviousMetrics(scope: Scope, range: DateRange, now: Date = new Date()) {
+  const { start, end } = comparisonWindow(range, now);
+  return metricsForWindow(scope, { gte: start, lt: end });
 }
 
 /** Per-day breakdown of a metric for the "personal" trend chart widgets. */
