@@ -1,19 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { DATE_RANGES, DateRange, rangeStart } from "@/lib/dashboardMetrics";
 
-export async function GET(req: NextRequest) {
+// Always a live, all-time ranking — no period selector. Sales leaderboards
+// that reset weekly/monthly hide who's actually ahead right now; this stays
+// continuous and just reflects current standings as they change.
+export async function GET() {
   const guard = await requireAnyRole();
   if ("error" in guard) return guard.error;
 
-  const { searchParams } = new URL(req.url);
-  const rangeParam = searchParams.get("range");
-  const range: DateRange = DATE_RANGES.includes(rangeParam as DateRange) ? (rangeParam as DateRange) : "mtd";
-  const since = rangeStart(range);
-
   const policies = await db.policy.findMany({
-    where: { status: "ISSUED", issuedAt: { gte: since }, agentId: { not: null } },
+    where: { status: "ISSUED", agentId: { not: null } },
     select: { annualPremium: true, agent: { select: { id: true, name: true, profileImageUrl: true } } },
   });
 
@@ -34,5 +31,5 @@ export async function GET(req: NextRequest) {
 
   const rankings = Array.from(byAgent.values()).sort((a, b) => b.issuedAP - a.issuedAP);
 
-  return NextResponse.json({ range, rankings });
+  return NextResponse.json({ rankings });
 }

@@ -5,12 +5,10 @@ import { KpiGrid } from "@/components/portal/dashboard/KpiGrid";
 import { GoalsSection } from "@/components/portal/dashboard/GoalsSection";
 import { CelebrationOverlay } from "@/components/portal/dashboard/CelebrationOverlay";
 import { ProductionTimeline } from "@/components/portal/dashboard/analytics/ProductionTimeline";
-import { ComboProductionChart } from "@/components/portal/dashboard/analytics/ComboProductionChart";
-import { ProductionHeatMap } from "@/components/portal/dashboard/analytics/ProductionHeatMap";
 import { DistributionAnalytics } from "@/components/portal/dashboard/analytics/DistributionAnalytics";
 import { StatusAnalytics } from "@/components/portal/dashboard/analytics/StatusAnalytics";
 import { PersonalKpiData, GoalWithProgress, GOAL_CATEGORY_LABELS } from "@/lib/personalDashboardShared";
-import { TimelineGranularity } from "@/lib/productionAnalyticsShared";
+import { AnalyticsRange } from "@/lib/productionAnalyticsShared";
 
 type Overview = {
   kpis: PersonalKpiData;
@@ -18,13 +16,10 @@ type Overview = {
   recentWins: { id: string; category: string; achievedAt: string | null }[];
   analytics: {
     timeline: { label: string; ap: number; count: number }[];
-    granularity: TimelineGranularity;
-    rolling8Week: { label: string; ap: number; count: number; avgCaseSize: number }[];
-    trend12Month: { label: string; ap: number; count: number; avgCaseSize: number }[];
-    heatmap: { date: string; ap: number; count: number; topCarrier: string | null; topProduct: string | null }[];
+    range: AnalyticsRange;
     carriers: { carrier: string; ap: number; count: number; avgPremium: number }[];
     products: { product: string; ap: number; count: number; avgCaseSize: number }[];
-    statusAnalytics: { breakdown: { status: string; count: number; percent: number }[]; conversionRate: number; placementRate: number };
+    statusAnalytics: { breakdown: { status: string; count: number; percent: number }[]; conversionRate: number };
   };
 };
 
@@ -32,14 +27,14 @@ const POLL_MS = 25000;
 
 export function PersonalDashboardClient() {
   const [overview, setOverview] = useState<Overview | null>(null);
-  const [granularity, setGranularity] = useState<TimelineGranularity>("monthly");
+  const [range, setRange] = useState<AnalyticsRange>("monthly");
   const [celebration, setCelebration] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const seenWinIds = useRef<Set<string> | null>(null);
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/portal/dashboard/overview?granularity=${granularity}`);
+      const res = await fetch(`/api/portal/dashboard/overview?range=${range}`);
       if (!res.ok) return;
       const data: Overview = await res.json();
       setOverview(data);
@@ -57,7 +52,7 @@ export function PersonalDashboardClient() {
     load();
     const interval = setInterval(load, POLL_MS);
     return () => clearInterval(interval);
-  }, [granularity, refreshTick]);
+  }, [range, refreshTick]);
 
   function refresh() {
     setRefreshTick((t) => t + 1);
@@ -78,16 +73,7 @@ export function PersonalDashboardClient() {
       <div>
         <h2 className="mb-3 text-lg font-bold text-white">Production Analytics</h2>
         <div className="grid gap-4">
-          <ProductionTimeline
-            data={analytics.timeline}
-            granularity={granularity}
-            onGranularityChange={setGranularity}
-          />
-          <div className="grid gap-4 lg:grid-cols-2">
-            <ComboProductionChart title="Rolling 8-Week Production" data={analytics.rolling8Week} />
-            <ComboProductionChart title="12-Month Production Trend" data={analytics.trend12Month} />
-          </div>
-          <ProductionHeatMap data={analytics.heatmap} />
+          <ProductionTimeline data={analytics.timeline} range={range} onRangeChange={setRange} />
           <div className="grid gap-4 lg:grid-cols-2">
             <DistributionAnalytics
               title="Carrier Analytics"
@@ -103,7 +89,6 @@ export function PersonalDashboardClient() {
           <StatusAnalytics
             breakdown={analytics.statusAnalytics.breakdown}
             conversionRate={analytics.statusAnalytics.conversionRate}
-            placementRate={analytics.statusAnalytics.placementRate}
           />
         </div>
       </div>

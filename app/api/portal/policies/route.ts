@@ -4,16 +4,7 @@ import { db } from "@/lib/db";
 import { checkAndAwardGoals } from "@/lib/personalDashboard";
 import { PolicyStatus } from "@prisma/client";
 
-const POLICY_STATUSES: PolicyStatus[] = [
-  "SUBMITTED",
-  "PENDING",
-  "ISSUED",
-  "PLACED",
-  "CANCELED",
-  "LAPSED",
-  "DECLINED",
-  "CHARGEBACK",
-];
+const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
 
 export async function GET(req: NextRequest) {
   const guard = await requireAnyRole();

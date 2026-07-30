@@ -6,7 +6,7 @@ import { PersonalKpiData } from "@/lib/personalDashboardShared";
 
 export * from "@/lib/personalDashboardShared";
 
-const TERMINAL_STATUSES = ["CANCELED", "LAPSED", "DECLINED", "CHARGEBACK"] as const;
+const TERMINAL_STATUSES = ["CHARGEBACK"] as const;
 
 /** Batches every Personal KPI card into a small, parallel set of indexed queries. */
 export async function computePersonalKpis(userId: string, now: Date = new Date()): Promise<PersonalKpiData> {
@@ -48,9 +48,8 @@ export async function computePersonalKpis(userId: string, now: Date = new Date()
     weeklyAP: { value: weeklyM.submittedAP, previousValue: prevWeeklyM.submittedAP },
     monthlyAP: { value: monthlyM.submittedAP, previousValue: prevMonthlyM.submittedAP },
     yearlyAP: { value: yearlyM.submittedAP, previousValue: prevYearlyM.submittedAP },
-    pendingPremium: { value: statusSum("PENDING") },
     issuedPremium: { value: statusSum("ISSUED") },
-    canceledPremium: { value: statusSum("CANCELED") },
+    chargebackPremium: { value: statusSum("CHARGEBACK") },
     policiesSubmitted: { value: monthlyM.submittedCount, previousValue: prevMonthlyM.submittedCount },
     activePolicies: { value: activePolicies },
     avgCaseSize: { value: monthlyM.avgIssuedPremium, previousValue: prevMonthlyM.avgIssuedPremium },

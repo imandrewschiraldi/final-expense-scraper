@@ -4,30 +4,21 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { PRODUCTS } from "@/lib/products";
 
-const POLICY_STATUSES = ["SUBMITTED", "PENDING", "ISSUED", "PLACED", "CANCELED", "LAPSED", "DECLINED", "CHARGEBACK"] as const;
+const POLICY_STATUSES = ["SUBMITTED", "ISSUED", "CHARGEBACK"] as const;
 type PolicyStatus = (typeof POLICY_STATUSES)[number];
 
 const STATUS_LABELS: Record<PolicyStatus, string> = {
   SUBMITTED: "Submitted",
-  PENDING: "Pending",
   ISSUED: "Issued",
-  PLACED: "Placed",
-  CANCELED: "Canceled",
-  LAPSED: "Lapsed",
-  DECLINED: "Declined",
   CHARGEBACK: "Chargeback",
 };
 
 const STATUS_TEXT_COLOR: Record<PolicyStatus, string> = {
   SUBMITTED: "text-blue-light",
-  PENDING: "text-copper",
   ISSUED: "text-green-light",
-  PLACED: "text-teal-light",
-  CANCELED: "text-red-light",
-  LAPSED: "text-red-lighter",
-  DECLINED: "text-red",
-  CHARGEBACK: "text-red",
+  CHARGEBACK: "text-red-light",
 };
 
 type Policy = {
@@ -197,11 +188,14 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                 value={form.carrier}
                 onChange={(e) => setForm({ ...form, carrier: e.target.value })}
               />
-              <Input
-                placeholder="Product"
-                value={form.product}
-                onChange={(e) => setForm({ ...form, product: e.target.value })}
-              />
+              <Select value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })}>
+                <option value="">— Select Product —</option>
+                {PRODUCTS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </Select>
               <Input
                 placeholder="Annual Premium"
                 type="number"
