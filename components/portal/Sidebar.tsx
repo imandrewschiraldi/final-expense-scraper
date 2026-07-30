@@ -30,7 +30,11 @@ import { NotificationBell } from "@/components/agent/NotificationBell";
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
 const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
-const HEADER_HEIGHT = 72;
+// Matches the embedded Scripts tool's own header recipe (46px logo + 14px
+// top/bottom padding + 2px copper border), now that Scripts/Commission
+// Calculator embed with their own header hidden — this is a single height
+// used everywhere, not something matched per-route.
+const HEADER_HEIGHT = 74;
 
 type NavItem = { href: string; label: string; icon: LucideIcon; roles: Role[]; requiresVault?: boolean };
 
@@ -99,22 +103,13 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
 
   const sidebarWidth = collapsed ? 68 : 240;
 
-  // Scripts and Commission Calculator each draw their own copper rule inside
-  // the iframe, at a height fixed by their own source CSS: both use a 46px
-  // logo, but the header's vertical padding differs (14px in Scripts vs 7px
-  // in Commission Calculator), so their lines sit at different heights from
-  // each other (74px vs 60px) — there's no single number that matches both.
-  // Everywhere else has no external line to match, so it keeps HEADER_HEIGHT.
-  const dividerTop =
-    pathname === "/portal/scripts" ? 74 : pathname === "/portal/commission-calculator" ? 60 : HEADER_HEIGHT;
-
   return (
     <>
       {/* Copper line spanning only the content area — from the sidebar's
           right edge to the far edge of the viewport, regardless of monitor
           size — not the sidebar itself. Tracks the sidebar's current width
           so it never shifts when the sidebar collapses/expands. */}
-      <div className="pointer-events-none fixed right-0 z-50 h-0.5 bg-copper" style={{ top: dividerTop, left: sidebarWidth }} />
+      <div className="pointer-events-none fixed right-0 z-50 h-0.5 bg-copper" style={{ top: HEADER_HEIGHT, left: sidebarWidth }} />
       <aside
         className={cn(
           "sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out",
