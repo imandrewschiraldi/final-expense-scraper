@@ -8,14 +8,22 @@ import { SignOutButton } from "@/components/ui/SignOutButton";
 
 const links = [
   { href: "/portal", label: "Portal" },
-  { href: "/admin/dashboard", label: "Dashboard" },
-  { href: "/admin/leads/all", label: "All Leads" },
-  { href: "/admin/leads/import", label: "Import Leads" },
-  { href: "/admin/leads/assign", label: "Assign Leads" },
+  { href: "/admin/leads", label: "Leads" },
   { href: "/admin/leads/vault", label: "Vault" },
   { href: "/admin/agents", label: "Agents" },
   { href: "/admin/training", label: "Training" },
 ];
+
+// The "Leads" link's own href ("/admin/leads") is a strict prefix of
+// "/admin/leads/vault", so a plain startsWith() would light up both nav
+// items whenever Vault is the active page. Leads is active for itself and
+// its all/import/assign children, but never for /vault.
+function isLinkActive(pathname: string, href: string) {
+  if (href === "/admin/leads") {
+    return pathname === href || (pathname.startsWith(`${href}/`) && !pathname.startsWith(`${href}/vault`));
+  }
+  return pathname.startsWith(href);
+}
 
 const externalLinks = [
   { href: "https://tier1financialscripts.org/", label: "Scripts" },
@@ -32,7 +40,7 @@ export function AdminNav() {
         {/* Small screens: logo + sign out on one line, wordmark on its own line below. */}
         <div className="lg:hidden">
           <div className="flex items-center justify-between gap-2 px-1.5 pt-2.5">
-            <Link href="/admin/dashboard" className="block shrink-0">
+            <Link href="/admin/leads" className="block shrink-0">
               <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-9 w-auto sm:h-11" priority />
             </Link>
             <SignOutButton />
@@ -50,7 +58,7 @@ export function AdminNav() {
         {/* lg and up: logo / wordmark centered / sign out, one line — logo height and
             padding match the script tool's header (46px logo, 14px/28px padding) */}
         <div className="mx-auto hidden max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-2.5 py-3.5 lg:grid">
-          <Link href="/admin/dashboard" className="block shrink-0 justify-self-start">
+          <Link href="/admin/leads" className="block shrink-0 justify-self-start">
             <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-[46px] w-auto" priority />
           </Link>
           <Image
@@ -69,7 +77,7 @@ export function AdminNav() {
 
       <nav className="mx-auto flex max-w-7xl flex-wrap justify-center gap-2.5 px-6 py-2.5">
         {links.map((link) => {
-          const active = pathname.startsWith(link.href);
+          const active = isLinkActive(pathname, link.href);
           return (
             <Link
               key={link.href}

@@ -8,7 +8,10 @@ export default async function PortalDashboardPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Dashboard</h1>
+      <div className="mb-6">
+        <h1 className="text-[26px] font-bold text-white">Performance</h1>
+        <p className="text-sm text-muted">Your production at a glance, derived from submitted policies.</p>
+      </div>
       <DashboardClient scope="personal" isAdmin={session?.user.role === "ADMIN"} />
     </div>
   );

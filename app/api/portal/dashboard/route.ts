@@ -5,6 +5,7 @@ import {
   DATE_RANGES,
   DateRange,
   computeMetrics,
+  computePreviousMetrics,
   computeDailyBreakdown,
   computeAgentBreakdown,
 } from "@/lib/dashboardMetrics";
@@ -22,13 +23,17 @@ export async function GET(req: NextRequest) {
 
   const widgets = await getDashboardLayout();
 
-  const data: Record<string, { value?: number; series?: { label: string; value: number }[] }> = {};
+  const data: Record<string, { value?: number; previousValue?: number; series?: { label: string; value: number }[] }> = {};
+
+  const hasMetricWidget = widgets.some((w) => w.type === "METRIC");
+  const [metrics, previousMetrics] = hasMetricWidget
+    ? await Promise.all([computeMetrics(scope, range), computePreviousMetrics(scope, range)])
+    : [null, null];
 
   await Promise.all(
     widgets.map(async (widget) => {
       if (widget.type === "METRIC") {
-        const metrics = await computeMetrics(scope, range);
-        data[widget.id] = { value: metrics[widget.metric] };
+        data[widget.id] = { value: metrics![widget.metric], previousValue: previousMetrics![widget.metric] };
       } else {
         const series =
           scopeParam === "personal"

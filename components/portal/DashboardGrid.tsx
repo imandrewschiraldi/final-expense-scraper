@@ -20,8 +20,11 @@ import {
   DollarSign,
   Target,
   TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
   LucideIcon,
 } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { GRID_COLUMNS, Widget, WidgetType } from "@/lib/dashboardLayoutShared";
@@ -31,7 +34,7 @@ import { useCountUp } from "@/lib/useCountUp";
 const ROW_HEIGHT = 72;
 const GAP = 12;
 
-type WidgetData = { value?: number; series?: { label: string; value: number }[] };
+type WidgetData = { value?: number; previousValue?: number; series?: { label: string; value: number }[] };
 
 const METRIC_ICONS: Record<MetricKey, LucideIcon> = {
   submittedCount: FileText,
@@ -54,12 +57,36 @@ function formatValue(metric: MetricKey, value: number | undefined) {
   return Math.round(value).toLocaleString("en-US");
 }
 
-function MetricValue({ metric, value }: { metric: MetricKey; value: number | undefined }) {
-  const animated = useCountUp(value);
+function DeltaBadge({ value, previousValue }: { value: number | undefined; previousValue: number | undefined }) {
+  if (value === undefined || previousValue === undefined || previousValue === 0) return null;
+  const change = ((value - previousValue) / previousValue) * 100;
+  if (!Number.isFinite(change) || Math.round(change) === 0) return null;
+  const isUp = change > 0;
+  const Icon = isUp ? ArrowUpRight : ArrowDownRight;
   return (
-    <span className="font-scoreboard text-4xl font-bold text-copper drop-shadow-[0_0_18px_rgba(200,121,65,0.25)]">
-      {formatValue(metric, animated)}
+    <span className={cn("flex items-center gap-0.5 text-xs font-semibold", isUp ? "text-green-light" : "text-red-light")}>
+      <Icon className="h-3.5 w-3.5" />
+      {Math.abs(change).toFixed(0)}%
     </span>
+  );
+}
+
+function MetricTileBody({ widget, data }: { widget: Widget; data: WidgetData | undefined }) {
+  const animated = useCountUp(data?.value);
+  const Icon = METRIC_ICONS[widget.metric];
+  return (
+    <div className="flex h-full flex-col justify-between p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-copper/10">
+          <Icon className="h-4 w-4 text-copper" />
+        </div>
+        <DeltaBadge value={data?.value} previousValue={data?.previousValue} />
+      </div>
+      <div>
+        <p className="mb-0.5 truncate text-[13px] text-muted">{widget.label}</p>
+        <p className="text-3xl font-bold text-white">{formatValue(widget.metric, animated)}</p>
+      </div>
+    </div>
   );
 }
 
@@ -178,7 +205,7 @@ export function DashboardGrid({
     <div>
       {editable && (
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs text-muted">Drag tiles by their header, resize from the bottom-right corner.</p>
+          <p className="text-xs text-muted">Drag a tile to rearrange, resize from the bottom-right corner — your layout is remembered.</p>
           <Button variant="secondary" onClick={() => setShowAddForm((s) => !s)}>
             {showAddForm ? "Cancel" : "Add Widget"}
           </Button>
@@ -240,46 +267,45 @@ export function DashboardGrid({
       >
         {widgets.map((widget, index) => {
           const widgetData = data[widget.id];
-          const Icon = METRIC_ICONS[widget.metric];
+          const isMetric = widget.type === "METRIC";
           return (
             <motion.div
               key={widget.id}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: Math.min(index * 0.05, 0.4), ease: "easeOut" }}
-              whileHover={{ y: -2 }}
-              className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface to-black shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] transition-shadow duration-200 hover:border-copper-dim hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
+              transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.3), ease: "easeOut" }}
+              className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-200 hover:border-copper-dim"
               style={{
                 gridColumn: `${widget.x + 1} / span ${widget.w}`,
                 gridRow: `${widget.y + 1} / span ${widget.h}`,
               }}
             >
-              <div
-                className={
-                  "font-condensed flex shrink-0 items-center justify-between gap-2 px-4 pt-3.5 pb-1 text-[11px] font-bold tracking-[0.1em] text-muted uppercase" +
-                  (editable ? " cursor-move select-none" : "")
-                }
-                onPointerDown={(e) => startDrag(e, widget)}
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <Icon className="h-3.5 w-3.5 shrink-0 text-copper/70" />
-                  <span className="truncate">{widget.label}</span>
-                </span>
-                {editable && (
-                  <button
-                    type="button"
-                    className="ml-2 text-muted hover:text-red-light"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => removeWidget(widget.id)}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
+              {(!isMetric || editable) && (
+                <div
+                  className={cn(
+                    "flex shrink-0 items-center justify-between gap-2 px-4 pt-3 text-[13px] text-muted",
+                    isMetric ? "pb-0" : "pb-1",
+                    editable && "cursor-move select-none",
+                  )}
+                  onPointerDown={(e) => startDrag(e, widget)}
+                >
+                  <span className="truncate">{isMetric ? (editable ? widget.label : "") : widget.label}</span>
+                  {editable && (
+                    <button
+                      type="button"
+                      className="ml-2 text-muted hover:text-red-light"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={() => removeWidget(widget.id)}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              )}
 
-              <div className="flex flex-1 items-center justify-center overflow-hidden p-2">
-                {widget.type === "METRIC" ? (
-                  <MetricValue metric={widget.metric} value={widgetData?.value} />
+              <div className={cn("flex flex-1 overflow-hidden", isMetric ? "" : "items-center justify-center p-2")}>
+                {isMetric ? (
+                  <MetricTileBody widget={widget} data={widgetData} />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     {widget.type === "BAR_CHART" ? (

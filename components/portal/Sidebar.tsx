@@ -47,7 +47,7 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
 
-  const homeHref = role === "ADMIN" ? "/admin/dashboard" : "/agent/dashboard";
+  const homeHref = role === "ADMIN" ? "/admin/leads" : "/agent/dashboard";
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

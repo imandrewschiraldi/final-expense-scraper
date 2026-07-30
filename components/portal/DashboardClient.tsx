@@ -68,7 +68,7 @@ export function DashboardClient({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        {heading && <h2 className="font-condensed text-lg font-extrabold tracking-wide text-white uppercase">{heading}</h2>}
+        {heading && <h2 className="text-lg font-bold text-white">{heading}</h2>}
         <div className="flex items-center gap-3">
           <TimeFilterTabs value={range} onChange={setRange} />
           {isAdmin && scope === "personal" && (
