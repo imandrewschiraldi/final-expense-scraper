@@ -24,7 +24,7 @@ export default async function AgentsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Agents</h1>
+      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Agents</h1>
       <AgentsPanel
         initialAgents={agents.map((a) => ({
           id: a.id,

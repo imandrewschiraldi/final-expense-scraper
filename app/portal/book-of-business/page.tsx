@@ -8,7 +8,7 @@ export default async function PortalBookOfBusinessPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Book of Business</h1>
+      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Book of Business</h1>
       <BookOfBusinessPanel isAgent={session?.user.role === "AGENT"} />
     </div>
   );

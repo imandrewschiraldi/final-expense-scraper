@@ -27,7 +27,7 @@ export default async function AdminDashboardPage({
 
   return (
     <div>
-      <h1 className="font-condensed mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">
+      <h1 className="font-condensed mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">
         Master Dashboard
       </h1>
 
