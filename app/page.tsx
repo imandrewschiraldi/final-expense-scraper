@@ -10,5 +10,5 @@ export default async function Home() {
     redirect("/login");
   }
 
-  redirect(session.user.role === "ADMIN" ? "/admin/leads" : "/agent/dashboard");
+  redirect("/portal/dashboard");
 }

@@ -13,8 +13,15 @@ import {
   FileBarChart2,
   Network,
   Settings,
+  Users,
+  Archive,
+  GraduationCap,
+  FileText,
+  Calculator,
+  UsersRound,
   ChevronsLeft,
   ChevronsRight,
+  LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { SignOutButton } from "@/components/ui/SignOutButton";
@@ -24,18 +31,43 @@ type Role = "ADMIN" | "MANAGER" | "AGENT";
 
 const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
 
-const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; roles: Role[] }[] = [
+type NavItem = { href: string; label: string; icon: LucideIcon; roles: Role[]; requiresVault?: boolean };
+
+// One shared sidebar for the entire platform — Agent Accelerator (leads,
+// vault, training) and the Agent Portal (dashboards, book of business, etc.)
+// are a single app now, not two navs stitched together.
+const NAV_ITEMS: NavItem[] = [
   { href: "/portal/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/agent/dashboard", label: "My Leads", icon: Users, roles: ["MANAGER", "AGENT"] },
+  { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"] },
+  { href: "/agent/vault", label: "Vault", icon: Archive, roles: ["MANAGER", "AGENT"], requiresVault: true },
+  { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"] },
+  { href: "/agent/training", label: "Training", icon: GraduationCap, roles: ["MANAGER", "AGENT"] },
+  { href: "/admin/training", label: "Training", icon: GraduationCap, roles: ["ADMIN"] },
+  { href: "/portal/scripts", label: "Scripts", icon: FileText, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/portal/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/book-of-business", label: "Book of Business", icon: BookOpen, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/submit-policy", label: "Submit Policy", icon: FilePlus2, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"] },
+  { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"] },
   { href: "/portal/settings", label: "Settings", icon: Settings, roles: ["ADMIN", "MANAGER", "AGENT"] },
 ];
 
-type Profile = { name: string; profileImageUrl: string | null; compLevel: string | null };
+// "/admin/leads" is a strict prefix of "/admin/leads/vault", so a plain
+// startsWith() would light up both nav items whenever Vault is the active
+// page. Leads is active for itself and its all/import/assign children, but
+// never for /vault.
+function isItemActive(pathname: string, href: string) {
+  if (href === "/admin/leads") {
+    return pathname === href || (pathname.startsWith(`${href}/`) && !pathname.startsWith(`${href}/vault`));
+  }
+  return pathname.startsWith(href);
+}
+
+type Profile = { name: string; profileImageUrl: string | null; compLevel: string | null; hasVaultAccess?: boolean };
 
 export function Sidebar({ role, name }: { role: Role; name: string }) {
   const pathname = usePathname();
@@ -44,8 +76,6 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
   // unavoidable here since the real value can only be read client-side.
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
-
-  const homeHref = role === "ADMIN" ? "/admin/leads" : "/agent/dashboard";
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -64,7 +94,7 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
     });
   }
 
-  const items = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const items = NAV_ITEMS.filter((item) => item.roles.includes(role) && (!item.requiresVault || profile?.hasVaultAccess));
 
   return (
     <aside
@@ -74,7 +104,7 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
       )}
     >
       <div className={cn("flex shrink-0 items-center border-b border-border px-3 py-4", collapsed ? "justify-center" : "justify-between")}>
-        <Link href={homeHref} className="block shrink-0" title="Back to Agent Accelerator">
+        <Link href="/portal/dashboard" className="block shrink-0">
           <Image
             src="/tier1-logo.jpg"
             alt="Tier 1 Financial"
@@ -109,7 +139,7 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
         {items.map((item) => {
-          const active = pathname.startsWith(item.href);
+          const active = isItemActive(pathname, item.href);
           const Icon = item.icon;
           return (
             <Link

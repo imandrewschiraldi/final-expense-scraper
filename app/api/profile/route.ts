@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
+import { hasVaultAccess } from "@/lib/vault";
 
 export async function GET() {
   const guard = await requireAnyRole();
@@ -16,10 +17,15 @@ export async function GET() {
       licensedStates: true,
       profileImageUrl: true,
       compLevel: true,
+      createdAt: true,
+      vaultEnabled: true,
     },
   });
 
-  return NextResponse.json({ profile: user });
+  if (!user) return NextResponse.json({ profile: null });
+
+  const { createdAt, vaultEnabled, ...profile } = user;
+  return NextResponse.json({ profile: { ...profile, hasVaultAccess: hasVaultAccess({ createdAt, vaultEnabled }) } });
 }
 
 export async function PATCH(req: NextRequest) {

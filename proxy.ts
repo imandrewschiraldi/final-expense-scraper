@@ -14,11 +14,11 @@ export default auth((req) => {
   }
 
   if (isAdminRoute && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/agent/dashboard", nextUrl));
+    return NextResponse.redirect(new URL("/portal/dashboard", nextUrl));
   }
 
   if (isAgentRoute && role !== "AGENT" && role !== "MANAGER") {
-    return NextResponse.redirect(new URL("/admin/leads", nextUrl));
+    return NextResponse.redirect(new URL("/portal/dashboard", nextUrl));
   }
 });
 
