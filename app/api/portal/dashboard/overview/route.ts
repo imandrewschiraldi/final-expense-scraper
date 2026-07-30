@@ -2,12 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { computePersonalKpis, activeGoalsFor, recentWinsFor } from "@/lib/personalDashboard";
 import {
-  TIMELINE_GRANULARITIES,
-  TimelineGranularity,
+  ANALYTICS_RANGES,
+  AnalyticsRange,
   computeProductionTimeline,
-  computeRolling8Week,
-  compute12MonthTrend,
-  computeHeatMap,
   computeCarrierAnalytics,
   computeProductAnalytics,
   computePolicyStatusAnalytics,
@@ -19,29 +16,25 @@ export async function GET(req: NextRequest) {
 
   const userId = guard.session.user.id;
   const { searchParams } = new URL(req.url);
-  const granularityParam = searchParams.get("granularity");
-  const granularity: TimelineGranularity = TIMELINE_GRANULARITIES.includes(granularityParam as TimelineGranularity)
-    ? (granularityParam as TimelineGranularity)
+  const rangeParam = searchParams.get("range");
+  const range: AnalyticsRange = ANALYTICS_RANGES.includes(rangeParam as AnalyticsRange)
+    ? (rangeParam as AnalyticsRange)
     : "monthly";
 
-  const [kpis, goals, recentWins, timeline, rolling8Week, trend12Month, heatmap, carriers, products, statusAnalytics] =
-    await Promise.all([
-      computePersonalKpis(userId),
-      activeGoalsFor(userId),
-      recentWinsFor(userId),
-      computeProductionTimeline(userId, granularity),
-      computeRolling8Week(userId),
-      compute12MonthTrend(userId),
-      computeHeatMap(userId),
-      computeCarrierAnalytics(userId),
-      computeProductAnalytics(userId),
-      computePolicyStatusAnalytics(userId),
-    ]);
+  const [kpis, goals, recentWins, timeline, carriers, products, statusAnalytics] = await Promise.all([
+    computePersonalKpis(userId),
+    activeGoalsFor(userId),
+    recentWinsFor(userId),
+    computeProductionTimeline(userId, range),
+    computeCarrierAnalytics(userId, range),
+    computeProductAnalytics(userId, range),
+    computePolicyStatusAnalytics(userId, range),
+  ]);
 
   return NextResponse.json({
     kpis,
     goals,
     recentWins,
-    analytics: { timeline, granularity, rolling8Week, trend12Month, heatmap, carriers, products, statusAnalytics },
+    analytics: { timeline, range, carriers, products, statusAnalytics },
   });
 }

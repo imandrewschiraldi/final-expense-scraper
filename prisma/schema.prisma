@@ -33,12 +33,7 @@ enum LeadType {
 
 enum PolicyStatus {
   SUBMITTED
-  PENDING
   ISSUED
-  PLACED
-  CANCELED
-  LAPSED
-  DECLINED
   CHARGEBACK
 }
 

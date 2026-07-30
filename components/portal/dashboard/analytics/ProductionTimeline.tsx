@@ -3,39 +3,32 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/cn";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
-import { TimelineGranularity, TIMELINE_GRANULARITIES } from "@/lib/productionAnalyticsShared";
-
-const GRANULARITY_LABELS: Record<TimelineGranularity, string> = {
-  daily: "Daily",
-  weekly: "Weekly",
-  monthly: "Monthly",
-  yearly: "Yearly",
-};
+import { AnalyticsRange, ANALYTICS_RANGES, ANALYTICS_RANGE_LABELS } from "@/lib/productionAnalyticsShared";
 
 export function ProductionTimeline({
   data,
-  granularity,
-  onGranularityChange,
+  range,
+  onRangeChange,
 }: {
   data: { label: string; ap: number; count: number }[];
-  granularity: TimelineGranularity;
-  onGranularityChange: (g: TimelineGranularity) => void;
+  range: AnalyticsRange;
+  onRangeChange: (r: AnalyticsRange) => void;
 }) {
   return (
     <PremiumPanel className="p-5">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-condensed text-base font-extrabold tracking-wide text-white uppercase">Production Timeline</h3>
         <div className="flex gap-1 rounded-lg border border-border p-0.5">
-          {TIMELINE_GRANULARITIES.map((g) => (
+          {ANALYTICS_RANGES.map((r) => (
             <button
-              key={g}
-              onClick={() => onGranularityChange(g)}
+              key={r}
+              onClick={() => onRangeChange(r)}
               className={cn(
                 "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
-                g === granularity ? "bg-copper text-black" : "text-muted hover:text-foreground",
+                r === range ? "bg-copper text-black" : "text-muted hover:text-foreground",
               )}
             >
-              {GRANULARITY_LABELS[g]}
+              {ANALYTICS_RANGE_LABELS[r]}
             </button>
           ))}
         </div>

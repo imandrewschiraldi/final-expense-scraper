@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Crown } from "lucide-react";
+import { Crown, Radio } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { TimeFilterTabs } from "@/components/portal/TimeFilterTabs";
 import { DashboardClient } from "@/components/portal/DashboardClient";
-import { DateRange } from "@/lib/dashboardMetricsShared";
 import { useCountUp } from "@/lib/useCountUp";
+
+const POLL_MS = 20000;
 
 type Ranking = { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number };
 
@@ -46,30 +46,35 @@ function Avatar({ url, name, size }: { url: string | null; name: string; size: n
 }
 
 export function LeaderboardPanel({ isAdmin }: { isAdmin: boolean }) {
-  const [range, setRange] = useState<DateRange>("mtd");
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/portal/leaderboard?range=${range}`)
-      .then(async (res) => {
-        if (!res.ok) {
-          const body = await res.json().catch(() => null);
-          throw new Error(body?.error ?? `Failed to load leaderboard (${res.status})`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setRankings(data.rankings ?? []);
-        setLoading(false);
-        setLoadError(null);
-      })
-      .catch((err) => {
-        setLoadError(err instanceof Error ? err.message : "Failed to load leaderboard.");
-        setLoading(false);
-      });
-  }, [range]);
+    function load() {
+      fetch("/api/portal/leaderboard")
+        .then(async (res) => {
+          if (!res.ok) {
+            const body = await res.json().catch(() => null);
+            throw new Error(body?.error ?? `Failed to load leaderboard (${res.status})`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setRankings(data.rankings ?? []);
+          setLoading(false);
+          setLoadError(null);
+        })
+        .catch((err) => {
+          setLoadError(err instanceof Error ? err.message : "Failed to load leaderboard.");
+          setLoading(false);
+        });
+    }
+
+    load();
+    const interval = setInterval(load, POLL_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   const top3 = rankings.slice(0, 3);
   const rest = rankings.slice(3, 10);
@@ -79,7 +84,10 @@ export function LeaderboardPanel({ isAdmin }: { isAdmin: boolean }) {
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-condensed text-lg font-extrabold tracking-wide text-white uppercase">Top Agents</h2>
-          <TimeFilterTabs value={range} onChange={setRange} />
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-green-light">
+            <Radio className="h-3.5 w-3.5 animate-pulse" />
+            Live
+          </span>
         </div>
 
         {loading ? (
@@ -87,7 +95,7 @@ export function LeaderboardPanel({ isAdmin }: { isAdmin: boolean }) {
         ) : loadError ? (
           <p className="text-sm text-red-light">{loadError}</p>
         ) : top3.length === 0 ? (
-          <p className="text-sm text-muted">No issued business yet for this period.</p>
+          <p className="text-sm text-muted">No issued business yet.</p>
         ) : (
           <>
             <div className="flex flex-col items-stretch gap-4 md:flex-row md:items-end">

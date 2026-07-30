@@ -12,7 +12,6 @@ import {
   FilePlus2,
   FileBarChart2,
   Network,
-  Bell,
   Settings,
   ChevronsLeft,
   ChevronsRight,
@@ -33,7 +32,6 @@ const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; ro
   { href: "/portal/submit-policy", label: "Submit Policy", icon: FilePlus2, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"] },
-  { href: "/portal/notifications", label: "Notifications", icon: Bell, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/settings", label: "Settings", icon: Settings, roles: ["ADMIN", "MANAGER", "AGENT"] },
 ];
 
@@ -136,9 +134,9 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
 
       <div className="shrink-0 border-t border-border px-2.5 py-3">
         {!collapsed && (
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between gap-2">
             <NotificationBell />
-            <SignOutButton />
+            <SignOutButton iconOnly />
           </div>
         )}
 

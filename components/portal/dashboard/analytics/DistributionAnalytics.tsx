@@ -12,14 +12,18 @@ function currency(v: number) {
 }
 
 /** Shared shape for Carrier Analytics and Product Analytics (spec: top item,
- * distribution donut, avg premium/case size per item — same layout for both). */
+ * distribution donut, avg premium/case size per item — same layout for both).
+ * Item order is caller-controlled (Carrier Analytics sorts by volume, Product
+ * Analytics keeps the fixed product list order); "top" is found by value
+ * regardless of list order. */
 export function DistributionAnalytics({ title, avgLabel, items }: { title: string; avgLabel: string; items: Item[] }) {
-  const top = items[0];
+  const totalAp = items.reduce((sum, i) => sum + i.ap, 0);
+  const top = items.reduce<Item | null>((max, i) => (max === null || i.ap > max.ap ? i : max), null);
 
   return (
     <PremiumPanel className="p-5">
       <h3 className="font-condensed mb-1 text-base font-extrabold tracking-wide text-white uppercase">{title}</h3>
-      {top ? (
+      {top && top.ap > 0 ? (
         <p className="mb-3 text-xs text-muted">
           Top: <span className="text-white">{top.name}</span> ({currency(top.ap)})
         </p>
@@ -28,22 +32,28 @@ export function DistributionAnalytics({ title, avgLabel, items }: { title: strin
       )}
       <div className="flex items-center gap-4">
         <div className="h-40 w-40 shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={items} dataKey="ap" nameKey="name" innerRadius={44} outerRadius={68} paddingAngle={2}>
-                {items.map((entry, i) => (
-                  <Cell key={entry.name} fill={DONUT_COLORS[i % DONUT_COLORS.length]} stroke="var(--color-surface)" />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ background: "var(--color-surface2)", border: "1px solid var(--color-border)", borderRadius: 8 }}
-                formatter={(value: unknown, name: unknown): [string, string] => [currency(Number(value)), String(name)]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          {totalAp > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={items} dataKey="ap" nameKey="name" innerRadius={44} outerRadius={68} paddingAngle={2}>
+                  {items.map((entry, i) => (
+                    <Cell key={entry.name} fill={DONUT_COLORS[i % DONUT_COLORS.length]} stroke="var(--color-surface)" />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ background: "var(--color-surface2)", border: "1px solid var(--color-border)", borderRadius: 8 }}
+                  formatter={(value: unknown, name: unknown): [string, string] => [currency(Number(value)), String(name)]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-full border border-dashed border-border text-[11px] text-muted">
+              No data
+            </div>
+          )}
         </div>
         <div className="min-w-0 flex-1 space-y-2">
-          {items.slice(0, 5).map((item, i) => (
+          {items.slice(0, 6).map((item, i) => (
             <div key={item.name} className="flex items-center justify-between gap-2 text-xs">
               <span className="flex min-w-0 items-center gap-1.5 truncate text-foreground">
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
