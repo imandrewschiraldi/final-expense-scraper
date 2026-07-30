@@ -107,14 +107,15 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
   // theirs instead of appearing as two lines at different heights.
   const isEmbeddedToolPage = pathname === "/portal/scripts" || pathname === "/portal/commission-calculator";
   const dividerTop = isEmbeddedToolPage ? HEADER_HEIGHT : DIVIDER_TOP;
+  const sidebarWidth = collapsed ? 68 : 240;
 
   return (
     <>
-      {/* One continuous copper line under the header, spanning the full
-          viewport width (not just the sidebar) regardless of monitor size
-          or collapse state — the header row height is fixed so this never
-          shifts when the sidebar toggles. */}
-      <div className="pointer-events-none fixed inset-x-0 z-50 h-0.5 bg-copper" style={{ top: dividerTop }} />
+      {/* Copper line spanning only the content area — from the sidebar's
+          right edge to the far edge of the viewport, regardless of monitor
+          size — not the sidebar itself. Tracks the sidebar's current width
+          so it never shifts when the sidebar collapses/expands. */}
+      <div className="pointer-events-none fixed right-0 z-50 h-0.5 bg-copper" style={{ top: dividerTop, left: sidebarWidth }} />
       <aside
         className={cn(
           "sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out",
