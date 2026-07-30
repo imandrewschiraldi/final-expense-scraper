@@ -9,7 +9,7 @@ type Profile = {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "AGENT";
+  role: "ADMIN" | "MANAGER" | "AGENT";
   licensedStates: string[];
   profileImageUrl: string | null;
   compLevel: string | null;
@@ -134,7 +134,7 @@ export function MyProfileWidget() {
                 </div>
               )}
 
-              {profile.role === "AGENT" && (
+              {(profile.role === "AGENT" || profile.role === "MANAGER") && (
                 <div>
                   <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
                     Licensed States

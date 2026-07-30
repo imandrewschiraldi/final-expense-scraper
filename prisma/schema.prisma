@@ -8,6 +8,7 @@ datasource db {
 
 enum Role {
   ADMIN
+  MANAGER
   AGENT
 }
 
@@ -46,12 +47,17 @@ model User {
   compLevel             String?
   vaultEnabled          Boolean   @default(true)
   assignmentEnabled     Boolean   @default(true)
+  npn                   String?
+  residentState         String?
+  managerId             String?
+  manager               User?     @relation("ManagerHierarchy", fields: [managerId], references: [id], onDelete: SetNull)
   inviteTokenHash       String?   @unique
   inviteTokenExpiresAt  DateTime?
   invitedAt             DateTime?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
+  downlines         User[]              @relation("ManagerHierarchy")
   assignedLeads     Lead[]              @relation("AssignedLeads")
   notes             LeadNote[]
   imports           Import[]
