@@ -127,14 +127,18 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
           style={{ height: HEADER_HEIGHT }}
         >
           <Link href="/portal/dashboard" className="block shrink-0">
-            <Image
-              src="/tier1-logo.jpg"
-              alt="Tier 1 Financial"
-              width={1560}
-              height={558}
-              className={cn("w-auto", collapsed ? "h-8" : "h-10")}
-              priority
-            />
+            {collapsed ? (
+              <Image
+                src="/tier1-mark-collapsed.png"
+                alt="Tier 1 Financial"
+                width={950}
+                height={1112}
+                className="h-auto w-8"
+                priority
+              />
+            ) : (
+              <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-10 w-auto" priority />
+            )}
           </Link>
           {!collapsed && (
             <button
