@@ -132,7 +132,7 @@ export function LeaderboardPanel() {
             </div>
 
             {rest.length > 0 && (
-              <div className="mt-6 overflow-hidden rounded-2xl border border-border">
+              <div className="mt-6 max-h-[560px] overflow-y-auto rounded-2xl border border-border">
                 {rest.map((agent, i) => (
                   <motion.div
                     key={agent.id}
