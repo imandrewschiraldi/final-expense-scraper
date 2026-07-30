@@ -1,26 +1,19 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { AgentNav } from "@/components/agent/AgentNav";
-import { hasVaultAccess } from "@/lib/vault";
-import { MyProfileWidget } from "@/components/shared/MyProfileWidget";
+import { Sidebar } from "@/components/portal/Sidebar";
 
 export default async function AgentLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-
-  let showVault = false;
-  if (session?.user.id) {
-    const agent = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { createdAt: true, vaultEnabled: true },
-    });
-    showVault = agent ? hasVaultAccess(agent) : false;
+  if (!session) {
+    redirect("/login");
   }
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-background">
-      <AgentNav agentName={session?.user.name ?? ""} showVault={showVault} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">{children}</main>
-      <MyProfileWidget />
+    <div className="flex min-h-screen bg-background">
+      <Sidebar role={session.user.role} name={session.user.name ?? ""} />
+      <main className="min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-10">
+        <div className="mx-auto w-full max-w-6xl">{children}</div>
+      </main>
     </div>
   );
 }
