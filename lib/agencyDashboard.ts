@@ -1,11 +1,11 @@
 import { db } from "@/lib/db";
 import { DashboardRange, rangeSince, previousRangeWindow } from "@/lib/dashboardRange";
 import { metricsForWindow } from "@/lib/personalDashboard";
-import { OrgKpiData, TopProducer, RecentActivityItem } from "@/lib/organizationDashboardShared";
+import { AgencyKpiData, TopProducer, RecentActivityItem } from "@/lib/agencyDashboardShared";
 
-export * from "@/lib/organizationDashboardShared";
+export * from "@/lib/agencyDashboardShared";
 
-export async function computeOrgKpis(range: DashboardRange, now: Date = new Date()): Promise<OrgKpiData> {
+export async function computeAgencyKpis(range: DashboardRange, now: Date = new Date()): Promise<AgencyKpiData> {
   const since = rangeSince(range, now);
   const prev = previousRangeWindow(range, now);
 
