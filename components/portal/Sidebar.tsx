@@ -31,6 +31,10 @@ type Role = "ADMIN" | "MANAGER" | "AGENT";
 
 const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
 const HEADER_HEIGHT = 72;
+// Lower than the sidebar header itself so it clears the taller page headings
+// (title + subtitle) that some portal pages render, instead of cutting
+// through their text.
+const DIVIDER_TOP = 100;
 
 type NavItem = { href: string; label: string; icon: LucideIcon; roles: Role[]; requiresVault?: boolean };
 
@@ -103,7 +107,7 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
           viewport width (not just the sidebar) regardless of monitor size
           or collapse state — the header row height is fixed so this never
           shifts when the sidebar toggles. */}
-      <div className="pointer-events-none fixed inset-x-0 z-50 h-0.5 bg-copper" style={{ top: HEADER_HEIGHT }} />
+      <div className="pointer-events-none fixed inset-x-0 z-50 h-0.5 bg-copper" style={{ top: DIVIDER_TOP }} />
       <aside
         className={cn(
           "sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out",

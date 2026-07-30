@@ -178,7 +178,7 @@ export default function ImportLeadsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="font-condensed mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Import Leads</h1>
+      <h1 className="font-condensed mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Import Leads</h1>
 
       <Card>
         <CardHeader>
