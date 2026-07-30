@@ -71,7 +71,7 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
   return (
     <aside
       className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col border-r-2 border-copper bg-black transition-all duration-200",
+        "sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out",
         collapsed ? "w-[68px]" : "w-60",
       )}
     >
@@ -109,7 +109,7 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
         </button>
       )}
 
-      <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-2.5 py-4">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
         {items.map((item) => {
           const active = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -119,13 +119,14 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
               href={item.href}
               title={collapsed ? item.label : undefined}
               className={cn(
-                "font-condensed flex items-center gap-3 rounded-lg border-[1.5px] px-3 py-2.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+                "font-condensed relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-all duration-150",
                 collapsed && "justify-center px-0",
                 active
-                  ? "border-copper bg-copper text-black"
-                  : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
+                  ? "bg-copper/[0.12] text-copper shadow-[inset_0_0_0_1px_rgba(200,121,65,0.25)]"
+                  : "text-muted hover:bg-white/[0.03] hover:text-foreground",
               )}
             >
+              {active && <span className="absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r bg-copper" />}
               <Icon className="h-4.5 w-4.5 shrink-0" />
               {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
@@ -144,7 +145,7 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
         <Link
           href="/portal/profile"
           className={cn(
-            "flex items-center gap-2.5 rounded-lg border-[1.5px] border-copper-dim px-2.5 py-2 transition-colors hover:border-copper",
+            "flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-white/[0.04]",
             collapsed && "justify-center px-0",
           )}
         >

@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
+import { checkAndAwardGoals } from "@/lib/personalDashboard";
+import { PolicyStatus } from "@prisma/client";
+
+const POLICY_STATUSES: PolicyStatus[] = [
+  "SUBMITTED",
+  "PENDING",
+  "ISSUED",
+  "PLACED",
+  "CANCELED",
+  "LAPSED",
+  "DECLINED",
+  "CHARGEBACK",
+];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAnyRole();
@@ -23,8 +36,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     carrier?: string;
     product?: string;
     annualPremium?: number;
-    status?: "SUBMITTED" | "ISSUED";
+    status?: PolicyStatus;
   };
+
+  if (status !== undefined && !POLICY_STATUSES.includes(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
 
   const policy = await db.policy.update({
     where: { id },
@@ -38,11 +55,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(status !== undefined
         ? {
             status,
-            issuedAt: status === "ISSUED" ? (existing.issuedAt ?? new Date()) : null,
+            issuedAt: status === "ISSUED" ? (existing.issuedAt ?? new Date()) : existing.issuedAt,
           }
         : {}),
     },
   });
+
+  if (status !== undefined && status !== existing.status) {
+    await db.policyStatusHistory.create({
+      data: { policyId: policy.id, fromStatus: existing.status, toStatus: status, changedById: guard.session.user.id },
+    });
+    if (policy.agentId) {
+      await checkAndAwardGoals(policy.agentId);
+    }
+  }
 
   return NextResponse.json({ policy });
 }

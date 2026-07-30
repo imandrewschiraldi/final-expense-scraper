@@ -23,6 +23,7 @@ enum LeadStatus {
 
 enum NotificationType {
   LEADS_ASSIGNED
+  GOAL_ACHIEVED
 }
 
 enum LeadType {
@@ -32,7 +33,22 @@ enum LeadType {
 
 enum PolicyStatus {
   SUBMITTED
+  PENDING
   ISSUED
+  PLACED
+  CANCELED
+  LAPSED
+  DECLINED
+  CHARGEBACK
+}
+
+enum GoalCategory {
+  MONTHLY_AP
+  ANNUAL_AP
+  ISSUED_PREMIUM
+  POLICY_COUNT
+  INCOME
+  RECRUITING
 }
 
 model User {
@@ -66,6 +82,8 @@ model User {
   trainingProgress  TrainingProgress[]
   policies          Policy[]            @relation("AgentPolicies")
   dashboardLayoutEdits DashboardLayout[]
+  goals             Goal[]
+  policyStatusChanges PolicyStatusHistory[] @relation("PolicyStatusChangedBy")
 
   @@map("users")
 }
@@ -238,11 +256,49 @@ model Policy {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
+  statusHistory PolicyStatusHistory[]
+
   @@index([agentId])
   @@index([status])
   @@index([submittedAt])
   @@index([issuedAt])
   @@map("policies")
+}
+
+// Written on every Policy.status change going forward (no backfill for
+// pre-existing rows) — powers the Book of Business status timeline and the
+// Policy Status Analytics trend/conversion chart on the personal dashboard.
+model PolicyStatusHistory {
+  id          String        @id @default(cuid())
+  policyId    String
+  policy      Policy        @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  fromStatus  PolicyStatus?
+  toStatus    PolicyStatus
+  changedById String?
+  changedBy   User?         @relation("PolicyStatusChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now())
+
+  @@index([policyId, createdAt])
+  @@map("policy_status_history")
+}
+
+// Personal goal tracking (spec: Goal Tracking System). One row per
+// agent-created goal; achievedAt doubles as the "achievement history" record
+// (a full Achievements/Badges catalog is a future phase, not built here).
+model Goal {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    GoalCategory
+  targetValue Decimal      @db.Decimal(12, 2)
+  periodStart DateTime
+  periodEnd   DateTime
+  achievedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId, periodEnd])
+  @@map("goals")
 }
 
 // Singleton: the admin-designed widget grid shared by every agent's personal

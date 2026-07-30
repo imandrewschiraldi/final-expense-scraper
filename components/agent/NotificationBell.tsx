@@ -7,10 +7,27 @@ import { cn } from "@/lib/cn";
 type Notification = {
   id: string;
   type: string;
-  payload: { count?: number };
+  payload: { count?: number; category?: string; targetValue?: number };
   read: boolean;
   createdAt: string;
 };
+
+const GOAL_CATEGORY_LABELS: Record<string, string> = {
+  MONTHLY_AP: "Monthly Annual Premium",
+  ANNUAL_AP: "Annual Premium",
+  ISSUED_PREMIUM: "Issued Premium",
+  POLICY_COUNT: "Policy Count",
+  INCOME: "Income",
+  RECRUITING: "Recruiting",
+};
+
+function notificationMessage(n: Notification) {
+  if (n.type === "GOAL_ACHIEVED") {
+    const label = GOAL_CATEGORY_LABELS[n.payload?.category ?? ""] ?? "Goal";
+    return `${label} goal reached`;
+  }
+  return `${n.payload?.count ?? ""} new lead${n.payload?.count === 1 ? "" : "s"} assigned to you`;
+}
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -68,9 +85,7 @@ export function NotificationBell() {
               key={n.id}
               className={cn("rounded-lg p-2 text-sm", !n.read && "bg-teal/10")}
             >
-              <p className="text-white">
-                {n.payload?.count ?? ""} new lead{n.payload?.count === 1 ? "" : "s"} assigned to you
-              </p>
+              <p className="text-white">{notificationMessage(n)}</p>
               <p className="text-xs text-muted">{formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}</p>
             </div>
           ))}

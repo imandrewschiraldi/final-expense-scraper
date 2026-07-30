@@ -5,6 +5,31 @@ import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 
+const POLICY_STATUSES = ["SUBMITTED", "PENDING", "ISSUED", "PLACED", "CANCELED", "LAPSED", "DECLINED", "CHARGEBACK"] as const;
+type PolicyStatus = (typeof POLICY_STATUSES)[number];
+
+const STATUS_LABELS: Record<PolicyStatus, string> = {
+  SUBMITTED: "Submitted",
+  PENDING: "Pending",
+  ISSUED: "Issued",
+  PLACED: "Placed",
+  CANCELED: "Canceled",
+  LAPSED: "Lapsed",
+  DECLINED: "Declined",
+  CHARGEBACK: "Chargeback",
+};
+
+const STATUS_TEXT_COLOR: Record<PolicyStatus, string> = {
+  SUBMITTED: "text-blue-light",
+  PENDING: "text-copper",
+  ISSUED: "text-green-light",
+  PLACED: "text-teal-light",
+  CANCELED: "text-red-light",
+  LAPSED: "text-red-lighter",
+  DECLINED: "text-red",
+  CHARGEBACK: "text-red",
+};
+
 type Policy = {
   id: string;
   clientName: string;
@@ -13,7 +38,7 @@ type Policy = {
   carrier: string;
   product: string | null;
   annualPremium: string;
-  status: "SUBMITTED" | "ISSUED";
+  status: PolicyStatus;
   submittedAt: string;
   issuedAt: string | null;
   agent: { name: string } | null;
@@ -29,7 +54,7 @@ const emptyForm = {
   carrier: "",
   product: "",
   annualPremium: "",
-  status: "SUBMITTED" as "SUBMITTED" | "ISSUED",
+  status: "SUBMITTED" as PolicyStatus,
 };
 
 function formatCurrency(value: string | number) {
@@ -112,12 +137,12 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
     setShowForm(false);
   }
 
-  async function markIssued(policy: Policy) {
+  async function changeStatus(policy: Policy, status: PolicyStatus) {
     setUpdatingId(policy.id);
     const res = await fetch(`/api/portal/policies/${policy.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "ISSUED" }),
+      body: JSON.stringify({ status }),
     });
     setUpdatingId(null);
     if (res.ok) {
@@ -192,10 +217,13 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
               </label>
               <Select
                 value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value as "SUBMITTED" | "ISSUED" })}
+                onChange={(e) => setForm({ ...form, status: e.target.value as PolicyStatus })}
               >
-                <option value="SUBMITTED">Submitted</option>
-                <option value="ISSUED">Issued</option>
+                {POLICY_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </option>
+                ))}
               </Select>
             </div>
             {error && <p className="text-sm text-red-light">{error}</p>}
@@ -237,19 +265,24 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                   <td className="py-2 pr-4 text-muted">{p.state ?? "—"}</td>
                   <td className="py-2 pr-4 text-white">{formatCurrency(p.annualPremium)}</td>
                   <td className="py-2 pr-4">
-                    <span className={p.status === "ISSUED" ? "text-green-light" : "text-teal-light"}>
-                      {p.status === "ISSUED" ? "Issued" : "Submitted"}
-                    </span>
+                    <span className={STATUS_TEXT_COLOR[p.status]}>{STATUS_LABELS[p.status]}</span>
                   </td>
                   <td className="py-2 pr-4 text-muted">
                     {new Date(p.status === "ISSUED" && p.issuedAt ? p.issuedAt : p.submittedAt).toLocaleDateString()}
                   </td>
                   <td className="py-2 pr-4">
-                    {p.status === "SUBMITTED" && (
-                      <Button variant="success" onClick={() => markIssued(p)} disabled={updatingId === p.id}>
-                        {updatingId === p.id ? "Saving..." : "Mark Issued"}
-                      </Button>
-                    )}
+                    <Select
+                      value={p.status}
+                      disabled={updatingId === p.id}
+                      onChange={(e) => changeStatus(p, e.target.value as PolicyStatus)}
+                      className="min-w-[130px] py-1 text-xs"
+                    >
+                      {POLICY_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {STATUS_LABELS[s]}
+                        </option>
+                      ))}
+                    </Select>
                   </td>
                 </tr>
               ))}
