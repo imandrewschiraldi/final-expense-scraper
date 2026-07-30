@@ -2,10 +2,7 @@
 // so client components can pull these in without bundling Prisma/pg.
 
 export const PERSONAL_KPI_KEYS = [
-  "todayAP",
-  "weeklyAP",
-  "monthlyAP",
-  "yearlyAP",
+  "annualPremium",
   "issuedPremium",
   "chargebackPremium",
   "policiesSubmitted",
@@ -17,17 +14,14 @@ export const PERSONAL_KPI_KEYS = [
 export type PersonalKpiKey = (typeof PERSONAL_KPI_KEYS)[number];
 
 export const PERSONAL_KPI_META: Record<PersonalKpiKey, { label: string; format: "currency" | "count" | "percent" | "rank"; explain: string }> = {
-  todayAP: { label: "Today's Annual Premium", format: "currency", explain: "Annual premium submitted today." },
-  weeklyAP: { label: "Weekly Annual Premium", format: "currency", explain: "Annual premium submitted this week (Mon–now)." },
-  monthlyAP: { label: "Monthly Annual Premium", format: "currency", explain: "Annual premium submitted this calendar month." },
-  yearlyAP: { label: "Yearly Annual Premium", format: "currency", explain: "Annual premium submitted this calendar year." },
-  issuedPremium: { label: "Issued Premium", format: "currency", explain: "Lifetime annual premium currently marked Issued." },
-  chargebackPremium: { label: "Chargeback Premium", format: "currency", explain: "Lifetime annual premium currently marked Chargeback." },
-  policiesSubmitted: { label: "Policies Submitted", format: "count", explain: "Policies submitted this calendar month." },
-  activePolicies: { label: "Active Policies", format: "count", explain: "Submitted or Issued policies (not Chargeback)." },
-  avgCaseSize: { label: "Average Case Size", format: "currency", explain: "Average annual premium of policies issued this month." },
+  annualPremium: { label: "Annual Premium", format: "currency", explain: "Annual premium submitted in the selected timeframe." },
+  issuedPremium: { label: "Issued Premium", format: "currency", explain: "Of that, annual premium currently marked Issued." },
+  chargebackPremium: { label: "Chargeback Premium", format: "currency", explain: "Of that, annual premium currently marked Chargeback." },
+  policiesSubmitted: { label: "Policies Submitted", format: "count", explain: "Policies submitted in the selected timeframe." },
+  activePolicies: { label: "Active Policies", format: "count", explain: "Submitted in the selected timeframe and not Chargeback." },
+  avgCaseSize: { label: "Average Case Size", format: "currency", explain: "Average annual premium of policies issued in the selected timeframe." },
   goalCompletionPercentage: { label: "Goal Completion", format: "percent", explain: "Average progress across your active goals." },
-  organizationRank: { label: "Organization Rank", format: "rank", explain: "Your rank across the org by month-to-date issued premium." },
+  organizationRank: { label: "Organization Rank", format: "rank", explain: "Your rank across the org by issued premium in the selected timeframe." },
 };
 
 export type PersonalKpiData = Partial<Record<PersonalKpiKey, { value: number; previousValue?: number }>>;

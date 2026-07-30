@@ -2,10 +2,7 @@
 
 import { motion } from "motion/react";
 import {
-  CalendarDays,
-  CalendarRange,
-  CalendarClock,
-  TrendingUp,
+  Wallet,
   FileCheck2,
   FileX2,
   FileText,
@@ -23,10 +20,7 @@ import { useCountUp } from "@/lib/useCountUp";
 import { PERSONAL_KPI_KEYS, PERSONAL_KPI_META, PersonalKpiData, PersonalKpiKey } from "@/lib/personalDashboardShared";
 
 const KPI_ICONS: Record<PersonalKpiKey, LucideIcon> = {
-  todayAP: CalendarDays,
-  weeklyAP: CalendarRange,
-  monthlyAP: CalendarClock,
-  yearlyAP: TrendingUp,
+  annualPremium: Wallet,
   issuedPremium: FileCheck2,
   chargebackPremium: FileX2,
   policiesSubmitted: FileText,

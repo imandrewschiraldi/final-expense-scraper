@@ -1,38 +1,12 @@
 "use client";
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { cn } from "@/lib/cn";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
-import { AnalyticsRange, ANALYTICS_RANGES, ANALYTICS_RANGE_LABELS } from "@/lib/productionAnalyticsShared";
 
-export function ProductionTimeline({
-  data,
-  range,
-  onRangeChange,
-}: {
-  data: { label: string; ap: number; count: number }[];
-  range: AnalyticsRange;
-  onRangeChange: (r: AnalyticsRange) => void;
-}) {
+export function ProductionTimeline({ data }: { data: { label: string; ap: number; count: number }[] }) {
   return (
     <PremiumPanel className="p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-condensed text-base font-extrabold tracking-wide text-white uppercase">Production Timeline</h3>
-        <div className="flex gap-1 rounded-lg border border-border p-0.5">
-          {ANALYTICS_RANGES.map((r) => (
-            <button
-              key={r}
-              onClick={() => onRangeChange(r)}
-              className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
-                r === range ? "bg-copper text-black" : "text-muted hover:text-foreground",
-              )}
-            >
-              {ANALYTICS_RANGE_LABELS[r]}
-            </button>
-          ))}
-        </div>
-      </div>
+      <h3 className="font-condensed mb-3 text-base font-extrabold tracking-wide text-white uppercase">Production Timeline</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>

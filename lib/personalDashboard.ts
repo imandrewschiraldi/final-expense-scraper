@@ -1,65 +1,84 @@
 import { differenceInCalendarDays, addDays, startOfDay } from "date-fns";
 import { db } from "@/lib/db";
-import { computeMetrics, computePreviousMetrics } from "@/lib/dashboardMetrics";
-import { DateRange, rangeStart } from "@/lib/dashboardMetricsShared";
+import { DashboardRange, rangeSince, previousRangeWindow } from "@/lib/dashboardRange";
 import { PersonalKpiData } from "@/lib/personalDashboardShared";
 
 export * from "@/lib/personalDashboardShared";
 
-const TERMINAL_STATUSES = ["CHARGEBACK"] as const;
+type WindowMetrics = {
+  submittedAP: number;
+  submittedCount: number;
+  issuedAP: number;
+  issuedCount: number;
+  chargebackAP: number;
+  activeCount: number;
+  avgCaseSize: number;
+};
 
-/** Batches every Personal KPI card into a small, parallel set of indexed queries. */
-export async function computePersonalKpis(userId: string, now: Date = new Date()): Promise<PersonalKpiData> {
-  const scope = { agentId: userId };
-  const ranges: DateRange[] = ["daily", "wtd", "mtd", "ytd"];
+async function metricsForWindow(userId: string, window: { gte?: Date; lt?: Date }): Promise<WindowMetrics> {
+  const hasBound = window.gte !== undefined || window.lt !== undefined;
+  const statusGroups = await db.policy.groupBy({
+    by: ["status"],
+    where: { agentId: userId, ...(hasBound ? { submittedAt: window } : {}) },
+    _sum: { annualPremium: true },
+    _count: { _all: true },
+  });
 
-  const [
-    [dailyM, weeklyM, monthlyM, yearlyM],
-    [prevDailyM, prevWeeklyM, prevMonthlyM, prevYearlyM],
-    statusGroups,
-    activeGoals,
-    rank,
-  ] = await Promise.all([
-    Promise.all(ranges.map((r) => computeMetrics(scope, r, now))),
-    Promise.all(ranges.map((r) => computePreviousMetrics(scope, r, now))),
-    db.policy.groupBy({
-      by: ["status"],
-      where: { agentId: userId },
-      _sum: { annualPremium: true },
-      _count: { _all: true },
-    }),
+  const sumFor = (s: string) => Number(statusGroups.find((g) => g.status === s)?._sum.annualPremium ?? 0);
+  const countFor = (s: string) => statusGroups.find((g) => g.status === s)?._count._all ?? 0;
+
+  const submittedAP = statusGroups.reduce((sum, g) => sum + Number(g._sum.annualPremium ?? 0), 0);
+  const submittedCount = statusGroups.reduce((sum, g) => sum + g._count._all, 0);
+  const issuedAP = sumFor("ISSUED");
+  const issuedCount = countFor("ISSUED");
+  const chargebackAP = sumFor("CHARGEBACK");
+  const activeCount = submittedCount - countFor("CHARGEBACK");
+
+  return {
+    submittedAP,
+    submittedCount,
+    issuedAP,
+    issuedCount,
+    chargebackAP,
+    activeCount,
+    avgCaseSize: issuedCount > 0 ? issuedAP / issuedCount : 0,
+  };
+}
+
+/** Batches every Personal KPI card into a small, parallel set of indexed queries, all scoped to the one selected range. */
+export async function computePersonalKpis(userId: string, range: DashboardRange, now: Date = new Date()): Promise<PersonalKpiData> {
+  const since = rangeSince(range, now);
+  const prev = previousRangeWindow(range, now);
+
+  const [current, previous, activeGoals, rank] = await Promise.all([
+    metricsForWindow(userId, since ? { gte: since } : {}),
+    prev ? metricsForWindow(userId, { gte: prev.start, lt: prev.end }) : Promise.resolve(null),
     activeGoalsFor(userId, now),
-    organizationRank(userId, now),
+    organizationRank(userId, range, now),
   ]);
-
-  const statusSum = (status: string) =>
-    Number(statusGroups.find((g) => g.status === status)?._sum.annualPremium ?? 0);
-  const activePolicies = statusGroups
-    .filter((g) => !TERMINAL_STATUSES.includes(g.status as (typeof TERMINAL_STATUSES)[number]))
-    .reduce((sum, g) => sum + g._count._all, 0);
 
   const goalCompletion =
     activeGoals.length === 0
       ? undefined
       : activeGoals.reduce((sum, g) => sum + Math.min(100, g.percent), 0) / activeGoals.length;
 
+  const withTrend = (value: number, previousValue: number | undefined) =>
+    previousValue !== undefined ? { value, previousValue } : { value };
+
   return {
-    todayAP: { value: dailyM.submittedAP, previousValue: prevDailyM.submittedAP },
-    weeklyAP: { value: weeklyM.submittedAP, previousValue: prevWeeklyM.submittedAP },
-    monthlyAP: { value: monthlyM.submittedAP, previousValue: prevMonthlyM.submittedAP },
-    yearlyAP: { value: yearlyM.submittedAP, previousValue: prevYearlyM.submittedAP },
-    issuedPremium: { value: statusSum("ISSUED") },
-    chargebackPremium: { value: statusSum("CHARGEBACK") },
-    policiesSubmitted: { value: monthlyM.submittedCount, previousValue: prevMonthlyM.submittedCount },
-    activePolicies: { value: activePolicies },
-    avgCaseSize: { value: monthlyM.avgIssuedPremium, previousValue: prevMonthlyM.avgIssuedPremium },
+    annualPremium: withTrend(current.submittedAP, previous?.submittedAP),
+    issuedPremium: withTrend(current.issuedAP, previous?.issuedAP),
+    chargebackPremium: withTrend(current.chargebackAP, previous?.chargebackAP),
+    policiesSubmitted: withTrend(current.submittedCount, previous?.submittedCount),
+    activePolicies: withTrend(current.activeCount, previous?.activeCount),
+    avgCaseSize: withTrend(current.avgCaseSize, previous?.avgCaseSize),
     ...(goalCompletion !== undefined ? { goalCompletionPercentage: { value: goalCompletion } } : {}),
     ...(rank ? { organizationRank: { value: rank.rank } } : {}),
   };
 }
 
-async function organizationRank(userId: string, now: Date) {
-  const rows = await computeIssuedApByAgent(now);
+async function organizationRank(userId: string, range: DashboardRange, now: Date) {
+  const rows = await computeIssuedApByAgent(range, now);
   if (rows.length === 0) return null;
   const sorted = [...rows].sort((a, b) => b.issuedAP - a.issuedAP);
   const idx = sorted.findIndex((r) => r.agentId === userId);
@@ -67,12 +86,12 @@ async function organizationRank(userId: string, now: Date) {
   return { rank: idx + 1, of: sorted.length };
 }
 
-async function computeIssuedApByAgent(now: Date) {
-  const since = rangeStart("mtd", now);
+async function computeIssuedApByAgent(range: DashboardRange, now: Date) {
+  const since = rangeSince(range, now);
   const [agents, policies] = await Promise.all([
     db.user.findMany({ where: { active: true, role: { in: ["AGENT", "MANAGER"] } }, select: { id: true } }),
     db.policy.findMany({
-      where: { status: "ISSUED", issuedAt: { gte: since }, agentId: { not: null } },
+      where: { status: "ISSUED", agentId: { not: null }, ...(since ? { submittedAt: { gte: since } } : {}) },
       select: { agentId: true, annualPremium: true },
     }),
   ]);
