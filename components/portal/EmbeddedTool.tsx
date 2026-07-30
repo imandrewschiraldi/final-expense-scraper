@@ -3,8 +3,9 @@ import { ExternalLink } from "lucide-react";
 /** Renders a third-party tool directly on the page via iframe — no card/
  * border, no page title, and the frame stretches past the page's own
  * padding on every side so the tool itself is the very first thing on the
- * page. A small floating link over the top-right corner is the only
- * fallback for sites that block being framed. */
+ * page. A small floating link sits just below the tool's own header (which
+ * runs its own logo/controls/progress bar in that band) so it stays near
+ * the top without covering any of that. */
 export function EmbeddedTool({ title, src }: { title: string; src: string }) {
   return (
     <div className="relative -mx-6 -my-8 h-screen lg:-mx-10">
@@ -13,7 +14,7 @@ export function EmbeddedTool({ title, src }: { title: string; src: string }) {
         href={src}
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-semibold text-muted backdrop-blur-sm transition-colors hover:text-white"
+        className="absolute top-[84px] right-3 flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-semibold text-muted backdrop-blur-sm transition-colors hover:text-white"
       >
         <ExternalLink className="h-3.5 w-3.5" />
         Open in New Tab
