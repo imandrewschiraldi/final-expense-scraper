@@ -5,9 +5,9 @@ import { Wallet, FileCheck2, FileX2, FileText, DollarSign, Users, ArrowUpRight, 
 import { cn } from "@/lib/cn";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
 import { useCountUp } from "@/lib/useCountUp";
-import { ORG_KPI_KEYS, ORG_KPI_META, OrgKpiData, OrgKpiKey } from "@/lib/organizationDashboardShared";
+import { AGENCY_KPI_KEYS, AGENCY_KPI_META, AgencyKpiData, AgencyKpiKey } from "@/lib/agencyDashboardShared";
 
-const KPI_ICONS: Record<OrgKpiKey, LucideIcon> = {
+const KPI_ICONS: Record<AgencyKpiKey, LucideIcon> = {
   totalAnnualPremium: Wallet,
   totalIssuedPremium: FileCheck2,
   totalChargebackPremium: FileX2,
@@ -16,9 +16,9 @@ const KPI_ICONS: Record<OrgKpiKey, LucideIcon> = {
   activeAgents: Users,
 };
 
-function formatKpiValue(key: OrgKpiKey, value: number | undefined) {
+function formatKpiValue(key: AgencyKpiKey, value: number | undefined) {
   if (value === undefined) return "—";
-  const format = ORG_KPI_META[key].format;
+  const format = AGENCY_KPI_META[key].format;
   if (format === "currency") {
     return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
   }
@@ -39,10 +39,10 @@ function DeltaBadge({ value, previousValue }: { value: number | undefined; previ
   );
 }
 
-function OrgKpiCard({ index, kpiKey, entry }: { index: number; kpiKey: OrgKpiKey; entry: { value: number; previousValue?: number } | undefined }) {
+function AgencyKpiCard({ index, kpiKey, entry }: { index: number; kpiKey: AgencyKpiKey; entry: { value: number; previousValue?: number } | undefined }) {
   const animated = useCountUp(entry?.value);
   const Icon = KPI_ICONS[kpiKey];
-  const meta = ORG_KPI_META[kpiKey];
+  const meta = AGENCY_KPI_META[kpiKey];
 
   return (
     <motion.div
@@ -66,11 +66,11 @@ function OrgKpiCard({ index, kpiKey, entry }: { index: number; kpiKey: OrgKpiKey
   );
 }
 
-export function OrgKpiGrid({ data }: { data: OrgKpiData }) {
+export function AgencyKpiGrid({ data }: { data: AgencyKpiData }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-      {ORG_KPI_KEYS.map((key, index) => (
-        <OrgKpiCard key={key} index={index} kpiKey={key} entry={data[key]} />
+      {AGENCY_KPI_KEYS.map((key, index) => (
+        <AgencyKpiCard key={key} index={index} kpiKey={key} entry={data[key]} />
       ))}
     </div>
   );

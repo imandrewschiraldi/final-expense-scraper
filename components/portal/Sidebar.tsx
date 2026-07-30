@@ -26,7 +26,7 @@ const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
 
 const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; roles: Role[] }[] = [
   { href: "/portal/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/portal/organization", label: "Organization Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/portal/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/book-of-business", label: "Book of Business", icon: BookOpen, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/submit-policy", label: "Submit Policy", icon: FilePlus2, roles: ["ADMIN", "MANAGER", "AGENT"] },

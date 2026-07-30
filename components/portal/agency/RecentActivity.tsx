@@ -3,7 +3,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/cn";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
-import { RecentActivityItem } from "@/lib/organizationDashboardShared";
+import { RecentActivityItem } from "@/lib/agencyDashboardShared";
 
 const STATUS_COLOR: Record<string, string> = {
   SUBMITTED: "text-blue-light",

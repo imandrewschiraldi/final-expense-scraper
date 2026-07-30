@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
-import { TopProducer } from "@/lib/organizationDashboardShared";
+import { TopProducer } from "@/lib/agencyDashboardShared";
 
 function Avatar({ url, name }: { url: string | null; name: string }) {
   return url ? (

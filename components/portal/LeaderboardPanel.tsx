@@ -76,7 +76,7 @@ export function LeaderboardPanel() {
   }, []);
 
   const top3 = rankings.slice(0, 3);
-  const rest = rankings.slice(3, 10);
+  const rest = rankings.slice(3);
 
   return (
     <div className="space-y-10">

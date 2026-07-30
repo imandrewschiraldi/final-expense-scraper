@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
-import { computeOrgKpis, computeTopProducers, computeRecentActivity } from "@/lib/organizationDashboard";
+import { computeAgencyKpis, computeTopProducers, computeRecentActivity } from "@/lib/agencyDashboard";
 import { DASHBOARD_RANGES, DashboardRange } from "@/lib/dashboardRange";
 import { computeProductionTimeline, computeCarrierAnalytics, computeProductAnalytics, computePolicyStatusAnalytics } from "@/lib/productionAnalytics";
 
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     : "monthly";
 
   const [kpis, topProducers, recentActivity, timeline, carriers, products, statusAnalytics] = await Promise.all([
-    computeOrgKpis(range),
+    computeAgencyKpis(range),
     computeTopProducers(range),
     computeRecentActivity(),
     computeProductionTimeline(null, range),

@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { OrgKpiGrid } from "@/components/portal/organization/OrgKpiGrid";
-import { TopProducers } from "@/components/portal/organization/TopProducers";
-import { RecentActivity } from "@/components/portal/organization/RecentActivity";
+import { AgencyKpiGrid } from "@/components/portal/agency/AgencyKpiGrid";
+import { TopProducers } from "@/components/portal/agency/TopProducers";
+import { RecentActivity } from "@/components/portal/agency/RecentActivity";
 import { DashboardRangeSelect } from "@/components/portal/dashboard/DashboardRangeSelect";
 import { ProductionTimeline } from "@/components/portal/dashboard/analytics/ProductionTimeline";
 import { DistributionAnalytics } from "@/components/portal/dashboard/analytics/DistributionAnalytics";
 import { StatusAnalytics } from "@/components/portal/dashboard/analytics/StatusAnalytics";
-import { OrgKpiData, TopProducer, RecentActivityItem } from "@/lib/organizationDashboardShared";
+import { AgencyKpiData, TopProducer, RecentActivityItem } from "@/lib/agencyDashboardShared";
 import { DashboardRange } from "@/lib/dashboardRange";
 
 type Overview = {
-  kpis: OrgKpiData;
+  kpis: AgencyKpiData;
   topProducers: TopProducer[];
   recentActivity: RecentActivityItem[];
   analytics: {
@@ -25,13 +25,13 @@ type Overview = {
 
 const POLL_MS = 25000;
 
-export function OrganizationDashboardClient() {
+export function AgencyDashboardClient() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [range, setRange] = useState<DashboardRange>("monthly");
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/portal/organization/overview?range=${range}`);
+      const res = await fetch(`/api/portal/agency/overview?range=${range}`);
       if (!res.ok) return;
       setOverview(await res.json());
     }
@@ -44,7 +44,7 @@ export function OrganizationDashboardClient() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-[26px] font-bold text-white">Organization Dashboard</h1>
+          <h1 className="text-[26px] font-bold text-white">Agency Dashboard</h1>
           <p className="text-sm text-muted">Company-wide production across every Tier 1 Financial agent.</p>
         </div>
         <DashboardRangeSelect value={range} onChange={setRange} />
@@ -54,7 +54,7 @@ export function OrganizationDashboardClient() {
         <p className="text-sm text-muted">Loading...</p>
       ) : (
         <>
-          <OrgKpiGrid data={overview.kpis} />
+          <AgencyKpiGrid data={overview.kpis} />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <TopProducers producers={overview.topProducers} />
@@ -62,7 +62,7 @@ export function OrganizationDashboardClient() {
           </div>
 
           <div>
-            <h2 className="mb-3 text-lg font-bold text-white">Organization Analytics</h2>
+            <h2 className="mb-3 text-lg font-bold text-white">Agency Analytics</h2>
             <div className="grid gap-4">
               <ProductionTimeline data={overview.analytics.timeline} />
               <div className="grid gap-4 lg:grid-cols-2">
