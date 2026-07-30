@@ -31,10 +31,6 @@ type Role = "ADMIN" | "MANAGER" | "AGENT";
 
 const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
 const HEADER_HEIGHT = 72;
-// Lower than the sidebar header itself so it clears the taller page headings
-// (title + subtitle) that some portal pages render, instead of cutting
-// through their text.
-const DIVIDER_TOP = 100;
 
 type NavItem = { href: string; label: string; icon: LucideIcon; roles: Role[]; requiresVault?: boolean };
 
@@ -101,21 +97,19 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
 
   const items = NAV_ITEMS.filter((item) => item.roles.includes(role) && (!item.requiresVault || profile?.hasVaultAccess));
 
-  // Scripts and Commission Calculator embed a third-party tool that draws its
-  // own copper rule under its own header at that header's natural height —
-  // match it exactly (== HEADER_HEIGHT) so our half of the line lines up with
-  // theirs instead of appearing as two lines at different heights.
-  const isEmbeddedToolPage = pathname === "/portal/scripts" || pathname === "/portal/commission-calculator";
-  const dividerTop = isEmbeddedToolPage ? HEADER_HEIGHT : DIVIDER_TOP;
   const sidebarWidth = collapsed ? 68 : 240;
 
   return (
     <>
       {/* Copper line spanning only the content area — from the sidebar's
           right edge to the far edge of the viewport, regardless of monitor
-          size — not the sidebar itself. Tracks the sidebar's current width
-          so it never shifts when the sidebar collapses/expands. */}
-      <div className="pointer-events-none fixed right-0 z-50 h-0.5 bg-copper" style={{ top: dividerTop, left: sidebarWidth }} />
+          size — not the sidebar itself. Sits at the sidebar header's own
+          height (== HEADER_HEIGHT) on every page, matching the line the
+          embedded Scripts/Commission Calculator tools draw under their own
+          header, so every page shares the same line height. Tracks the
+          sidebar's current width so it never shifts when the sidebar
+          collapses/expands. */}
+      <div className="pointer-events-none fixed right-0 z-50 h-0.5 bg-copper" style={{ top: HEADER_HEIGHT, left: sidebarWidth }} />
       <aside
         className={cn(
           "sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out",
