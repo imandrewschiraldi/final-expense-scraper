@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { Crown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TimeFilterTabs } from "@/components/portal/TimeFilterTabs";
 import { DashboardClient } from "@/components/portal/DashboardClient";
 import { DateRange } from "@/lib/dashboardMetricsShared";
+import { useCountUp } from "@/lib/useCountUp";
 
 type Ranking = { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number };
 
@@ -13,10 +16,15 @@ function formatAP(value: number) {
 }
 
 const PODIUM_STYLES = [
-  "border-copper bg-copper/10 order-2 md:-translate-y-3",
-  "border-copper-dim bg-surface order-1",
-  "border-copper-dim bg-surface order-3",
+  "border-copper bg-gradient-to-b from-copper/15 to-surface order-2 md:-translate-y-4 shadow-[0_0_40px_rgba(200,121,65,0.18)]",
+  "border-copper-dim bg-gradient-to-b from-surface2 to-surface order-1",
+  "border-copper-dim bg-gradient-to-b from-surface2 to-surface order-3",
 ];
+
+function AnimatedAP({ value, className }: { value: number; className?: string }) {
+  const animated = useCountUp(value);
+  return <span className={className}>{formatAP(animated ?? 0)}</span>;
+}
 
 function Avatar({ url, name, size }: { url: string | null; name: string; size: number }) {
   return url ? (
@@ -84,34 +92,55 @@ export function LeaderboardPanel({ isAdmin }: { isAdmin: boolean }) {
           <>
             <div className="flex flex-col items-stretch gap-4 md:flex-row md:items-end">
               {top3.map((agent, i) => (
-                <div
+                <motion.div
                   key={agent.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, delay: i === 0 ? 0.15 : i * 0.1, ease: "easeOut" }}
                   className={cn(
-                    "flex flex-1 flex-col items-center gap-2 rounded-[10px] border-[1.5px] p-5 text-center",
+                    "relative flex flex-1 flex-col items-center gap-2 overflow-hidden rounded-2xl border-[1.5px] p-6 text-center",
                     PODIUM_STYLES[i],
                   )}
                 >
-                  <span className="font-scoreboard text-2xl font-bold text-copper">#{i + 1}</span>
-                  <Avatar url={agent.profileImageUrl} name={agent.name} size={i === 0 ? 72 : 56} />
+                  {i === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.5, rotate: -12 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                      transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 15 }}
+                      className="absolute -top-1 left-1/2 -translate-x-1/2"
+                    >
+                      <Crown className="h-6 w-6 fill-copper text-copper" />
+                    </motion.div>
+                  )}
+                  <span className="font-scoreboard mt-3 text-2xl font-bold text-copper">#{i + 1}</span>
+                  <Avatar url={agent.profileImageUrl} name={agent.name} size={i === 0 ? 76 : 56} />
                   <span className="text-sm font-semibold text-white">{agent.name}</span>
-                  <span className="font-scoreboard text-xl font-bold text-copper">{formatAP(agent.issuedAP)}</span>
+                  <AnimatedAP
+                    value={agent.issuedAP}
+                    className="font-scoreboard text-2xl font-bold text-copper drop-shadow-[0_0_18px_rgba(200,121,65,0.3)]"
+                  />
                   <span className="text-xs text-muted">{agent.issuedCount} issued</span>
-                </div>
+                </motion.div>
               ))}
             </div>
 
             {rest.length > 0 && (
-              <table className="mt-6 w-full text-left text-sm">
-                <tbody>
-                  {rest.map((agent, i) => (
-                    <tr key={agent.id} className="border-b border-border/60">
-                      <td className="py-2 pr-4 text-muted">#{i + 4}</td>
-                      <td className="py-2 pr-4 text-white">{agent.name}</td>
-                      <td className="py-2 pr-4 text-right text-copper">{formatAP(agent.issuedAP)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="mt-6 overflow-hidden rounded-2xl border border-border">
+                {rest.map((agent, i) => (
+                  <motion.div
+                    key={agent.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.3 + i * 0.04 }}
+                    className="flex items-center gap-4 border-b border-border/60 px-4 py-3 text-sm last:border-b-0 hover:bg-surface2"
+                  >
+                    <span className="font-scoreboard w-8 shrink-0 text-muted">#{i + 4}</span>
+                    <Avatar url={agent.profileImageUrl} name={agent.name} size={28} />
+                    <span className="min-w-0 flex-1 truncate text-white">{agent.name}</span>
+                    <AnimatedAP value={agent.issuedAP} className="font-scoreboard shrink-0 text-copper" />
+                  </motion.div>
+                ))}
+              </div>
             )}
           </>
         )}

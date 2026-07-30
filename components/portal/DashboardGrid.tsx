@@ -1,26 +1,46 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { motion } from "motion/react";
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import {
+  FileText,
+  Wallet,
+  FileCheck2,
+  DollarSign,
+  Target,
+  TrendingUp,
+  LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { GRID_COLUMNS, Widget, WidgetType } from "@/lib/dashboardLayoutShared";
 import { METRIC_LABELS, METRIC_FORMATS, MetricKey } from "@/lib/dashboardMetricsShared";
+import { useCountUp } from "@/lib/useCountUp";
 
 const ROW_HEIGHT = 72;
 const GAP = 12;
 
 type WidgetData = { value?: number; series?: { label: string; value: number }[] };
+
+const METRIC_ICONS: Record<MetricKey, LucideIcon> = {
+  submittedCount: FileText,
+  submittedAP: Wallet,
+  issuedCount: FileCheck2,
+  issuedAP: DollarSign,
+  conversionRate: Target,
+  avgIssuedPremium: TrendingUp,
+};
 
 function formatValue(metric: MetricKey, value: number | undefined) {
   if (value === undefined) return "—";
@@ -32,6 +52,15 @@ function formatValue(metric: MetricKey, value: number | undefined) {
     return `${(value * 100).toFixed(0)}%`;
   }
   return Math.round(value).toLocaleString("en-US");
+}
+
+function MetricValue({ metric, value }: { metric: MetricKey; value: number | undefined }) {
+  const animated = useCountUp(value);
+  return (
+    <span className="font-scoreboard text-4xl font-bold text-copper drop-shadow-[0_0_18px_rgba(200,121,65,0.25)]">
+      {formatValue(metric, animated)}
+    </span>
+  );
 }
 
 const CHART_METRICS: MetricKey[] = ["submittedCount", "submittedAP", "issuedCount", "issuedAP"];
@@ -209,12 +238,17 @@ export function DashboardGrid({
           gap: `${GAP}px`,
         }}
       >
-        {widgets.map((widget) => {
+        {widgets.map((widget, index) => {
           const widgetData = data[widget.id];
+          const Icon = METRIC_ICONS[widget.metric];
           return (
-            <div
+            <motion.div
               key={widget.id}
-              className="relative flex flex-col overflow-hidden rounded-[10px] border border-copper-dim bg-surface"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: Math.min(index * 0.05, 0.4), ease: "easeOut" }}
+              whileHover={{ y: -2 }}
+              className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface to-black shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] transition-shadow duration-200 hover:border-copper-dim hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
               style={{
                 gridColumn: `${widget.x + 1} / span ${widget.w}`,
                 gridRow: `${widget.y + 1} / span ${widget.h}`,
@@ -222,12 +256,15 @@ export function DashboardGrid({
             >
               <div
                 className={
-                  "font-condensed flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5 text-[11px] font-bold tracking-[0.1em] text-muted uppercase" +
+                  "font-condensed flex shrink-0 items-center justify-between gap-2 px-4 pt-3.5 pb-1 text-[11px] font-bold tracking-[0.1em] text-muted uppercase" +
                   (editable ? " cursor-move select-none" : "")
                 }
                 onPointerDown={(e) => startDrag(e, widget)}
               >
-                <span className="truncate">{widget.label}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <Icon className="h-3.5 w-3.5 shrink-0 text-copper/70" />
+                  <span className="truncate">{widget.label}</span>
+                </span>
                 {editable && (
                   <button
                     type="button"
@@ -242,27 +279,53 @@ export function DashboardGrid({
 
               <div className="flex flex-1 items-center justify-center overflow-hidden p-2">
                 {widget.type === "METRIC" ? (
-                  <span className="font-scoreboard text-4xl font-bold text-copper">
-                    {formatValue(widget.metric, widgetData?.value)}
-                  </span>
+                  <MetricValue metric={widget.metric} value={widgetData?.value} />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     {widget.type === "BAR_CHART" ? (
                       <BarChart data={widgetData?.series ?? []}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                        <XAxis dataKey="label" stroke="var(--color-muted)" fontSize={11} />
-                        <YAxis stroke="var(--color-muted)" fontSize={11} />
-                        <Tooltip contentStyle={{ background: "var(--color-surface2)", border: "1px solid var(--color-border)" }} />
-                        <Bar dataKey="value" fill="var(--color-copper)" radius={[4, 4, 0, 0]} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                        <XAxis dataKey="label" stroke="var(--color-muted)" fontSize={11} tickLine={false} axisLine={false} />
+                        <YAxis stroke="var(--color-muted)" fontSize={11} tickLine={false} axisLine={false} width={40} />
+                        <Tooltip
+                          cursor={{ fill: "var(--color-copper-glow)" }}
+                          contentStyle={{
+                            background: "var(--color-surface2)",
+                            border: "1px solid var(--color-border)",
+                            borderRadius: 8,
+                          }}
+                        />
+                        <Bar dataKey="value" fill="var(--color-copper)" radius={[6, 6, 0, 0]} maxBarSize={40} />
                       </BarChart>
                     ) : (
-                      <LineChart data={widgetData?.series ?? []}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                        <XAxis dataKey="label" stroke="var(--color-muted)" fontSize={11} />
-                        <YAxis stroke="var(--color-muted)" fontSize={11} />
-                        <Tooltip contentStyle={{ background: "var(--color-surface2)", border: "1px solid var(--color-border)" }} />
-                        <Line type="monotone" dataKey="value" stroke="var(--color-copper)" strokeWidth={2} dot={false} />
-                      </LineChart>
+                      <AreaChart data={widgetData?.series ?? []}>
+                        <defs>
+                          <linearGradient id={`areaFill-${widget.id}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="var(--color-copper)" stopOpacity={0.28} />
+                            <stop offset="100%" stopColor="var(--color-copper)" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                        <XAxis dataKey="label" stroke="var(--color-muted)" fontSize={11} tickLine={false} axisLine={false} />
+                        <YAxis stroke="var(--color-muted)" fontSize={11} tickLine={false} axisLine={false} width={40} />
+                        <Tooltip
+                          cursor={{ stroke: "var(--color-copper-dim)", strokeWidth: 1 }}
+                          contentStyle={{
+                            background: "var(--color-surface2)",
+                            border: "1px solid var(--color-border)",
+                            borderRadius: 8,
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="var(--color-copper)"
+                          strokeWidth={2.5}
+                          fill={`url(#areaFill-${widget.id})`}
+                          dot={false}
+                          activeDot={{ r: 5, fill: "var(--color-copper)", stroke: "var(--color-background)", strokeWidth: 2 }}
+                        />
+                      </AreaChart>
                     )}
                   </ResponsiveContainer>
                 )}
@@ -276,7 +339,7 @@ export function DashboardGrid({
                   <div className="absolute bottom-1 right-1 h-2 w-2 border-b-2 border-r-2 border-copper" />
                 </div>
               )}
-            </div>
+            </motion.div>
           );
         })}
       </div>
