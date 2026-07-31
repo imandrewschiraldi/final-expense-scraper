@@ -1,4 +1,5 @@
-import { Sidebar, HEADER_HEIGHT } from "@/components/portal/Sidebar";
+import { Sidebar } from "@/components/portal/Sidebar";
+import { HeaderDivider } from "@/components/portal/HeaderDivider";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -15,13 +16,9 @@ export function AppShell({ role, name, children }: { role: Role; name: string; c
             area, at the same height. Lives inside the scrollable region
             (not viewport-fixed) so it scrolls away with the rest of the
             page instead of staying pinned over content that's scrolled
-            underneath it. z-10 keeps it above embedded-tool iframes
-            (Scripts/Commission Calculator), which are relatively
-            positioned and would otherwise paint over it. */}
-        <div
-          className="pointer-events-none absolute inset-x-0 z-10 -mx-6 h-0.5 bg-copper lg:-mx-10"
-          style={{ top: HEADER_HEIGHT }}
-        />
+            underneath it. Omitted on Scripts/Commission Calculator — see
+            HeaderDivider. */}
+        <HeaderDivider />
         <div className="mx-auto w-full max-w-6xl">{children}</div>
       </main>
     </div>
