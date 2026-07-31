@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StateMultiSelect } from "@/components/shared/StateMultiSelect";
+import { ROLE_SWITCH_EMAIL, SwitchableRole } from "@/lib/roleSwitch";
 
 type Profile = {
   id: string;
@@ -16,10 +18,12 @@ type Profile = {
 };
 
 export function ProfilePanel() {
+  const { update: updateSession } = useSession();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editStates, setEditStates] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +53,32 @@ export function ProfilePanel() {
       setSaveMessage("Licensed states saved.");
     } else {
       setError("Failed to save states.");
+    }
+  }
+
+  async function switchRole(role: SwitchableRole) {
+    setSwitching(true);
+    setError(null);
+    const res = await fetch("/api/profile/switch-role", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+    if (res.ok) {
+      // Passing a (even empty) payload is what makes next-auth POST to the
+      // session endpoint instead of just GETing the existing one — only the
+      // POST path re-runs the jwt callback with trigger:"update", which is
+      // what actually refreshes the token. The jwt callback ignores this
+      // payload and re-reads the DB directly, so its contents don't matter.
+      await updateSession({ role });
+      // Hard navigation, not router.push — the new session cookie needs a
+      // fresh request through the middleware, and a client-side push here
+      // can race the just-applied session update.
+      window.location.href = role === "ADMIN" ? "/admin/dashboard" : "/agent/dashboard";
+    } else {
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "Failed to switch role.");
+      setSwitching(false);
     }
   }
 
@@ -122,6 +152,22 @@ export function ProfilePanel() {
             <span className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">Role</span>
             <p className="text-white">{profile.role}</p>
           </div>
+          {profile.email === ROLE_SWITCH_EMAIL && (
+            <div>
+              <span className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+                Switch View
+              </span>
+              <div className="mt-1">
+                <Button
+                  variant="secondary"
+                  onClick={() => switchRole(profile.role === "ADMIN" ? "AGENT" : "ADMIN")}
+                  disabled={switching}
+                >
+                  {switching ? "Switching..." : `Switch to ${profile.role === "ADMIN" ? "Agent" : "Admin"}`}
+                </Button>
+              </div>
+            </div>
+          )}
           {profile.compLevel && (
             <div>
               <span className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
