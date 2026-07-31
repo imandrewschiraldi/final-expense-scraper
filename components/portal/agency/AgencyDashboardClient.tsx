@@ -27,13 +27,22 @@ const POLL_MS = 25000;
 
 export function AgencyDashboardClient() {
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [range, setRange] = useState<DashboardRange>("monthly");
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/portal/agency/overview?range=${range}`);
-      if (!res.ok) return;
-      setOverview(await res.json());
+      try {
+        const res = await fetch(`/api/portal/agency/overview?range=${range}`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error ?? `Failed to load agency dashboard (${res.status})`);
+        }
+        setOverview(await res.json());
+        setLoadError(null);
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : "Failed to load agency dashboard.");
+      }
     }
     load();
     const interval = setInterval(load, POLL_MS);
@@ -50,7 +59,9 @@ export function AgencyDashboardClient() {
         <DashboardRangeSelect value={range} onChange={setRange} />
       </div>
 
-      {!overview ? (
+      {loadError ? (
+        <p className="text-sm text-red-light">{loadError}</p>
+      ) : !overview ? (
         <p className="text-sm text-muted">Loading...</p>
       ) : (
         <>
