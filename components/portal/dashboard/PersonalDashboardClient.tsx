@@ -27,6 +27,7 @@ const POLL_MS = 25000;
 
 export function PersonalDashboardClient() {
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [range, setRange] = useState<DashboardRange>("monthly");
   const [celebration, setCelebration] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
@@ -34,19 +35,27 @@ export function PersonalDashboardClient() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/portal/dashboard/overview?range=${range}`);
-      if (!res.ok) return;
-      const data: Overview = await res.json();
-      setOverview(data);
-
-      const currentIds = new Set(data.recentWins.map((w) => w.id));
-      if (seenWinIds.current) {
-        const newlyWon = data.recentWins.find((w) => !seenWinIds.current!.has(w.id));
-        if (newlyWon) {
-          setCelebration(GOAL_CATEGORY_LABELS[newlyWon.category] ?? newlyWon.category);
+      try {
+        const res = await fetch(`/api/portal/dashboard/overview?range=${range}`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error ?? `Failed to load dashboard (${res.status})`);
         }
+        const data: Overview = await res.json();
+        setOverview(data);
+        setLoadError(null);
+
+        const currentIds = new Set(data.recentWins.map((w) => w.id));
+        if (seenWinIds.current) {
+          const newlyWon = data.recentWins.find((w) => !seenWinIds.current!.has(w.id));
+          if (newlyWon) {
+            setCelebration(GOAL_CATEGORY_LABELS[newlyWon.category] ?? newlyWon.category);
+          }
+        }
+        seenWinIds.current = currentIds;
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : "Failed to load dashboard.");
       }
-      seenWinIds.current = currentIds;
     }
 
     load();
@@ -68,7 +77,9 @@ export function PersonalDashboardClient() {
         <DashboardRangeSelect value={range} onChange={setRange} />
       </div>
 
-      {!overview ? (
+      {loadError ? (
+        <p className="text-sm text-red-light">{loadError}</p>
+      ) : !overview ? (
         <p className="text-sm text-muted">Loading...</p>
       ) : (
         <>
