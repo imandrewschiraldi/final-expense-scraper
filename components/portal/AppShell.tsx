@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/portal/Sidebar";
 import { HeaderDivider } from "@/components/portal/HeaderDivider";
+import { ContentContainer } from "@/components/portal/ContentContainer";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -19,7 +20,7 @@ export function AppShell({ role, name, children }: { role: Role; name: string; c
             underneath it. Omitted on Scripts/Commission Calculator — see
             HeaderDivider. */}
         <HeaderDivider />
-        <div className="mx-auto w-full max-w-6xl">{children}</div>
+        <ContentContainer>{children}</ContentContainer>
       </main>
     </div>
   );
