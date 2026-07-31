@@ -1,7 +1,7 @@
 import { differenceInCalendarDays, addDays, startOfDay } from "date-fns";
 import { db } from "@/lib/db";
 import { DashboardRange, rangeSince, previousRangeWindow } from "@/lib/dashboardRange";
-import { PersonalKpiData } from "@/lib/personalDashboardShared";
+import { PersonalKpiData, GOAL_CATEGORY_LABELS, GOAL_CATEGORY_FORMAT } from "@/lib/personalDashboardShared";
 
 export * from "@/lib/personalDashboardShared";
 
@@ -51,17 +51,20 @@ export async function computePersonalKpis(userId: string, range: DashboardRange,
   const since = rangeSince(range, now);
   const prev = previousRangeWindow(range, now);
 
-  const [current, previous, activeGoals, rank] = await Promise.all([
+  const [current, previous, activeGoals] = await Promise.all([
     metricsForWindow(userId, since ? { gte: since } : {}),
     prev ? metricsForWindow(userId, { gte: prev.start, lt: prev.end }) : Promise.resolve(null),
     activeGoalsFor(userId, now),
-    organizationRank(userId, range, now),
   ]);
 
   const goalCompletion =
     activeGoals.length === 0
       ? undefined
       : activeGoals.reduce((sum, g) => sum + Math.min(100, g.percent), 0) / activeGoals.length;
+
+  // activeGoalsFor orders by soonest deadline first, so the first entry is
+  // the goal a user should be paying attention to right now.
+  const primaryGoal = activeGoals[0];
 
   const withTrend = (value: number, previousValue: number | undefined) =>
     previousValue !== undefined ? { value, previousValue } : { value };
@@ -74,35 +77,16 @@ export async function computePersonalKpis(userId: string, range: DashboardRange,
     activePolicies: withTrend(current.activeCount, previous?.activeCount),
     avgCaseSize: withTrend(current.avgCaseSize, previous?.avgCaseSize),
     ...(goalCompletion !== undefined ? { goalCompletionPercentage: { value: goalCompletion } } : {}),
-    ...(rank ? { organizationRank: { value: rank.rank } } : {}),
+    ...(primaryGoal
+      ? {
+          goalRemaining: {
+            value: primaryGoal.remaining,
+            label: `${GOAL_CATEGORY_LABELS[primaryGoal.category] ?? "Goal"} Remaining`,
+            format: GOAL_CATEGORY_FORMAT[primaryGoal.category] ?? "currency",
+          },
+        }
+      : {}),
   };
-}
-
-async function organizationRank(userId: string, range: DashboardRange, now: Date) {
-  const rows = await computeIssuedApByAgent(range, now);
-  if (rows.length === 0) return null;
-  const sorted = [...rows].sort((a, b) => b.issuedAP - a.issuedAP);
-  const idx = sorted.findIndex((r) => r.agentId === userId);
-  if (idx === -1) return null;
-  return { rank: idx + 1, of: sorted.length };
-}
-
-async function computeIssuedApByAgent(range: DashboardRange, now: Date) {
-  const since = rangeSince(range, now);
-  const [agents, policies] = await Promise.all([
-    db.user.findMany({ where: { active: true, role: { in: ["AGENT", "MANAGER"] } }, select: { id: true } }),
-    db.policy.findMany({
-      where: { status: "ISSUED", agentId: { not: null }, ...(since ? { submittedAt: { gte: since } } : {}) },
-      select: { agentId: true, annualPremium: true },
-    }),
-  ]);
-  const sums = new Map<string, number>();
-  for (const a of agents) sums.set(a.id, 0);
-  for (const p of policies) {
-    if (!p.agentId) continue;
-    sums.set(p.agentId, (sums.get(p.agentId) ?? 0) + Number(p.annualPremium));
-  }
-  return Array.from(sums.entries()).map(([agentId, issuedAP]) => ({ agentId, issuedAP }));
 }
 
 // --- Goal progress + pace math ---

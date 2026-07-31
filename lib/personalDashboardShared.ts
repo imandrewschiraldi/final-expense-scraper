@@ -9,11 +9,11 @@ export const PERSONAL_KPI_KEYS = [
   "activePolicies",
   "avgCaseSize",
   "goalCompletionPercentage",
-  "organizationRank",
+  "goalRemaining",
 ] as const;
 export type PersonalKpiKey = (typeof PERSONAL_KPI_KEYS)[number];
 
-export const PERSONAL_KPI_META: Record<PersonalKpiKey, { label: string; format: "currency" | "count" | "percent" | "rank"; explain: string }> = {
+export const PERSONAL_KPI_META: Record<PersonalKpiKey, { label: string; format: "currency" | "count" | "percent"; explain: string }> = {
   annualPremium: { label: "Annual Premium", format: "currency", explain: "Annual premium submitted in the selected timeframe." },
   issuedPremium: { label: "Issued Premium", format: "currency", explain: "Of that, annual premium currently marked Issued." },
   chargebackPremium: { label: "Chargeback Premium", format: "currency", explain: "Of that, annual premium currently marked Chargeback." },
@@ -21,10 +21,12 @@ export const PERSONAL_KPI_META: Record<PersonalKpiKey, { label: string; format: 
   activePolicies: { label: "Active Policies", format: "count", explain: "Submitted in the selected timeframe and not Chargeback." },
   avgCaseSize: { label: "Average Case Size", format: "currency", explain: "Average annual premium of policies issued in the selected timeframe." },
   goalCompletionPercentage: { label: "Goal Completion", format: "percent", explain: "Average progress across your active goals." },
-  organizationRank: { label: "Organization Rank", format: "rank", explain: "Your rank across the org by issued premium in the selected timeframe." },
+  goalRemaining: { label: "Goal Remaining", format: "currency", explain: "What's left to hit your nearest active goal." },
 };
 
-export type PersonalKpiData = Partial<Record<PersonalKpiKey, { value: number; previousValue?: number }>>;
+export type PersonalKpiData = Partial<
+  Record<PersonalKpiKey, { value: number; previousValue?: number; label?: string; format?: "currency" | "count" | "percent" }>
+>;
 
 export const GOAL_CATEGORIES = ["MONTHLY_AP", "ANNUAL_AP", "ISSUED_PREMIUM", "POLICY_COUNT", "INCOME", "RECRUITING"] as const;
 export type GoalCategoryKey = (typeof GOAL_CATEGORIES)[number];
