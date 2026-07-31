@@ -14,9 +14,13 @@ export const ACTIVE_STATUSES: LeadStatus[] = [
   "CONTACTED",
   "NO_ANSWER",
   "APPOINTMENT_BOOKING",
+  "NOT_INTERESTED",
 ];
 
-export const ARCHIVED_STATUSES: LeadStatus[] = ["SOLD", "NOT_INTERESTED"];
+// Not Interested no longer removes a lead from work — it stays visible
+// (tagged) in the vault or in an agent's own book. Only Sold is a true
+// dead-end.
+export const ARCHIVED_STATUSES: LeadStatus[] = ["SOLD"];
 
 export function isArchivedStatus(status: LeadStatus) {
   return ARCHIVED_STATUSES.includes(status);

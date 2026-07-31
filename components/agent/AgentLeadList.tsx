@@ -33,6 +33,7 @@ const ACTIVE_TABS: { value: LeadStatus | "ALL"; label: string }[] = [
   { value: "CONTACTED", label: LEAD_STATUS_LABELS.CONTACTED },
   { value: "NO_ANSWER", label: LEAD_STATUS_LABELS.NO_ANSWER },
   { value: "APPOINTMENT_BOOKING", label: LEAD_STATUS_LABELS.APPOINTMENT_BOOKING },
+  { value: "NOT_INTERESTED", label: LEAD_STATUS_LABELS.NOT_INTERESTED },
 ];
 
 function buildFilterParams(tab: LeadStatus | "ALL", archiveView: boolean, state: string) {

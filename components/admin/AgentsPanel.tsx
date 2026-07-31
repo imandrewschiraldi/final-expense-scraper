@@ -20,11 +20,11 @@ type Agent = {
   createdAt: string;
 };
 
-const VAULT_ACCESS_WEEKS = 8;
+const VAULT_ACCESS_DAYS = 90;
 
 function vaultAccessLabel(createdAt: string, vaultEnabled: boolean): string {
   if (!vaultEnabled) return "Off (manual)";
-  const cutoff = new Date(createdAt).getTime() + VAULT_ACCESS_WEEKS * 7 * 24 * 60 * 60 * 1000;
+  const cutoff = new Date(createdAt).getTime() + VAULT_ACCESS_DAYS * 24 * 60 * 60 * 1000;
   const daysLeft = Math.ceil((cutoff - Date.now()) / (24 * 60 * 60 * 1000));
   return daysLeft > 0 ? `${daysLeft} day(s) left` : "Expired";
 }
@@ -114,21 +114,6 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
     setTogglingId(null);
     if (res.ok) {
       setAgents((prev) => prev.map((a) => (a.id === agent.id ? { ...a, vaultEnabled: !a.vaultEnabled } : a)));
-    }
-  }
-
-  async function toggleAssignmentEnabled(agent: Agent) {
-    setTogglingId(agent.id);
-    const res = await fetch(`/api/admin/agents/${agent.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assignmentEnabled: !agent.assignmentEnabled }),
-    });
-    setTogglingId(null);
-    if (res.ok) {
-      setAgents((prev) =>
-        prev.map((a) => (a.id === agent.id ? { ...a, assignmentEnabled: !a.assignmentEnabled } : a)),
-      );
     }
   }
 
@@ -281,13 +266,6 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                         )}
                         <Button variant="ghost" onClick={() => toggleActive(agent)}>
                           {agent.active ? "Deactivate" : "Activate"}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => toggleAssignmentEnabled(agent)}
-                          disabled={togglingId === agent.id}
-                        >
-                          {agent.assignmentEnabled ? "Turn Off Assign" : "Turn On Assign"}
                         </Button>
                         <Button
                           variant="ghost"

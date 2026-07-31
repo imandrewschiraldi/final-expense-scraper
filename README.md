@@ -43,7 +43,7 @@ See `.env.example`. Summary:
 - `DIRECT_URL` — Supabase direct connection (port 5432). Used by Prisma Migrate/CLI.
 - `AUTH_SECRET` — NextAuth session secret (`openssl rand -base64 32`).
 - `NEXTAUTH_URL` — base URL of the app (`http://localhost:3000` locally).
-- `CRON_SECRET` — shared secret Vercel Cron sends as a bearer token to protect `/api/cron/weekly-assign`.
+- `CRON_SECRET` — shared secret Vercel Cron sends as a bearer token to protect `/api/cron/vault-revert` and `/api/cron/recycle-leads`.
 - `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` — used once by `npm run db:seed` to create the first admin.
 - `RESEND_API_KEY` / `RESEND_FROM_EMAIL` — sends the agent invite email (see below).
 
@@ -57,8 +57,8 @@ See `.env.example`. Summary:
 
 1. Import the repo into Vercel.
 2. Set all variables from `.env.example` in the Vercel project's Environment Variables.
-3. Vercel automatically sends `CRON_SECRET` as a bearer token to cron-triggered requests when the env var is set, matching the check in `/api/cron/weekly-assign`.
-4. `vercel.json` schedules the weekly auto-assignment job for Monday at 13:00 UTC — adjust the cron expression if your agents are not on US Eastern time.
+3. Vercel automatically sends `CRON_SECRET` as a bearer token to cron-triggered requests when the env var is set, matching the check in the cron routes.
+4. `vercel.json` schedules the vault-revert and lead-recycle jobs — adjust the cron expressions if your agents are not on US Eastern time.
 5. Run `npm run db:deploy` (via a one-off build step or manually) before the first deploy so the schema exists, then `npm run db:seed` once to create the initial admin.
 
 ## Agent invites
@@ -77,11 +77,17 @@ reorderable with the up/down controls. Agents work through it at `/agent/trainin
 per-module progress bar, mark lessons complete, and move lesson-to-lesson with Next/Prev or
 the arrow keys, the same pattern used for lead navigation.
 
-## How assignment works
+## How leads reach an agent
 
-- **Weekly auto-assignment** (`/api/cron/weekly-assign`, `lib/assignment.ts`): every Monday, each active agent is assigned up to 300 unassigned, non-archived leads matching their `licensedStates`, oldest-first. Agents who get fewer than 300 (including zero) are recorded as a flag on that week's `AssignmentRun`, surfaced on the admin dashboard.
-- **Manual admin assignment** (`/admin/leads/assign`): filter the shared pool by state, then either check off specific leads or use "Quick Assign" to grab the oldest N unassigned leads in a state for a given agent.
-- **Status lifecycle**: `New → Contacted / No Answer / Appointment Booking` stay in the active pool and are reworkable. `Sold` and `Not Interested` are terminal — they archive the lead and lock it from further agent edits.
+Leads no longer get auto-assigned. The Vault (`/agent/vault`) is the primary intake: every
+agent with vault access can browse and call any vault lead. Marking one `Appointment Booked`
+or `Sold` claims it into that agent's own "My Leads" and removes it from the shared pool;
+marking it `Contacted`, `No Answer`, or `Not Interested` leaves it shared but writes a
+`ContactLogEntry` (who touched it, when, and with what outcome), visible to every agent
+viewing that lead, so people aren't spam-calling someone who was already worked.
+
+- **Manual admin assignment** (`/admin/leads/assign`, `lib/assignment.ts`): still available for occasional direct hand-offs — filter the shared pool by state, then either check off specific leads or use "Quick Assign" to grab the oldest N unassigned leads in a state for a given agent. CSV import can also send leads straight to a specific agent instead of the vault.
+- **Status lifecycle**: `New → Contacted / No Answer / Not Interested` stay in the active pool and are reworkable. `Appointment Booking` claims a vault lead but is still reworkable. `Sold` is the only terminal status — it archives the lead and locks it from further agent edits.
 
 ## Project structure
 

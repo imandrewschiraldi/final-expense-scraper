@@ -30,17 +30,24 @@ export default async function VaultPage() {
         </CardHeader>
         <div className="space-y-3 text-sm text-muted">
           <p>
-            The Vault is a shared lead source, open to every agent for their first eight (8) weeks. All agents
-            draw from the same vault and are expected to work it accordingly.
+            The Vault is the only source of new leads — nothing gets auto-assigned anymore. It&apos;s a shared
+            pool, open to every agent for their first 90 days. All agents draw from the same vault and are
+            expected to work it accordingly.
           </p>
           <p>
             <span className="font-bold text-white">Every lead must be dispositioned when dialed.</span> A
             disposition is not optional — it is the price to access this vault.
           </p>
           <ul className="ml-4 list-disc space-y-1">
-            <li>Leads marked <span className="font-semibold text-green-light">Sold</span> or{" "}
-              <span className="font-semibold text-red-light">Not Interested</span> are removed from the vault
-              immediately.</li>
+            <li>Leads marked <span className="font-semibold text-white">Appointment Booked</span> or{" "}
+              <span className="font-semibold text-green-light">Sold</span> are claimed into your own book and
+              removed from the vault immediately.</li>
+            <li>Leads marked <span className="font-semibold text-teal-light">Contacted</span>,{" "}
+              <span className="font-semibold text-muted">No Answer</span>, or{" "}
+              <span className="font-semibold text-red-light">Not Interested</span>{" "}
+              stay in the shared vault —
+              your name and the time show up in that lead&apos;s Contact Log so no one spam-calls someone
+              who was already worked.</li>
             <li>Leads marked <span className="font-semibold text-white">Appointment Booked</span> that are not
               marked Sold within 14 days are automatically returned to the vault.</li>
           </ul>

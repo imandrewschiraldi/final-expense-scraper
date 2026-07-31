@@ -4,10 +4,10 @@ import { db } from "@/lib/db";
 import { LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
 import { Prisma } from "@prisma/client";
 
-// Manually sends leads back into the shared vault pool, resetting their
-// status to New. Used for the admin "Not Interested" vault folder, where
-// resets are a deliberate admin decision rather than the automatic
-// 14-day Appointment Booked timer.
+// Manually resets a lead's status back to New, clearing a Not Interested
+// tag (and any assignment) so it looks fresh in the shared vault pool.
+// Used for the admin "Not Interested" vault folder, a deliberate admin
+// decision rather than the automatic 14-day Appointment Booked timer.
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin();
   if ("error" in guard) return guard.error;
