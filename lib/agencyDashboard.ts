@@ -12,7 +12,7 @@ export async function computeAgencyKpis(range: DashboardRange, now: Date = new D
   const [current, previous, activeAgents] = await Promise.all([
     metricsForWindow(null, since ? { gte: since } : {}),
     prev ? metricsForWindow(null, { gte: prev.start, lt: prev.end }) : Promise.resolve(null),
-    db.user.count({ where: { active: true, role: { in: ["AGENT", "MANAGER"] } } }),
+    db.user.count({ where: { active: true, role: { in: ["AGENT", "MANAGER", "ADMIN"] } } }),
   ]);
 
   const withTrend = (value: number, previousValue: number | undefined) =>

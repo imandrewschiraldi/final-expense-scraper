@@ -17,8 +17,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     assignmentEnabled?: boolean;
   };
 
+  // Deactivating yourself would lock you out immediately (login rejects
+  // inactive users) — blocked regardless of role, since an admin who also
+  // produces can now appear in this same list.
+  if (active === false && id === guard.session.user.id) {
+    return NextResponse.json({ error: "You can't deactivate your own account." }, { status: 400 });
+  }
+
   const agent = await db.user.update({
-    where: { id, role: "AGENT" },
+    where: { id, role: { in: ["AGENT", "ADMIN"] } },
     data: {
       ...(name !== undefined ? { name } : {}),
       ...(licensedStates !== undefined ? { licensedStates: licensedStates.map((s) => s.toUpperCase()) } : {}),
@@ -48,8 +55,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params;
 
+  if (id === guard.session.user.id) {
+    return NextResponse.json({ error: "You can't delete your own account." }, { status: 400 });
+  }
+
   const agent = await db.user.findUnique({ where: { id } });
-  if (!agent || agent.role !== "AGENT") {
+  if (!agent || (agent.role !== "AGENT" && agent.role !== "ADMIN")) {
     return NextResponse.json({ error: "Agent not found" }, { status: 404 });
   }
   if (agent.active) {
