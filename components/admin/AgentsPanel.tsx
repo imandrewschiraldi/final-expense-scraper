@@ -10,6 +10,7 @@ type Agent = {
   id: string;
   name: string;
   email: string;
+  role: "ADMIN" | "MANAGER" | "AGENT";
   licensedStates: string[];
   active: boolean;
   compLevel: string | null;
@@ -30,7 +31,7 @@ function vaultAccessLabel(createdAt: string, vaultEnabled: boolean): string {
 }
 
 
-export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
+export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: Agent[]; currentUserId: string | null }) {
   const [agents, setAgents] = useState(initialAgents);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editStates, setEditStates] = useState<string[]>([]);
@@ -60,7 +61,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
       setError(data.error ?? "Failed to create agent");
       return;
     }
-    setAgents((prev) => [...prev, { ...data.agent, leadCount: 0 }]);
+    setAgents((prev) => [...prev, { ...data.agent, role: "AGENT" as const, leadCount: 0 }]);
     setForm({ name: "", email: "", licensedStates: [] });
     setShowForm(false);
     if (data.warning) {
@@ -264,9 +265,11 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                             {resendingId === agent.id ? "Sending..." : "Resend Invite"}
                           </Button>
                         )}
-                        <Button variant="ghost" onClick={() => toggleActive(agent)}>
-                          {agent.active ? "Deactivate" : "Activate"}
-                        </Button>
+                        {agent.id !== currentUserId && (
+                          <Button variant="ghost" onClick={() => toggleActive(agent)}>
+                            {agent.active ? "Deactivate" : "Activate"}
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           onClick={() => toggleVaultEnabled(agent)}
@@ -274,7 +277,7 @@ export function AgentsPanel({ initialAgents }: { initialAgents: Agent[] }) {
                         >
                           {agent.vaultEnabled ? "Turn Off Vault" : "Turn On Vault"}
                         </Button>
-                        {!agent.active && (
+                        {!agent.active && agent.id !== currentUserId && (
                           <Button
                             variant="danger"
                             onClick={() => deleteAgent(agent)}

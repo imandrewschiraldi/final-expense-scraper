@@ -73,8 +73,10 @@ export function ProfilePanel() {
       await updateSession({ role });
       // Hard navigation, not router.push — the new session cookie needs a
       // fresh request through the middleware, and a client-side push here
-      // can race the just-applied session update.
-      window.location.href = role === "ADMIN" ? "/admin/dashboard" : "/agent/dashboard";
+      // can race the just-applied session update. Always the unified
+      // Portal dashboard, not the legacy per-role /admin or /agent
+      // dashboards, which both roles can still reach from the sidebar.
+      window.location.href = "/portal/dashboard";
     } else {
       const data = await res.json().catch(() => null);
       setError(data?.error ?? "Failed to switch role.");

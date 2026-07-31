@@ -5,7 +5,10 @@ import { db } from "@/lib/db";
 // Always a live, all-time ranking — no period selector. Sales leaderboards
 // that reset weekly/monthly hide who's actually ahead right now; this stays
 // continuous and just reflects current standings as they change. Every
-// active agent/manager is included (even at $0), so new accounts show up
+// active user is included (even at $0), regardless of role — an admin who
+// also personally writes business is still part of the agency's production,
+// and excluding them by role previously meant their issued premium was
+// silently dropped instead of just not ranking anyone: new accounts show up
 // on the board immediately instead of waiting for their first issued policy.
 export async function GET() {
   const guard = await requireAnyRole();
@@ -14,7 +17,7 @@ export async function GET() {
   try {
     const [agents, policies] = await Promise.all([
       db.user.findMany({
-        where: { active: true, role: { in: ["AGENT", "MANAGER"] } },
+        where: { active: true },
         select: { id: true, name: true, profileImageUrl: true },
       }),
       db.policy.findMany({
