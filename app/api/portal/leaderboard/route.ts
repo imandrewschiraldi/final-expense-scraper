@@ -11,30 +11,35 @@ export async function GET() {
   const guard = await requireAnyRole();
   if ("error" in guard) return guard.error;
 
-  const [agents, policies] = await Promise.all([
-    db.user.findMany({
-      where: { active: true, role: { in: ["AGENT", "MANAGER"] } },
-      select: { id: true, name: true, profileImageUrl: true },
-    }),
-    db.policy.findMany({
-      where: { status: "ISSUED", agentId: { not: null } },
-      select: { annualPremium: true, agentId: true },
-    }),
-  ]);
+  try {
+    const [agents, policies] = await Promise.all([
+      db.user.findMany({
+        where: { active: true, role: { in: ["AGENT", "MANAGER"] } },
+        select: { id: true, name: true, profileImageUrl: true },
+      }),
+      db.policy.findMany({
+        where: { status: "ISSUED", agentId: { not: null } },
+        select: { annualPremium: true, agentId: true },
+      }),
+    ]);
 
-  const byAgent = new Map<string, { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number }>();
-  for (const a of agents) {
-    byAgent.set(a.id, { id: a.id, name: a.name, profileImageUrl: a.profileImageUrl, issuedAP: 0, issuedCount: 0 });
+    const byAgent = new Map<string, { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number }>();
+    for (const a of agents) {
+      byAgent.set(a.id, { id: a.id, name: a.name, profileImageUrl: a.profileImageUrl, issuedAP: 0, issuedCount: 0 });
+    }
+    for (const p of policies) {
+      if (!p.agentId) continue;
+      const entry = byAgent.get(p.agentId);
+      if (!entry) continue;
+      entry.issuedAP += Number(p.annualPremium);
+      entry.issuedCount += 1;
+    }
+
+    const rankings = Array.from(byAgent.values()).sort((a, b) => b.issuedAP - a.issuedAP);
+
+    return NextResponse.json({ rankings });
+  } catch (err) {
+    console.error("GET /api/portal/leaderboard failed:", err);
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed to load leaderboard" }, { status: 500 });
   }
-  for (const p of policies) {
-    if (!p.agentId) continue;
-    const entry = byAgent.get(p.agentId);
-    if (!entry) continue;
-    entry.issuedAP += Number(p.annualPremium);
-    entry.issuedCount += 1;
-  }
-
-  const rankings = Array.from(byAgent.values()).sort((a, b) => b.issuedAP - a.issuedAP);
-
-  return NextResponse.json({ rankings });
 }
