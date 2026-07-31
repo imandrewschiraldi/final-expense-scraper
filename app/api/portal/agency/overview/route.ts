@@ -14,20 +14,25 @@ export async function GET(req: NextRequest) {
     ? (rangeParam as DashboardRange)
     : "monthly";
 
-  const [kpis, topProducers, recentActivity, timeline, carriers, products, statusAnalytics] = await Promise.all([
-    computeAgencyKpis(range),
-    computeTopProducers(range),
-    computeRecentActivity(),
-    computeProductionTimeline(null, range),
-    computeCarrierAnalytics(null, range),
-    computeProductAnalytics(null, range),
-    computePolicyStatusAnalytics(null, range),
-  ]);
+  try {
+    const [kpis, topProducers, recentActivity, timeline, carriers, products, statusAnalytics] = await Promise.all([
+      computeAgencyKpis(range),
+      computeTopProducers(range),
+      computeRecentActivity(),
+      computeProductionTimeline(null, range),
+      computeCarrierAnalytics(null, range),
+      computeProductAnalytics(null, range),
+      computePolicyStatusAnalytics(null, range),
+    ]);
 
-  return NextResponse.json({
-    kpis,
-    topProducers,
-    recentActivity,
-    analytics: { timeline, carriers, products, statusAnalytics },
-  });
+    return NextResponse.json({
+      kpis,
+      topProducers,
+      recentActivity,
+      analytics: { timeline, carriers, products, statusAnalytics },
+    });
+  } catch (err) {
+    console.error("GET /api/portal/agency/overview failed:", err);
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed to load agency dashboard" }, { status: 500 });
+  }
 }

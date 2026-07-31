@@ -15,20 +15,25 @@ export async function GET(req: NextRequest) {
     ? (rangeParam as DashboardRange)
     : "monthly";
 
-  const [kpis, goals, recentWins, timeline, carriers, products, statusAnalytics] = await Promise.all([
-    computePersonalKpis(userId, range),
-    activeGoalsFor(userId),
-    recentWinsFor(userId),
-    computeProductionTimeline(userId, range),
-    computeCarrierAnalytics(userId, range),
-    computeProductAnalytics(userId, range),
-    computePolicyStatusAnalytics(userId, range),
-  ]);
+  try {
+    const [kpis, goals, recentWins, timeline, carriers, products, statusAnalytics] = await Promise.all([
+      computePersonalKpis(userId, range),
+      activeGoalsFor(userId),
+      recentWinsFor(userId),
+      computeProductionTimeline(userId, range),
+      computeCarrierAnalytics(userId, range),
+      computeProductAnalytics(userId, range),
+      computePolicyStatusAnalytics(userId, range),
+    ]);
 
-  return NextResponse.json({
-    kpis,
-    goals,
-    recentWins,
-    analytics: { timeline, carriers, products, statusAnalytics },
-  });
+    return NextResponse.json({
+      kpis,
+      goals,
+      recentWins,
+      analytics: { timeline, carriers, products, statusAnalytics },
+    });
+  } catch (err) {
+    console.error("GET /api/portal/dashboard/overview failed:", err);
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed to load dashboard" }, { status: 500 });
+  }
 }
