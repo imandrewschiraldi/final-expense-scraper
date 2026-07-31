@@ -160,22 +160,6 @@ function GoalCard({ goal, index, onDeleted }: { goal: GoalWithProgress; index: n
           <p className="mt-0.5 text-xs text-muted">
             {formatGoalValue(goal.category, goal.remaining)} remaining of {formatGoalValue(goal.category, goal.targetValue)}
           </p>
-          <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-muted">
-            <div>
-              <p className="text-white">{formatGoalValue(goal.category, goal.requiredDailyPace)}</p>
-              <p>per day</p>
-            </div>
-            <div>
-              <p className="text-white">{formatGoalValue(goal.category, goal.requiredWeeklyPace)}</p>
-              <p>per week</p>
-            </div>
-            <div>
-              <p className="text-white">
-                {goal.projectedCompletionDate ? format(new Date(goal.projectedCompletionDate), "MMM d") : "—"}
-              </p>
-              <p>projected</p>
-            </div>
-          </div>
         </div>
       </PremiumPanel>
     </motion.div>

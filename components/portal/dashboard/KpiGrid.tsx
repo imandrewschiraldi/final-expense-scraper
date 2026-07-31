@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   DollarSign,
   Target,
-  Trophy,
+  Flag,
   ArrowUpRight,
   ArrowDownRight,
   LucideIcon,
@@ -27,17 +27,15 @@ const KPI_ICONS: Record<PersonalKpiKey, LucideIcon> = {
   activePolicies: ShieldCheck,
   avgCaseSize: DollarSign,
   goalCompletionPercentage: Target,
-  organizationRank: Trophy,
+  goalRemaining: Flag,
 };
 
-function formatKpiValue(key: PersonalKpiKey, value: number | undefined) {
+function formatKpiValue(format: "currency" | "count" | "percent", value: number | undefined) {
   if (value === undefined) return "—";
-  const format = PERSONAL_KPI_META[key].format;
   if (format === "currency") {
     return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
   }
   if (format === "percent") return `${value.toFixed(0)}%`;
-  if (format === "rank") return `#${Math.round(value)}`;
   return Math.round(value).toLocaleString("en-US");
 }
 
@@ -55,10 +53,14 @@ function DeltaBadge({ value, previousValue }: { value: number | undefined; previ
   );
 }
 
-function KpiCard({ index, kpiKey, entry }: { index: number; kpiKey: PersonalKpiKey; entry: { value: number; previousValue?: number } | undefined }) {
+type KpiEntry = { value: number; previousValue?: number; label?: string; format?: "currency" | "count" | "percent" };
+
+function KpiCard({ index, kpiKey, entry }: { index: number; kpiKey: PersonalKpiKey; entry: KpiEntry | undefined }) {
   const animated = useCountUp(entry?.value);
   const Icon = KPI_ICONS[kpiKey];
   const meta = PERSONAL_KPI_META[kpiKey];
+  const label = entry?.label ?? meta.label;
+  const format = entry?.format ?? meta.format;
 
   return (
     <motion.div
@@ -75,8 +77,8 @@ function KpiCard({ index, kpiKey, entry }: { index: number; kpiKey: PersonalKpiK
           </div>
           <DeltaBadge value={entry?.value} previousValue={entry?.previousValue} />
         </div>
-        <p className="mt-3 truncate text-[13px] text-muted">{meta.label}</p>
-        <p className="mt-0.5 text-[26px] leading-tight font-bold text-white">{formatKpiValue(kpiKey, animated)}</p>
+        <p className="mt-3 truncate text-[13px] text-muted">{label}</p>
+        <p className="mt-0.5 text-[26px] leading-tight font-bold text-white">{formatKpiValue(format, animated)}</p>
       </PremiumPanel>
     </motion.div>
   );
