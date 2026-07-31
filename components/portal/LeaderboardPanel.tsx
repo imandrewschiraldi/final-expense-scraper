@@ -9,6 +9,7 @@ import { useCountUp } from "@/lib/useCountUp";
 const POLL_MS = 20000;
 
 type Ranking = { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number };
+type PodiumSlot = Ranking | { id: string; placeholder: true };
 
 function formatAP(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -75,7 +76,7 @@ export function LeaderboardPanel() {
     return () => clearInterval(interval);
   }, []);
 
-  const top3 = rankings.slice(0, 3);
+  const top3: PodiumSlot[] = Array.from({ length: 3 }, (_, i) => rankings[i] ?? { id: `empty-${i}`, placeholder: true });
   const rest = rankings.slice(3);
 
   return (
@@ -93,42 +94,53 @@ export function LeaderboardPanel() {
           <p className="text-sm text-muted">Loading...</p>
         ) : loadError ? (
           <p className="text-sm text-red-light">{loadError}</p>
-        ) : top3.length === 0 ? (
-          <p className="text-sm text-muted">No issued business yet.</p>
         ) : (
           <>
             <div className="flex flex-col items-stretch gap-4 md:flex-row md:items-end">
-              {top3.map((agent, i) => (
-                <motion.div
-                  key={agent.id}
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.45, delay: i === 0 ? 0.15 : i * 0.1, ease: "easeOut" }}
-                  className={cn(
-                    "relative flex flex-1 flex-col items-center gap-2 overflow-hidden rounded-2xl border-[1.5px] p-6 text-center",
-                    PODIUM_STYLES[i],
-                  )}
-                >
-                  {i === 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.5, rotate: -12 }}
-                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                      transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 15 }}
-                      className="absolute -top-1 left-1/2 -translate-x-1/2"
-                    >
-                      <Crown className="h-6 w-6 fill-copper text-copper" />
-                    </motion.div>
-                  )}
-                  <span className="font-scoreboard mt-3 text-2xl font-bold text-copper">#{i + 1}</span>
-                  <Avatar url={agent.profileImageUrl} name={agent.name} size={i === 0 ? 76 : 56} />
-                  <span className="text-sm font-semibold text-white">{agent.name}</span>
-                  <AnimatedAP
-                    value={agent.issuedAP}
-                    className="font-scoreboard text-2xl font-bold text-copper drop-shadow-[0_0_18px_rgba(200,121,65,0.3)]"
-                  />
-                  <span className="text-xs text-muted">{agent.issuedCount} issued</span>
-                </motion.div>
-              ))}
+              {top3.map((agent, i) => {
+                const isPlaceholder = "placeholder" in agent;
+                return (
+                  <motion.div
+                    key={agent.id}
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45, delay: i === 0 ? 0.15 : i * 0.1, ease: "easeOut" }}
+                    className={cn(
+                      "relative flex flex-1 flex-col items-center gap-2 overflow-hidden rounded-2xl border-[1.5px] p-6 text-center",
+                      PODIUM_STYLES[i],
+                      isPlaceholder && "opacity-40",
+                    )}
+                  >
+                    {i === 0 && !isPlaceholder && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.5, rotate: -12 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 15 }}
+                        className="absolute -top-1 left-1/2 -translate-x-1/2"
+                      >
+                        <Crown className="h-6 w-6 fill-copper text-copper" />
+                      </motion.div>
+                    )}
+                    <span className="font-scoreboard mt-3 text-2xl font-bold text-copper">#{i + 1}</span>
+                    {isPlaceholder ? (
+                      <div
+                        style={{ width: i === 0 ? 76 : 56, height: i === 0 ? 76 : 56 }}
+                        className="flex items-center justify-center rounded-full border-2 border-dashed border-copper-dim/50 bg-surface2 text-muted"
+                      >
+                        —
+                      </div>
+                    ) : (
+                      <Avatar url={agent.profileImageUrl} name={agent.name} size={i === 0 ? 76 : 56} />
+                    )}
+                    <span className="text-sm font-semibold text-white">{isPlaceholder ? "Open Slot" : agent.name}</span>
+                    <AnimatedAP
+                      value={isPlaceholder ? 0 : agent.issuedAP}
+                      className="font-scoreboard text-2xl font-bold text-copper drop-shadow-[0_0_18px_rgba(200,121,65,0.3)]"
+                    />
+                    <span className="text-xs text-muted">{isPlaceholder ? "—" : `${agent.issuedCount} issued`}</span>
+                  </motion.div>
+                );
+              })}
             </div>
 
             {rest.length > 0 && (
