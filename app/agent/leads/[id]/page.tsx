@@ -20,7 +20,10 @@ export default async function AgentLeadDetailPage({
 
   const lead = await db.lead.findFirst({
     where: { id, assignedAgentId: agentId },
-    include: { notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } } },
+    include: {
+      notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
+      contactLogEntries: { orderBy: { createdAt: "desc" }, include: { agent: { select: { name: true } } } },
+    },
   });
 
   if (!lead) {
@@ -48,6 +51,7 @@ export default async function AgentLeadDetailPage({
         ...lead,
         dateOfBirth: lead.dateOfBirth.toISOString(),
         notes: lead.notes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString() })),
+        contactLogEntries: lead.contactLogEntries.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
       }}
       navigation={{
         prevId,

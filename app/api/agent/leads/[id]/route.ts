@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
-import { computeVaultAwareStatusUpdate, agentHasVaultAccess } from "@/lib/vault";
+import { computeVaultAwareStatusUpdate, agentHasVaultAccess, shouldLogContact } from "@/lib/vault";
 import { Prisma } from "@prisma/client";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +17,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const lead = await db.lead.findFirst({
     where: { id, OR: or },
-    include: { notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } } },
+    include: {
+      notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
+      contactLogEntries: { orderBy: { createdAt: "desc" }, include: { agent: { select: { name: true } } } },
+    },
   });
 
   if (!lead) {
@@ -67,7 +70,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "This lead was just claimed by another agent" }, { status: 409 });
   }
 
-  const updated = await db.lead.findUniqueOrThrow({ where: { id } });
+  if (shouldLogContact(status)) {
+    await db.contactLogEntry.create({ data: { leadId: id, agentId, status } });
+  }
+
+  const updated = await db.lead.findUniqueOrThrow({
+    where: { id },
+    include: {
+      notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
+      contactLogEntries: { orderBy: { createdAt: "desc" }, include: { agent: { select: { name: true } } } },
+    },
+  });
 
   return NextResponse.json({ lead: updated });
 }

@@ -24,6 +24,13 @@ const STATUS_OPTIONS: LeadStatus[] = [
 
 type Note = { id: string; body: string; createdAt: string; author: { name: string } | null };
 
+type ContactLogEntry = {
+  id: string;
+  status: LeadStatus;
+  createdAt: string;
+  agent: { name: string } | null;
+};
+
 type Lead = {
   id: string;
   firstName: string;
@@ -36,6 +43,7 @@ type Lead = {
   isArchived: boolean;
   isVaulted: boolean;
   notes: Note[];
+  contactLogEntries: ContactLogEntry[];
 };
 
 type Navigation = {
@@ -99,7 +107,13 @@ export function LeadDetailPanel({
       setError(data.error ?? "Failed to update status");
       return;
     }
-    setLead((prev) => ({ ...prev, status: data.lead.status, isArchived: data.lead.isArchived, isVaulted: data.lead.isVaulted }));
+    setLead((prev) => ({
+      ...prev,
+      status: data.lead.status,
+      isArchived: data.lead.isArchived,
+      isVaulted: data.lead.isVaulted,
+      contactLogEntries: data.lead.contactLogEntries,
+    }));
     router.refresh();
   }
 
@@ -158,8 +172,10 @@ export function LeadDetailPanel({
 
         {lead.isVaulted && (
           <Callout variant="gold" className="mb-4">
-            This is a shared Vault lead — any agent can call it. Marking it Appointment Booked, Not
-            Interested, or Sold will claim it for you and remove it from the shared pool.
+            This is a shared Vault lead — any agent can call it. Marking it Appointment Booked or Sold
+            claims it for you and removes it from the shared pool. Marking it Contacted, No Answer, or Not
+            Interested keeps it shared, but logs your attempt below so other agents can see it before
+            calling again.
           </Callout>
         )}
 
@@ -189,6 +205,30 @@ export function LeadDetailPanel({
           </div>
         )}
         {error && <p className="mt-3 text-sm text-red-light">{error}</p>}
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Contact Log</CardTitle>
+        </CardHeader>
+        <p className="mb-3 text-sm text-muted">
+          A record of every time this lead was marked Contacted, No Answer, or Not Interested — so you can
+          see who&apos;s already reached out before calling.
+        </p>
+        <div className="space-y-2">
+          {lead.contactLogEntries.length === 0 && <p className="text-sm text-muted">No contact attempts logged yet.</p>}
+          {lead.contactLogEntries.map((entry) => (
+            <div
+              key={entry.id}
+              className="flex items-center justify-between rounded-lg border border-border bg-surface2 px-3 py-2 text-sm"
+            >
+              <span className="font-semibold text-white">{LEAD_STATUS_LABELS[entry.status]}</span>
+              <span className="text-xs text-muted">
+                {entry.agent?.name ?? "Former Agent"} &middot; {format(new Date(entry.createdAt), "MMM d, yyyy h:mm a")}
+              </span>
+            </div>
+          ))}
+        </div>
       </Card>
 
       <Card>

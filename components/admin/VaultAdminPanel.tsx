@@ -101,7 +101,7 @@ export function VaultAdminPanel() {
 
   async function resetSelected() {
     if (selected.size === 0) return;
-    if (!window.confirm(`Send ${selected.size} selected lead(s) back into the vault as New?`)) return;
+    if (!window.confirm(`Reset ${selected.size} selected lead(s) to New?`)) return;
     setLoading(true);
     const res = await fetch("/api/admin/leads/vault-reset", {
       method: "POST",
@@ -110,7 +110,7 @@ export function VaultAdminPanel() {
     });
     const data = await res.json();
     setLoading(false);
-    setMessage(res.ok ? `Reset ${data.reset} lead(s) back into the vault.` : (data.error ?? "Reset failed"));
+    setMessage(res.ok ? `Reset ${data.reset} lead(s) to New.` : (data.error ?? "Reset failed"));
     if (res.ok) refreshAll();
   }
 
@@ -131,7 +131,7 @@ export function VaultAdminPanel() {
 
   async function resetAll() {
     if (total === 0) return;
-    if (!window.confirm(`Send ALL ${total.toLocaleString()} Not Interested vault lead(s) back into the vault as New?`)) return;
+    if (!window.confirm(`Reset ALL ${total.toLocaleString()} Not Interested vault lead(s) to New?`)) return;
     setLoading(true);
     const res = await fetch("/api/admin/leads/vault-reset", {
       method: "POST",
@@ -140,7 +140,7 @@ export function VaultAdminPanel() {
     });
     const data = await res.json();
     setLoading(false);
-    setMessage(res.ok ? `Reset ${data.reset} lead(s) back into the vault.` : (data.error ?? "Reset failed"));
+    setMessage(res.ok ? `Reset ${data.reset} lead(s) to New.` : (data.error ?? "Reset failed"));
     if (res.ok) refreshAll();
   }
 
@@ -152,17 +152,23 @@ export function VaultAdminPanel() {
         </CardHeader>
         <div className="space-y-3 text-sm text-muted">
           <p>
-            The Vault is a shared lead source, open to every agent for their first eight (8) weeks. All agents
-            draw from the same vault and are expected to work it accordingly.
+            The Vault is the only source of new leads — nothing gets auto-assigned anymore. It&apos;s a shared
+            pool, open to every agent for their first 90 days. All agents draw from the same vault and are
+            expected to work it accordingly.
           </p>
           <p>
             <span className="font-bold text-white">Every lead must be dispositioned when dialed.</span> A
             disposition is not optional — it is the price to access this vault.
           </p>
           <ul className="ml-4 list-disc space-y-1">
-            <li>Leads marked <span className="font-semibold text-green-light">Sold</span> or{" "}
-              <span className="font-semibold text-red-light">Not Interested</span> are removed from the vault
-              immediately.</li>
+            <li>Leads marked <span className="font-semibold text-white">Appointment Booked</span> or{" "}
+              <span className="font-semibold text-green-light">Sold</span> are claimed into the agent&apos;s
+              own book and removed from the vault immediately.</li>
+            <li>Leads marked <span className="font-semibold text-teal-light">Contacted</span>,{" "}
+              <span className="font-semibold text-muted">No Answer</span>, or{" "}
+              <span className="font-semibold text-red-light">Not Interested</span>{" "}
+              stay in the shared vault,
+              tagged with a Contact Log entry so agents can see it&apos;s already been worked.</li>
             <li>Leads marked <span className="font-semibold text-white">Appointment Booked</span> that are not
               marked Sold within 14 days are automatically returned to the vault.</li>
           </ul>
@@ -182,7 +188,7 @@ export function VaultAdminPanel() {
           <CardTitle>Not Interested ({total.toLocaleString()})</CardTitle>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={resetAll} disabled={loading || total === 0}>
-              Reset All to Vault
+              Reset All to New
             </Button>
             <Button variant="danger" onClick={deleteAll} disabled={loading || total === 0}>
               Delete All
@@ -190,8 +196,9 @@ export function VaultAdminPanel() {
           </div>
         </CardHeader>
         <p className="mb-3 text-sm text-muted">
-          Leads that came from the vault and were marked Not Interested. These don&apos;t return to the vault
-          automatically — review them here and either delete them for good or send them back in.
+          Vault leads currently tagged Not Interested. They stay in the shared vault and remain callable — use
+          this list to clean up dead records: permanently delete them, or reset a lead back to a fresh New
+          status if it&apos;s worth trying again.
         </p>
 
         {message && <p className="mb-3 text-sm text-teal-light">{message}</p>}

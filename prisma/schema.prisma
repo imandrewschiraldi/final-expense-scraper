@@ -71,6 +71,7 @@ model User {
   downlines         User[]              @relation("ManagerHierarchy")
   assignedLeads     Lead[]              @relation("AssignedLeads")
   notes             LeadNote[]
+  contactLogEntries ContactLogEntry[]
   imports           Import[]
   notifications     Notification[]
   assignmentFlags   AssignmentRunFlag[]
@@ -103,8 +104,9 @@ model Lead {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  notes    LeadNote[]
-  policies Policy[]
+  notes             LeadNote[]
+  contactLogEntries ContactLogEntry[]
+  policies          Policy[]
 
   @@index([state])
   @@index([status])
@@ -129,6 +131,24 @@ model LeadNote {
 
   @@index([leadId])
   @@map("lead_notes")
+}
+
+// Auto-created whenever an agent marks a lead Contacted, No Answer, or Not
+// Interested — a visible, append-only record of who touched a shared vault
+// lead and when, so agents don't spam-call someone another agent already
+// tried. Written regardless of vault state (harmless once a lead is
+// privately claimed, still useful as a history).
+model ContactLogEntry {
+  id        String     @id @default(cuid())
+  leadId    String
+  lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  agentId   String?
+  agent     User?      @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  status    LeadStatus
+  createdAt DateTime   @default(now())
+
+  @@index([leadId, createdAt])
+  @@map("contact_log_entries")
 }
 
 model Import {
