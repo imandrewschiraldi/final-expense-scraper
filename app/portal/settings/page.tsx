@@ -1,10 +1,10 @@
-import { ComingSoon } from "@/components/portal/ComingSoon";
+import { SettingsPanel } from "@/components/portal/SettingsPanel";
 
 export default function SettingsPage() {
   return (
-    <ComingSoon
-      title="Settings"
-      description="Account settings — password, notification preferences, and more. For profile info and licensed states, see My Profile at the bottom of the sidebar."
-    />
+    <div>
+      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Settings</h1>
+      <SettingsPanel />
+    </div>
   );
 }

@@ -1,33 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/cn";
+import { notificationMessage, type NotificationRecord } from "@/lib/notifications";
 
-type Notification = {
-  id: string;
-  type: string;
-  payload: { count?: number; category?: string; targetValue?: number };
-  read: boolean;
-  createdAt: string;
-};
-
-const GOAL_CATEGORY_LABELS: Record<string, string> = {
-  MONTHLY_AP: "Monthly Annual Premium",
-  ANNUAL_AP: "Annual Premium",
-  ISSUED_PREMIUM: "Issued Premium",
-  POLICY_COUNT: "Policy Count",
-  INCOME: "Income",
-  RECRUITING: "Recruiting",
-};
-
-function notificationMessage(n: Notification) {
-  if (n.type === "GOAL_ACHIEVED") {
-    const label = GOAL_CATEGORY_LABELS[n.payload?.category ?? ""] ?? "Goal";
-    return `${label} goal reached`;
-  }
-  return `${n.payload?.count ?? ""} new lead${n.payload?.count === 1 ? "" : "s"} assigned to you`;
-}
+type Notification = NotificationRecord;
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -78,7 +57,7 @@ export function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 z-10 mt-2 w-72 rounded-[10px] border border-border bg-surface p-2 shadow-lg">
+        <div className="absolute right-0 bottom-full z-10 mb-2 max-h-96 w-72 overflow-y-auto rounded-[10px] border border-border bg-surface p-2 shadow-lg">
           {notifications.length === 0 && <p className="p-2 text-sm text-muted">No notifications yet.</p>}
           {notifications.map((n) => (
             <div
@@ -89,6 +68,12 @@ export function NotificationBell() {
               <p className="text-xs text-muted">{formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}</p>
             </div>
           ))}
+          <Link
+            href="/portal/notifications"
+            className="font-condensed mt-1 block rounded-lg p-2 text-center text-xs font-bold tracking-[0.05em] text-copper uppercase hover:bg-copper/10"
+          >
+            View All
+          </Link>
         </div>
       )}
     </div>
