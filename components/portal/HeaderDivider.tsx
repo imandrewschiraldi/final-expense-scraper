@@ -16,7 +16,7 @@ export function HeaderDivider() {
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 z-10 -mx-6 h-0.5 bg-copper lg:-mx-10"
+      className="pointer-events-none absolute inset-x-0 z-10 -mx-4 h-0.5 bg-copper sm:-mx-6 lg:-mx-10"
       style={{ top: HEADER_HEIGHT }}
     />
   );

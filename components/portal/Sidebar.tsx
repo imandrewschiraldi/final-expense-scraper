@@ -21,6 +21,8 @@ import {
   UsersRound,
   ChevronsLeft,
   ChevronsRight,
+  Menu,
+  X,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -33,7 +35,9 @@ const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
 // Matches the embedded Scripts tool's own header recipe (46px logo + 14px
 // top/bottom padding + 2px copper border), now that Scripts/Commission
 // Calculator embed with their own header hidden — this is a single height
-// used everywhere, not something matched per-route.
+// used everywhere, not something matched per-route. Also doubles as the
+// mobile top bar's height, so HeaderDivider lines up without needing a
+// separate mobile-specific value.
 export const HEADER_HEIGHT = 74;
 
 type NavItem = { href: string; label: string; icon: LucideIcon; roles: Role[]; requiresVault?: boolean };
@@ -74,6 +78,96 @@ function isItemActive(pathname: string, href: string) {
 
 type Profile = { name: string; profileImageUrl: string | null; compLevel: string | null; hasVaultAccess?: boolean };
 
+function NavLinks({
+  items,
+  pathname,
+  collapsed,
+  onNavigate,
+}: {
+  items: NavItem[];
+  pathname: string;
+  collapsed: boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <>
+      {items.map((item) => {
+        const active = isItemActive(pathname, item.href);
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            title={collapsed ? item.label : undefined}
+            onClick={onNavigate}
+            className={cn(
+              "font-condensed relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-all duration-150",
+              collapsed && "justify-center px-0",
+              active
+                ? "bg-copper/[0.12] text-copper shadow-[inset_0_0_0_1px_rgba(200,121,65,0.25)]"
+                : "text-muted hover:bg-white/[0.03] hover:text-foreground",
+            )}
+          >
+            {active && <span className="absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r bg-copper" />}
+            <Icon className="h-4.5 w-4.5 shrink-0" />
+            {!collapsed && <span className="truncate">{item.label}</span>}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
+function SidebarFooter({
+  collapsed,
+  profile,
+  name,
+  role,
+  onNavigate,
+}: {
+  collapsed: boolean;
+  profile: Profile | null;
+  name: string;
+  role: Role;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="shrink-0 border-t border-border px-2.5 py-3">
+      {!collapsed && (
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <NotificationBell />
+          <SignOutButton iconOnly />
+        </div>
+      )}
+
+      <Link
+        href="/portal/profile"
+        onClick={onNavigate}
+        className={cn(
+          "flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-white/[0.04]",
+          collapsed && "justify-center px-0",
+        )}
+      >
+        {profile?.profileImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.profileImageUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface2 text-sm font-bold text-muted">
+            {(profile?.name ?? name).charAt(0).toUpperCase()}
+          </div>
+        )}
+        {!collapsed && (
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">
+              {role === "ADMIN" ? "Admin" : (profile?.name ?? name)}
+            </p>
+          </div>
+        )}
+      </Link>
+    </div>
+  );
+}
+
 export function Sidebar({ role, name }: { role: Role; name: string }) {
   const pathname = usePathname();
   // Starts false (matching SSR, which has no access to localStorage) and
@@ -81,6 +175,7 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
   // unavoidable here since the real value can only be read client-side.
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -90,6 +185,13 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data?.profile && setProfile(data.profile));
   }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
 
   function toggleCollapsed() {
     setCollapsed((prev) => {
@@ -102,110 +204,120 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
   const items = NAV_ITEMS.filter((item) => item.roles.includes(role) && (!item.requiresVault || profile?.hasVaultAccess));
 
   return (
-    <aside
-      className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out",
-        collapsed ? "w-[68px]" : "w-60",
-      )}
-    >
+    <>
+      {/* Mobile top bar — replaces the full sidebar below the lg breakpoint. */}
       <div
-        className={cn("flex shrink-0 items-center px-3", collapsed ? "justify-center" : "justify-between")}
+        className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b border-white/[0.06] bg-black px-4 lg:hidden"
         style={{ height: HEADER_HEIGHT }}
       >
-        <Link href="/portal/dashboard" className="block shrink-0">
-          {collapsed ? (
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          className="text-muted transition-colors hover:text-foreground"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+        <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-8 w-auto" priority />
+        <div className="w-6" />
+      </div>
+
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile drawer — an overlay, not a layout column, so it never
+          competes with page content for width. */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col bg-gradient-to-b from-[#0a0a0a] to-black transition-transform duration-300 ease-out lg:hidden",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <div className="flex shrink-0 items-center justify-between px-3" style={{ height: HEADER_HEIGHT }}>
+          <Link href="/portal/dashboard" className="block shrink-0" onClick={() => setMobileOpen(false)}>
             <Image
-              src="/tier1-mark-collapsed.png"
+              src="/tier1-logo.jpg"
               alt="Tier 1 Financial"
-              width={950}
-              height={1112}
-              className="h-auto w-8"
+              width={1560}
+              height={558}
+              className="h-8 w-auto"
               priority
             />
-          ) : (
-            <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-10 w-auto" priority />
+          </Link>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
+            className="text-muted transition-colors hover:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
+          <NavLinks items={items} pathname={pathname} collapsed={false} onNavigate={() => setMobileOpen(false)} />
+        </nav>
+        <SidebarFooter collapsed={false} profile={profile} name={name} role={role} onNavigate={() => setMobileOpen(false)} />
+      </aside>
+
+      {/* Desktop sidebar — a real layout column, collapsible via the chevron. */}
+      <aside
+        className={cn(
+          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out lg:flex",
+          collapsed ? "w-[68px]" : "w-60",
+        )}
+      >
+        <div
+          className={cn("flex shrink-0 items-center px-3", collapsed ? "justify-center" : "justify-between")}
+          style={{ height: HEADER_HEIGHT }}
+        >
+          <Link href="/portal/dashboard" className="block shrink-0">
+            {collapsed ? (
+              <Image
+                src="/tier1-mark-collapsed.png"
+                alt="Tier 1 Financial"
+                width={950}
+                height={1112}
+                className="h-auto w-8"
+                priority
+              />
+            ) : (
+              <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-10 w-auto" priority />
+            )}
+          </Link>
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label="Collapse sidebar"
+              className="text-muted transition-colors hover:text-foreground"
+            >
+              <ChevronsLeft className="h-4.5 w-4.5" />
+            </button>
           )}
-        </Link>
-        {!collapsed && (
+        </div>
+
+        {collapsed && (
           <button
             type="button"
             onClick={toggleCollapsed}
-            aria-label="Collapse sidebar"
-            className="text-muted transition-colors hover:text-foreground"
+            aria-label="Expand sidebar"
+            className="flex shrink-0 items-center justify-center border-b border-border py-2 text-muted transition-colors hover:text-foreground"
           >
-            <ChevronsLeft className="h-4.5 w-4.5" />
+            <ChevronsRight className="h-4.5 w-4.5" />
           </button>
         )}
-      </div>
 
-      {collapsed && (
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          aria-label="Expand sidebar"
-          className="flex shrink-0 items-center justify-center border-b border-border py-2 text-muted transition-colors hover:text-foreground"
-        >
-          <ChevronsRight className="h-4.5 w-4.5" />
-        </button>
-      )}
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
+          <NavLinks items={items} pathname={pathname} collapsed={collapsed} />
+        </nav>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
-        {items.map((item) => {
-          const active = isItemActive(pathname, item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={collapsed ? item.label : undefined}
-              className={cn(
-                "font-condensed relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-all duration-150",
-                collapsed && "justify-center px-0",
-                active
-                  ? "bg-copper/[0.12] text-copper shadow-[inset_0_0_0_1px_rgba(200,121,65,0.25)]"
-                  : "text-muted hover:bg-white/[0.03] hover:text-foreground",
-              )}
-            >
-              {active && <span className="absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r bg-copper" />}
-              <Icon className="h-4.5 w-4.5 shrink-0" />
-              {!collapsed && <span className="truncate">{item.label}</span>}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="shrink-0 border-t border-border px-2.5 py-3">
-        {!collapsed && (
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <NotificationBell />
-            <SignOutButton iconOnly />
-          </div>
-        )}
-
-        <Link
-          href="/portal/profile"
-          className={cn(
-            "flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-white/[0.04]",
-            collapsed && "justify-center px-0",
-          )}
-        >
-          {profile?.profileImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.profileImageUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
-          ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface2 text-sm font-bold text-muted">
-              {(profile?.name ?? name).charAt(0).toUpperCase()}
-            </div>
-          )}
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">
-                {role === "ADMIN" ? "Admin" : (profile?.name ?? name)}
-              </p>
-            </div>
-          )}
-        </Link>
-      </div>
-    </aside>
+        <SidebarFooter collapsed={collapsed} profile={profile} name={name} role={role} />
+      </aside>
+    </>
   );
 }
