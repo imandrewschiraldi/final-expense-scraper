@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { ComingSoon } from "@/components/portal/ComingSoon";
+import { HierarchyAdminPanel } from "@/components/portal/HierarchyAdminPanel";
+import { HierarchyManagerPanel } from "@/components/portal/HierarchyManagerPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +12,9 @@ export default async function HierarchyPage() {
   }
 
   return (
-    <ComingSoon
-      title="Hierarchy"
-      description="Manage reporting relationships across the organization — admins assign managers and agents, managers can request changes for admin approval, and every manager sees their assigned downline's production."
-    />
+    <div>
+      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Hierarchy</h1>
+      {session.user.role === "ADMIN" ? <HierarchyAdminPanel /> : <HierarchyManagerPanel />}
+    </div>
   );
 }
