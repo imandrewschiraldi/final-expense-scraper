@@ -199,7 +199,9 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
           )}
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">{profile?.name ?? name}</p>
+              <p className="truncate text-sm font-semibold text-white">
+                {role === "ADMIN" ? "Admin" : (profile?.name ?? name)}
+              </p>
               {profile?.compLevel && <p className="truncate text-xs text-muted">{profile.compLevel} Comp</p>}
             </div>
           )}
