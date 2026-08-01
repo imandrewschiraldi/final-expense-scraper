@@ -1,10 +1,10 @@
-import { ComingSoon } from "@/components/portal/ComingSoon";
+import { NotificationsPanel } from "@/components/portal/NotificationsPanel";
 
 export default function NotificationsPage() {
   return (
-    <ComingSoon
-      title="Notifications"
-      description="A full history of policy, performance, organization, and career notifications. For now, check the bell icon at the bottom of the sidebar."
-    />
+    <div>
+      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Notifications</h1>
+      <NotificationsPanel />
+    </div>
   );
 }
