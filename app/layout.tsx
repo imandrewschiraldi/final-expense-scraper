@@ -25,6 +25,26 @@ const orbitron = Orbitron({
 export const metadata: Metadata = {
   title: "Agent Accelerator",
   description: "Final expense lead management for admins and agents",
+  // Without this, iOS's "Add to Home Screen" only launches standalone for
+  // the exact page that was current when added — navigating anywhere else
+  // (Book of Business, Reports, etc.) drops back into regular Safari with
+  // the address bar. This, together with app/manifest.ts, keeps every route
+  // in the standalone app window.
+  appleWebApp: {
+    capable: true,
+    title: "Agent Accelerator",
+    // "black" (opaque) rather than "black-translucent" — translucent draws
+    // app content underneath the status bar/notch, which would need safe-
+    // area padding added everywhere to avoid the mobile header sitting
+    // under it. Not worth that scope for this fix.
+    statusBarStyle: "black",
+  },
+  other: {
+    // Next only emits the modern, unprefixed mobile-web-app-capable tag.
+    // Older iOS only recognizes this legacy Apple-prefixed one — harmless
+    // to include both.
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
