@@ -26,19 +26,16 @@ function AnimatedAP({ value, className }: { value: number; className?: string })
   return <span className={className}>{formatAP(animated ?? 0)}</span>;
 }
 
-function Avatar({ url, name, size }: { url: string | null; name: string; size: number }) {
+function Avatar({ url, name, sizeClassName }: { url: string | null; name: string; sizeClassName: string }) {
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={url}
-      alt=""
-      style={{ width: size, height: size }}
-      className="rounded-full border-2 border-copper object-cover"
-    />
+    <img src={url} alt="" className={cn("shrink-0 rounded-full border-2 border-copper object-cover", sizeClassName)} />
   ) : (
     <div
-      style={{ width: size, height: size }}
-      className="flex items-center justify-center rounded-full border-2 border-copper-dim bg-surface2 text-xl font-bold text-muted"
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full border-2 border-copper-dim bg-surface2 text-base font-bold text-muted sm:text-xl",
+        sizeClassName,
+      )}
     >
       {name.charAt(0).toUpperCase()}
     </div>
@@ -96,9 +93,10 @@ export function LeaderboardPanel() {
           <p className="text-sm text-red-light">{loadError}</p>
         ) : (
           <>
-            <div className="flex flex-col items-stretch gap-4 md:flex-row md:items-end">
+            <div className="flex flex-row items-end gap-2 sm:gap-4">
               {top3.map((agent, i) => {
                 const isPlaceholder = "placeholder" in agent;
+                const avatarSize = i === 0 ? "h-12 w-12 sm:h-[76px] sm:w-[76px]" : "h-9 w-9 sm:h-14 sm:w-14";
                 return (
                   <motion.div
                     key={agent.id}
@@ -106,7 +104,7 @@ export function LeaderboardPanel() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45, delay: i === 0 ? 0.15 : i * 0.1, ease: "easeOut" }}
                     className={cn(
-                      "relative flex flex-1 flex-col items-center gap-2 overflow-hidden rounded-2xl border-[1.5px] p-6 text-center",
+                      "relative flex min-w-0 flex-1 flex-col items-center gap-1 overflow-hidden rounded-xl border-[1.5px] p-2 text-center sm:gap-2 sm:rounded-2xl sm:p-6",
                       PODIUM_STYLES[i],
                       isPlaceholder && "opacity-40",
                     )}
@@ -118,26 +116,34 @@ export function LeaderboardPanel() {
                         transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 15 }}
                         className="absolute -top-1 left-1/2 -translate-x-1/2"
                       >
-                        <Crown className="h-6 w-6 fill-copper text-copper" />
+                        <Crown className="h-4 w-4 fill-copper text-copper sm:h-6 sm:w-6" />
                       </motion.div>
                     )}
-                    <span className="font-scoreboard mt-3 text-2xl font-bold text-copper">#{i + 1}</span>
+                    <span className="font-scoreboard mt-2 text-sm font-bold text-copper sm:mt-3 sm:text-2xl">
+                      #{i + 1}
+                    </span>
                     {isPlaceholder ? (
                       <div
-                        style={{ width: i === 0 ? 76 : 56, height: i === 0 ? 76 : 56 }}
-                        className="flex items-center justify-center rounded-full border-2 border-dashed border-copper-dim/50 bg-surface2 text-muted"
+                        className={cn(
+                          "flex items-center justify-center rounded-full border-2 border-dashed border-copper-dim/50 bg-surface2 text-muted",
+                          avatarSize,
+                        )}
                       >
                         —
                       </div>
                     ) : (
-                      <Avatar url={agent.profileImageUrl} name={agent.name} size={i === 0 ? 76 : 56} />
+                      <Avatar url={agent.profileImageUrl} name={agent.name} sizeClassName={avatarSize} />
                     )}
-                    <span className="text-sm font-semibold text-white">{isPlaceholder ? "Open Slot" : agent.name}</span>
+                    <span className="w-full truncate px-1 text-xs font-semibold text-white sm:text-sm">
+                      {isPlaceholder ? "Open Slot" : agent.name}
+                    </span>
                     <AnimatedAP
                       value={isPlaceholder ? 0 : agent.issuedAP}
-                      className="font-scoreboard text-2xl font-bold text-copper drop-shadow-[0_0_18px_rgba(200,121,65,0.3)]"
+                      className="font-scoreboard text-sm font-bold text-copper drop-shadow-[0_0_18px_rgba(200,121,65,0.3)] sm:text-2xl"
                     />
-                    <span className="text-xs text-muted">{isPlaceholder ? "—" : `${agent.issuedCount} issued`}</span>
+                    <span className="text-[10px] text-muted sm:text-xs">
+                      {isPlaceholder ? "—" : `${agent.issuedCount} issued`}
+                    </span>
                   </motion.div>
                 );
               })}
@@ -154,7 +160,7 @@ export function LeaderboardPanel() {
                     className="flex items-center gap-4 border-b border-border/60 px-4 py-3 text-sm last:border-b-0 hover:bg-surface2"
                   >
                     <span className="font-scoreboard w-8 shrink-0 text-muted">#{i + 4}</span>
-                    <Avatar url={agent.profileImageUrl} name={agent.name} size={28} />
+                    <Avatar url={agent.profileImageUrl} name={agent.name} sizeClassName="h-7 w-7" />
                     <span className="min-w-0 flex-1 truncate text-white">{agent.name}</span>
                     <AnimatedAP value={agent.issuedAP} className="font-scoreboard shrink-0 text-copper" />
                   </motion.div>
