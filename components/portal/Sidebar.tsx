@@ -21,7 +21,6 @@ import {
   UsersRound,
   ChevronsLeft,
   ChevronsRight,
-  Menu,
   X,
   LucideIcon,
 } from "lucide-react";
@@ -32,12 +31,8 @@ import { NotificationBell } from "@/components/agent/NotificationBell";
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
 const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
-// Matches the embedded Scripts tool's own header recipe (46px logo + 14px
-// top/bottom padding + 2px copper border), now that Scripts/Commission
-// Calculator embed with their own header hidden — this is a single height
-// used everywhere, not something matched per-route. Also doubles as the
-// mobile top bar's height, so HeaderDivider lines up without needing a
-// separate mobile-specific value.
+// Matches PageHeader's height, so the mobile top bar/drawer line up with the
+// desktop sidebar's own logo row at the same height.
 export const HEADER_HEIGHT = 74;
 
 type NavItem = { href: string; label: string; icon: LucideIcon; roles: Role[]; requiresVault?: boolean };
@@ -168,14 +163,23 @@ function SidebarFooter({
   );
 }
 
-export function Sidebar({ role, name }: { role: Role; name: string }) {
+export function Sidebar({
+  role,
+  name,
+  mobileOpen,
+  onCloseMobile,
+}: {
+  role: Role;
+  name: string;
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
+}) {
   const pathname = usePathname();
   // Starts false (matching SSR, which has no access to localStorage) and
   // syncs from persisted state right after mount — an effect+setState is
   // unavoidable here since the real value can only be read client-side.
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -205,53 +209,27 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
 
   return (
     <>
-      {/* Mobile top bar — replaces the full sidebar below the lg breakpoint. */}
-      <div
-        className="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b border-white/[0.06] bg-black px-4 lg:hidden"
-        style={{ height: HEADER_HEIGHT }}
-      >
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open menu"
-          className="text-muted transition-colors hover:text-foreground"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
-        <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-8 w-auto" priority />
-        <div className="w-6" />
-      </div>
-
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/70 lg:hidden"
-          onClick={() => setMobileOpen(false)}
+          onClick={onCloseMobile}
           aria-hidden="true"
         />
       )}
 
       {/* Mobile drawer — an overlay, not a layout column, so it never
-          competes with page content for width. */}
+          competes with page content for width. No logo in the drawer
+          itself; it lives in PageHeader's mobile-only top bar instead. */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col bg-gradient-to-b from-[#0a0a0a] to-black transition-transform duration-300 ease-out lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex shrink-0 items-center justify-between px-3" style={{ height: HEADER_HEIGHT }}>
-          <Link href="/portal/dashboard" className="block shrink-0" onClick={() => setMobileOpen(false)}>
-            <Image
-              src="/tier1-logo.jpg"
-              alt="Tier 1 Financial"
-              width={1560}
-              height={558}
-              className="h-8 w-auto"
-              priority
-            />
-          </Link>
+        <div className="flex shrink-0 items-center justify-end px-3" style={{ height: HEADER_HEIGHT }}>
           <button
             type="button"
-            onClick={() => setMobileOpen(false)}
+            onClick={onCloseMobile}
             aria-label="Close menu"
             className="text-muted transition-colors hover:text-foreground"
           >
@@ -259,9 +237,9 @@ export function Sidebar({ role, name }: { role: Role; name: string }) {
           </button>
         </div>
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
-          <NavLinks items={items} pathname={pathname} collapsed={false} onNavigate={() => setMobileOpen(false)} />
+          <NavLinks items={items} pathname={pathname} collapsed={false} onNavigate={onCloseMobile} />
         </nav>
-        <SidebarFooter collapsed={false} profile={profile} name={name} role={role} onNavigate={() => setMobileOpen(false)} />
+        <SidebarFooter collapsed={false} profile={profile} name={name} role={role} onNavigate={onCloseMobile} />
       </aside>
 
       {/* Desktop sidebar — a real layout column, collapsible via the chevron. */}
