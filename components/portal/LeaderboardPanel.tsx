@@ -16,9 +16,9 @@ function formatAP(value: number) {
 }
 
 const PODIUM_STYLES = [
-  "border-copper bg-gradient-to-b from-copper/15 to-surface order-2 md:-translate-y-4 shadow-[0_0_40px_rgba(200,121,65,0.18)]",
-  "border-copper-dim bg-gradient-to-b from-surface2 to-surface order-1",
-  "border-copper-dim bg-gradient-to-b from-surface2 to-surface order-3",
+  "border-copper bg-gradient-to-b from-copper/15 to-surface md:order-2 md:-translate-y-4 shadow-[0_0_40px_rgba(200,121,65,0.18)]",
+  "border-copper-dim bg-gradient-to-b from-surface2 to-surface md:order-1",
+  "border-copper-dim bg-gradient-to-b from-surface2 to-surface md:order-3",
 ];
 
 function AnimatedAP({ value, className }: { value: number; className?: string }) {
