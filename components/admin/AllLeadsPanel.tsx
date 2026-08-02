@@ -34,6 +34,7 @@ export function AllLeadsPanel() {
   const [leadTypeFilter, setLeadTypeFilter] = useState("");
   const [archivedFilter, setArchivedFilter] = useState<"any" | "true" | "false">("any");
   const [vaultFilter, setVaultFilter] = useState<"any" | "true" | "false">("any");
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [moving, setMoving] = useState(false);
 
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -110,14 +111,23 @@ export function AllLeadsPanel() {
     loadStateCounts();
   }, [loadStateCounts]);
 
-  const loadLeads = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: String(page), archived: archivedFilter });
+  const buildFilterParams = useCallback(
+    (extra?: Record<string, string>) => {
+      const params = new URLSearchParams({ archived: archivedFilter, ...extra });
       if (stateFilter) params.set("state", stateFilter);
       if (statusFilter) params.set("status", statusFilter);
       if (leadTypeFilter) params.set("leadType", leadTypeFilter);
       if (vaultFilter !== "any") params.set("isVaulted", vaultFilter);
+      if (unassignedOnly) params.set("unassignedOnly", "true");
+      return params;
+    },
+    [stateFilter, statusFilter, leadTypeFilter, archivedFilter, vaultFilter, unassignedOnly],
+  );
+
+  const loadLeads = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = buildFilterParams({ page: String(page) });
       const res = await fetch(`/api/admin/leads?${params.toString()}`);
       const data = await res.json();
       setLeads(data.leads);
@@ -126,7 +136,7 @@ export function AllLeadsPanel() {
     } finally {
       setLoading(false);
     }
-  }, [page, stateFilter, statusFilter, leadTypeFilter, archivedFilter, vaultFilter]);
+  }, [page, buildFilterParams]);
 
   useEffect(() => {
     loadLeads();
@@ -144,11 +154,7 @@ export function AllLeadsPanel() {
   async function selectAllMatchingFilters() {
     setSelectingAll(true);
     try {
-      const params = new URLSearchParams({ archived: archivedFilter, idsOnly: "true" });
-      if (stateFilter) params.set("state", stateFilter);
-      if (statusFilter) params.set("status", statusFilter);
-      if (leadTypeFilter) params.set("leadType", leadTypeFilter);
-      if (vaultFilter !== "any") params.set("isVaulted", vaultFilter);
+      const params = buildFilterParams({ idsOnly: "true" });
       const res = await fetch(`/api/admin/leads?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
@@ -428,6 +434,17 @@ export function AllLeadsPanel() {
               <option value="false">Not in Vault</option>
             </Select>
           </div>
+          <label className="flex items-center gap-2 pb-2 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={unassignedOnly}
+              onChange={(e) => {
+                setUnassignedOnly(e.target.checked);
+                setPage(1);
+              }}
+            />
+            Unassigned Only
+          </label>
         </div>
       </Card>
 
@@ -435,6 +452,11 @@ export function AllLeadsPanel() {
         <CardHeader>
           <CardTitle>{total.toLocaleString()} Lead(s)</CardTitle>
           <div className="flex flex-wrap gap-2">
+            <a href={`/api/admin/leads/export?${buildFilterParams().toString()}`}>
+              <Button variant="secondary" disabled={total === 0}>
+                Export CSV ({total.toLocaleString()})
+              </Button>
+            </a>
             <Button variant="ghost" onClick={selectAllMatchingFilters} disabled={selectingAll || total === 0}>
               {selectingAll ? "Selecting..." : `Select All ${total.toLocaleString()}`}
             </Button>
@@ -452,9 +474,9 @@ export function AllLeadsPanel() {
 
         {message && <p className="mb-3 text-sm text-teal-light">{message}</p>}
         <p className="mb-3 text-xs text-muted">
-          &quot;Select All&quot; selects every lead matching your current filters, not just the 50 shown on this
-          page. &quot;Move Selected to Vault&quot; only affects unassigned leads — any selected leads already
-          assigned to an agent are skipped.
+          &quot;Export CSV&quot; and &quot;Select All&quot; both use every lead matching your current filters, not
+          just the 50 shown on this page. &quot;Move Selected to Vault&quot; only affects unassigned leads — any
+          selected leads already assigned to an agent are skipped.
         </p>
 
         <div className="overflow-x-auto">
