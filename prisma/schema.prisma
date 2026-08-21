@@ -364,6 +364,9 @@ model ChatMessage {
   /// Denormalised so a deleted agent's history still reads sensibly.
   authorName String
   body       String
+  /// A message may be image-only (body empty) or text-only (this null) —
+  /// never both empty.
+  imageUrl   String?
   editedAt   DateTime?
   deletedAt  DateTime?
   pinnedAt   DateTime?
