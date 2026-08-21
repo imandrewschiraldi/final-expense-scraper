@@ -31,6 +31,14 @@ type Channel = {
   unread: boolean;
 };
 
+type ModalState =
+  | { kind: "category" }
+  | { kind: "channel"; categoryId: string | null }
+  | { kind: "renameChannel"; channel: Channel }
+  | { kind: "archiveChannel"; channel: Channel }
+  | { kind: "deleteMessage"; id: string }
+  | null;
+
 type Reaction = { emoji: string; count: number; mine: boolean };
 
 type Message = {
@@ -67,6 +75,15 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Admin actions below use an in-app modal rather than window.prompt/confirm:
+  // this app is used as an installed PWA, and native dialogs are unreliable
+  // (often silent no-ops) in a standalone display, not just a plain browser tab.
+  const [modal, setModal] = useState<ModalState>(null);
+  const [modalInput, setModalInput] = useState("");
+  const [modalRole, setModalRole] = useState<"AGENT" | "MANAGER">("AGENT");
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [modalBusy, setModalBusy] = useState(false);
 
   const scroller = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
@@ -224,63 +241,140 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     if (activeId) loadPins(activeId);
   }
 
-  async function remove(id: string) {
-    if (!window.confirm("Delete this message for everyone?")) return;
-    const res = await fetch(`/api/portal/chat/messages?id=${id}`, { method: "DELETE" });
-    if (!res.ok) return;
-    setMessages((prev) => prev.filter((m) => m.id !== id));
-    setPins((prev) => prev.filter((m) => m.id !== id));
+  function closeModal() {
+    setModal(null);
+    setModalInput("");
+    setModalRole("AGENT");
+    setModalError(null);
+    setModalBusy(false);
   }
 
-  async function addCategory() {
-    const name = window.prompt("Category name");
-    if (!name?.trim()) return;
-    await fetch("/api/portal/chat/categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    loadRail();
+  function openDeleteMessageModal(id: string) {
+    setModal({ kind: "deleteMessage", id });
+    setModalError(null);
   }
 
-  async function addChannel(categoryId: string | null) {
-    const name = window.prompt("Channel name");
-    if (!name?.trim()) return;
-    const minRole = window.confirm("Managers and admins only?\n\nOK = restricted, Cancel = everyone")
-      ? "MANAGER"
-      : "AGENT";
+  function openCategoryModal() {
+    setModal({ kind: "category" });
+    setModalInput("");
+    setModalError(null);
+  }
 
-    const res = await fetch("/api/portal/chat/channels", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, categoryId, minRole }),
-    });
-    if (res.ok) {
+  function openChannelModal(categoryId: string | null) {
+    setModal({ kind: "channel", categoryId });
+    setModalInput("");
+    setModalRole("AGENT");
+    setModalError(null);
+  }
+
+  function openRenameModal(channel: Channel) {
+    setModal({ kind: "renameChannel", channel });
+    setModalInput(channel.name);
+    setModalError(null);
+  }
+
+  function openArchiveModal(channel: Channel) {
+    setModal({ kind: "archiveChannel", channel });
+    setModalError(null);
+  }
+
+  async function submitModal() {
+    if (!modal) return;
+    setModalBusy(true);
+    setModalError(null);
+
+    if (modal.kind === "deleteMessage") {
+      const res = await fetch(`/api/portal/chat/messages?id=${modal.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setModalError("Could not delete that message.");
+        setModalBusy(false);
+        return;
+      }
+      setMessages((prev) => prev.filter((m) => m.id !== modal.id));
+      setPins((prev) => prev.filter((m) => m.id !== modal.id));
+      closeModal();
+      return;
+    }
+
+    if (modal.kind === "category") {
+      const name = modalInput.trim();
+      if (!name) {
+        setModalBusy(false);
+        return;
+      }
+      const res = await fetch("/api/portal/chat/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setModalError(data.error ?? "Could not create that category.");
+        setModalBusy(false);
+        return;
+      }
+      await loadRail();
+      closeModal();
+      return;
+    }
+
+    if (modal.kind === "channel") {
+      const name = modalInput.trim();
+      if (!name) {
+        setModalBusy(false);
+        return;
+      }
+      const res = await fetch("/api/portal/chat/channels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, categoryId: modal.categoryId, minRole: modalRole }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setModalError(data.error ?? "Could not create that channel.");
+        setModalBusy(false);
+        return;
+      }
       const { channel } = (await res.json()) as { channel: Channel };
       await loadRail();
       setActiveId(channel.id);
-    } else {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      window.alert(data.error ?? "Could not create that channel.");
+      closeModal();
+      return;
     }
-  }
 
-  async function renameChannel(channel: Channel) {
-    const name = window.prompt("Channel name", channel.name);
-    if (!name?.trim() || name === channel.name) return;
-    await fetch(`/api/portal/chat/channels/${channel.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    loadRail();
-  }
+    if (modal.kind === "renameChannel") {
+      const name = modalInput.trim();
+      if (!name || name === modal.channel.name) {
+        closeModal();
+        return;
+      }
+      const res = await fetch(`/api/portal/chat/channels/${modal.channel.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setModalError(data.error ?? "Could not rename that channel.");
+        setModalBusy(false);
+        return;
+      }
+      await loadRail();
+      closeModal();
+      return;
+    }
 
-  async function archiveChannel(channel: Channel) {
-    if (!window.confirm(`Remove #${channel.name} from the rail?\n\nIts messages are kept.`)) return;
-    await fetch(`/api/portal/chat/channels/${channel.id}`, { method: "DELETE" });
-    setActiveId(null);
-    loadRail();
+    if (modal.kind === "archiveChannel") {
+      const res = await fetch(`/api/portal/chat/channels/${modal.channel.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setModalError("Could not remove that channel.");
+        setModalBusy(false);
+        return;
+      }
+      setActiveId(null);
+      await loadRail();
+      closeModal();
+    }
   }
 
   const active = channels.find((c) => c.id === activeId) ?? null;
@@ -325,7 +419,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
           <div className="absolute top-1/2 right-2 hidden -translate-y-1/2 gap-1 group-hover/chan:flex">
             <button
               type="button"
-              onClick={() => renameChannel(channel)}
+              onClick={() => openRenameModal(channel)}
               aria-label={`Rename ${channel.name}`}
               className={cn("text-xs", channel.id === activeId ? "text-black/70" : "text-muted hover:text-foreground")}
             >
@@ -333,7 +427,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             </button>
             <button
               type="button"
-              onClick={() => archiveChannel(channel)}
+              onClick={() => openArchiveModal(channel)}
               aria-label={`Remove ${channel.name}`}
               className={cn(channel.id === activeId ? "text-black/70" : "text-muted hover:text-red-light")}
             >
@@ -425,7 +519,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             {(message.authorId === me || canManage) && (
               <button
                 type="button"
-                onClick={() => remove(message.id)}
+                onClick={() => openDeleteMessageModal(message.id)}
                 aria-label="Delete message"
                 className="text-muted hover:text-red-light"
               >
@@ -465,14 +559,14 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={addCategory}
+                onClick={openCategoryModal}
                 className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase hover:text-copper"
               >
                 + Category
               </button>
               <button
                 type="button"
-                onClick={() => addChannel(null)}
+                onClick={() => openChannelModal(null)}
                 aria-label="New channel"
                 className="text-muted hover:text-copper"
               >
@@ -494,7 +588,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               {canManage && (
                 <button
                   type="button"
-                  onClick={() => addChannel(category.id)}
+                  onClick={() => openChannelModal(category.id)}
                   aria-label={`New channel in ${category.name}`}
                   className="text-muted hover:text-copper"
                 >
@@ -599,6 +693,119 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
           </div>
         </div>
       </section>
+
+      {modal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+          onClick={closeModal}
+        >
+          <div
+            className="w-full max-w-sm rounded-[10px] border border-border bg-surface p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {modal.kind === "category" && (
+              <>
+                <h3 className="font-condensed mb-3 text-sm font-extrabold tracking-[0.1em] text-white uppercase">
+                  New category
+                </h3>
+                <input
+                  autoFocus
+                  value={modalInput}
+                  onChange={(e) => setModalInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && submitModal()}
+                  placeholder="Category name"
+                  className="w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper focus:outline-none"
+                />
+              </>
+            )}
+
+            {modal.kind === "channel" && (
+              <>
+                <h3 className="font-condensed mb-3 text-sm font-extrabold tracking-[0.1em] text-white uppercase">
+                  New channel
+                </h3>
+                <input
+                  autoFocus
+                  value={modalInput}
+                  onChange={(e) => setModalInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && submitModal()}
+                  placeholder="Channel name"
+                  className="mb-3 w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper focus:outline-none"
+                />
+                <div className="flex items-center gap-4 text-sm text-muted">
+                  <label className="flex items-center gap-1.5">
+                    <input
+                      type="radio"
+                      name="modalRole"
+                      checked={modalRole === "AGENT"}
+                      onChange={() => setModalRole("AGENT")}
+                    />
+                    Everyone
+                  </label>
+                  <label className="flex items-center gap-1.5">
+                    <input
+                      type="radio"
+                      name="modalRole"
+                      checked={modalRole === "MANAGER"}
+                      onChange={() => setModalRole("MANAGER")}
+                    />
+                    Managers &amp; admins only
+                  </label>
+                </div>
+              </>
+            )}
+
+            {modal.kind === "renameChannel" && (
+              <>
+                <h3 className="font-condensed mb-3 text-sm font-extrabold tracking-[0.1em] text-white uppercase">
+                  Rename channel
+                </h3>
+                <input
+                  autoFocus
+                  value={modalInput}
+                  onChange={(e) => setModalInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && submitModal()}
+                  className="w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper focus:outline-none"
+                />
+              </>
+            )}
+
+            {modal.kind === "archiveChannel" && (
+              <p className="text-sm text-foreground">
+                Remove <span className="font-bold text-copper">#{modal.channel.name}</span> from the rail? Its
+                messages are kept.
+              </p>
+            )}
+
+            {modal.kind === "deleteMessage" && (
+              <p className="text-sm text-foreground">Delete this message for everyone?</p>
+            )}
+
+            {modalError && <p className="mt-2 text-sm text-red-light">{modalError}</p>}
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="font-condensed rounded-md px-3 py-1.5 text-xs font-bold tracking-[0.08em] text-muted uppercase hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitModal}
+                disabled={
+                  modalBusy ||
+                  (["category", "channel", "renameChannel"].includes(modal.kind) && !modalInput.trim())
+                }
+                className="font-condensed rounded-md border-[1.5px] border-copper px-3 py-1.5 text-xs font-bold tracking-[0.08em] text-copper uppercase transition-colors hover:bg-copper hover:text-black disabled:opacity-40"
+              >
+                {modal.kind === "archiveChannel" || modal.kind === "deleteMessage" ? "Delete" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
