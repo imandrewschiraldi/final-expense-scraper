@@ -50,6 +50,7 @@ export function canManageChannels(role: Role): boolean {
   return role === "ADMIN";
 }
 
+
 /**
  * Normalise a submitted message.
  *

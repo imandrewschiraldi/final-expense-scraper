@@ -83,6 +83,7 @@ model User {
   chatReads         ChatRead[]
   chatReactions     ChatReaction[]
   chatPins          ChatMessage[]  @relation("ChatPinnedBy")
+  chatChannelMemberships ChatChannelMember[]
 
   @@map("users")
 }
@@ -331,8 +332,13 @@ model ChatChannel {
   name       String
   topic      String?
   /// Lowest role that may read and post. Managers see MANAGER channels and
-  /// below; agents see AGENT channels only.
+  /// below; agents see AGENT channels only. Ignored once `restricted` is set —
+  /// an explicit member list takes over instead of the role tier.
   minRole    Role          @default(AGENT)
+  /// When true, visibility is exactly the rows in `members` (plus anyone who
+  /// can manage channels, so admins never lock themselves out of a room they
+  /// created) — `minRole` no longer applies at all.
+  restricted Boolean       @default(false)
   categoryId String?
   category   ChatCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   order      Int           @default(0)
@@ -342,6 +348,7 @@ model ChatChannel {
 
   messages ChatMessage[]
   reads    ChatRead[]
+  members  ChatChannelMember[]
 
   @@index([archived, order])
   @@index([categoryId])
@@ -420,4 +427,20 @@ model ChatReaction {
   @@unique([messageId, userId, emoji])
   @@index([messageId])
   @@map("chat_reactions")
+}
+
+/// One row per person explicitly granted access to a `restricted` channel.
+/// Only meaningful when the channel's `restricted` flag is set — otherwise
+/// visibility comes from `minRole` instead and this table isn't consulted.
+model ChatChannelMember {
+  id        String      @id @default(cuid())
+  channelId String
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([channelId, userId])
+  @@index([userId])
+  @@map("chat_channel_members")
 }

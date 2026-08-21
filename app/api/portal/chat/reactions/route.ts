@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { canSeeChannel, isReaction } from "@/lib/chat";
+import { isReaction } from "@/lib/chat";
+import { openChannelFor } from "@/lib/chatAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -25,14 +26,13 @@ export async function POST(req: NextRequest) {
   // allowed in the channel the message lives in.
   const message = await db.chatMessage.findUnique({
     where: { id: messageId },
-    select: { deletedAt: true, channel: { select: { minRole: true, archived: true } } },
+    select: { deletedAt: true, channelId: true },
   });
-  if (!message || message.deletedAt || message.channel.archived) {
+  if (!message || message.deletedAt) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (!canSeeChannel(session.user.role, message.channel.minRole)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const channel = await openChannelFor(message.channelId, session.user.id, session.user.role);
+  if (!channel) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const key = { messageId_userId_emoji: { messageId, userId: session.user.id, emoji } };
   const existing = await db.chatReaction.findUnique({ where: key });

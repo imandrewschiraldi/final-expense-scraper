@@ -21,10 +21,20 @@ export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const manage = canManageChannels(session.user.role);
+
   const [categories, channels] = await Promise.all([
     db.chatCategory.findMany({ orderBy: [{ order: "asc" }, { name: "asc" }] }),
     db.chatChannel.findMany({
-      where: { archived: false, minRole: { in: visibleChannelRoles(session.user.role) } },
+      where: manage
+        ? { archived: false }
+        : {
+            archived: false,
+            OR: [
+              { restricted: false, minRole: { in: visibleChannelRoles(session.user.role) } },
+              { restricted: true, members: { some: { userId: session.user.id } } },
+            ],
+          },
       orderBy: [{ order: "asc" }, { name: "asc" }],
       include: {
         reads: { where: { userId: session.user.id }, select: { lastReadAt: true } },
@@ -34,12 +44,16 @@ export async function GET() {
           take: 1,
           select: { createdAt: true },
         },
+        // Only admins need to know exactly who's on a restricted channel —
+        // that's their editing UI. Small join either way, but no reason to
+        // ship membership lists to clients that won't use them.
+        members: manage ? { select: { userId: true } } : false,
       },
     }),
   ]);
 
   return NextResponse.json({
-    canManage: canManageChannels(session.user.role),
+    canManage: manage,
     categories: categories.map((c) => ({ id: c.id, name: c.name })),
     channels: channels.map((c) => {
       const latest = c.messages[0]?.createdAt ?? null;
@@ -50,6 +64,8 @@ export async function GET() {
         name: c.name,
         topic: c.topic,
         minRole: c.minRole,
+        restricted: c.restricted,
+        memberIds: manage ? (c.members ?? []).map((m) => m.userId) : undefined,
         categoryId: c.categoryId,
         unread: Boolean(latest && (!lastRead || latest > lastRead)),
       };
@@ -69,6 +85,8 @@ export async function POST(req: NextRequest) {
     topic?: string;
     minRole?: string;
     categoryId?: string | null;
+    restricted?: boolean;
+    memberIds?: string[];
   };
 
   const name = cleanName(body.name);
@@ -78,6 +96,12 @@ export async function POST(req: NextRequest) {
   if (!slug) return NextResponse.json({ error: "Name needs a letter or number" }, { status: 400 });
   if (await db.chatChannel.findUnique({ where: { slug } })) {
     return NextResponse.json({ error: "A channel with that name already exists" }, { status: 409 });
+  }
+
+  const restricted = body.restricted === true;
+  const memberIds = [...new Set((body.memberIds ?? []).filter((id): id is string => typeof id === "string"))];
+  if (restricted && memberIds.length === 0) {
+    return NextResponse.json({ error: "Select at least one person" }, { status: 400 });
   }
 
   const last = await db.chatChannel.findFirst({ orderBy: { order: "desc" }, select: { order: true } });
@@ -90,6 +114,8 @@ export async function POST(req: NextRequest) {
       minRole: body.minRole === "MANAGER" || body.minRole === "ADMIN" ? body.minRole : "AGENT",
       categoryId: body.categoryId || null,
       order: (last?.order ?? 0) + 1,
+      restricted,
+      members: restricted ? { create: memberIds.map((userId) => ({ userId })) } : undefined,
     },
   });
 
