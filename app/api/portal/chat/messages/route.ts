@@ -12,6 +12,7 @@ const MESSAGE_SELECT = {
   authorId: true,
   authorName: true,
   body: true,
+  imageUrl: true,
   createdAt: true,
   editedAt: true,
   pinnedAt: true,
@@ -121,12 +122,15 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = (await req.json()) as { channelId?: string; body?: string };
+  const body = (await req.json()) as { channelId?: string; body?: string; imageUrl?: string };
   const channel = await openChannelFor(body.channelId ?? null, session.user.id, session.user.role);
   if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const text = normaliseMessage(body.body);
-  if (!text) return NextResponse.json({ error: "Message is empty" }, { status: 400 });
+  // An image-only message is valid (body ends up ""); text-only is the
+  // common case; empty-and-imageless is the only thing rejected.
+  const text = normaliseMessage(body.body) ?? "";
+  const imageUrl = typeof body.imageUrl === "string" && body.imageUrl.startsWith("https://") ? body.imageUrl : null;
+  if (!text && !imageUrl) return NextResponse.json({ error: "Message is empty" }, { status: 400 });
 
   const message = await db.chatMessage.create({
     data: {
@@ -134,6 +138,7 @@ export async function POST(req: NextRequest) {
       authorId: session.user.id,
       authorName: session.user.name ?? session.user.email ?? "Agent",
       body: text,
+      imageUrl,
     },
     select: MESSAGE_SELECT,
   });

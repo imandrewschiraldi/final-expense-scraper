@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Hash, Lock, Pin, PinOff, Plus, Send, SmilePlus, Trash2 } from "lucide-react";
+import { ChevronDown, Hash, ImagePlus, Lock, Pin, PinOff, Plus, Send, SmilePlus, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
+  CHAT_IMAGE_MAX_BYTES,
+  CHAT_IMAGE_TYPES,
   CHAT_MESSAGE_MAX,
   CHAT_POLL_ACTIVE_MS,
   CHAT_POLL_HIDDEN_MS,
@@ -55,6 +57,7 @@ type Message = {
   authorId: string | null;
   authorName: string;
   body: string;
+  imageUrl: string | null;
   createdAt: string;
   editedAt: string | null;
   pinnedAt: string | null;
@@ -73,6 +76,15 @@ function dayLabel(iso: string) {
 const timeLabel = (iso: string) =>
   new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
+// A response without a JSON {error} body (a raw 500/404 page, a network
+// hiccup) previously collapsed into one indistinguishable generic string.
+// Falling back to the status code instead means the next failure is
+// diagnosable from the UI alone, not just from server logs.
+async function errorFrom(res: Response, fallback: string): Promise<string> {
+  const data = (await res.json().catch(() => ({}))) as { error?: string };
+  return data.error ?? `${fallback} (HTTP ${res.status})`;
+}
+
 export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -84,6 +96,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const imageInput = useRef<HTMLInputElement>(null);
 
   // Admin actions below use an in-app modal rather than window.prompt/confirm:
   // this app is used as an installed PWA, and native dialogs are unreliable
@@ -190,27 +205,72 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     if (atBottom.current) scroller.current?.scrollTo({ top: scroller.current.scrollHeight });
   }, [messages]);
 
+  function pickImage(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    if (!CHAT_IMAGE_TYPES.includes(file.type as (typeof CHAT_IMAGE_TYPES)[number])) {
+      setError("Only PNG, JPEG, GIF, or WebP images are allowed.");
+      return;
+    }
+    if (file.size > CHAT_IMAGE_MAX_BYTES) {
+      setError("That image is too large (8MB max).");
+      return;
+    }
+    setPendingImage((prev) => {
+      if (prev) URL.revokeObjectURL(prev.previewUrl);
+      return { file, previewUrl: URL.createObjectURL(file) };
+    });
+  }
+
+  function clearPendingImage() {
+    setPendingImage((prev) => {
+      if (prev) URL.revokeObjectURL(prev.previewUrl);
+      return null;
+    });
+  }
+
   async function send() {
     const body = draft.trim();
-    if (!body || !activeId || sending) return;
+    if ((!body && !pendingImage) || !activeId || sending) return;
     setSending(true);
     setError(null);
+    const image = pendingImage;
     setDraft("");
+    // Cleared without revoking yet — a failed send below restores this same
+    // object (and its still-valid preview URL) rather than re-picking.
+    setPendingImage(null);
     atBottom.current = true;
+
+    let imageUrl: string | undefined;
+    if (image) {
+      const form = new FormData();
+      form.append("file", image.file);
+      const uploadRes = await fetch("/api/portal/chat/upload", { method: "POST", body: form });
+      if (!uploadRes.ok) {
+        setDraft(body);
+        setPendingImage(image);
+        setError(await errorFrom(uploadRes, "That image didn't upload."));
+        setSending(false);
+        return;
+      }
+      imageUrl = ((await uploadRes.json()) as { url: string }).url;
+    }
 
     const res = await fetch("/api/portal/chat/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelId: activeId, body }),
+      body: JSON.stringify({ channelId: activeId, body, imageUrl }),
     });
 
     if (res.ok) {
+      if (image) URL.revokeObjectURL(image.previewUrl);
       const { message } = (await res.json()) as { message: Message };
       cursor.current = message.createdAt;
       setMessages((prev) => [...prev, message]);
     } else {
       setDraft(body);
-      setError("That didn't send. Try again.");
+      setPendingImage(image);
+      setError(await errorFrom(res, "That didn't send."));
     }
     setSending(false);
   }
@@ -312,7 +372,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     if (modal.kind === "deleteMessage") {
       const res = await fetch(`/api/portal/chat/messages?id=${modal.id}`, { method: "DELETE" });
       if (!res.ok) {
-        setModalError("Could not delete that message.");
+        setModalError(await errorFrom(res, "Could not delete that message."));
         setModalBusy(false);
         return;
       }
@@ -334,8 +394,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
         body: JSON.stringify({ name }),
       });
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setModalError(data.error ?? "Could not create that category.");
+        setModalError(await errorFrom(res, "Could not create that category."));
         setModalBusy(false);
         return;
       }
@@ -367,8 +426,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
         }),
       });
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setModalError(data.error ?? "Could not create that channel.");
+        setModalError(await errorFrom(res, "Could not create that channel."));
         setModalBusy(false);
         return;
       }
@@ -401,8 +459,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
         }),
       });
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setModalError(data.error ?? "Could not save that channel.");
+        setModalError(await errorFrom(res, "Could not save that channel."));
         setModalBusy(false);
         return;
       }
@@ -414,7 +471,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     if (modal.kind === "archiveChannel") {
       const res = await fetch(`/api/portal/chat/channels/${modal.channel.id}`, { method: "DELETE" });
       if (!res.ok) {
-        setModalError("Could not remove that channel.");
+        setModalError(await errorFrom(res, "Could not remove that channel."));
         setModalBusy(false);
         return;
       }
@@ -518,9 +575,21 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             </div>
           )}
 
-          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">
-            {message.body}
-          </p>
+          {message.body && (
+            <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">
+              {message.body}
+            </p>
+          )}
+
+          {message.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={message.imageUrl}
+              alt=""
+              onClick={() => setLightbox(message.imageUrl)}
+              className="mt-1.5 max-h-72 max-w-full cursor-zoom-in rounded-lg border border-border object-contain"
+            />
+          )}
 
           {message.reactions.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -597,7 +666,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   return (
     <div className="grid gap-4 lg:grid-cols-[236px_minmax(0,1fr)]">
       {/* Rail ---------------------------------------------------------- */}
-      <aside className="rounded-[10px] border border-border bg-surface p-3">
+      <aside className="rounded-[10px] border border-copper/20 bg-surface p-3 shadow-[0_0_50px_-14px_var(--copper-glow)]">
         <div className="mb-2 flex items-center justify-between px-1">
           <p className="font-condensed text-[11px] font-extrabold tracking-[0.18em] text-muted uppercase">
             Channels
@@ -651,7 +720,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
       </aside>
 
       {/* Room ---------------------------------------------------------- */}
-      <section className="flex h-[calc(100vh-260px)] min-h-[420px] flex-col rounded-[10px] border border-border bg-surface">
+      <section className="flex h-[calc(100vh-260px)] min-h-[420px] flex-col rounded-[10px] border border-copper/20 bg-surface shadow-[0_0_50px_-14px_var(--copper-glow)]">
         {active && (
           <header className="shrink-0 border-b border-border px-5 py-3">
             <div className="flex items-start justify-between gap-4">
@@ -719,7 +788,44 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
         <div className="shrink-0 border-t border-border p-3">
           {error && <p className="mb-2 px-1 text-sm text-red-light">{error}</p>}
+          {pendingImage && (
+            <div className="relative mb-2 inline-block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={pendingImage.previewUrl}
+                alt=""
+                className="max-h-28 rounded-lg border border-border object-contain"
+              />
+              <button
+                type="button"
+                onClick={clearPendingImage}
+                aria-label="Remove image"
+                className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-black text-white hover:bg-red-light"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
           <div className="flex items-end gap-2">
+            <input
+              ref={imageInput}
+              type="file"
+              accept={CHAT_IMAGE_TYPES.join(",")}
+              onChange={(e) => {
+                pickImage(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => imageInput.current?.click()}
+              disabled={!active}
+              aria-label="Attach image"
+              className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-copper hover:text-copper disabled:opacity-40"
+            >
+              <ImagePlus className="h-4 w-4" />
+            </button>
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value.slice(0, CHAT_MESSAGE_MAX))}
@@ -739,7 +845,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             <button
               type="button"
               onClick={send}
-              disabled={!draft.trim() || sending || !active}
+              disabled={(!draft.trim() && !pendingImage) || sending || !active}
               aria-label="Send"
               className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border-[1.5px] border-copper text-copper transition-colors hover:bg-copper hover:text-black disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-copper"
             >
@@ -748,6 +854,24 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
           </div>
         </div>
       </section>
+
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightbox} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            aria-label="Close"
+            className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
       {modal && (
         <div

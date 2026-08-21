@@ -27,6 +27,13 @@ export const CHAT_MESSAGE_MAX = 4_000;
 /** How many messages a channel opens with, and pages by. */
 export const CHAT_PAGE_SIZE = 60;
 
+/** Largest image a message may attach. Vercel Blob has no practical limit
+ *  itself — this is about keeping an agent's phone upload fast, not storage. */
+export const CHAT_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+
+/** Accepted image types, shared between the file picker and the upload route. */
+export const CHAT_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"] as const;
+
 /**
  * Roles that can read a channel gated at `minRole`.
  *
