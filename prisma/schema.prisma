@@ -79,6 +79,10 @@ model User {
   policies          Policy[]            @relation("AgentPolicies")
   goals             Goal[]
   policyStatusChanges PolicyStatusHistory[] @relation("PolicyStatusChangedBy")
+  chatMessages      ChatMessage[]
+  chatReads         ChatRead[]
+  chatReactions     ChatReaction[]
+  chatPins          ChatMessage[]  @relation("ChatPinnedBy")
 
   @@map("users")
 }
@@ -313,4 +317,107 @@ model Goal {
 
   @@index([userId, periodEnd])
   @@map("goals")
+}
+
+/// Team chat — channels, messages, and where each person left off.
+///
+/// Deliberately polled rather than socketed: a Vercel function cannot hold a
+/// long-lived connection, and every other live surface in this app (dashboard,
+/// leaderboard, notifications) already polls. One more poll on an indexed
+/// table costs nothing and adds no service to a deployment.
+model ChatChannel {
+  id         String        @id @default(cuid())
+  slug       String        @unique
+  name       String
+  topic      String?
+  /// Lowest role that may read and post. Managers see MANAGER channels and
+  /// below; agents see AGENT channels only.
+  minRole    Role          @default(AGENT)
+  categoryId String?
+  category   ChatCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  order      Int           @default(0)
+  archived   Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  messages ChatMessage[]
+  reads    ChatRead[]
+
+  @@index([archived, order])
+  @@index([categoryId])
+  @@map("chat_channels")
+}
+
+model ChatMessage {
+  id         String      @id @default(cuid())
+  channelId  String
+  channel    ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  authorId   String?
+  author     User?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  /// Denormalised so a deleted agent's history still reads sensibly.
+  authorName String
+  body       String
+  editedAt   DateTime?
+  deletedAt  DateTime?
+  pinnedAt   DateTime?
+  pinnedById String?
+  pinnedBy   User?       @relation("ChatPinnedBy", fields: [pinnedById], references: [id], onDelete: SetNull)
+  createdAt  DateTime    @default(now())
+
+  reactions ChatReaction[]
+
+  /// The paging index: "everything in this channel after this id".
+  @@index([channelId, createdAt])
+  /// Pinned messages are read as their own short list, newest pin first.
+  @@index([channelId, pinnedAt])
+  @@map("chat_messages")
+}
+
+model ChatRead {
+  id         String      @id @default(cuid())
+  channelId  String
+  channel    ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime    @default(now())
+
+  @@unique([channelId, userId])
+  @@index([userId])
+  @@map("chat_reads")
+}
+
+/// A named group of channels in the rail, the way Discord stacks them.
+///
+/// Channels may sit outside every category; those render above the groups
+/// rather than being forced into an "Uncategorised" bucket nobody named.
+model ChatCategory {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  channels ChatChannel[]
+
+  @@index([order])
+  @@map("chat_categories")
+}
+
+/// One person's one reaction of one emoji to one message.
+///
+/// Stored a row per person rather than a tally per emoji, because the useful
+/// question is "did I already react, and who else did" — a counter cannot
+/// answer either, and it drifts the moment a write is lost.
+model ChatReaction {
+  id        String      @id @default(cuid())
+  messageId String
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime    @default(now())
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("chat_reactions")
 }
