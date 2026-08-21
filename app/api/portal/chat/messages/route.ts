@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { CHAT_PAGE_SIZE, canSeeChannel, normaliseMessage } from "@/lib/chat";
+import { CHAT_PAGE_SIZE, normaliseMessage } from "@/lib/chat";
+import { openChannelFor } from "@/lib/chatAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -40,13 +41,6 @@ function shape(rows: Row[], me: string) {
   });
 }
 
-async function openChannel(channelId: string | null, role: "ADMIN" | "MANAGER" | "AGENT") {
-  if (!channelId) return null;
-  const channel = await db.chatChannel.findUnique({ where: { id: channelId } });
-  if (!channel || channel.archived || !canSeeChannel(role, channel.minRole)) return null;
-  return channel;
-}
-
 /**
  * Messages in a channel.
  *
@@ -64,7 +58,7 @@ export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const channel = await openChannel(req.nextUrl.searchParams.get("channelId"), session.user.role);
+  const channel = await openChannelFor(req.nextUrl.searchParams.get("channelId"), session.user.id, session.user.role);
   if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (req.nextUrl.searchParams.get("pinned")) {
@@ -128,7 +122,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await req.json()) as { channelId?: string; body?: string };
-  const channel = await openChannel(body.channelId ?? null, session.user.role);
+  const channel = await openChannelFor(body.channelId ?? null, session.user.id, session.user.role);
   if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const text = normaliseMessage(body.body);

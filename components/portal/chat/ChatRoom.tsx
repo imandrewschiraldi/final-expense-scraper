@@ -27,9 +27,18 @@ type Channel = {
   name: string;
   topic: string | null;
   minRole: "ADMIN" | "MANAGER" | "AGENT";
+  restricted: boolean;
+  memberIds?: string[];
   categoryId: string | null;
   unread: boolean;
 };
+
+type Member = { id: string; name: string; role: "ADMIN" | "MANAGER" | "AGENT" };
+
+// "SPECIFIC" is this app's own audience option, layered on top of the two
+// role tiers the server already understands — it maps to restricted:true
+// with an explicit member list instead of a minRole.
+type Audience = "AGENT" | "MANAGER" | "SPECIFIC";
 
 type ModalState =
   | { kind: "category" }
@@ -81,9 +90,11 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   // (often silent no-ops) in a standalone display, not just a plain browser tab.
   const [modal, setModal] = useState<ModalState>(null);
   const [modalInput, setModalInput] = useState("");
-  const [modalRole, setModalRole] = useState<"AGENT" | "MANAGER">("AGENT");
+  const [modalAudience, setModalAudience] = useState<Audience>("AGENT");
+  const [modalMemberIds, setModalMemberIds] = useState<string[]>([]);
   const [modalError, setModalError] = useState<string | null>(null);
   const [modalBusy, setModalBusy] = useState(false);
+  const [members, setMembers] = useState<Member[] | null>(null);
 
   const scroller = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
@@ -244,9 +255,19 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   function closeModal() {
     setModal(null);
     setModalInput("");
-    setModalRole("AGENT");
+    setModalAudience("AGENT");
+    setModalMemberIds([]);
     setModalError(null);
     setModalBusy(false);
+  }
+
+  // The member picker is admin-only and rarely needed, so it's fetched lazily
+  // the first time a channel/audience modal opens rather than on every mount.
+  async function ensureMembersLoaded() {
+    if (members !== null) return;
+    const res = await fetch("/api/portal/chat/members");
+    if (res.ok) setMembers(((await res.json()) as { users: Member[] }).users);
+    else setMembers([]);
   }
 
   function openDeleteMessageModal(id: string) {
@@ -263,14 +284,19 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   function openChannelModal(categoryId: string | null) {
     setModal({ kind: "channel", categoryId });
     setModalInput("");
-    setModalRole("AGENT");
+    setModalAudience("AGENT");
+    setModalMemberIds([]);
     setModalError(null);
+    ensureMembersLoaded();
   }
 
   function openRenameModal(channel: Channel) {
     setModal({ kind: "renameChannel", channel });
     setModalInput(channel.name);
+    setModalAudience(channel.restricted ? "SPECIFIC" : channel.minRole === "MANAGER" ? "MANAGER" : "AGENT");
+    setModalMemberIds(channel.memberIds ?? []);
     setModalError(null);
+    ensureMembersLoaded();
   }
 
   function openArchiveModal(channel: Channel) {
@@ -324,10 +350,21 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
         setModalBusy(false);
         return;
       }
+      if (modalAudience === "SPECIFIC" && modalMemberIds.length === 0) {
+        setModalError("Select at least one person.");
+        setModalBusy(false);
+        return;
+      }
       const res = await fetch("/api/portal/chat/channels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, categoryId: modal.categoryId, minRole: modalRole }),
+        body: JSON.stringify({
+          name,
+          categoryId: modal.categoryId,
+          ...(modalAudience === "SPECIFIC"
+            ? { restricted: true, memberIds: modalMemberIds }
+            : { restricted: false, minRole: modalAudience }),
+        }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -344,18 +381,28 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
     if (modal.kind === "renameChannel") {
       const name = modalInput.trim();
-      if (!name || name === modal.channel.name) {
-        closeModal();
+      if (!name) {
+        setModalBusy(false);
+        return;
+      }
+      if (modalAudience === "SPECIFIC" && modalMemberIds.length === 0) {
+        setModalError("Select at least one person.");
+        setModalBusy(false);
         return;
       }
       const res = await fetch(`/api/portal/chat/channels/${modal.channel.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({
+          name,
+          ...(modalAudience === "SPECIFIC"
+            ? { restricted: true, memberIds: modalMemberIds }
+            : { restricted: false, minRole: modalAudience }),
+        }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setModalError(data.error ?? "Could not rename that channel.");
+        setModalError(data.error ?? "Could not save that channel.");
         setModalBusy(false);
         return;
       }
@@ -405,10 +452,10 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               : "text-muted hover:bg-surface2 hover:text-foreground",
           )}
         >
-          {channel.minRole === "AGENT" ? (
-            <Hash className="h-3.5 w-3.5 shrink-0" />
-          ) : (
+          {channel.restricted || channel.minRole !== "AGENT" ? (
             <Lock className="h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <Hash className="h-3.5 w-3.5 shrink-0" />
           )}
           <span className="truncate">{channel.name}</span>
           {channel.unread && channel.id !== activeId && (
@@ -610,14 +657,22 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="font-condensed text-lg font-extrabold tracking-wide text-white uppercase">
-                  {active.minRole === "AGENT" ? "#" : "🔒 "}
+                  {active.restricted || active.minRole !== "AGENT" ? "🔒 " : "#"}
                   {active.name}
                 </h2>
                 {active.topic && <p className="mt-0.5 text-sm text-muted">{active.topic}</p>}
-                {active.minRole !== "AGENT" && (
+                {active.restricted ? (
                   <p className="mt-0.5 text-xs text-muted">
-                    Visible to {active.minRole === "MANAGER" ? "managers and admins" : "admins"} only.
+                    {active.memberIds
+                      ? `Visible to ${active.memberIds.length} selected ${active.memberIds.length === 1 ? "person" : "people"} only.`
+                      : "Visible to specific people only."}
                   </p>
+                ) : (
+                  active.minRole !== "AGENT" && (
+                    <p className="mt-0.5 text-xs text-muted">
+                      Visible to {active.minRole === "MANAGER" ? "managers and admins" : "admins"} only.
+                    </p>
+                  )
                 )}
               </div>
               {pins.length > 0 && (
@@ -719,54 +774,76 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               </>
             )}
 
-            {modal.kind === "channel" && (
+            {(modal.kind === "channel" || modal.kind === "renameChannel") && (
               <>
                 <h3 className="font-condensed mb-3 text-sm font-extrabold tracking-[0.1em] text-white uppercase">
-                  New channel
+                  {modal.kind === "channel" ? "New channel" : "Edit channel"}
                 </h3>
                 <input
                   autoFocus
                   value={modalInput}
                   onChange={(e) => setModalInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submitModal()}
                   placeholder="Channel name"
                   className="mb-3 w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper focus:outline-none"
                 />
-                <div className="flex items-center gap-4 text-sm text-muted">
+
+                <p className="font-condensed mb-1.5 text-[10px] font-bold tracking-[0.14em] text-muted uppercase">
+                  Who can see this channel
+                </p>
+                <div className="mb-3 flex flex-col gap-1.5 text-sm text-muted">
                   <label className="flex items-center gap-1.5">
                     <input
                       type="radio"
-                      name="modalRole"
-                      checked={modalRole === "AGENT"}
-                      onChange={() => setModalRole("AGENT")}
+                      name="modalAudience"
+                      checked={modalAudience === "AGENT"}
+                      onChange={() => setModalAudience("AGENT")}
                     />
                     Everyone
                   </label>
                   <label className="flex items-center gap-1.5">
                     <input
                       type="radio"
-                      name="modalRole"
-                      checked={modalRole === "MANAGER"}
-                      onChange={() => setModalRole("MANAGER")}
+                      name="modalAudience"
+                      checked={modalAudience === "MANAGER"}
+                      onChange={() => setModalAudience("MANAGER")}
                     />
                     Managers &amp; admins only
                   </label>
+                  <label className="flex items-center gap-1.5">
+                    <input
+                      type="radio"
+                      name="modalAudience"
+                      checked={modalAudience === "SPECIFIC"}
+                      onChange={() => setModalAudience("SPECIFIC")}
+                    />
+                    Specific people
+                  </label>
                 </div>
-              </>
-            )}
 
-            {modal.kind === "renameChannel" && (
-              <>
-                <h3 className="font-condensed mb-3 text-sm font-extrabold tracking-[0.1em] text-white uppercase">
-                  Rename channel
-                </h3>
-                <input
-                  autoFocus
-                  value={modalInput}
-                  onChange={(e) => setModalInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submitModal()}
-                  className="w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper focus:outline-none"
-                />
+                {modalAudience === "SPECIFIC" && (
+                  <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-surface2 p-2">
+                    {members === null && <p className="px-1 py-1 text-sm text-muted">Loading people…</p>}
+                    {members?.length === 0 && <p className="px-1 py-1 text-sm text-muted">No one to pick from.</p>}
+                    {members?.map((person) => (
+                      <label
+                        key={person.id}
+                        className="flex items-center gap-2 rounded-md px-1.5 py-1.5 text-sm text-foreground hover:bg-surface"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={modalMemberIds.includes(person.id)}
+                          onChange={() =>
+                            setModalMemberIds((prev) =>
+                              prev.includes(person.id) ? prev.filter((id) => id !== person.id) : [...prev, person.id],
+                            )
+                          }
+                        />
+                        <span className="truncate">{person.name}</span>
+                        <span className="ml-auto text-xs text-muted">{person.role}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
@@ -796,7 +873,10 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                 onClick={submitModal}
                 disabled={
                   modalBusy ||
-                  (["category", "channel", "renameChannel"].includes(modal.kind) && !modalInput.trim())
+                  (["category", "channel", "renameChannel"].includes(modal.kind) && !modalInput.trim()) ||
+                  ((modal.kind === "channel" || modal.kind === "renameChannel") &&
+                    modalAudience === "SPECIFIC" &&
+                    modalMemberIds.length === 0)
                 }
                 className="font-condensed rounded-md border-[1.5px] border-copper px-3 py-1.5 text-xs font-bold tracking-[0.08em] text-copper uppercase transition-colors hover:bg-copper hover:text-black disabled:opacity-40"
               >
