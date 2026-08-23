@@ -15,6 +15,7 @@ const HEADINGS = {
   "agency-dashboard": { width: 1472, height: 88 },
   leaderboard: { width: 1060, height: 88 },
   dashboard: { width: 879, height: 88 },
+  "team-chat": { width: 413, height: 45 },
 } as const;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;

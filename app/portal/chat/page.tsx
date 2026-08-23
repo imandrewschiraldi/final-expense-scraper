@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { canManageChannels } from "@/lib/chat";
 import { ChatRoom } from "@/components/portal/chat/ChatRoom";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export default async function ChatPage() {
 
   return (
     <div>
-      <h1 className="mb-14 text-2xl font-extrabold tracking-wide text-white uppercase">Team Chat</h1>
+      <PageHeading slug="team-chat" alt="Team Chat" />
       <ChatRoom me={session.user.id} canManage={canManageChannels(session.user.role)} />
     </div>
   );
