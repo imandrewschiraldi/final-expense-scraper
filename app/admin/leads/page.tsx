@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ClipboardList, Upload, Send } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 const SECTIONS = [
   {
@@ -26,7 +27,7 @@ const SECTIONS = [
 export default function LeadsPage() {
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Leads</h1>
+      <PageHeading slug="leads" alt="Leads" />
       <div className="grid gap-4 sm:grid-cols-3">
         {SECTIONS.map((section) => {
           const Icon = section.icon;

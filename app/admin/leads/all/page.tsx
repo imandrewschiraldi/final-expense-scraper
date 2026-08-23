@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { AllLeadsPanel } from "@/components/admin/AllLeadsPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -8,9 +9,8 @@ export default async function AllLeadsPage() {
 
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">
-        All Leads <span className="text-copper">({totalLeads.toLocaleString()})</span>
-      </h1>
+      <PageHeading slug="all-leads" alt="All Leads" />
+      <p className="-mt-4 mb-6 text-center text-sm text-muted">{totalLeads.toLocaleString()} total leads</p>
       <AllLeadsPanel />
     </div>
   );

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { sniffCsvHeaders } from "@/lib/csvHeaders";
 import { LEAD_TYPES, LEAD_TYPE_LABELS, type LeadType } from "@/lib/leadType";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 type ImportResult = {
   imported: number;
@@ -178,7 +179,7 @@ export default function ImportLeadsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="font-condensed mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Import Leads</h1>
+      <PageHeading slug="import-leads" alt="Import Leads" />
 
       <Card>
         <CardHeader>

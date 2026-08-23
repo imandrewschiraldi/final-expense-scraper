@@ -16,6 +16,10 @@ const HEADINGS = {
   leaderboard: { width: 1060, height: 88 },
   dashboard: { width: 879, height: 88 },
   "team-chat": { width: 413, height: 45 },
+  leads: { width: 470, height: 88 },
+  "import-leads": { width: 526, height: 45 },
+  "all-leads": { width: 391, height: 45 },
+  "assign-leads": { width: 511, height: 45 },
 } as const;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;

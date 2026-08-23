@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { AssignPanel } from "@/components/admin/AssignPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function AssignLeadsPage() {
 
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Assign Leads</h1>
+      <PageHeading slug="assign-leads" alt="Assign Leads" />
       <AssignPanel stateOptions={stateOptions} agents={agents} />
     </div>
   );
