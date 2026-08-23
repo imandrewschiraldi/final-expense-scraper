@@ -159,14 +159,17 @@ export function ProfilePanel() {
               <span className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
                 Switch View
               </span>
-              <div className="mt-1">
-                <Button
-                  variant="secondary"
-                  onClick={() => switchRole(profile.role === "ADMIN" ? "AGENT" : "ADMIN")}
-                  disabled={switching}
-                >
-                  {switching ? "Switching..." : `Switch to ${profile.role === "ADMIN" ? "Agent" : "Admin"}`}
-                </Button>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {(["ADMIN", "MANAGER", "AGENT"] as const).map((role) => (
+                  <Button
+                    key={role}
+                    variant={profile.role === role ? "ghost" : "secondary"}
+                    onClick={() => switchRole(role)}
+                    disabled={switching || profile.role === role}
+                  >
+                    {switching ? "Switching..." : role.charAt(0) + role.slice(1).toLowerCase()}
+                  </Button>
+                ))}
               </div>
             </div>
           )}
