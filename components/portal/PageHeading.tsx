@@ -21,8 +21,8 @@ export type PageHeadingSlug = keyof typeof HEADINGS;
 
 /**
  * A page's title, rendered as its graphic copper wordmark instead of plain
- * text — centered so the shell's copper accent line runs through the middle
- * of it rather than sitting below it.
+ * text — sitting cleanly above the shell's copper accent line (never
+ * straddling it) with even breathing room on both sides.
  *
  * The Scripts/Commission Calculator tools render their own titles at a
  * measured ~20px actual letter height on desktop (~13px below `lg`),
@@ -31,11 +31,16 @@ export type PageHeadingSlug = keyof typeof HEADINGS;
  * 88px-tall crop, ~77%), so one display height reproduces that same
  * lettered height for all of them: 26px tall -> ~20px letters,
  * 17px tall -> ~13px letters.
+ *
+ * Desktop vertical centering: content starts 8px below main's top (its
+ * `pt-2`) and the accent line sits at HEADER_HEIGHT (74px, see Sidebar.tsx),
+ * leaving a 66px band above the line. A 26px-tall image centered in that
+ * band gets an even 20px margin-top and 20px gap before the line.
  */
 export function PageHeading({ slug, alt }: { slug: PageHeadingSlug; alt: string }) {
   const { width, height } = HEADINGS[slug];
   return (
-    <div className="mb-6 mt-3 flex justify-center lg:mt-[53px]">
+    <div className="mb-6 mt-3 flex justify-center lg:mt-[20px]">
       <Image
         src={`/headings/${slug}.png`}
         alt={alt}
