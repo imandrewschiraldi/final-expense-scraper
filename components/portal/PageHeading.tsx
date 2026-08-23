@@ -21,15 +21,21 @@ export type PageHeadingSlug = keyof typeof HEADINGS;
 
 /**
  * A page's title, rendered as its graphic copper wordmark instead of plain
- * text — sized to read at the same letter-height the still-plain-text page
- * titles use, and centered so the shell's copper accent line runs through
- * the middle of it rather than sitting below it.
+ * text — centered so the shell's copper accent line runs through the middle
+ * of it rather than sitting below it.
+ *
+ * Sized as large as the longest current title ("Agency Dashboard") can go
+ * without exceeding the content column's width (max-w-6xl, 1152px) — 56px
+ * tall renders it at ~937px. Matching the much larger scale the external
+ * Scripts/Commission Calculator tools use for their own single-word-ish
+ * titles isn't possible here across the board: at that size "Agency
+ * Dashboard" and "Book of Business" would render wider than the page.
  */
 export function PageHeading({ slug, alt }: { slug: PageHeadingSlug; alt: string }) {
   const { width, height } = HEADINGS[slug];
   return (
-    <div className="mb-6 flex justify-center lg:mt-12">
-      <Image src={`/headings/${slug}.png`} alt={alt} width={width} height={height} className="h-6 w-auto" priority />
+    <div className="mb-6 flex justify-center lg:mt-10">
+      <Image src={`/headings/${slug}.png`} alt={alt} width={width} height={height} className="h-14 w-auto" priority />
     </div>
   );
 }
