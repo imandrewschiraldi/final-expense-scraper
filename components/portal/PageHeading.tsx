@@ -24,18 +24,26 @@ export type PageHeadingSlug = keyof typeof HEADINGS;
  * text — centered so the shell's copper accent line runs through the middle
  * of it rather than sitting below it.
  *
- * Sized as large as the longest current title ("Agency Dashboard") can go
- * without exceeding the content column's width (max-w-6xl, 1152px) — 56px
- * tall renders it at ~937px. Matching the much larger scale the external
- * Scripts/Commission Calculator tools use for their own single-word-ish
- * titles isn't possible here across the board: at that size "Agency
- * Dashboard" and "Book of Business" would render wider than the page.
+ * The Scripts/Commission Calculator tools render their own titles at a
+ * measured ~20px actual letter height on desktop (~13px below `lg`),
+ * regardless of each logo's own image padding. Every wordmark here is
+ * cropped to the same glyph-to-image ratio (a 68px-tall glyph inside an
+ * 88px-tall crop, ~77%), so one display height reproduces that same
+ * lettered height for all of them: 26px tall -> ~20px letters,
+ * 17px tall -> ~13px letters.
  */
 export function PageHeading({ slug, alt }: { slug: PageHeadingSlug; alt: string }) {
   const { width, height } = HEADINGS[slug];
   return (
-    <div className="mb-6 flex justify-center lg:mt-10">
-      <Image src={`/headings/${slug}.png`} alt={alt} width={width} height={height} className="h-14 w-auto" priority />
+    <div className="mb-6 mt-3 flex justify-center lg:mt-[53px]">
+      <Image
+        src={`/headings/${slug}.png`}
+        alt={alt}
+        width={width}
+        height={height}
+        className="h-[17px] w-auto lg:h-[26px]"
+        priority
+      />
     </div>
   );
 }
