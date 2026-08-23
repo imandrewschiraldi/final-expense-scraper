@@ -666,7 +666,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   return (
     <div className="grid gap-4 lg:grid-cols-[236px_minmax(0,1fr)]">
       {/* Rail ---------------------------------------------------------- */}
-      <aside className="rounded-[10px] border border-copper/20 bg-surface p-3 shadow-[0_0_50px_-14px_var(--copper-glow)]">
+      <aside className="rounded-[10px] border-2 border-copper/50 bg-surface p-3 shadow-[0_0_60px_8px_color-mix(in_srgb,var(--copper)_20%,transparent)]">
         <div className="mb-2 flex items-center justify-between px-1">
           <p className="font-condensed text-[11px] font-extrabold tracking-[0.18em] text-muted uppercase">
             Channels
@@ -720,9 +720,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
       </aside>
 
       {/* Room ---------------------------------------------------------- */}
-      <section className="flex h-[calc(100vh-260px)] min-h-[420px] flex-col rounded-[10px] border border-copper/20 bg-surface shadow-[0_0_50px_-14px_var(--copper-glow)]">
+      <section className="flex h-[calc(100vh-260px)] min-h-[420px] flex-col rounded-[10px] border-2 border-copper/50 bg-surface shadow-[0_0_60px_8px_color-mix(in_srgb,var(--copper)_20%,transparent)]">
         {active && (
-          <header className="shrink-0 border-b border-border px-5 py-3">
+          <header className="shrink-0 border-b-2 border-copper/25 px-5 py-3">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="font-condensed text-lg font-extrabold tracking-wide text-white uppercase">
@@ -786,7 +786,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
           {messages.map((m, i) => messageRow(m, messages[i - 1], false))}
         </div>
 
-        <div className="shrink-0 border-t border-border p-3">
+        <div className="shrink-0 border-t-2 border-copper/25 p-3">
           {error && <p className="mb-2 px-1 text-sm text-red-light">{error}</p>}
           {pendingImage && (
             <div className="relative mb-2 inline-block">
