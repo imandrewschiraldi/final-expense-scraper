@@ -51,8 +51,9 @@ export function HierarchyAdminPanel() {
   }
 
   // Admins can also personally run a downline, not just promoted managers —
-  // an admin who has agents reporting directly to them shouldn't need a
-  // second, MANAGER-role account just to be assignable here.
+  // an admin who has agents reporting directly to them shouldn't need to
+  // switch their own account to MANAGER (and lose this very screen) just to
+  // be assignable here.
   const supervisors = users.filter((u) => u.role === "MANAGER" || u.role === "ADMIN");
   const agents = users.filter((u) => u.role === "AGENT");
 
