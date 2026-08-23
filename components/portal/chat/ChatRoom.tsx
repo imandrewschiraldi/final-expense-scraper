@@ -1,7 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Hash, ImagePlus, Lock, Pin, PinOff, Plus, Send, SmilePlus, Trash2, X } from "lucide-react";
+import {
+  ChevronDown,
+  GripVertical,
+  Hash,
+  ImagePlus,
+  Lock,
+  Pin,
+  PinOff,
+  Plus,
+  Send,
+  SmilePlus,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+} from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/cn";
 import {
   CHAT_IMAGE_MAX_BYTES,
@@ -11,6 +37,9 @@ import {
   CHAT_POLL_HIDDEN_MS,
   CHAT_REACTIONS,
 } from "@/lib/chat";
+
+/** The "no category" bucket at the top of the rail — not a real category id. */
+const LOOSE = "loose";
 
 /**
  * The team room.
@@ -85,6 +114,146 @@ async function errorFrom(res: Response, fallback: string): Promise<string> {
   return data.error ?? `${fallback} (HTTP ${res.status})`;
 }
 
+/** A container's drop target — the raw area a channel can land on, including
+ *  the empty space below an existing list (or the whole area when there are
+ *  no channels in it yet, since an empty SortableContext has no item to be
+ *  "over"). */
+function DroppableContainer({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
+  const { setNodeRef } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={className}>
+      {children}
+    </div>
+  );
+}
+
+function SortableChannel({
+  channel,
+  active,
+  canManage,
+  onSelect,
+  onRename,
+  onArchive,
+}: {
+  channel: Channel;
+  active: boolean;
+  canManage: boolean;
+  onSelect: () => void;
+  onRename: () => void;
+  onArchive: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `chan:${channel.id}`,
+  });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+
+  return (
+    <div ref={setNodeRef} style={style} className="group/chan relative">
+      <button
+        type="button"
+        onClick={onSelect}
+        className={cn(
+          "font-condensed flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-bold tracking-[0.04em] uppercase transition-colors",
+          active ? "bg-copper text-black" : "text-muted hover:bg-surface2 hover:text-foreground",
+        )}
+      >
+        {canManage && (
+          // Always visible (not hover-only) — a drag handle only agents can
+          // find on hover is useless on a touchscreen, which has no hover.
+          <span
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Reorder ${channel.name}`}
+            className={cn(
+              "shrink-0 cursor-grab touch-none active:cursor-grabbing",
+              active ? "text-black/50" : "text-muted/60",
+            )}
+          >
+            <GripVertical className="h-3.5 w-3.5" />
+          </span>
+        )}
+        {channel.restricted || channel.minRole !== "AGENT" ? (
+          <Lock className="h-3.5 w-3.5 shrink-0" />
+        ) : (
+          <Hash className="h-3.5 w-3.5 shrink-0" />
+        )}
+        <span className="truncate">{channel.name}</span>
+        {channel.unread && !active && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-copper" />}
+      </button>
+      {canManage && (
+        <div className="absolute top-1/2 right-2 hidden -translate-y-1/2 gap-1 group-hover/chan:flex">
+          <button
+            type="button"
+            onClick={onRename}
+            aria-label={`Rename ${channel.name}`}
+            className={cn("text-xs", active ? "text-black/70" : "text-muted hover:text-foreground")}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={onArchive}
+            aria-label={`Remove ${channel.name}`}
+            className={cn(active ? "text-black/70" : "text-muted hover:text-red-light")}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SortableCategoryGroup({
+  category,
+  canManage,
+  onAddChannel,
+  children,
+}: {
+  category: Category;
+  canManage: boolean;
+  onAddChannel: () => void;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `cat:${category.id}`,
+  });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+  return (
+    <div ref={setNodeRef} style={style} className="mt-4">
+      <div className="mb-1 flex items-center gap-1 px-1">
+        {canManage && (
+          <span
+            {...attributes}
+            {...listeners}
+            aria-label={`Reorder ${category.name}`}
+            className="shrink-0 cursor-grab touch-none text-muted/60 active:cursor-grabbing"
+          >
+            <GripVertical className="h-3 w-3" />
+          </span>
+        )}
+        <ChevronDown className="h-3 w-3 text-muted" />
+        <p className="font-condensed flex-1 text-[10px] font-extrabold tracking-[0.18em] text-muted uppercase">
+          {category.name}
+        </p>
+        {canManage && (
+          <button
+            type="button"
+            onClick={onAddChannel}
+            aria-label={`New channel in ${category.name}`}
+            className="text-muted hover:text-copper"
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -110,6 +279,133 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   const [modalError, setModalError] = useState<string | null>(null);
   const [modalBusy, setModalBusy] = useState(false);
   const [members, setMembers] = useState<Member[] | null>(null);
+
+  // Drag-and-drop reordering, admin-only. `containers` maps a container key
+  // (LOOSE, or a category id) to its channel ids in display order, and
+  // `categoryOrder` is the categories themselves in display order — both are
+  // real state (not derived) so a drag can move ids between them live. The
+  // sync effects below keep them following the server's data whenever a
+  // drag isn't actually in progress; `dragging` guards against a poll
+  // landing mid-drag and clobbering the gesture the admin is mid-way through.
+  const [containers, setContainers] = useState<Record<string, string[]>>({ [LOOSE]: [] });
+  const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
+  const dragging = useRef(false);
+
+  useEffect(() => {
+    if (dragging.current) return;
+    const next: Record<string, string[]> = { [LOOSE]: [] };
+    for (const cat of categories) next[cat.id] = [];
+    for (const ch of channels) {
+      const key = ch.categoryId && next[ch.categoryId] ? ch.categoryId : LOOSE;
+      next[key].push(ch.id);
+    }
+    setContainers(next);
+  }, [channels, categories]);
+
+  useEffect(() => {
+    if (dragging.current) return;
+    setCategoryOrder(categories.map((c) => c.id));
+  }, [categories]);
+
+  const channelById = useMemo(() => new Map(channels.map((c) => [c.id, c])), [channels]);
+
+  const sensors = useSensors(
+    // A small activation distance so a plain click/tap still selects a
+    // channel instead of every tap being interpreted as a drag start.
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  );
+
+  function containerOf(channelId: string): string | null {
+    for (const [key, ids] of Object.entries(containers)) {
+      if (ids.includes(channelId)) return key;
+    }
+    return null;
+  }
+
+  function handleDragStart() {
+    dragging.current = true;
+  }
+
+  // Live-previews a channel moving into a different category while it's
+  // still being dragged, so the rail visibly reshapes before the drop —
+  // the standard multi-container drag-and-drop pattern.
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event;
+    if (!over) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    if (!activeId.startsWith("chan:")) return;
+
+    const activeChannelId = activeId.slice(5);
+    const fromContainer = containerOf(activeChannelId);
+    const toContainer = overId.startsWith("chan:") ? containerOf(overId.slice(5)) : overId;
+    if (!fromContainer || !toContainer || fromContainer === toContainer) return;
+
+    setContainers((prev) => {
+      const from = prev[fromContainer].filter((id) => id !== activeChannelId);
+      const overIndex = overId.startsWith("chan:") ? prev[toContainer].indexOf(overId.slice(5)) : prev[toContainer].length;
+      const to = [...prev[toContainer]];
+      to.splice(overIndex === -1 ? to.length : overIndex, 0, activeChannelId);
+      return { ...prev, [fromContainer]: from, [toContainer]: to };
+    });
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    dragging.current = false;
+    const { active, over } = event;
+    if (!over) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    if (activeId.startsWith("cat:")) {
+      const from = categoryOrder.indexOf(activeId.slice(4));
+      const to = overId.startsWith("cat:") ? categoryOrder.indexOf(overId.slice(4)) : -1;
+      if (from === -1 || to === -1 || from === to) return;
+      const next = [...categoryOrder];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      setCategoryOrder(next);
+      await fetch("/api/portal/chat/categories/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoryIds: next }),
+      });
+      return;
+    }
+
+    if (!activeId.startsWith("chan:")) return;
+    const activeChannelId = activeId.slice(5);
+    const container = containerOf(activeChannelId);
+    if (!container) return;
+
+    // Same-container reorder: dragOver already handled any cross-container
+    // move, so this just repositions within the (possibly already-updated)
+    // container's own id list.
+    let finalContainers = containers;
+    if (overId.startsWith("chan:")) {
+      const overChannelId = overId.slice(5);
+      const ids = containers[container];
+      const from = ids.indexOf(activeChannelId);
+      const to = ids.indexOf(overChannelId);
+      if (from !== -1 && to !== -1 && from !== to) {
+        const next = [...ids];
+        next.splice(from, 1);
+        next.splice(to, 0, activeChannelId);
+        finalContainers = { ...containers, [container]: next };
+        setContainers(finalContainers);
+      }
+    }
+
+    const payload = Object.entries(finalContainers).flatMap(([key, ids]) =>
+      ids.map((id, order) => ({ id, categoryId: key === LOOSE ? null : key, order })),
+    );
+    await fetch("/api/portal/chat/channels/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channels: payload }),
+    });
+  }
 
   const scroller = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
@@ -483,66 +779,6 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
   const active = channels.find((c) => c.id === activeId) ?? null;
 
-  // Channels with no category sit above the groups rather than being forced
-  // into an "Uncategorised" heading nobody chose to create.
-  const grouped = useMemo(() => {
-    const loose = channels.filter((c) => !c.categoryId || !categories.some((k) => k.id === c.categoryId));
-    return {
-      loose,
-      groups: categories.map((cat) => ({
-        category: cat,
-        items: channels.filter((c) => c.categoryId === cat.id),
-      })),
-    };
-  }, [channels, categories]);
-
-  function channelButton(channel: Channel) {
-    return (
-      <div key={channel.id} className="group/chan relative">
-        <button
-          type="button"
-          onClick={() => setActiveId(channel.id)}
-          className={cn(
-            "font-condensed flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-bold tracking-[0.04em] uppercase transition-colors",
-            channel.id === activeId
-              ? "bg-copper text-black"
-              : "text-muted hover:bg-surface2 hover:text-foreground",
-          )}
-        >
-          {channel.restricted || channel.minRole !== "AGENT" ? (
-            <Lock className="h-3.5 w-3.5 shrink-0" />
-          ) : (
-            <Hash className="h-3.5 w-3.5 shrink-0" />
-          )}
-          <span className="truncate">{channel.name}</span>
-          {channel.unread && channel.id !== activeId && (
-            <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-copper" />
-          )}
-        </button>
-        {canManage && (
-          <div className="absolute top-1/2 right-2 hidden -translate-y-1/2 gap-1 group-hover/chan:flex">
-            <button
-              type="button"
-              onClick={() => openRenameModal(channel)}
-              aria-label={`Rename ${channel.name}`}
-              className={cn("text-xs", channel.id === activeId ? "text-black/70" : "text-muted hover:text-foreground")}
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => openArchiveModal(channel)}
-              aria-label={`Remove ${channel.name}`}
-              className={cn(channel.id === activeId ? "text-black/70" : "text-muted hover:text-red-light")}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   function messageRow(message: Message, prev: Message | undefined, inPinList: boolean) {
     const newDay = !inPinList && (!prev || dayLabel(prev.createdAt) !== dayLabel(message.createdAt));
     // Consecutive messages from one person in a short window read as one turn,
@@ -666,58 +902,98 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   return (
     <div className="grid gap-4 lg:grid-cols-[236px_minmax(0,1fr)]">
       {/* Rail ---------------------------------------------------------- */}
-      <aside className="rounded-[10px] border-2 border-copper/50 bg-surface p-3 shadow-[0_0_60px_8px_color-mix(in_srgb,var(--copper)_20%,transparent)]">
-        <div className="mb-2 flex items-center justify-between px-1">
-          <p className="font-condensed text-[11px] font-extrabold tracking-[0.18em] text-muted uppercase">
-            Channels
-          </p>
-          {canManage && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={openCategoryModal}
-                className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase hover:text-copper"
-              >
-                + Category
-              </button>
-              <button
-                type="button"
-                onClick={() => openChannelModal(null)}
-                aria-label="New channel"
-                className="text-muted hover:text-copper"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-1">{grouped.loose.map(channelButton)}</div>
-
-        {grouped.groups.map(({ category, items }) => (
-          <div key={category.id} className="mt-4">
-            <div className="mb-1 flex items-center gap-1 px-1">
-              <ChevronDown className="h-3 w-3 text-muted" />
-              <p className="font-condensed flex-1 text-[10px] font-extrabold tracking-[0.18em] text-muted uppercase">
-                {category.name}
-              </p>
-              {canManage && (
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <aside className="rounded-[10px] border-2 border-copper/50 bg-surface p-3 shadow-[0_0_60px_8px_color-mix(in_srgb,var(--copper)_20%,transparent)]">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <p className="font-condensed text-[11px] font-extrabold tracking-[0.18em] text-muted uppercase">
+              Channels
+            </p>
+            {canManage && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => openChannelModal(category.id)}
-                  aria-label={`New channel in ${category.name}`}
+                  onClick={openCategoryModal}
+                  className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase hover:text-copper"
+                >
+                  + Category
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openChannelModal(null)}
+                  aria-label="New channel"
                   className="text-muted hover:text-copper"
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-4 w-4" />
                 </button>
-              )}
-            </div>
-            <div className="space-y-1">{items.map(channelButton)}</div>
+              </div>
+            )}
           </div>
-        ))}
 
-        {channels.length === 0 && <p className="px-1 py-2 text-sm text-muted">No channels yet.</p>}
-      </aside>
+          <DroppableContainer id={LOOSE} className="min-h-[8px] space-y-1">
+            <SortableContext items={containers[LOOSE].map((id) => `chan:${id}`)} strategy={verticalListSortingStrategy}>
+              {containers[LOOSE].map((id) => {
+                const channel = channelById.get(id);
+                if (!channel) return null;
+                return (
+                  <SortableChannel
+                    key={id}
+                    channel={channel}
+                    active={channel.id === activeId}
+                    canManage={canManage}
+                    onSelect={() => setActiveId(channel.id)}
+                    onRename={() => openRenameModal(channel)}
+                    onArchive={() => openArchiveModal(channel)}
+                  />
+                );
+              })}
+            </SortableContext>
+          </DroppableContainer>
+
+          <SortableContext items={categoryOrder.map((id) => `cat:${id}`)} strategy={verticalListSortingStrategy}>
+            {categoryOrder.map((catId) => {
+              const category = categories.find((c) => c.id === catId);
+              if (!category) return null;
+              const ids = containers[catId] ?? [];
+              return (
+                <SortableCategoryGroup
+                  key={catId}
+                  category={category}
+                  canManage={canManage}
+                  onAddChannel={() => openChannelModal(catId)}
+                >
+                  <DroppableContainer id={catId} className="min-h-[8px] space-y-1">
+                    <SortableContext items={ids.map((id) => `chan:${id}`)} strategy={verticalListSortingStrategy}>
+                      {ids.map((id) => {
+                        const channel = channelById.get(id);
+                        if (!channel) return null;
+                        return (
+                          <SortableChannel
+                            key={id}
+                            channel={channel}
+                            active={channel.id === activeId}
+                            canManage={canManage}
+                            onSelect={() => setActiveId(channel.id)}
+                            onRename={() => openRenameModal(channel)}
+                            onArchive={() => openArchiveModal(channel)}
+                          />
+                        );
+                      })}
+                    </SortableContext>
+                  </DroppableContainer>
+                </SortableCategoryGroup>
+              );
+            })}
+          </SortableContext>
+
+          {channels.length === 0 && <p className="px-1 py-2 text-sm text-muted">No channels yet.</p>}
+        </aside>
+      </DndContext>
 
       {/* Room ---------------------------------------------------------- */}
       <section className="flex h-[calc(100vh-260px)] min-h-[420px] flex-col rounded-[10px] border-2 border-copper/50 bg-surface shadow-[0_0_60px_8px_color-mix(in_srgb,var(--copper)_20%,transparent)]">
