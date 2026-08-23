@@ -30,8 +30,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "A user can't manage themselves." }, { status: 400 });
     }
     const manager = await db.user.findUnique({ where: { id: managerId } });
-    if (!manager || manager.role !== "MANAGER") {
-      return NextResponse.json({ error: "managerId must reference an existing manager." }, { status: 400 });
+    // Admins can also personally run a downline — they don't need to hold
+    // the MANAGER role to have agents report to them.
+    if (!manager || (manager.role !== "MANAGER" && manager.role !== "ADMIN")) {
+      return NextResponse.json({ error: "managerId must reference an existing manager or admin." }, { status: 400 });
     }
   }
 

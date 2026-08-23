@@ -9,7 +9,7 @@ type HierarchyUser = {
   id: string;
   name: string;
   email: string;
-  role: "MANAGER" | "AGENT";
+  role: "ADMIN" | "MANAGER" | "AGENT";
   managerId: string | null;
   active: boolean;
 };
@@ -50,7 +50,10 @@ export function HierarchyAdminPanel() {
     return <p className="text-sm text-muted">Loading...</p>;
   }
 
-  const managers = users.filter((u) => u.role === "MANAGER");
+  // Admins can also personally run a downline, not just promoted managers —
+  // an admin who has agents reporting directly to them shouldn't need a
+  // second, MANAGER-role account just to be assignable here.
+  const supervisors = users.filter((u) => u.role === "MANAGER" || u.role === "ADMIN");
   const agents = users.filter((u) => u.role === "AGENT");
 
   function AgentRow({ agent }: { agent: HierarchyUser }) {
@@ -68,9 +71,10 @@ export function HierarchyAdminPanel() {
             onChange={(e) => patchUser(agent.id, { managerId: e.target.value || null })}
           >
             <option value="">— Unassigned —</option>
-            {managers.map((m) => (
+            {supervisors.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
+                {m.role === "ADMIN" ? " (Admin)" : ""}
               </option>
             ))}
           </Select>
@@ -94,26 +98,33 @@ export function HierarchyAdminPanel() {
         <CardHeader>
           <CardTitle>Managers</CardTitle>
         </CardHeader>
-        {managers.length === 0 && <p className="text-sm text-muted">No managers yet — promote an agent below.</p>}
+        {supervisors.length === 0 && <p className="text-sm text-muted">No managers yet — promote an agent below.</p>}
         <div className="space-y-4">
-          {managers.map((manager) => {
+          {supervisors.map((manager) => {
             const downline = agents.filter((a) => a.managerId === manager.id);
             return (
               <div key={manager.id} className="rounded-[10px] border border-border p-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-white">{manager.name}</p>
+                    <p className="text-sm font-semibold text-white">
+                      {manager.name}
+                      {manager.role === "ADMIN" && <span className="text-muted"> (Admin)</span>}
+                    </p>
                     <p className="text-xs text-muted">
                       {manager.email} · {downline.length} agent{downline.length === 1 ? "" : "s"}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    disabled={busyId === manager.id}
-                    onClick={() => patchUser(manager.id, { role: "AGENT" })}
-                  >
-                    Demote to Agent
-                  </Button>
+                  {/* Admin status isn't managed through this panel, so there's
+                      no equivalent "demote" action for an admin supervisor. */}
+                  {manager.role === "MANAGER" && (
+                    <Button
+                      variant="ghost"
+                      disabled={busyId === manager.id}
+                      onClick={() => patchUser(manager.id, { role: "AGENT" })}
+                    >
+                      Demote to Agent
+                    </Button>
+                  )}
                 </div>
                 {downline.length > 0 && (
                   <div className="mt-2 divide-y divide-border border-t border-border pl-4">
