@@ -1,9 +1,10 @@
 import { ReportsPanel } from "@/components/portal/ReportsPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export default function ReportsPage() {
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Reports</h1>
+      <PageHeading slug="reports" alt="Reports" />
       <ReportsPanel />
     </div>
   );

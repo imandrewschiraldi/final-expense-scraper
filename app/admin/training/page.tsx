@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { TrainingPanel } from "@/components/admin/TrainingPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export default async function AdminTrainingPage() {
 
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Training</h1>
+      <PageHeading slug="training" alt="Training" />
       <TrainingPanel
         initialModules={modules.map((m) => ({
           ...m,

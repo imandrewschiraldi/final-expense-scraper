@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { HierarchyAdminPanel } from "@/components/portal/HierarchyAdminPanel";
 import { HierarchyManagerPanel } from "@/components/portal/HierarchyManagerPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function HierarchyPage() {
 
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Hierarchy</h1>
+      <PageHeading slug="hierarchy" alt="Hierarchy" />
       {session.user.role === "ADMIN" ? <HierarchyAdminPanel /> : <HierarchyManagerPanel />}
     </div>
   );

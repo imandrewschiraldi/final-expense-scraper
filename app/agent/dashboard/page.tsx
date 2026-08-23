@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { AgentLeadList } from "@/components/agent/AgentLeadList";
 import { StatCard } from "@/components/admin/StatCard";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function AgentDashboardPage() {
 
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">My Leads</h1>
+      <PageHeading slug="my-leads" alt="My Leads" />
 
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="New" value={counts.NEW ?? 0} accent="copper" />
