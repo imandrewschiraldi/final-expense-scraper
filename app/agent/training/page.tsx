@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { TrainingModuleList } from "@/components/agent/TrainingModuleList";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function AgentTrainingPage() {
 
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Training</h1>
+      <PageHeading slug="training" alt="Training" />
       {modules.length === 0 ? (
         <p className="text-sm text-muted">No training modules have been added yet — check back soon.</p>
       ) : (
