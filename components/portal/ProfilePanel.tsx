@@ -160,7 +160,7 @@ export function ProfilePanel() {
                 Switch View
               </span>
               <div className="mt-1 flex flex-wrap gap-2">
-                {(["ADMIN", "MANAGER", "AGENT"] as const).map((role) => (
+                {(["ADMIN", "MANAGER"] as const).map((role) => (
                   <Button
                     key={role}
                     variant={profile.role === role ? "ghost" : "secondary"}
