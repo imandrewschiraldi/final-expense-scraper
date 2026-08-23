@@ -7,7 +7,7 @@ export async function GET() {
   if ("error" in guard) return guard.error;
 
   const users = await db.user.findMany({
-    where: { role: { in: ["MANAGER", "AGENT"] } },
+    where: { role: { in: ["ADMIN", "MANAGER", "AGENT"] } },
     orderBy: { name: "asc" },
     select: { id: true, name: true, email: true, role: true, managerId: true, active: true },
   });
