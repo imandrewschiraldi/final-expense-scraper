@@ -5,6 +5,7 @@ import { KpiGrid } from "@/components/portal/dashboard/KpiGrid";
 import { GoalsSection } from "@/components/portal/dashboard/GoalsSection";
 import { CelebrationOverlay } from "@/components/portal/dashboard/CelebrationOverlay";
 import { DashboardRangeSelect } from "@/components/portal/dashboard/DashboardRangeSelect";
+import { PageHeading } from "@/components/portal/PageHeading";
 import { ProductionTimeline } from "@/components/portal/dashboard/analytics/ProductionTimeline";
 import { DistributionAnalytics } from "@/components/portal/dashboard/analytics/DistributionAnalytics";
 import { StatusAnalytics } from "@/components/portal/dashboard/analytics/StatusAnalytics";
@@ -69,11 +70,9 @@ export function PersonalDashboardClient() {
 
   return (
     <div className="space-y-6">
+      <PageHeading slug="dashboard" alt="Dashboard" />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[26px] font-bold text-white">Performance</h1>
-          <p className="text-sm text-muted">Your production at a glance, derived from submitted policies.</p>
-        </div>
+        <p className="text-sm text-muted">Your production at a glance, derived from submitted policies.</p>
         <DashboardRangeSelect value={range} onChange={setRange} />
       </div>
 

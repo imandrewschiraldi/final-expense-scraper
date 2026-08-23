@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { SubmitPolicyPanel } from "@/components/portal/SubmitPolicyPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export default async function SubmitPolicyPage() {
 
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Submit Policy</h1>
+      <PageHeading slug="submit-policy" alt="Submit Policy" />
       <SubmitPolicyPanel isAgent={session?.user.role === "AGENT"} />
     </div>
   );
