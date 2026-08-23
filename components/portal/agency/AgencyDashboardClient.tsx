@@ -5,6 +5,7 @@ import { AgencyKpiGrid } from "@/components/portal/agency/AgencyKpiGrid";
 import { TopProducers } from "@/components/portal/agency/TopProducers";
 import { RecentActivity } from "@/components/portal/agency/RecentActivity";
 import { DashboardRangeSelect } from "@/components/portal/dashboard/DashboardRangeSelect";
+import { PageHeading } from "@/components/portal/PageHeading";
 import { ProductionTimeline } from "@/components/portal/dashboard/analytics/ProductionTimeline";
 import { DistributionAnalytics } from "@/components/portal/dashboard/analytics/DistributionAnalytics";
 import { StatusAnalytics } from "@/components/portal/dashboard/analytics/StatusAnalytics";
@@ -51,11 +52,9 @@ export function AgencyDashboardClient() {
 
   return (
     <div className="space-y-6">
+      <PageHeading slug="agency-dashboard" alt="Agency Dashboard" />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-[26px] font-bold text-white">Agency Dashboard</h1>
-          <p className="text-sm text-muted">Company-wide production across every Tier 1 Financial agent.</p>
-        </div>
+        <p className="text-sm text-muted">Company-wide production across every Tier 1 Financial agent.</p>
         <DashboardRangeSelect value={range} onChange={setRange} />
       </div>
 

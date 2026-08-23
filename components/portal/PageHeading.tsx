@@ -10,6 +10,11 @@ const HEADINGS = {
   training: { width: 687, height: 88 },
   "lead-vault": { width: 820, height: 87 },
   "my-leads": { width: 721, height: 88 },
+  "submit-policy": { width: 1055, height: 88 },
+  "book-of-business": { width: 1302, height: 88 },
+  "agency-dashboard": { width: 1472, height: 88 },
+  leaderboard: { width: 1060, height: 88 },
+  dashboard: { width: 879, height: 88 },
 } as const;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;
