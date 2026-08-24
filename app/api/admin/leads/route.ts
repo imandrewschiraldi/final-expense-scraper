@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
   const archivedParam = searchParams.get("archived");
   const isVaultedParam = searchParams.get("isVaulted");
   const vaultOriginParam = searchParams.get("vaultOrigin");
+  const wasRecycledParam = searchParams.get("wasRecycled");
   const idsOnly = searchParams.get("idsOnly") === "true";
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
 
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
   else if (agentId) where.assignedAgentId = agentId;
   if (isVaultedParam === "true" || isVaultedParam === "false") where.isVaulted = isVaultedParam === "true";
   if (vaultOriginParam === "true" || vaultOriginParam === "false") where.vaultOrigin = vaultOriginParam === "true";
+  if (wasRecycledParam === "true") where.wasRecycled = true;
 
   // Used by "Select All" bulk actions — returns every matching id (no
   // pagination) instead of a page of full lead records.

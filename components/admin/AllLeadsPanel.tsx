@@ -27,6 +27,7 @@ type Lead = {
 };
 
 type StateCount = { state: string; count: number };
+type AgentOption = { id: string; name: string; _count: { assignedLeads: number } };
 
 export function AllLeadsPanel() {
   const [stateFilter, setStateFilter] = useState("");
@@ -35,6 +36,7 @@ export function AllLeadsPanel() {
   const [archivedFilter, setArchivedFilter] = useState<"any" | "true" | "false">("any");
   const [vaultFilter, setVaultFilter] = useState<"any" | "true" | "false">("any");
   const [unassignedOnly, setUnassignedOnly] = useState(false);
+  const [previouslyAssignedOnly, setPreviouslyAssignedOnly] = useState(false);
   const [moving, setMoving] = useState(false);
 
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -52,6 +54,27 @@ export function AllLeadsPanel() {
   const [unvaultStateValue, setUnvaultStateValue] = useState("");
   const [unvaulting, setUnvaulting] = useState(false);
   const [unvaultMessage, setUnvaultMessage] = useState<string | null>(null);
+
+  const [agentsWithLeads, setAgentsWithLeads] = useState<AgentOption[]>([]);
+  const [unassignAgentId, setUnassignAgentId] = useState("");
+  const [unassigningAgent, setUnassigningAgent] = useState(false);
+  const [unassignAgentMessage, setUnassignAgentMessage] = useState<string | null>(null);
+
+  const loadAgentsWithLeads = useCallback(async () => {
+    const res = await fetch("/api/admin/agents");
+    if (res.ok) {
+      const data = await res.json();
+      const withLeads = (data.agents as AgentOption[])
+        .filter((a) => a._count.assignedLeads > 0)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setAgentsWithLeads(withLeads);
+      setUnassignAgentId((prev) => prev || withLeads[0]?.id || "");
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAgentsWithLeads();
+  }, [loadAgentsWithLeads]);
 
   const loadVaultStateCounts = useCallback(async () => {
     const res = await fetch("/api/admin/leads/states?isVaulted=true");
@@ -119,9 +142,10 @@ export function AllLeadsPanel() {
       if (leadTypeFilter) params.set("leadType", leadTypeFilter);
       if (vaultFilter !== "any") params.set("isVaulted", vaultFilter);
       if (unassignedOnly) params.set("unassignedOnly", "true");
+      if (previouslyAssignedOnly) params.set("wasRecycled", "true");
       return params;
     },
-    [stateFilter, statusFilter, leadTypeFilter, archivedFilter, vaultFilter, unassignedOnly],
+    [stateFilter, statusFilter, leadTypeFilter, archivedFilter, vaultFilter, unassignedOnly, previouslyAssignedOnly],
   );
 
   const loadLeads = useCallback(async () => {
@@ -275,6 +299,37 @@ export function AllLeadsPanel() {
       loadVaultStateCounts();
     } else {
       setUnvaultMessage(data.error ?? "Remove from vault failed");
+    }
+  }
+
+  async function unassignAgentLeads() {
+    if (!unassignAgentId) return;
+    const agent = agentsWithLeads.find((a) => a.id === unassignAgentId);
+    const count = agent?._count.assignedLeads ?? 0;
+    const confirmed = window.confirm(
+      `Unassign all ${count.toLocaleString()} lead(s) currently assigned to ${agent?.name ?? "this agent"}? ` +
+        `They're returned to the unassigned pool (not the vault) and stay visible under "Previously Assigned Only".`,
+    );
+    if (!confirmed) return;
+
+    setUnassigningAgent(true);
+    setUnassignAgentMessage(null);
+    const res = await fetch("/api/admin/leads/unassign-agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ agentId: unassignAgentId }),
+    });
+    const data = await res.json();
+    setUnassigningAgent(false);
+    if (res.ok) {
+      setUnassignAgentMessage(`Unassigned ${data.unassigned.toLocaleString()} lead(s) from ${agent?.name ?? "this agent"}.`);
+      setUnassignAgentId("");
+      setPage(1);
+      loadLeads();
+      loadAssignmentSummary();
+      loadAgentsWithLeads();
+    } else {
+      setUnassignAgentMessage(data.error ?? "Unassign failed");
     }
   }
 
@@ -445,6 +500,17 @@ export function AllLeadsPanel() {
             />
             Unassigned Only
           </label>
+          <label className="flex items-center gap-2 pb-2 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={previouslyAssignedOnly}
+              onChange={(e) => {
+                setPreviouslyAssignedOnly(e.target.checked);
+                setPage(1);
+              }}
+            />
+            Previously Assigned Only
+          </label>
         </div>
       </Card>
 
@@ -598,6 +664,41 @@ export function AllLeadsPanel() {
             disabled={unvaulting || !unvaultStateValue || vaultStateCounts.length === 0}
           >
             Remove All &quot;{unvaultStateValue}&quot; From Vault
+          </Button>
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Unassign Agent&apos;s Leads</CardTitle>
+        </CardHeader>
+        <p className="mb-3 text-sm text-muted">
+          Pulls every currently-assigned lead off the agent you pick and returns them to the regular unassigned
+          pool — not the vault. They keep their status and history, and stay visible in All Leads under
+          &quot;Previously Assigned Only&quot; so you can review what they were working before reassigning.
+        </p>
+        {unassignAgentMessage && <p className="mb-3 text-sm text-teal-light">{unassignAgentMessage}</p>}
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="w-64">
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              Agent
+            </label>
+            <Select value={unassignAgentId} onChange={(e) => setUnassignAgentId(e.target.value)}>
+              {agentsWithLeads.length === 0 && <option value="">No agents currently have assigned leads</option>}
+              {agentsWithLeads.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({a._count.assignedLeads.toLocaleString()})
+                </option>
+              ))}
+            </Select>
+          </div>
+          <Button
+            variant="danger"
+            onClick={unassignAgentLeads}
+            disabled={unassigningAgent || !unassignAgentId || agentsWithLeads.length === 0}
+          >
+            Unassign All From{" "}
+            {agentsWithLeads.find((a) => a.id === unassignAgentId)?.name ?? "..."}
           </Button>
         </div>
       </Card>
