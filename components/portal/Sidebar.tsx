@@ -12,7 +12,6 @@ import {
   FilePlus2,
   FileBarChart2,
   Network,
-  Settings,
   Users,
   Archive,
   GraduationCap,
@@ -59,7 +58,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/portal/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"] },
-  { href: "/portal/settings", label: "Settings", icon: Settings, roles: ["ADMIN", "MANAGER", "AGENT"] },
 ];
 
 // "/admin/leads" is a strict prefix of "/admin/leads/vault", so a plain

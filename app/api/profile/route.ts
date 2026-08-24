@@ -17,6 +17,8 @@ export async function GET() {
       licensedStates: true,
       profileImageUrl: true,
       compLevel: true,
+      npn: true,
+      residentState: true,
       createdAt: true,
       vaultEnabled: true,
     },
@@ -33,14 +35,20 @@ export async function PATCH(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { licensedStates } = body as { licensedStates?: string[] };
+  const { licensedStates, npn, residentState } = body as {
+    licensedStates?: string[];
+    npn?: string | null;
+    residentState?: string | null;
+  };
 
-  // Comp level is admin-only (set via /api/admin/agents/[id]) and deliberately
-  // not accepted here.
+  // Comp level and role are admin-only (set via /api/admin/agents/[id]) and
+  // deliberately not accepted here.
   const user = await db.user.update({
     where: { id: guard.session.user.id },
     data: {
       ...(licensedStates !== undefined ? { licensedStates: licensedStates.map((s) => s.toUpperCase()) } : {}),
+      ...(npn !== undefined ? { npn: npn?.trim() || null } : {}),
+      ...(residentState !== undefined ? { residentState: residentState?.trim().toUpperCase() || null } : {}),
     },
     select: {
       id: true,
@@ -50,6 +58,8 @@ export async function PATCH(req: NextRequest) {
       licensedStates: true,
       profileImageUrl: true,
       compLevel: true,
+      npn: true,
+      residentState: true,
     },
   });
 
