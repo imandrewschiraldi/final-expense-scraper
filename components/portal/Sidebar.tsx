@@ -96,11 +96,11 @@ function NavLinks({
             title={collapsed ? item.label : undefined}
             onClick={onNavigate}
             className={cn(
-              "font-condensed relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-all duration-150",
+              "font-condensed relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-all duration-200",
               collapsed && "justify-center px-0",
               active
                 ? "bg-copper/[0.12] text-copper shadow-[inset_0_0_0_1px_rgba(200,121,65,0.25)]"
-                : "text-muted hover:bg-white/[0.03] hover:text-foreground",
+                : "text-muted hover:bg-copper/[0.08] hover:text-copper hover:shadow-[0_0_16px_1px_rgba(200,121,65,0.3)]",
             )}
           >
             {active && <span className="absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r bg-copper" />}
