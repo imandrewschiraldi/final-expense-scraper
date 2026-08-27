@@ -42,10 +42,20 @@ export type PageHeadingSlug = keyof typeof HEADINGS;
  * leaving a 66px band above the line. A 26px-tall image centered in that
  * band gets an even 20px margin-top and 20px gap before the line.
  */
-export function PageHeading({ slug, alt }: { slug: PageHeadingSlug; alt: string }) {
+export function PageHeading({
+  slug,
+  alt,
+  wrapperClassName,
+}: {
+  slug: PageHeadingSlug;
+  alt: string;
+  // Lets one page sit closer to (or further from) the line than the shared
+  // default, without changing every other page's heading.
+  wrapperClassName?: string;
+}) {
   const { width, height } = HEADINGS[slug];
   return (
-    <div className="mb-6 mt-3 flex justify-center lg:mt-[20px]">
+    <div className={wrapperClassName ?? "mb-6 mt-3 flex justify-center lg:mt-[20px]"}>
       <Image
         src={`/headings/${slug}.png`}
         alt={alt}

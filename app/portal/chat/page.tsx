@@ -12,7 +12,7 @@ export default async function ChatPage() {
 
   return (
     <div>
-      <PageHeading slug="team-chat" alt="Team Chat" />
+      <PageHeading slug="team-chat" alt="Team Chat" wrapperClassName="mb-6 mt-5 flex justify-center lg:mt-[28px]" />
       <ChatRoom me={session.user.id} canManage={canManageChannels(session.user.role)} />
     </div>
   );
