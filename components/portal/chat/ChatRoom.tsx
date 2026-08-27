@@ -41,6 +41,10 @@ import {
 /** The "no category" bucket at the top of the rail — not a real category id. */
 const LOOSE = "loose";
 
+/** Persists which category groups are collapsed, so the rail doesn't reset
+ *  to fully expanded every time the page reloads. */
+const COLLAPSED_CATEGORIES_KEY = "chat-collapsed-categories";
+
 /**
  * The team room.
  *
@@ -208,11 +212,15 @@ function SortableChannel({
 function SortableCategoryGroup({
   category,
   canManage,
+  collapsed,
+  onToggleCollapsed,
   onAddChannel,
   children,
 }: {
   category: Category;
   canManage: boolean;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
   onAddChannel: () => void;
   children: React.ReactNode;
 }) {
@@ -234,10 +242,17 @@ function SortableCategoryGroup({
             <GripVertical className="h-3 w-3" />
           </span>
         )}
-        <ChevronDown className="h-3 w-3 text-muted" />
-        <p className="font-condensed flex-1 text-[10px] font-extrabold tracking-[0.18em] text-muted uppercase">
-          {category.name}
-        </p>
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          aria-expanded={!collapsed}
+          className="flex flex-1 items-center gap-1 text-left text-muted hover:text-foreground"
+        >
+          <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform", collapsed && "-rotate-90")} />
+          <p className="font-condensed flex-1 text-[10px] font-extrabold tracking-[0.18em] uppercase">
+            {category.name}
+          </p>
+        </button>
         {canManage && (
           <button
             type="button"
@@ -249,7 +264,7 @@ function SortableCategoryGroup({
           </button>
         )}
       </div>
-      {children}
+      <div className={collapsed ? "hidden" : undefined}>{children}</div>
     </div>
   );
 }
@@ -279,6 +294,33 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   const [modalError, setModalError] = useState<string | null>(null);
   const [modalBusy, setModalBusy] = useState(false);
   const [members, setMembers] = useState<Member[] | null>(null);
+
+  // Which category groups are collapsed — starts empty (matching SSR) and
+  // syncs from localStorage right after mount, same pattern as the sidebar's
+  // own collapse state.
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const raw = localStorage.getItem(COLLAPSED_CATEGORIES_KEY);
+    if (raw) {
+      try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCollapsedCategories(new Set(JSON.parse(raw)));
+      } catch {
+        // Ignore malformed storage — falls back to everything expanded.
+      }
+    }
+  }, []);
+
+  function toggleCategoryCollapsed(categoryId: string) {
+    setCollapsedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) next.delete(categoryId);
+      else next.add(categoryId);
+      localStorage.setItem(COLLAPSED_CATEGORIES_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  }
 
   // Drag-and-drop reordering, admin-only. `containers` maps a container key
   // (LOOSE, or a category id) to its channel ids in display order, and
@@ -965,6 +1007,8 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                   key={catId}
                   category={category}
                   canManage={canManage}
+                  collapsed={collapsedCategories.has(catId)}
+                  onToggleCollapsed={() => toggleCategoryCollapsed(catId)}
                   onAddChannel={() => openChannelModal(catId)}
                 >
                   <DroppableContainer id={catId} className="min-h-[8px] space-y-1">
