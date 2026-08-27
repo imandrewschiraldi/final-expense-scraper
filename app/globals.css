@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 :root {
+  /* Belt-and-suspenders alongside the `viewport.colorScheme` meta tag in
+     layout.tsx: without this, a browser's "auto dark theme" heuristic can
+     decide a page needs help and repaint true black as washed-out gray,
+     throwing off every glow/shadow tuned against #000. */
+  color-scheme: dark;
+
   --background: #000000;
   --surface: #0d0d0d;
   --surface2: #141414;
