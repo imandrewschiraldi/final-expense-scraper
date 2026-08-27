@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Barlow, Orbitron } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -45,6 +45,15 @@ export const metadata: Metadata = {
     // to include both.
     "apple-mobile-web-app-capable": "yes",
   },
+};
+
+// Without this, a browser/OS "auto dark theme" heuristic (Chrome's forced
+// dark mode is the common culprit) can decide this page needs help and
+// repaint pure black as a washed-out gray, throwing off every glow/shadow
+// that was tuned against true black — this tells it the page is already
+// intentionally dark and to leave it alone.
+export const viewport: Viewport = {
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
