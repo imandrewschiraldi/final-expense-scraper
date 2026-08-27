@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { checkAndAwardGoals } from "@/lib/personalDashboard";
+import { postDailySaleAnnouncement } from "@/lib/chatBot";
 import { PolicyStatus } from "@prisma/client";
 
 const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
@@ -76,6 +77,12 @@ export async function POST(req: NextRequest) {
   if (guard.session.user.id) {
     await checkAndAwardGoals(guard.session.user.id);
   }
+
+  await postDailySaleAnnouncement({
+    agentName: guard.session.user.name ?? guard.session.user.email ?? "An agent",
+    annualPremium,
+    carrier: carrier.trim(),
+  });
 
   return NextResponse.json({ policy }, { status: 201 });
 }
