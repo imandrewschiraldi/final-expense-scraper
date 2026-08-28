@@ -4,14 +4,15 @@ import { PRODUCTS } from "@/lib/products";
 import { windowFor, bucketKey, POLICY_STATUSES } from "@/lib/productionAnalytics";
 import { computeCommissionAmount } from "@/lib/commission";
 import { PersonalKpiData, CommissionsPaidCardData } from "@/lib/personalDashboardShared";
+import { RecentActivityItem } from "@/lib/agencyDashboardShared";
 
 /**
  * Demo Mode's entire fake dataset, generated in-memory and never written to
  * the database — every function below reads this instead of Prisma, so a
- * viewer's own Dashboard/Book of Business/Leaderboard swap to fake numbers
- * without ever touching a real row or any other user's view.
+ * viewer's own Dashboard/Book of Business/Leaderboard/Agency Dashboard swap
+ * to fake numbers without ever touching a real row or any other user's view.
  *
- * Deterministic (a fixed PRNG seed): the same 520 policies every time, so
+ * Deterministic (a fixed PRNG seed): the same 379 policies every time, so
  * numbers don't visibly jump around between the dashboard's 25s polls.
  */
 
@@ -29,7 +30,7 @@ export type DemoPolicy = {
   commissionAmount: number;
 };
 
-const DEMO_POLICY_COUNT = 520;
+const DEMO_POLICY_COUNT = 379;
 // Purely for shaping the fake commissionAmount figures — not a real comp
 // level or rate, just plausible-looking inputs to the same real formula.
 const DEMO_COMP_LEVEL_PERCENT = 0.8;
@@ -63,8 +64,8 @@ function pick<T>(arr: readonly T[], random: () => number): T {
 }
 
 /**
- * 520 fake policies spread evenly (with natural jitter) across the trailing
- * 365 days ending `now` — never future-dated, roughly ~43/month, ~10/week.
+ * 379 fake policies spread evenly (with natural jitter) across the trailing
+ * 365 days ending `now` — never future-dated, roughly ~32/month, ~7/week.
  * ~8% end up Chargeback, matching a realistic-looking book; the rest split
  * between Submitted and Issued depending on how long ago they were sold.
  */
@@ -288,6 +289,19 @@ export function demoLeaderboardTotals(policies: DemoPolicy[]) {
     issuedAP: issued.reduce((sum, p) => sum + p.annualPremium, 0),
     issuedCount: issued.length,
   };
+}
+
+/** Top N demo policies shaped as Agency Dashboard "recent activity" rows — policies are already sorted newest-first. */
+export function demoRecentActivity(policies: DemoPolicy[], agentName: string, limit = 8): RecentActivityItem[] {
+  return policies.slice(0, limit).map((p) => ({
+    id: p.id,
+    agentName,
+    carrier: p.carrier,
+    product: p.product,
+    annualPremium: p.annualPremium,
+    status: p.status,
+    submittedAt: p.submittedAt.toISOString(),
+  }));
 }
 
 /** Shapes the fake set as the same rows GET /api/portal/policies returns, for Book of Business. */
