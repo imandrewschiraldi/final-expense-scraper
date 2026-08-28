@@ -19,6 +19,7 @@ export async function GET() {
       compLevel: true,
       npn: true,
       residentState: true,
+      demoModeEnabled: true,
       createdAt: true,
       vaultEnabled: true,
     },
@@ -35,10 +36,11 @@ export async function PATCH(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { licensedStates, npn, residentState } = body as {
+  const { licensedStates, npn, residentState, demoModeEnabled } = body as {
     licensedStates?: string[];
     npn?: string | null;
     residentState?: string | null;
+    demoModeEnabled?: boolean;
   };
 
   // Comp level and role are admin-only (set via /api/admin/agents/[id]) and
@@ -49,6 +51,7 @@ export async function PATCH(req: NextRequest) {
       ...(licensedStates !== undefined ? { licensedStates: licensedStates.map((s) => s.toUpperCase()) } : {}),
       ...(npn !== undefined ? { npn: npn?.trim() || null } : {}),
       ...(residentState !== undefined ? { residentState: residentState?.trim().toUpperCase() || null } : {}),
+      ...(demoModeEnabled !== undefined ? { demoModeEnabled } : {}),
     },
     select: {
       id: true,
@@ -60,6 +63,7 @@ export async function PATCH(req: NextRequest) {
       compLevel: true,
       npn: true,
       residentState: true,
+      demoModeEnabled: true,
     },
   });
 

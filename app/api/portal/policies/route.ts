@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { checkAndAwardGoals } from "@/lib/personalDashboard";
 import { postDailySaleAnnouncement } from "@/lib/chatBot";
 import { resolveCommissionAmount } from "@/lib/commissionServer";
+import { generateDemoPolicies, demoPoliciesAsApiRows } from "@/lib/demoData";
 import { PolicyStatus } from "@prisma/client";
 
 const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
@@ -14,9 +15,23 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const mine = searchParams.get("mine") === "true";
+  // Only true when this response can only ever contain the requester's own
+  // policies — an admin/manager browsing org-wide (no `mine`, not an
+  // AGENT) always sees real data, never faked.
+  const ownScopeOnly = mine || guard.session.user.role === "AGENT";
+
+  if (ownScopeOnly) {
+    const user = await db.user.findUnique({
+      where: { id: guard.session.user.id },
+      select: { name: true, demoModeEnabled: true },
+    });
+    if (user?.demoModeEnabled) {
+      return NextResponse.json({ policies: demoPoliciesAsApiRows(generateDemoPolicies(), user.name) });
+    }
+  }
 
   const policies = await db.policy.findMany({
-    where: mine || guard.session.user.role === "AGENT" ? { agentId: guard.session.user.id } : {},
+    where: ownScopeOnly ? { agentId: guard.session.user.id } : {},
     orderBy: { submittedAt: "desc" },
     include: { agent: { select: { name: true } } },
   });

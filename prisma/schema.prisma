@@ -60,6 +60,11 @@ model User {
   assignmentEnabled     Boolean   @default(true)
   npn                   String?
   residentState         String?
+  /// When on, this user's own Dashboard/Book of Business/Leaderboard views
+  /// are swapped for deterministic fake production data — for demoing the
+  /// system. Purely a per-viewer read-time overlay: never writes fake rows
+  /// to the real tables, and never affects what any other user sees.
+  demoModeEnabled       Boolean   @default(false)
   managerId             String?
   manager               User?     @relation("ManagerHierarchy", fields: [managerId], references: [id], onDelete: SetNull)
   inviteTokenHash       String?   @unique

@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
+import { db } from "@/lib/db";
 import { computePersonalKpis, activeGoalsFor, recentWinsFor, computeCommissionsPaidCard } from "@/lib/personalDashboard";
 import { DASHBOARD_RANGES, DashboardRange } from "@/lib/dashboardRange";
 import { computeProductionTimeline, computeCarrierAnalytics, computeProductAnalytics, computePolicyStatusAnalytics } from "@/lib/productionAnalytics";
+import {
+  generateDemoPolicies,
+  demoPersonalKpis,
+  demoCommissionsPaidCard,
+  demoProductionTimeline,
+  demoCarrierAnalytics,
+  demoProductAnalytics,
+  demoPolicyStatusAnalytics,
+} from "@/lib/demoData";
 
 export async function GET(req: NextRequest) {
   const guard = await requireAnyRole();
@@ -16,10 +26,40 @@ export async function GET(req: NextRequest) {
     : "monthly";
 
   try {
-    const [kpis, goals, recentWins, timeline, carriers, products, statusAnalytics, commissionsPaid] = await Promise.all([
+    const [goals, recentWins] = await Promise.all([activeGoalsFor(userId), recentWinsFor(userId)]);
+
+    // Demo Mode is a per-viewer read-time overlay: checked fresh against
+    // this user's own row, and only ever changes what this one request
+    // returns to them — never writes anything, never touches another
+    // user's response.
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { name: true, profileImageUrl: true, demoModeEnabled: true },
+    });
+
+    if (user?.demoModeEnabled) {
+      const demoPolicies = generateDemoPolicies();
+      // Goal Completion / Goal Remaining still come from the real
+      // computePersonalKpis (via activeGoalsFor above being folded in by
+      // it) so a person's own goal-tracking is never faked — only demoPersonalKpis'
+      // AP-derived tiles are, layered on top.
+      const realKpis = await computePersonalKpis(userId, range);
+      return NextResponse.json({
+        kpis: { ...realKpis, ...demoPersonalKpis(demoPolicies, range) },
+        goals,
+        recentWins,
+        analytics: {
+          timeline: demoProductionTimeline(demoPolicies, range),
+          carriers: demoCarrierAnalytics(demoPolicies, range),
+          products: demoProductAnalytics(demoPolicies, range),
+          statusAnalytics: demoPolicyStatusAnalytics(demoPolicies, range),
+        },
+        commissionsPaid: demoCommissionsPaidCard(demoPolicies, range, user.name, user.profileImageUrl),
+      });
+    }
+
+    const [kpis, timeline, carriers, products, statusAnalytics, commissionsPaid] = await Promise.all([
       computePersonalKpis(userId, range),
-      activeGoalsFor(userId),
-      recentWinsFor(userId),
       computeProductionTimeline(userId, range),
       computeCarrierAnalytics(userId, range),
       computeProductAnalytics(userId, range),
