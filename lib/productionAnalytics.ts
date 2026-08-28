@@ -3,11 +3,11 @@ import { startOfDay, startOfWeek, startOfMonth, startOfYear, subDays, subWeeks, 
 import { DashboardRange } from "@/lib/dashboardRange";
 import { PRODUCTS } from "@/lib/products";
 
-const POLICY_STATUSES = ["SUBMITTED", "ISSUED", "CHARGEBACK"] as const;
+export const POLICY_STATUSES = ["SUBMITTED", "ISSUED", "CHARGEBACK"] as const;
 
-type Bucket = "daily" | "weekly" | "monthly";
+export type Bucket = "daily" | "weekly" | "monthly";
 
-function windowFor(range: DashboardRange, now: Date): { since: Date | null; bucket: Bucket } {
+export function windowFor(range: DashboardRange, now: Date): { since: Date | null; bucket: Bucket } {
   switch (range) {
     case "daily":
       return { since: subDays(startOfDay(now), 29), bucket: "daily" };
@@ -22,7 +22,7 @@ function windowFor(range: DashboardRange, now: Date): { since: Date | null; buck
   }
 }
 
-function bucketKey(date: Date, bucket: Bucket): { key: string; label: string } {
+export function bucketKey(date: Date, bucket: Bucket): { key: string; label: string } {
   switch (bucket) {
     case "daily": {
       const d = startOfDay(date);

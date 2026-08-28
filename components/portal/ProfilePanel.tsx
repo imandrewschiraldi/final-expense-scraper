@@ -19,6 +19,7 @@ type Profile = {
   compLevel: string | null;
   npn: string | null;
   residentState: string | null;
+  demoModeEnabled: boolean;
 };
 
 export function ProfilePanel() {
@@ -40,6 +41,8 @@ export function ProfilePanel() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+
+  const [togglingDemoMode, setTogglingDemoMode] = useState(false);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -101,6 +104,25 @@ export function ProfilePanel() {
       setConfirmPassword("");
     } else {
       setPasswordError(data?.error ?? "Failed to update password.");
+    }
+  }
+
+  async function toggleDemoMode() {
+    if (!profile) return;
+    const next = !profile.demoModeEnabled;
+    setTogglingDemoMode(true);
+    setError(null);
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ demoModeEnabled: next }),
+    });
+    setTogglingDemoMode(false);
+    if (res.ok) {
+      const data = await res.json();
+      setProfile(data.profile);
+    } else {
+      setError("Failed to toggle Demo Mode.");
     }
   }
 
@@ -229,6 +251,26 @@ export function ProfilePanel() {
               <p className="text-white">{profile.compLevel}</p>
             </div>
           )}
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Demo Mode</CardTitle>
+        </CardHeader>
+        <div className="flex items-start justify-between gap-4">
+          <p className="max-w-md text-sm text-muted">
+            Shows realistic-looking fake production across your Dashboard, Book of Business, and Leaderboard row —
+            useful when demoing the system to someone. It&apos;s only ever what appears on your own screen: nothing
+            fake is ever written to the real data, and no one else&apos;s view is affected.
+          </p>
+          <Button
+            variant={profile.demoModeEnabled ? "ghost" : "secondary"}
+            onClick={toggleDemoMode}
+            disabled={togglingDemoMode}
+          >
+            {togglingDemoMode ? "Saving..." : profile.demoModeEnabled ? "On — Turn Off" : "Off — Turn On"}
+          </Button>
         </div>
       </Card>
 
