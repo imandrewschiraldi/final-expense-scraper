@@ -11,7 +11,7 @@ import { PersonalKpiData, CommissionsPaidCardData } from "@/lib/personalDashboar
  * viewer's own Dashboard/Book of Business/Leaderboard swap to fake numbers
  * without ever touching a real row or any other user's view.
  *
- * Deterministic (a fixed PRNG seed): the same 130 policies every time, so
+ * Deterministic (a fixed PRNG seed): the same 520 policies every time, so
  * numbers don't visibly jump around between the dashboard's 25s polls.
  */
 
@@ -29,7 +29,7 @@ export type DemoPolicy = {
   commissionAmount: number;
 };
 
-const DEMO_POLICY_COUNT = 130;
+const DEMO_POLICY_COUNT = 520;
 // Purely for shaping the fake commissionAmount figures — not a real comp
 // level or rate, just plausible-looking inputs to the same real formula.
 const DEMO_COMP_LEVEL_PERCENT = 0.8;
@@ -63,8 +63,8 @@ function pick<T>(arr: readonly T[], random: () => number): T {
 }
 
 /**
- * 130 fake policies spread evenly (with natural jitter) across the trailing
- * 365 days ending `now` — never future-dated, roughly ~11/month, ~2.5/week.
+ * 520 fake policies spread evenly (with natural jitter) across the trailing
+ * 365 days ending `now` — never future-dated, roughly ~43/month, ~10/week.
  * ~8% end up Chargeback, matching a realistic-looking book; the rest split
  * between Submitted and Issued depending on how long ago they were sold.
  */
