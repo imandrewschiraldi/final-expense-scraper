@@ -29,6 +29,8 @@ export type SubmittedPolicy = {
 };
 
 type SoldLead = { id: string; firstName: string; lastName: string; phone: string; state: string };
+type CarrierPlan = { id: string; name: string };
+type CarrierWithPlans = { id: string; name: string; plans: CarrierPlan[] };
 
 const emptyForm = {
   leadId: "",
@@ -39,6 +41,7 @@ const emptyForm = {
   product: "",
   annualPremium: "",
   status: "SUBMITTED" as PolicyStatus,
+  carrierPlanId: "",
 };
 
 export function PolicySubmitForm({
@@ -49,6 +52,7 @@ export function PolicySubmitForm({
   onSubmitted: (policy: SubmittedPolicy) => void;
 }) {
   const [soldLeads, setSoldLeads] = useState<SoldLead[]>([]);
+  const [carriers, setCarriers] = useState<CarrierWithPlans[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -61,6 +65,24 @@ export function PolicySubmitForm({
         .catch(() => setSoldLeads([]));
     }
   }, [isAgent]);
+
+  useEffect(() => {
+    fetch("/api/portal/carrier-plans")
+      .then((res) => (res.ok ? res.json() : { carriers: [] }))
+      .then((data) => setCarriers((data.carriers ?? []).filter((c: CarrierWithPlans) => c.plans.length > 0)))
+      .catch(() => setCarriers([]));
+  }, []);
+
+  function onCarrierPlanSelect(carrierPlanId: string) {
+    const owningCarrier = carriers.find((c) => c.plans.some((p) => p.id === carrierPlanId));
+    setForm((f) => ({
+      ...f,
+      carrierPlanId,
+      // Only fills the free-text carrier field when it's empty, so this
+      // never clobbers something already typed by hand.
+      carrier: !f.carrier.trim() && owningCarrier ? owningCarrier.name : f.carrier,
+    }));
+  }
 
   function onLeadSelect(leadId: string) {
     const lead = soldLeads.find((l) => l.id === leadId);
@@ -87,6 +109,7 @@ export function PolicySubmitForm({
         ...form,
         leadId: form.leadId || undefined,
         annualPremium: Number(form.annualPremium),
+        carrierPlanId: form.carrierPlanId || undefined,
       }),
     });
     const data = await res.json();
@@ -150,6 +173,25 @@ export function PolicySubmitForm({
           onChange={(e) => setForm({ ...form, annualPremium: e.target.value })}
         />
       </div>
+      {carriers.length > 0 && (
+        <div>
+          <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+            Rate Plan (optional — drives Commissions Paid)
+          </label>
+          <Select value={form.carrierPlanId} onChange={(e) => onCarrierPlanSelect(e.target.value)}>
+            <option value="">— Not rated / not listed —</option>
+            {carriers.map((c) => (
+              <optgroup key={c.id} label={c.name}>
+                {c.plans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {c.name} — {p.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </Select>
+        </div>
+      )}
       <div>
         <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
           Status

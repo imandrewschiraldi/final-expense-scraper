@@ -3,6 +3,7 @@ import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { checkAndAwardGoals } from "@/lib/personalDashboard";
 import { postDailySaleAnnouncement } from "@/lib/chatBot";
+import { resolveCommissionAmount } from "@/lib/commissionServer";
 import { PolicyStatus } from "@prisma/client";
 
 const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { leadId, clientName, clientPhone, state, carrier, product, annualPremium, status } = body as {
+  const { leadId, clientName, clientPhone, state, carrier, product, annualPremium, status, carrierPlanId } = body as {
     leadId?: string;
     clientName?: string;
     clientPhone?: string;
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
     product?: string;
     annualPremium?: number;
     status?: PolicyStatus;
+    carrierPlanId?: string;
   };
 
   if (!clientName?.trim() || !carrier?.trim() || !annualPremium || annualPremium <= 0) {
@@ -56,6 +58,12 @@ export async function POST(req: NextRequest) {
 
   const now = new Date();
   const resolvedStatus = status && POLICY_STATUSES.includes(status) ? status : "SUBMITTED";
+  const resolvedCarrierPlanId = carrierPlanId || null;
+  const commissionAmount = await resolveCommissionAmount({
+    agentId: guard.session.user.id,
+    annualPremium,
+    carrierPlanId: resolvedCarrierPlanId,
+  });
   const policy = await db.policy.create({
     data: {
       agentId: guard.session.user.id,
@@ -68,6 +76,8 @@ export async function POST(req: NextRequest) {
       annualPremium,
       status: resolvedStatus,
       issuedAt: resolvedStatus === "ISSUED" ? now : null,
+      carrierPlanId: resolvedCarrierPlanId,
+      commissionAmount,
     },
   });
 
