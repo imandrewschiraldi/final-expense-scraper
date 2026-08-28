@@ -19,6 +19,7 @@ import {
   Calculator,
   MessagesSquare,
   UsersRound,
+  Percent,
   ChevronsLeft,
   ChevronsRight,
   X,
@@ -58,6 +59,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/portal/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"] },
+  { href: "/admin/carriers", label: "Carrier Rates", icon: Percent, roles: ["ADMIN"] },
 ];
 
 // "/admin/leads" is a strict prefix of "/admin/leads/vault", so a plain

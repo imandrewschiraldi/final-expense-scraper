@@ -275,13 +275,63 @@ model Policy {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
+  /// Optional link to a rated Carrier/CarrierPlan so commissionAmount can be
+  /// computed automatically. Free-text `carrier`/`product` above are kept
+  /// regardless — this is purely additive, for the commission calculation.
+  carrierPlanId String?
+  carrierPlan   CarrierPlan? @relation(fields: [carrierPlanId], references: [id], onDelete: SetNull)
+  /// Snapshotted at submit/edit time: AP × the 9-month advance × the
+  /// agent's own comp level × the plan's payout multiplier. Frozen so a
+  /// later change to an agent's comp level or a carrier's rate never
+  /// retroactively alters what was actually already advanced on a sale.
+  /// Null until both the agent has a parsable comp level and a carrier
+  /// plan is attached.
+  commissionAmount Decimal? @db.Decimal(12, 2)
+
   statusHistory PolicyStatusHistory[]
 
   @@index([agentId])
   @@index([status])
   @@index([submittedAt])
   @@index([issuedAt])
+  @@index([carrierPlanId])
   @@map("policies")
+}
+
+/// A carrier in the commission rate table — admin-managed, purely for the
+/// Commissions Paid calculation. Distinct from Policy.carrier (free text)
+/// so historical/manual entries never break just because a name isn't
+/// rated yet.
+model Carrier {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plans CarrierPlan[]
+
+  @@map("carriers")
+}
+
+/// One rated plan under a carrier (e.g. Americo "HMS 125"), carrying how
+/// much of an agent's own comp level this specific plan actually pays out.
+model CarrierPlan {
+  id        String  @id @default(cuid())
+  carrierId String
+  carrier   Carrier @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  name      String
+  /// Fraction of the agent's own comp level this plan pays — 1.0000 means
+  /// "pays the agent's full contract level", 0.9375 means "pays 93.75% of
+  /// it". Multiplied by the agent's parsed compLevel to get the actual
+  /// commission rate for a sale of this plan.
+  payoutMultiplier Decimal @db.Decimal(5, 4)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  policies Policy[]
+
+  @@unique([carrierId, name])
+  @@map("carrier_plans")
 }
 
 // Written on every Policy.status change going forward (no backfill for

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
-import { computePersonalKpis, activeGoalsFor, recentWinsFor } from "@/lib/personalDashboard";
+import { computePersonalKpis, activeGoalsFor, recentWinsFor, computeCommissionsPaidCard } from "@/lib/personalDashboard";
 import { DASHBOARD_RANGES, DashboardRange } from "@/lib/dashboardRange";
 import { computeProductionTimeline, computeCarrierAnalytics, computeProductAnalytics, computePolicyStatusAnalytics } from "@/lib/productionAnalytics";
 
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     : "monthly";
 
   try {
-    const [kpis, goals, recentWins, timeline, carriers, products, statusAnalytics] = await Promise.all([
+    const [kpis, goals, recentWins, timeline, carriers, products, statusAnalytics, commissionsPaid] = await Promise.all([
       computePersonalKpis(userId, range),
       activeGoalsFor(userId),
       recentWinsFor(userId),
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
       computeCarrierAnalytics(userId, range),
       computeProductAnalytics(userId, range),
       computePolicyStatusAnalytics(userId, range),
+      computeCommissionsPaidCard(userId, range),
     ]);
 
     return NextResponse.json({
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
       goals,
       recentWins,
       analytics: { timeline, carriers, products, statusAnalytics },
+      commissionsPaid,
     });
   } catch (err) {
     console.error("GET /api/portal/dashboard/overview failed:", err);

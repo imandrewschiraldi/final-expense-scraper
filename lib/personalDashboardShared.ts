@@ -49,6 +49,14 @@ export const GOAL_CATEGORY_FORMAT: Record<string, "currency" | "count"> = {
   RECRUITING: "count",
 };
 
+export type CommissionsPaidCardData = {
+  value: number;
+  previousValue: number;
+  rangeLabel: string;
+  agentName: string;
+  agentProfileImageUrl: string | null;
+};
+
 export type GoalWithProgress = {
   id: string;
   category: string;

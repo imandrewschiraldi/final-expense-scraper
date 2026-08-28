@@ -1,7 +1,13 @@
 import { differenceInCalendarDays, addDays, startOfDay } from "date-fns";
 import { db } from "@/lib/db";
 import { DashboardRange, rangeSince, previousRangeWindow } from "@/lib/dashboardRange";
-import { PersonalKpiData, GOAL_CATEGORY_LABELS, GOAL_CATEGORY_FORMAT } from "@/lib/personalDashboardShared";
+import {
+  PersonalKpiData,
+  GOAL_CATEGORY_LABELS,
+  GOAL_CATEGORY_FORMAT,
+  CommissionsPaidCardData,
+} from "@/lib/personalDashboardShared";
+import { parseCompLevelPercent } from "@/lib/commission";
 
 export * from "@/lib/personalDashboardShared";
 
@@ -13,6 +19,10 @@ export type WindowMetrics = {
   chargebackAP: number;
   activeCount: number;
   avgCaseSize: number;
+  /** Sum of Policy.commissionAmount across every non-Chargeback policy in
+   *  the window — a charged-back policy's frozen commission snapshot stops
+   *  counting the moment its status flips, no separate reversal needed. */
+  commissionsPaid: number;
 };
 
 /** `agentId: null` scopes org-wide instead of to one agent — shared by the personal and organization dashboards. */
@@ -21,7 +31,7 @@ export async function metricsForWindow(agentId: string | null, window: { gte?: D
   const statusGroups = await db.policy.groupBy({
     by: ["status"],
     where: { ...(agentId ? { agentId } : {}), ...(hasBound ? { submittedAt: window } : {}) },
-    _sum: { annualPremium: true },
+    _sum: { annualPremium: true, commissionAmount: true },
     _count: { _all: true },
   });
 
@@ -34,6 +44,9 @@ export async function metricsForWindow(agentId: string | null, window: { gte?: D
   const issuedCount = countFor("ISSUED");
   const chargebackAP = sumFor("CHARGEBACK");
   const activeCount = submittedCount - countFor("CHARGEBACK");
+  const commissionsPaid = statusGroups
+    .filter((g) => g.status !== "CHARGEBACK")
+    .reduce((sum, g) => sum + Number(g._sum.commissionAmount ?? 0), 0);
 
   return {
     submittedAP,
@@ -43,6 +56,33 @@ export async function metricsForWindow(agentId: string | null, window: { gte?: D
     chargebackAP,
     activeCount,
     avgCaseSize: issuedCount > 0 ? issuedAP / issuedCount : 0,
+    commissionsPaid,
+  };
+}
+
+/** Everything the Commissions Paid hero card needs, in one call — the
+ *  current + comparable-prior window totals (net of chargebacks) plus the
+ *  agent's own display info, so the card never has to join it client-side. */
+export async function computeCommissionsPaidCard(
+  userId: string,
+  range: DashboardRange,
+  now: Date = new Date(),
+): Promise<CommissionsPaidCardData> {
+  const since = rangeSince(range, now);
+  const prev = previousRangeWindow(range, now);
+
+  const [current, previous, user] = await Promise.all([
+    metricsForWindow(userId, since ? { gte: since } : {}),
+    prev ? metricsForWindow(userId, { gte: prev.start, lt: prev.end }) : Promise.resolve(null),
+    db.user.findUnique({ where: { id: userId }, select: { name: true, profileImageUrl: true } }),
+  ]);
+
+  return {
+    value: current.commissionsPaid,
+    previousValue: previous?.commissionsPaid ?? 0,
+    rangeLabel: range,
+    agentName: user?.name ?? "Agent",
+    agentProfileImageUrl: user?.profileImageUrl ?? null,
   };
 }
 
@@ -108,14 +148,6 @@ type GoalProgressInternal = {
   requiredWeeklyPace: number;
   projectedCompletionDate: Date | null;
 };
-
-function parseCompLevelPercent(compLevel: string | null): number | null {
-  if (!compLevel) return null;
-  const match = compLevel.match(/(\d+(?:\.\d+)?)\s*%/);
-  if (!match) return null;
-  const pct = Number(match[1]);
-  return Number.isFinite(pct) ? pct / 100 : null;
-}
 
 async function currentGoalValue(
   userId: string,

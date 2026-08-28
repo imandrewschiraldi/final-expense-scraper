@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { checkAndAwardGoals } from "@/lib/personalDashboard";
+import { resolveCommissionAmount } from "@/lib/commissionServer";
 import { PolicyStatus } from "@prisma/client";
 
 const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
@@ -20,7 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const body = await req.json();
-  const { clientName, clientPhone, state, carrier, product, annualPremium, status } = body as {
+  const { clientName, clientPhone, state, carrier, product, annualPremium, status, carrierPlanId } = body as {
     clientName?: string;
     clientPhone?: string;
     state?: string;
@@ -28,11 +29,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     product?: string;
     annualPremium?: number;
     status?: PolicyStatus;
+    carrierPlanId?: string | null;
   };
 
   if (status !== undefined && !POLICY_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
+
+  // A changed AP or a newly-picked/cleared rate plan both mean the frozen
+  // commission snapshot is stale and needs recomputing — a comp-level or
+  // carrier-rate change alone does NOT, by design (see resolveCommissionAmount).
+  const shouldRecomputeCommission = annualPremium !== undefined || carrierPlanId !== undefined;
+  const commissionAmount = shouldRecomputeCommission
+    ? await resolveCommissionAmount({
+        agentId: existing.agentId,
+        annualPremium: annualPremium !== undefined ? annualPremium : Number(existing.annualPremium),
+        carrierPlanId: carrierPlanId !== undefined ? carrierPlanId : existing.carrierPlanId,
+      })
+    : undefined;
 
   const policy = await db.policy.update({
     where: { id },
@@ -43,6 +57,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(carrier !== undefined ? { carrier: carrier.trim() } : {}),
       ...(product !== undefined ? { product: product.trim() || null } : {}),
       ...(annualPremium !== undefined ? { annualPremium } : {}),
+      ...(carrierPlanId !== undefined ? { carrierPlanId } : {}),
+      ...(shouldRecomputeCommission ? { commissionAmount } : {}),
       ...(status !== undefined
         ? {
             status,

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { KpiGrid } from "@/components/portal/dashboard/KpiGrid";
+import { CommissionsPaidCard } from "@/components/portal/dashboard/CommissionsPaidCard";
 import { GoalsSection } from "@/components/portal/dashboard/GoalsSection";
 import { CelebrationOverlay } from "@/components/portal/dashboard/CelebrationOverlay";
 import { DashboardRangeSelect } from "@/components/portal/dashboard/DashboardRangeSelect";
@@ -9,7 +10,7 @@ import { PageHeading } from "@/components/portal/PageHeading";
 import { ProductionTimeline } from "@/components/portal/dashboard/analytics/ProductionTimeline";
 import { DistributionAnalytics } from "@/components/portal/dashboard/analytics/DistributionAnalytics";
 import { StatusAnalytics } from "@/components/portal/dashboard/analytics/StatusAnalytics";
-import { PersonalKpiData, GoalWithProgress, GOAL_CATEGORY_LABELS } from "@/lib/personalDashboardShared";
+import { PersonalKpiData, GoalWithProgress, GOAL_CATEGORY_LABELS, CommissionsPaidCardData } from "@/lib/personalDashboardShared";
 import { DashboardRange } from "@/lib/dashboardRange";
 
 type Overview = {
@@ -22,6 +23,7 @@ type Overview = {
     products: { product: string; ap: number; count: number; avgCaseSize: number }[];
     statusAnalytics: { breakdown: { status: string; count: number; percent: number }[]; conversionRate: number };
   };
+  commissionsPaid: CommissionsPaidCardData;
 };
 
 const POLL_MS = 25000;
@@ -82,6 +84,8 @@ export function PersonalDashboardClient() {
         <p className="text-sm text-muted">Loading...</p>
       ) : (
         <>
+          <CommissionsPaidCard data={overview.commissionsPaid} range={range} />
+
           <KpiGrid data={overview.kpis} />
 
           <GoalsSection goals={overview.goals} recentWins={overview.recentWins} onChanged={refresh} />
