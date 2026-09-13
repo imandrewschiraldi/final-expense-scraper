@@ -54,7 +54,7 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
         </span>
       </div>
 
-      <p className="font-condensed mb-1.5 text-xs font-extrabold tracking-[0.22em] text-copper uppercase">
+      <p className="font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] text-copper uppercase">
         Commissions Paid
       </p>
       <p
