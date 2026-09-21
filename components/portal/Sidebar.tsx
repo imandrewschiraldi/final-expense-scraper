@@ -36,14 +36,14 @@ const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
 // desktop sidebar's own logo row at the same height.
 export const HEADER_HEIGHT = 74;
 
-type NavItem = { href: string; label: string; icon: LucideIcon; roles: Role[]; requiresVault?: boolean };
+type NavItem = { href: string; label: string; icon: LucideIcon; roles: Role[]; requiresVault?: boolean; requiresAgencyDashboard?: boolean };
 
 // One shared sidebar for the entire platform — Agent Accelerator (leads,
 // vault, training) and the Agent Portal (dashboards, book of business, etc.)
 // are a single app now, not two navs stitched together.
 const NAV_ITEMS: NavItem[] = [
   { href: "/portal/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/portal/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/portal/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"], requiresAgencyDashboard: true },
   { href: "/portal/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/chat", label: "Team Chat", icon: MessagesSquare, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/book-of-business", label: "Book of Business", icon: BookOpen, roles: ["ADMIN", "MANAGER", "AGENT"] },
@@ -73,7 +73,13 @@ function isItemActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
-type Profile = { name: string; profileImageUrl: string | null; compLevel: string | null; hasVaultAccess?: boolean };
+type Profile = {
+  name: string;
+  profileImageUrl: string | null;
+  compLevel: string | null;
+  hasVaultAccess?: boolean;
+  agencyDashboardEnabled?: boolean;
+};
 
 function NavLinks({
   items,
@@ -207,7 +213,12 @@ export function Sidebar({
     });
   }
 
-  const items = NAV_ITEMS.filter((item) => item.roles.includes(role) && (!item.requiresVault || profile?.hasVaultAccess));
+  const items = NAV_ITEMS.filter(
+    (item) =>
+      item.roles.includes(role) &&
+      (!item.requiresVault || profile?.hasVaultAccess) &&
+      (!item.requiresAgencyDashboard || profile?.agencyDashboardEnabled),
+  );
 
   return (
     <>

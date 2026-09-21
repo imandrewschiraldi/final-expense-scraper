@@ -22,6 +22,7 @@ export async function GET() {
       demoModeEnabled: true,
       createdAt: true,
       vaultEnabled: true,
+      agencyDashboardEnabled: true,
     },
   });
 
@@ -64,6 +65,7 @@ export async function PATCH(req: NextRequest) {
       npn: true,
       residentState: true,
       demoModeEnabled: true,
+      agencyDashboardEnabled: true,
     },
   });
 

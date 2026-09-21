@@ -25,8 +25,13 @@ export async function GET(req: NextRequest) {
     // used by the Dashboard, Book of Business, and Leaderboard.
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { name: true, profileImageUrl: true, demoModeEnabled: true },
+      select: { name: true, profileImageUrl: true, demoModeEnabled: true, agencyDashboardEnabled: true },
     });
+
+    if (!user?.agencyDashboardEnabled) {
+      return NextResponse.json({ error: "Agency Dashboard access has been turned off for this account" }, { status: 403 });
+    }
+
     const demoPolicies = user?.demoModeEnabled ? generateDemoPolicies() : null;
     const agentName = user?.name ?? "Agent";
     const agentProfileImageUrl = user?.profileImageUrl ?? null;
