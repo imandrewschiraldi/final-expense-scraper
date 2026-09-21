@@ -20,6 +20,7 @@ export async function GET() {
       compLevel: true,
       vaultEnabled: true,
       assignmentEnabled: true,
+      agencyDashboardEnabled: true,
       passwordHash: true,
       createdAt: true,
       _count: { select: { assignedLeads: true } },
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
       compLevel: true,
       vaultEnabled: true,
       assignmentEnabled: true,
+      agencyDashboardEnabled: true,
       createdAt: true,
     },
   });

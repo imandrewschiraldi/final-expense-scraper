@@ -16,6 +16,7 @@ type Agent = {
   compLevel: string | null;
   vaultEnabled: boolean;
   assignmentEnabled: boolean;
+  agencyDashboardEnabled: boolean;
   inviteAccepted: boolean;
   leadCount: number;
   createdAt: string;
@@ -41,6 +42,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
   const [deleteError, setDeleteError] = useState<{ id: string; text: string } | null>(null);
   const [compLevelDrafts, setCompLevelDrafts] = useState<Record<string, string>>({});
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [togglingAgencyId, setTogglingAgencyId] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", licensedStates: [] as string[] });
@@ -115,6 +117,21 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
     setTogglingId(null);
     if (res.ok) {
       setAgents((prev) => prev.map((a) => (a.id === agent.id ? { ...a, vaultEnabled: !a.vaultEnabled } : a)));
+    }
+  }
+
+  async function toggleAgencyDashboardEnabled(agent: Agent) {
+    setTogglingAgencyId(agent.id);
+    const res = await fetch(`/api/admin/agents/${agent.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ agencyDashboardEnabled: !agent.agencyDashboardEnabled }),
+    });
+    setTogglingAgencyId(null);
+    if (res.ok) {
+      setAgents((prev) =>
+        prev.map((a) => (a.id === agent.id ? { ...a, agencyDashboardEnabled: !a.agencyDashboardEnabled } : a)),
+      );
     }
   }
 
@@ -198,6 +215,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                 <th className="py-2 pr-4">Comp Level</th>
                 <th className="py-2 pr-4">Assigned Leads</th>
                 <th className="py-2 pr-4">Vault Access</th>
+                <th className="py-2 pr-4">Agency Dashboard</th>
                 <th className="py-2 pr-4">Status</th>
                 <th className="py-2 pr-4"></th>
               </tr>
@@ -244,6 +262,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                   </td>
                   <td className="py-2 pr-4 text-white">{agent.leadCount.toLocaleString()}</td>
                   <td className="py-2 pr-4 text-muted">{vaultAccessLabel(agent.createdAt, agent.vaultEnabled)}</td>
+                  <td className="py-2 pr-4 text-muted">{agent.agencyDashboardEnabled ? "On" : "Off"}</td>
                   <td className="py-2 pr-4">
                     {!agent.inviteAccepted ? (
                       <span className="text-copper">Invited (pending)</span>
@@ -276,6 +295,13 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                           disabled={togglingId === agent.id}
                         >
                           {agent.vaultEnabled ? "Turn Off Vault" : "Turn On Vault"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => toggleAgencyDashboardEnabled(agent)}
+                          disabled={togglingAgencyId === agent.id}
+                        >
+                          {agent.agencyDashboardEnabled ? "Turn Off Agency" : "Turn On Agency"}
                         </Button>
                         {!agent.active && agent.id !== currentUserId && (
                           <Button
