@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, Moon, Sun } from "lucide-react";
+import { ExternalLink, Sun, Columns2, Moon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const QUOTE_TOOLS = {
@@ -17,18 +17,34 @@ const QUOTE_TOOLS = {
 
 type QuoteToolKey = keyof typeof QUOTE_TOOLS;
 
+const VIEW_MODES = {
+  LIGHT: { label: "Light", icon: Sun },
+  SPLIT: { label: "Split", icon: Columns2 },
+  DARK: { label: "Dark", icon: Moon },
+} as const;
+
+type ViewMode = keyof typeof VIEW_MODES;
+
+const INVERT_STYLE = { filter: "invert(1) hue-rotate(180deg)" };
+
 /**
  * Two third-party quoting tools switched by a button bar and embedded via
  * iframe. Unlike Scripts/Commission Calculator, these aren't Tier 1's own
  * tools, so there's no "?embed=1" mode to hide their branding — each one
- * just iframes as-is. `key={active}` on the iframe forces a full remount on
- * switch, so the previous tool doesn't linger mounted (and mid-quote)
- * invisibly in the background.
+ * just iframes as-is.
  *
- * Dark Mode is a CSS invert() applied to the iframe itself, not a real
- * theme from the tool (it doesn't offer one) — a rough approximation that
- * can make any logos/photos on their end look inverted too, so it's an
- * opt-in toggle rather than always on.
+ * Dark is a CSS invert() applied to the iframe, not a real theme from the
+ * tool (it doesn't offer one) — a rough approximation that can make any
+ * logos/photos on their end look inverted too. Split shows it twice,
+ * side by side, one plain and one inverted — genuinely two separate
+ * iframes (two independent page loads of the same tool), not one iframe
+ * visually cut in half, since a cross-origin site can't be clipped/mirrored
+ * from outside. That means the two halves don't stay in sync — filling in
+ * a quote on one side never appears on the other.
+ *
+ * `key={active}` on every iframe forces a full remount when switching
+ * tools, so the previous one doesn't linger mounted (and mid-quote)
+ * invisibly in the background.
  *
  * Unlike Scripts/Commission Calculator, this doesn't bleed up under the
  * page header — those tools render their own copper line inside their
@@ -39,12 +55,12 @@ type QuoteToolKey = keyof typeof QUOTE_TOOLS;
  */
 export function QuoterTool() {
   const [active, setActive] = useState<QuoteToolKey>("FINAL_EXPENSE");
-  const [darkMode, setDarkMode] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("LIGHT");
   const tool = QUOTE_TOOLS[active];
 
   return (
     <div className="relative -mx-4 -mb-8 flex h-[70vh] flex-col sm:-mx-6 lg:-mx-10">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-4 py-3 sm:px-6 lg:px-10">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-surface px-4 py-3 sm:px-6 lg:px-10">
         <div className="flex items-center gap-2">
           {(Object.keys(QUOTE_TOOLS) as QuoteToolKey[]).map((key) => (
             <button
@@ -62,30 +78,55 @@ export function QuoterTool() {
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={() => setDarkMode((d) => !d)}
-          title="Approximated with a color filter — the tool itself has no dark mode"
-          className={cn(
-            "font-condensed flex items-center gap-1.5 rounded-lg border-[1.5px] px-3 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-            darkMode
-              ? "border-copper bg-copper text-black"
-              : "border-border text-muted hover:border-copper hover:text-foreground",
-          )}
-        >
-          {darkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-          <span className="hidden sm:inline">Dark Mode</span>
-        </button>
+        <div className="flex items-center gap-1.5 rounded-lg border-[1.5px] border-border p-0.5">
+          {(Object.keys(VIEW_MODES) as ViewMode[]).map((key) => {
+            const Icon = VIEW_MODES[key].icon;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setViewMode(key)}
+                title={key === "SPLIT" ? "Two independent copies side by side — they won't stay in sync" : undefined}
+                className={cn(
+                  "font-condensed flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+                  viewMode === key ? "bg-copper text-black" : "text-muted hover:text-foreground",
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{VIEW_MODES[key].label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className={cn("relative flex-1 overflow-hidden", darkMode ? "bg-black" : "bg-white")}>
-        <iframe
-          key={active}
-          src={tool.src}
-          title={tool.label}
-          className="h-full w-full border-0"
-          style={darkMode ? { filter: "invert(1) hue-rotate(180deg)" } : undefined}
-        />
+      <div className="relative flex flex-1 overflow-hidden">
+        {viewMode === "SPLIT" ? (
+          <>
+            <div className="h-full w-1/2 bg-white">
+              <iframe key={`${active}-light`} src={tool.src} title={`${tool.label} (light)`} className="h-full w-full border-0" />
+            </div>
+            <div className="h-full w-1/2 border-l border-border bg-black">
+              <iframe
+                key={`${active}-dark`}
+                src={tool.src}
+                title={`${tool.label} (dark)`}
+                className="h-full w-full border-0"
+                style={INVERT_STYLE}
+              />
+            </div>
+          </>
+        ) : (
+          <div className={cn("h-full w-full", viewMode === "DARK" ? "bg-black" : "bg-white")}>
+            <iframe
+              key={active}
+              src={tool.src}
+              title={tool.label}
+              className="h-full w-full border-0"
+              style={viewMode === "DARK" ? INVERT_STYLE : undefined}
+            />
+          </div>
+        )}
         <a
           href={tool.src}
           target="_blank"
