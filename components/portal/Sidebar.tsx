@@ -52,7 +52,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/portal/scripts", label: "Scripts", icon: FileText, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/quoter", label: "Quoter", icon: Quote, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/portal/quoter", label: "Quoter", icon: Quote, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/agent/dashboard", label: "My Leads", icon: Users, roles: ["MANAGER", "AGENT"] },
   { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"] },
   { href: "/agent/vault", label: "Vault", icon: Archive, roles: ["MANAGER", "AGENT"], requiresVault: true },
