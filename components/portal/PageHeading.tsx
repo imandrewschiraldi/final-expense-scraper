@@ -20,6 +20,7 @@ const HEADINGS = {
   "import-leads": { width: 526, height: 45 },
   "all-leads": { width: 391, height: 45 },
   "assign-leads": { width: 511, height: 45 },
+  "quote-tool": { width: 430, height: 48 },
 } as const;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;

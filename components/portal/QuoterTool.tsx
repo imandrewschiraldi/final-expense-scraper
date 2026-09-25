@@ -28,26 +28,19 @@ type QuoteToolKey = keyof typeof QUOTE_TOOLS;
  * so the previous one doesn't linger mounted (and mid-quote) invisibly in
  * the background.
  *
- * Unlike Scripts/Commission Calculator, this doesn't bleed up under the
- * page header — those tools render their own copper line inside their
- * embed, this one doesn't, so it sits below the shell's normal copper
- * divider instead (see HeaderDivider). On desktop the mobile-only
- * PageHeader (see PageHeader.tsx) contributes zero height, so `main`'s
- * content starts right after its own 8px top padding while the divider
- * line sits pinned 74px down — every PageHeading-based page fills that
- * 66px gap with its own top margin + wordmark height, so this needs the
- * same `lg:mt-[66px]` or its content renders above the line instead of
- * below it. Also gets a bounded height rather than the full remaining
- * viewport, scrolling internally if the embedded tool's own content runs
- * taller.
+ * Sits in the normal reading-width column below its own graphic
+ * PageHeading (see quoter/page.tsx) — unlike Scripts/Commission Calculator,
+ * which have no heading and bleed their iframe to the viewport edges
+ * instead. Gets a bounded height rather than the full remaining viewport,
+ * scrolling internally if the embedded tool's own content runs taller.
  */
 export function QuoterTool() {
   const [active, setActive] = useState<QuoteToolKey>("FINAL_EXPENSE");
   const tool = QUOTE_TOOLS[active];
 
   return (
-    <div className="relative -mx-4 -mb-8 flex h-[70vh] flex-col sm:-mx-6 lg:mt-[66px] lg:-mx-10">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-4 py-3 sm:px-6 lg:px-10">
+    <div className="relative mb-8 flex h-[70vh] flex-col overflow-hidden rounded-lg border border-border">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-4 py-3">
         <div className="flex items-center gap-2">
           {(Object.keys(QUOTE_TOOLS) as QuoteToolKey[]).map((key) => (
             <button
