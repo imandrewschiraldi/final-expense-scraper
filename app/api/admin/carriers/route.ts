@@ -8,7 +8,11 @@ export async function GET() {
 
   const carriers = await db.carrier.findMany({
     orderBy: { name: "asc" },
-    include: { plans: { orderBy: { name: "asc" } } },
+    include: {
+      plans: { orderBy: { name: "asc" } },
+      contacts: { orderBy: { order: "asc" } },
+      links: { orderBy: { order: "asc" } },
+    },
   });
 
   return NextResponse.json({ carriers });
@@ -26,5 +30,5 @@ export async function POST(req: NextRequest) {
   if (existing) return NextResponse.json({ error: "A carrier with that name already exists" }, { status: 409 });
 
   const carrier = await db.carrier.create({ data: { name: cleaned } });
-  return NextResponse.json({ carrier: { ...carrier, plans: [] } }, { status: 201 });
+  return NextResponse.json({ carrier: { ...carrier, plans: [], contacts: [], links: [] } }, { status: 201 });
 }

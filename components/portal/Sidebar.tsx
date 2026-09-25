@@ -21,6 +21,7 @@ import {
   MessagesSquare,
   UsersRound,
   Percent,
+  Landmark,
   ChevronsLeft,
   ChevronsRight,
   X,
@@ -52,6 +53,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/portal/scripts", label: "Scripts", icon: FileText, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/quoter", label: "Quote Tool", icon: Quote, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/portal/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/agent/dashboard", label: "My Leads", icon: Users, roles: ["MANAGER", "AGENT"] },
   { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"] },
   { href: "/agent/vault", label: "Vault", icon: Archive, roles: ["MANAGER", "AGENT"], requiresVault: true },
@@ -62,6 +64,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/portal/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"] },
   { href: "/admin/carriers", label: "Carrier Rates", icon: Percent, roles: ["ADMIN"] },
+  { href: "/admin/carrier-resources", label: "Manage Carrier Resources", icon: Landmark, roles: ["ADMIN"] },
 ];
 
 // "/admin/leads" is a strict prefix of "/admin/leads/vault", so a plain
