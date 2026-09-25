@@ -35,12 +35,19 @@ const INVERT_STYLE = { filter: "invert(1) hue-rotate(180deg)" };
  *
  * Dark is a CSS invert() applied to the iframe, not a real theme from the
  * tool (it doesn't offer one) — a rough approximation that can make any
- * logos/photos on their end look inverted too. Split shows it twice,
- * side by side, one plain and one inverted — genuinely two separate
- * iframes (two independent page loads of the same tool), not one iframe
- * visually cut in half, since a cross-origin site can't be clipped/mirrored
- * from outside. That means the two halves don't stay in sync — filling in
- * a quote on one side never appears on the other.
+ * logos/photos on their end look inverted too. It's the default view. The
+ * ask was for the inputs/heading to stay dark but the generated quote
+ * itself to switch back to light automatically — not achievable: the tool
+ * is a cross-origin site, so there's no way to observe anything happening
+ * inside it (a click, a navigation, a state change) from out here, and the
+ * filter can only apply to the iframe as one uniform block for as long as
+ * it's mounted. Switching to Light for the results has to be a manual
+ * click on the toggle. Split shows it twice, side by side, one plain and
+ * one inverted — genuinely two separate iframes (two independent page
+ * loads of the same tool), not one iframe visually cut in half, since a
+ * cross-origin site can't be clipped/mirrored from outside. That means the
+ * two halves don't stay in sync — filling in a quote on one side never
+ * appears on the other.
  *
  * `key={active}` on every iframe forces a full remount when switching
  * tools, so the previous one doesn't linger mounted (and mid-quote)
@@ -55,7 +62,7 @@ const INVERT_STYLE = { filter: "invert(1) hue-rotate(180deg)" };
  */
 export function QuoterTool() {
   const [active, setActive] = useState<QuoteToolKey>("FINAL_EXPENSE");
-  const [viewMode, setViewMode] = useState<ViewMode>("LIGHT");
+  const [viewMode, setViewMode] = useState<ViewMode>("DARK");
   const tool = QUOTE_TOOLS[active];
 
   return (
