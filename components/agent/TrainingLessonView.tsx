@@ -118,7 +118,7 @@ export function TrainingLessonView({
           <div className="rounded-lg border border-border bg-surface2 p-6 text-center">
             <p className="mb-3 text-sm text-muted">This video can&apos;t be embedded automatically.</p>
             <a href={lesson.videoUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="secondary">Open Video</Button>
+              <Button variant="secondary">Open Training</Button>
             </a>
           </div>
         )}
