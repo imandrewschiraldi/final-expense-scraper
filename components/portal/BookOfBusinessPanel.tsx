@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { PolicySubmitForm, type PolicyStatus, type SubmittedPolicy } from "@/components/portal/PolicySubmitForm";
+import {
+  PolicySubmitForm,
+  type PolicyStatus,
+  type SubmittedPolicy,
+  type CarrierWithPlans,
+} from "@/components/portal/PolicySubmitForm";
 
 const POLICY_STATUSES = ["SUBMITTED", "ISSUED", "CHARGEBACK"] as const;
 
@@ -32,6 +37,15 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [updatingRateId, setUpdatingRateId] = useState<string | null>(null);
+  const [carriers, setCarriers] = useState<CarrierWithPlans[]>([]);
+
+  useEffect(() => {
+    fetch("/api/portal/carrier-plans")
+      .then((res) => (res.ok ? res.json() : { carriers: [] }))
+      .then((data) => setCarriers((data.carriers ?? []).filter((c: CarrierWithPlans) => c.plans.length > 0)))
+      .catch(() => setCarriers([]));
+  }, []);
 
   useEffect(() => {
     fetch("/api/portal/policies?mine=true")
@@ -63,7 +77,26 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
     setUpdatingId(null);
     if (res.ok) {
       const data = await res.json();
-      setPolicies((prev) => prev.map((p) => (p.id === policy.id ? data.policy : p)));
+      setPolicies((prev) => prev.map((p) => (p.id === policy.id ? { ...p, ...data.policy } : p)));
+    }
+  }
+
+  // Rate Plan is optional at submit time, so a policy can end up parked at
+  // $0 commission indefinitely with no way to fix it — this lets it be
+  // assigned (or changed) after the fact; the server recomputes
+  // commissionAmount from the agent's current comp level the moment a plan
+  // is attached.
+  async function changeRatePlan(policy: Policy, carrierPlanId: string) {
+    setUpdatingRateId(policy.id);
+    const res = await fetch(`/api/portal/policies/${policy.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ carrierPlanId: carrierPlanId || null }),
+    });
+    setUpdatingRateId(null);
+    if (res.ok) {
+      const data = await res.json();
+      setPolicies((prev) => prev.map((p) => (p.id === policy.id ? { ...p, ...data.policy } : p)));
     }
   }
 
@@ -98,6 +131,8 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                 <th className="py-2 pr-4">Product</th>
                 <th className="py-2 pr-4">State</th>
                 <th className="py-2 pr-4">Annual Premium</th>
+                <th className="py-2 pr-4">Rate Plan</th>
+                <th className="py-2 pr-4">Commission</th>
                 <th className="py-2 pr-4">Status</th>
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4"></th>
@@ -106,18 +141,46 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
             <tbody>
               {!loading && !loadError && policies.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-6 text-center text-muted">
+                  <td colSpan={10} className="py-6 text-center text-muted">
                     No deals submitted yet.
                   </td>
                 </tr>
               )}
-              {policies.map((p) => (
+              {policies.map((p) => {
+                const isDemo = p.id.startsWith("demo-");
+                return (
                 <tr key={p.id} className="border-b border-border/60 hover:bg-surface2">
                   <td className="py-2 pr-4 text-white">{p.clientName}</td>
                   <td className="py-2 pr-4 text-muted">{p.carrier}</td>
                   <td className="py-2 pr-4 text-muted">{p.product ?? "—"}</td>
                   <td className="py-2 pr-4 text-muted">{p.state ?? "—"}</td>
                   <td className="py-2 pr-4 text-white">{formatCurrency(p.annualPremium)}</td>
+                  <td className="py-2 pr-4">
+                    {isDemo ? (
+                      <span className="text-muted">—</span>
+                    ) : (
+                      <Select
+                        value={p.carrierPlanId ?? ""}
+                        disabled={updatingRateId === p.id}
+                        onChange={(e) => changeRatePlan(p, e.target.value)}
+                        className="min-w-[160px] py-1 text-xs"
+                      >
+                        <option value="">— Not rated —</option>
+                        {carriers.map((c) => (
+                          <optgroup key={c.id} label={c.name}>
+                            {c.plans.map((plan) => (
+                              <option key={plan.id} value={plan.id}>
+                                {c.name} — {plan.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </Select>
+                    )}
+                  </td>
+                  <td className="py-2 pr-4 text-muted">
+                    {p.commissionAmount ? formatCurrency(p.commissionAmount) : "—"}
+                  </td>
                   <td className="py-2 pr-4">
                     <span className={STATUS_TEXT_COLOR[p.status]}>{STATUS_LABELS[p.status]}</span>
                   </td>
@@ -139,7 +202,8 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                     </Select>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
