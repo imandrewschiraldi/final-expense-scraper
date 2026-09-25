@@ -8,9 +8,9 @@ import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 // own content — something this outer line fundamentally can't do, since
 // the iframe is cross-origin and its internal scroll isn't observable from
 // here). Showing both would double up the line on those two pages. Quoter
-// has its own button-bar header (with its own bottom border) for the same
-// reason — no separate outer line needed on top of it.
-const NO_OUTER_LINE_PREFIXES = ["/portal/scripts", "/portal/commission-calculator", "/portal/quoter"];
+// doesn't have that — its embedded tools are third-party, not Tier 1's own
+// — so it keeps this outer line and starts its own content below it.
+const NO_OUTER_LINE_PREFIXES = ["/portal/scripts", "/portal/commission-calculator"];
 
 export function HeaderDivider() {
   const pathname = usePathname();
