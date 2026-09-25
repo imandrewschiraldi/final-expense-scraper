@@ -26,11 +26,13 @@ export type SubmittedPolicy = {
   submittedAt: string;
   issuedAt: string | null;
   agent: { name: string } | null;
+  carrierPlanId?: string | null;
+  commissionAmount?: string | null;
 };
 
 type SoldLead = { id: string; firstName: string; lastName: string; phone: string; state: string };
-type CarrierPlan = { id: string; name: string };
-type CarrierWithPlans = { id: string; name: string; plans: CarrierPlan[] };
+export type CarrierPlan = { id: string; name: string };
+export type CarrierWithPlans = { id: string; name: string; plans: CarrierPlan[] };
 
 const emptyForm = {
   leadId: "",
