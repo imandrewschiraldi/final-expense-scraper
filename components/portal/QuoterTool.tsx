@@ -29,6 +29,13 @@ type QuoteToolKey = keyof typeof QUOTE_TOOLS;
  * theme from the tool (it doesn't offer one) — a rough approximation that
  * can make any logos/photos on their end look inverted too, so it's an
  * opt-in toggle rather than always on.
+ *
+ * Unlike Scripts/Commission Calculator, this doesn't bleed up under the
+ * page header — those tools render their own copper line inside their
+ * embed, this one doesn't, so it sits below the shell's normal copper
+ * divider instead (see HeaderDivider) and gets a bounded height rather
+ * than the full remaining viewport, scrolling internally if the embedded
+ * tool's own content runs taller.
  */
 export function QuoterTool() {
   const [active, setActive] = useState<QuoteToolKey>("FINAL_EXPENSE");
@@ -36,7 +43,7 @@ export function QuoterTool() {
   const tool = QUOTE_TOOLS[active];
 
   return (
-    <div className="relative -mx-4 -mb-8 flex h-[calc(100dvh-74px)] flex-col sm:-mx-6 lg:-mx-10 lg:-mt-2 lg:h-screen">
+    <div className="relative -mx-4 -mb-8 flex h-[70vh] flex-col sm:-mx-6 lg:-mx-10">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-4 py-3 sm:px-6 lg:px-10">
         <div className="flex items-center gap-2">
           {(Object.keys(QUOTE_TOOLS) as QuoteToolKey[]).map((key) => (
