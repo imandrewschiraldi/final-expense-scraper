@@ -317,7 +317,9 @@ model Carrier {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  plans CarrierPlan[]
+  plans    CarrierPlan[]
+  contacts CarrierContact[]
+  links    CarrierLink[]
 
   @@map("carriers")
 }
@@ -341,6 +343,40 @@ model CarrierPlan {
 
   @@unique([carrierId, name])
   @@map("carrier_plans")
+}
+
+/// A labeled phone number on the Carrier Resources page (e.g. "Customer
+/// Service Number", "Agent Hotline (Prompt 1,1,3)") — a carrier can have
+/// several, admin-orderable via `order`.
+model CarrierContact {
+  id        String   @id @default(cuid())
+  carrierId String
+  carrier   Carrier  @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  label     String
+  phone     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([carrierId])
+  @@map("carrier_contacts")
+}
+
+/// A labeled link button on the Carrier Resources page — Agent Portal, a
+/// quoting tool, an underwriting guide, any other resource. `isAgentPortal`
+/// gets it the distinct highlighted button treatment on the card; every
+/// other link renders the same way regardless of what it links to.
+model CarrierLink {
+  id            String   @id @default(cuid())
+  carrierId     String
+  carrier       Carrier  @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  label         String
+  url           String
+  isAgentPortal Boolean  @default(false)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@index([carrierId])
+  @@map("carrier_links")
 }
 
 // Written on every Policy.status change going forward (no backfill for
