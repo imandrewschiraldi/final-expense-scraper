@@ -23,6 +23,7 @@ export default async function AgentLeadDetailPage({
     include: {
       notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
       contactLogEntries: { orderBy: { createdAt: "desc" }, include: { agent: { select: { name: true } } } },
+      sourceImport: { select: { uploadedById: true } },
     },
   });
 
@@ -60,6 +61,8 @@ export default async function AgentLeadDetailPage({
         total: ids.length,
         filterQuery,
       }}
+      canEdit
+      canDelete={lead.sourceImport?.uploadedById === agentId}
     />
   );
 }

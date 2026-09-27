@@ -4,6 +4,8 @@ import { useRef, useState, FormEvent, ChangeEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { sniffCsvHeaders } from "@/lib/csvHeaders";
+import { guessMapping, mappingIsComplete, type MappingState } from "@/lib/csvMapping";
+import { ColumnSelect } from "@/components/shared/ColumnSelect";
 import { LEAD_TYPES, LEAD_TYPE_LABELS, type LeadType } from "@/lib/leadType";
 import { PageHeading } from "@/components/portal/PageHeading";
 
@@ -17,46 +19,6 @@ type ImportResult = {
 type FileResult = {
   filename: string;
 } & ({ status: "ok"; result: ImportResult } | { status: "error"; error: string });
-
-type NameMode = "single" | "split";
-
-type MappingState = {
-  nameMode: NameMode;
-  nameField: string;
-  firstNameField: string;
-  lastNameField: string;
-  phoneField: string;
-  dobField: string;
-  stateField: string;
-};
-
-function guessField(headers: string[], candidates: string[]): string {
-  const normalized = headers.map((h) => ({ raw: h, norm: h.trim().toLowerCase().replace(/[\s_]+/g, " ") }));
-  for (const candidate of candidates) {
-    const match = normalized.find((h) => h.norm === candidate);
-    if (match) return match.raw;
-  }
-  for (const candidate of candidates) {
-    const match = normalized.find((h) => h.norm.includes(candidate));
-    if (match) return match.raw;
-  }
-  return "";
-}
-
-function guessMapping(headers: string[]): MappingState {
-  const firstNameField = guessField(headers, ["first name", "firstname", "first"]);
-  const lastNameField = guessField(headers, ["last name", "lastname", "last"]);
-  const nameField = guessField(headers, ["name", "full name", "client name", "lead name"]);
-  return {
-    nameMode: firstNameField ? "split" : "single",
-    nameField: firstNameField ? "" : nameField,
-    firstNameField,
-    lastNameField,
-    phoneField: guessField(headers, ["phone", "phone number", "cell", "mobile"]),
-    dobField: guessField(headers, ["date of birth", "dob", "birth date", "birthdate"]),
-    stateField: guessField(headers, ["state"]),
-  };
-}
 
 export default function ImportLeadsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -85,12 +47,6 @@ export default function ImportLeadsPage() {
     setHeaders(detected);
     setPreviewFilename(first.name);
     setMapping(guessMapping(detected));
-  }
-
-  function mappingIsComplete(m: MappingState | null): m is MappingState {
-    if (!m) return false;
-    const nameOk = m.nameMode === "single" ? !!m.nameField : !!m.firstNameField;
-    return nameOk && !!m.phoneField && !!m.dobField && !!m.stateField;
   }
 
   async function importOneFile(
@@ -399,35 +355,5 @@ export default function ImportLeadsPage() {
         )}
       </Card>
     </div>
-  );
-}
-
-function ColumnSelect({
-  label,
-  value,
-  headers,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  headers: string[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-sm text-foreground focus:border-copper-dim focus:outline-none"
-      >
-        <option value="">Select column...</option>
-        {headers.map((h) => (
-          <option key={h} value={h}>
-            {h}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }

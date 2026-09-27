@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
+import { AgentLeadImportForm } from "@/components/agent/AgentLeadImportForm";
 import { cn } from "@/lib/cn";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
@@ -56,6 +57,8 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
   const [stateOptions, setStateOptions] = useState<{ state: string; count: number }[]>([]);
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [loading, setLoading] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const filterParams = buildFilterParams(tab, archiveView, stateFilter);
   const filterQuery = filterParams.toString();
@@ -85,10 +88,23 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
     }
 
     loadLeads();
-  }, [filterQuery]);
+  }, [filterQuery, reloadKey]);
 
   return (
     <div>
+      <div className="mb-4 flex items-center justify-end">
+        <Button onClick={() => setShowImport((s) => !s)}>{showImport ? "Cancel" : "Import Leads"}</Button>
+      </div>
+
+      {showImport && (
+        <AgentLeadImportForm
+          onImported={() => {
+            setShowImport(false);
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {ACTIVE_TABS.map((t) => (

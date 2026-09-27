@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Callout } from "@/components/ui/Callout";
@@ -60,18 +61,38 @@ export function LeadDetailPanel({
   basePath = "/agent/leads",
   backHref = "/agent/dashboard",
   backLabel = "Back to My Leads",
+  canEdit = false,
+  canDelete = false,
 }: {
   lead: Lead;
   navigation: Navigation;
   basePath?: string;
   backHref?: string;
   backLabel?: string;
+  // Editing/deleting a lead's own details (not just its status) is a
+  // My Leads-only concept — the shared Vault view never passes these, so
+  // that flow is completely unaffected by default.
+  canEdit?: boolean;
+  canDelete?: boolean;
 }) {
   const router = useRouter();
   const [lead, setLead] = useState(initialLead);
   const [noteBody, setNoteBody] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: lead.firstName,
+    lastName: lead.lastName,
+    phone: lead.phone,
+    state: lead.state,
+    dateOfBirth: lead.dateOfBirth.slice(0, 10),
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const prevHref = navigation.prevId ? `${basePath}/${navigation.prevId}?${navigation.filterQuery}` : null;
   const nextHref = navigation.nextId ? `${basePath}/${navigation.nextId}?${navigation.filterQuery}` : null;
@@ -117,6 +138,59 @@ export function LeadDetailPanel({
     router.refresh();
   }
 
+  function startEditing() {
+    setEditForm({
+      firstName: lead.firstName,
+      lastName: lead.lastName,
+      phone: lead.phone,
+      state: lead.state,
+      dateOfBirth: lead.dateOfBirth.slice(0, 10),
+    });
+    setEditError(null);
+    setEditing(true);
+  }
+
+  async function saveEdit() {
+    setEditSaving(true);
+    setEditError(null);
+    const res = await fetch(`/api/agent/leads/${lead.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    const data = await res.json();
+    setEditSaving(false);
+    if (!res.ok) {
+      setEditError(data.error ?? "Failed to save changes");
+      return;
+    }
+    setLead((prev) => ({
+      ...prev,
+      firstName: data.lead.firstName,
+      lastName: data.lead.lastName,
+      phone: data.lead.phone,
+      state: data.lead.state,
+      dateOfBirth: data.lead.dateOfBirth,
+    }));
+    setEditing(false);
+    router.refresh();
+  }
+
+  async function deleteLead() {
+    if (!window.confirm(`Permanently delete ${lead.firstName} ${lead.lastName}? This can't be undone.`)) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const res = await fetch(`/api/agent/leads/${lead.id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push(backHref);
+      router.refresh();
+      return;
+    }
+    const data = await res.json().catch(() => null);
+    setDeleteError(data?.error ?? "Failed to delete lead");
+    setDeleting(false);
+  }
+
   async function addNote() {
     if (!noteBody.trim()) return;
     setSaving(true);
@@ -158,19 +232,82 @@ export function LeadDetailPanel({
 
       <Card>
         <CardHeader>
-          <div>
-            <CardTitle>
-              {lead.firstName} {lead.lastName}
-            </CardTitle>
-            <p className="mt-1 text-sm text-muted">
-              {formatPhone(lead.phone)} &middot; {lead.state} &middot; DOB{" "}
-              {format(new Date(lead.dateOfBirth), "MM/dd/yyyy")} &middot; {LEAD_TYPE_LABELS[lead.leadType]}
-            </p>
+          {editing ? (
+            <CardTitle>Edit Lead</CardTitle>
+          ) : (
+            <div>
+              <CardTitle>
+                {lead.firstName} {lead.lastName}
+              </CardTitle>
+              <p className="mt-1 text-sm text-muted">
+                {formatPhone(lead.phone)} &middot; {lead.state} &middot; DOB{" "}
+                {format(new Date(lead.dateOfBirth), "MM/dd/yyyy")} &middot; {LEAD_TYPE_LABELS[lead.leadType]}
+              </p>
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            {!editing && (canEdit || canDelete) && !lead.isArchived && (
+              <div className="flex gap-2">
+                {canEdit && (
+                  <Button variant="ghost" onClick={startEditing}>
+                    Edit
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button variant="ghost" onClick={deleteLead} disabled={deleting} className="!text-red-light">
+                    {deleting ? "Deleting..." : "Delete"}
+                  </Button>
+                )}
+              </div>
+            )}
+            {!editing && <StatusBadge status={lead.status} />}
           </div>
-          <StatusBadge status={lead.status} />
         </CardHeader>
 
-        {lead.isVaulted && (
+        {editing && (
+          <div className="mb-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                placeholder="First Name"
+                value={editForm.firstName}
+                onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+              />
+              <Input
+                placeholder="Last Name"
+                value={editForm.lastName}
+                onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+              />
+              <Input
+                placeholder="Phone"
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+              />
+              <Input
+                placeholder="State"
+                value={editForm.state}
+                onChange={(e) => setEditForm({ ...editForm, state: e.target.value.toUpperCase() })}
+                maxLength={2}
+              />
+              <Input
+                type="date"
+                value={editForm.dateOfBirth}
+                onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
+              />
+            </div>
+            {editError && <p className="text-sm text-red-light">{editError}</p>}
+            <div className="flex gap-2">
+              <Button onClick={saveEdit} disabled={editSaving}>
+                {editSaving ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button variant="ghost" onClick={() => setEditing(false)} disabled={editSaving}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+        {deleteError && <p className="mb-4 text-sm text-red-light">{deleteError}</p>}
+
+        {!editing && lead.isVaulted && (
           <Callout variant="gold" className="mb-4">
             This is a shared Vault lead — any agent can call it. Marking it Appointment Booked or Sold
             claims it for you and removes it from the shared pool. Marking it Contacted, No Answer, or Not
@@ -179,7 +316,7 @@ export function LeadDetailPanel({
           </Callout>
         )}
 
-        {lead.isArchived ? (
+        {!editing && (lead.isArchived ? (
           <p className="rounded-[10px] border border-border bg-surface2 p-3 text-sm text-muted">
             This lead is {LEAD_STATUS_LABELS[lead.status].toLowerCase()} and locked — it has exited your active
             pool.
@@ -203,8 +340,8 @@ export function LeadDetailPanel({
               ))}
             </div>
           </div>
-        )}
-        {error && <p className="mt-3 text-sm text-red-light">{error}</p>}
+        ))}
+        {!editing && error && <p className="mt-3 text-sm text-red-light">{error}</p>}
       </Card>
 
       <Card>
