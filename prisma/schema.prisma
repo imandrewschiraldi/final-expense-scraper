@@ -29,6 +29,8 @@ enum NotificationType {
 enum LeadType {
   VETERANS_FINAL_EXPENSE
   MORTGAGE_PROTECTION
+  FINAL_EXPENSE
+  IUL
 }
 
 enum PolicyStatus {
@@ -102,7 +104,10 @@ model Lead {
   firstName       String
   lastName        String
   phone           String
-  dateOfBirth     DateTime
+  // Only name/phone/state are truly required at intake — DOB and
+  // everything below is optional, filled in by whatever the source
+  // (import or manual entry) actually provides.
+  dateOfBirth     DateTime?
   state           String
   leadType        LeadType   @default(VETERANS_FINAL_EXPENSE)
   status          LeadStatus @default(NEW)
@@ -117,6 +122,29 @@ model Lead {
   sourceImport    Import?    @relation(fields: [sourceImportId], references: [id])
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+
+  /// Everything below is optional supplemental info a lead source may or
+  /// may not provide — never required to create or import a lead.
+  email                   String?
+  address                 String?
+  zip                     String?
+  county                  String?
+  beneficiary             String?
+  beneficiaryRelationship String?
+  gender                  String?
+  maritalStatus           String?
+  height                  String?
+  weight                  String?
+  tobaccoUse              Boolean?
+  occupation              String?
+  income                  String?
+  existingCoverage        String?
+  coverageAmountRequested String?
+  militaryBranch          String?
+  // Free-text notes carried over from the lead source/vendor at import
+  // time — distinct from the `notes` relation below, which is the
+  // in-app contact-note history agents write themselves.
+  vendorNotes             String?
 
   notes             LeadNote[]
   contactLogEntries ContactLogEntry[]

@@ -8,8 +8,25 @@ export type ParsedLeadRow = {
   firstName: string;
   lastName: string;
   phone: string;
-  dateOfBirth: Date;
+  dateOfBirth: Date | null;
   state: string;
+  email?: string;
+  address?: string;
+  zip?: string;
+  county?: string;
+  beneficiary?: string;
+  beneficiaryRelationship?: string;
+  gender?: string;
+  maritalStatus?: string;
+  height?: string;
+  weight?: string;
+  tobaccoUse?: boolean;
+  occupation?: string;
+  income?: string;
+  existingCoverage?: string;
+  coverageAmountRequested?: string;
+  militaryBranch?: string;
+  vendorNotes?: string;
 };
 
 export type DuplicateDetail = {
@@ -34,7 +51,7 @@ export type ColumnMapping = {
   firstNameField?: string;
   lastNameField?: string;
   phoneField: string;
-  dobField: string;
+  dobField?: string;
   stateField: string;
 };
 
@@ -117,7 +134,7 @@ export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): Csv
         firstNameField: mapping.firstNameField ? normalizeHeader(mapping.firstNameField) : undefined,
         lastNameField: mapping.lastNameField ? normalizeHeader(mapping.lastNameField) : undefined,
         phoneField: normalizeHeader(mapping.phoneField),
-        dobField: normalizeHeader(mapping.dobField),
+        dobField: mapping.dobField ? normalizeHeader(mapping.dobField) : undefined,
         stateField: normalizeHeader(mapping.stateField),
       }
     : null;
@@ -133,8 +150,29 @@ export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): Csv
     const firstNameField = m ? (m.nameMode === "split" ? record[m.firstNameField ?? ""] : undefined) : record["first name"];
     const lastNameField = m ? (m.nameMode === "split" ? record[m.lastNameField ?? ""] : undefined) : record["last name"];
     const phoneRaw = m ? record[m.phoneField] : (record["phone"] ?? record["phone number"]);
-    const dobRaw = m ? record[m.dobField] : (record["date of birth"] ?? record["dob"]);
+    const dobRaw = m ? (m.dobField ? record[m.dobField] : undefined) : (record["date of birth"] ?? record["dob"]);
     const stateRaw = m ? record[m.stateField] : record["state"];
+
+    // These supplemental fields are never part of the manual column
+    // mapping UI (that stays scoped to name/phone/dob/state) — they're
+    // always picked up heuristically by common header name, if present.
+    const email = record["email"] ?? record["email address"];
+    const address = record["address"] ?? record["street address"] ?? record["mailing address"];
+    const zip = record["zip"] ?? record["zip code"] ?? record["postal code"];
+    const county = record["county"];
+    const beneficiary = record["beneficiary"] ?? record["beneficiary name"];
+    const beneficiaryRelationship = record["beneficiary relationship"] ?? record["relationship to beneficiary"];
+    const gender = record["gender"] ?? record["sex"];
+    const maritalStatus = record["marital status"];
+    const height = record["height"];
+    const weight = record["weight"];
+    const tobaccoRaw = record["tobacco"] ?? record["tobacco use"] ?? record["smoker"];
+    const occupation = record["occupation"] ?? record["job"] ?? record["employer"];
+    const income = record["income"] ?? record["annual income"];
+    const existingCoverage = record["existing coverage"] ?? record["current coverage"];
+    const coverageAmountRequested = record["coverage amount"] ?? record["coverage requested"] ?? record["face amount"];
+    const militaryBranch = record["military branch"] ?? record["branch of service"];
+    const vendorNotes = record["notes"] ?? record["comments"] ?? record["vendor notes"];
 
     let firstName = firstNameField?.trim() ?? "";
     let lastName = lastNameField?.trim() ?? "";
@@ -161,12 +199,16 @@ export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): Csv
       return;
     }
 
-    // Date of birth has to be a real date since it's stored as one, but
-    // we try hard to parse whatever format shows up before giving up.
-    const dateOfBirth = dobRaw ? parseFlexibleDate(dobRaw) : null;
-    if (!dateOfBirth) {
-      errors.push({ line, message: dobRaw ? `Invalid date of birth: ${dobRaw}` : "Missing date of birth" });
-      return;
+    // Date of birth is optional — only name/phone/state are mandatory —
+    // but if a value IS present, it has to actually parse as a date, since
+    // a garbled DOB is a data-quality signal worth surfacing.
+    let dateOfBirth: Date | null = null;
+    if (dobRaw && dobRaw.trim()) {
+      dateOfBirth = parseFlexibleDate(dobRaw);
+      if (!dateOfBirth) {
+        errors.push({ line, message: `Invalid date of birth: ${dobRaw}` });
+        return;
+      }
     }
 
     // State: accept abbreviations or full names in any casing. Only
@@ -175,7 +217,34 @@ export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): Csv
     const resolvedState = resolveStateCode(stateRaw);
     const state = resolvedState ?? stateRaw?.trim().toUpperCase() ?? "";
 
-    rows.push({ line, firstName, lastName, phone, dateOfBirth, state });
+    const tobaccoUse =
+      tobaccoRaw && tobaccoRaw.trim() ? /^(y|yes|true|1)$/i.test(tobaccoRaw.trim()) : undefined;
+
+    rows.push({
+      line,
+      firstName,
+      lastName,
+      phone,
+      dateOfBirth,
+      state,
+      email: email?.trim() || undefined,
+      address: address?.trim() || undefined,
+      zip: zip?.trim() || undefined,
+      county: county?.trim() || undefined,
+      beneficiary: beneficiary?.trim() || undefined,
+      beneficiaryRelationship: beneficiaryRelationship?.trim() || undefined,
+      gender: gender?.trim() || undefined,
+      maritalStatus: maritalStatus?.trim() || undefined,
+      height: height?.trim() || undefined,
+      weight: weight?.trim() || undefined,
+      tobaccoUse,
+      occupation: occupation?.trim() || undefined,
+      income: income?.trim() || undefined,
+      existingCoverage: existingCoverage?.trim() || undefined,
+      coverageAmountRequested: coverageAmountRequested?.trim() || undefined,
+      militaryBranch: militaryBranch?.trim() || undefined,
+      vendorNotes: vendorNotes?.trim() || undefined,
+    });
   });
 
   return { rows, errors };
@@ -281,6 +350,23 @@ export async function importLeadsFromCsv(
         isVaulted: isVault,
         vaultOrigin: isVault,
         sourceImportId: importRecord.id,
+        email: row.email,
+        address: row.address,
+        zip: row.zip,
+        county: row.county,
+        beneficiary: row.beneficiary,
+        beneficiaryRelationship: row.beneficiaryRelationship,
+        gender: row.gender,
+        maritalStatus: row.maritalStatus,
+        height: row.height,
+        weight: row.weight,
+        tobaccoUse: row.tobaccoUse,
+        occupation: row.occupation,
+        income: row.income,
+        existingCoverage: row.existingCoverage,
+        coverageAmountRequested: row.coverageAmountRequested,
+        militaryBranch: row.militaryBranch,
+        vendorNotes: row.vendorNotes,
         ...(isSelf ? { assignedAgentId: assignToAgentId, assignedAt: now } : {}),
       })),
     });

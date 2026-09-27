@@ -13,6 +13,7 @@ import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 import { cn } from "@/lib/cn";
 import { formatPhone } from "@/lib/formatPhone";
+import { formatDob } from "@/lib/formatDob";
 
 const STATUS_OPTIONS: LeadStatus[] = [
   "NEW",
@@ -38,14 +39,50 @@ type Lead = {
   lastName: string;
   phone: string;
   state: string;
-  dateOfBirth: string;
+  dateOfBirth: string | null;
   status: LeadStatus;
   leadType: LeadType;
   isArchived: boolean;
   isVaulted: boolean;
   notes: Note[];
   contactLogEntries: ContactLogEntry[];
+  email?: string | null;
+  address?: string | null;
+  zip?: string | null;
+  county?: string | null;
+  beneficiary?: string | null;
+  beneficiaryRelationship?: string | null;
+  gender?: string | null;
+  maritalStatus?: string | null;
+  height?: string | null;
+  weight?: string | null;
+  tobaccoUse?: boolean | null;
+  occupation?: string | null;
+  income?: string | null;
+  existingCoverage?: string | null;
+  coverageAmountRequested?: string | null;
+  militaryBranch?: string | null;
+  vendorNotes?: string | null;
 };
+
+const SUPPLEMENTAL_FIELDS: { key: keyof Lead; label: string }[] = [
+  { key: "email", label: "Email" },
+  { key: "address", label: "Address" },
+  { key: "zip", label: "ZIP" },
+  { key: "county", label: "County" },
+  { key: "beneficiary", label: "Beneficiary" },
+  { key: "beneficiaryRelationship", label: "Beneficiary Relationship" },
+  { key: "gender", label: "Gender" },
+  { key: "maritalStatus", label: "Marital Status" },
+  { key: "height", label: "Height" },
+  { key: "weight", label: "Weight" },
+  { key: "occupation", label: "Occupation" },
+  { key: "income", label: "Income" },
+  { key: "existingCoverage", label: "Existing Coverage" },
+  { key: "coverageAmountRequested", label: "Coverage Requested" },
+  { key: "militaryBranch", label: "Military Branch" },
+  { key: "vendorNotes", label: "Source Notes" },
+];
 
 type Navigation = {
   prevId: string | null;
@@ -87,7 +124,7 @@ export function LeadDetailPanel({
     lastName: lead.lastName,
     phone: lead.phone,
     state: lead.state,
-    dateOfBirth: lead.dateOfBirth.slice(0, 10),
+    dateOfBirth: lead.dateOfBirth?.slice(0, 10) ?? "",
   });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -144,7 +181,7 @@ export function LeadDetailPanel({
       lastName: lead.lastName,
       phone: lead.phone,
       state: lead.state,
-      dateOfBirth: lead.dateOfBirth.slice(0, 10),
+      dateOfBirth: lead.dateOfBirth?.slice(0, 10) ?? "",
     });
     setEditError(null);
     setEditing(true);
@@ -170,7 +207,7 @@ export function LeadDetailPanel({
       lastName: data.lead.lastName,
       phone: data.lead.phone,
       state: data.lead.state,
-      dateOfBirth: data.lead.dateOfBirth,
+      dateOfBirth: data.lead.dateOfBirth ?? null,
     }));
     setEditing(false);
     router.refresh();
@@ -240,8 +277,8 @@ export function LeadDetailPanel({
                 {lead.firstName} {lead.lastName}
               </CardTitle>
               <p className="mt-1 text-sm text-muted">
-                {formatPhone(lead.phone)} &middot; {lead.state} &middot; DOB{" "}
-                {format(new Date(lead.dateOfBirth), "MM/dd/yyyy")} &middot; {LEAD_TYPE_LABELS[lead.leadType]}
+                {formatPhone(lead.phone)} &middot; {lead.state} &middot; DOB {formatDob(lead.dateOfBirth)} &middot;{" "}
+                {LEAD_TYPE_LABELS[lead.leadType]}
               </p>
             </div>
           )}
@@ -290,6 +327,7 @@ export function LeadDetailPanel({
               />
               <Input
                 type="date"
+                placeholder="Date of Birth (optional)"
                 value={editForm.dateOfBirth}
                 onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
               />
@@ -343,6 +381,37 @@ export function LeadDetailPanel({
         ))}
         {!editing && error && <p className="mt-3 text-sm text-red-light">{error}</p>}
       </Card>
+
+      {!editing &&
+        (() => {
+          const populated = SUPPLEMENTAL_FIELDS.filter((f) => lead[f.key]);
+          if (populated.length === 0 && !lead.tobaccoUse) return null;
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Additional Info</CardTitle>
+              </CardHeader>
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+                {populated.map((f) => (
+                  <div key={f.key}>
+                    <dt className="font-condensed text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
+                      {f.label}
+                    </dt>
+                    <dd className="text-white">{String(lead[f.key])}</dd>
+                  </div>
+                ))}
+                {lead.tobaccoUse != null && (
+                  <div>
+                    <dt className="font-condensed text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
+                      Tobacco Use
+                    </dt>
+                    <dd className="text-white">{lead.tobaccoUse ? "Yes" : "No"}</dd>
+                  </div>
+                )}
+              </dl>
+            </Card>
+          );
+        })()}
 
       <Card>
         <CardHeader>

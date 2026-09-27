@@ -142,11 +142,14 @@ export default function ImportLeadsPage() {
           <CardTitle>Upload CSV</CardTitle>
         </CardHeader>
         <p className="mb-4 text-sm text-muted">
-          Columns expected: <span className="text-teal-light">Name</span> (or First Name / Last Name),{" "}
-          <span className="text-teal-light">Phone</span>, <span className="text-teal-light">Date of Birth</span>,{" "}
-          <span className="text-teal-light">State</span>. Rows with a phone number already in the system (or
-          already in another file you're uploading in the same batch) are skipped as duplicates. You can select
-          multiple CSV files at once — they'll be imported one after another.
+          Required columns: <span className="text-teal-light">Name</span> (or First Name / Last Name),{" "}
+          <span className="text-teal-light">Phone</span>, <span className="text-teal-light">State</span>. Date of
+          Birth is optional. A ton of other fields — email, address, ZIP, county, beneficiary, gender, marital
+          status, height/weight, tobacco use, occupation, income, existing coverage, coverage amount requested,
+          military branch, notes — are picked up automatically from matching column headers if present, no mapping
+          needed. Rows with a phone number already in the system (or already in another file you're uploading in
+          the same batch) are skipped as duplicates. You can select multiple CSV files at once — they'll be
+          imported one after another.
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block">
@@ -261,7 +264,7 @@ export default function ImportLeadsPage() {
                   onChange={(v) => setMapping({ ...mapping, phoneField: v })}
                 />
                 <ColumnSelect
-                  label="Date of Birth"
+                  label="Date of Birth (optional)"
                   value={mapping.dobField}
                   headers={headers}
                   onChange={(v) => setMapping({ ...mapping, dobField: v })}

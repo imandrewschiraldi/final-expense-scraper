@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
@@ -11,6 +10,7 @@ import { cn } from "@/lib/cn";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 import { formatPhone } from "@/lib/formatPhone";
+import { formatDob } from "@/lib/formatDob";
 
 type Lead = {
   id: string;
@@ -18,7 +18,7 @@ type Lead = {
   lastName: string;
   phone: string;
   state: string;
-  dateOfBirth: string;
+  dateOfBirth: string | null;
   status: LeadStatus;
   leadType: LeadType;
 };
@@ -26,6 +26,8 @@ type Lead = {
 const LEAD_TYPE_SHORT_LABELS: Record<LeadType, string> = {
   VETERANS_FINAL_EXPENSE: "VFE",
   MORTGAGE_PROTECTION: "MP",
+  FINAL_EXPENSE: "FE",
+  IUL: "IUL",
 };
 
 const ACTIVE_TABS: { value: LeadStatus | "ALL"; label: string }[] = [
@@ -182,7 +184,7 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
                 </td>
                 <td className="px-4 py-3 text-muted">{formatPhone(lead.phone)}</td>
                 <td className="px-4 py-3 text-muted">{lead.state}</td>
-                <td className="px-4 py-3 text-muted">{format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}</td>
+                <td className="px-4 py-3 text-muted">{formatDob(lead.dateOfBirth)}</td>
                 <td className="px-4 py-3 text-muted" title={LEAD_TYPE_LABELS[lead.leadType]}>
                   {LEAD_TYPE_SHORT_LABELS[lead.leadType]}
                 </td>
