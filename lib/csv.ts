@@ -189,7 +189,11 @@ export async function importLeadsFromCsv(
   filename: string,
   leadType: LeadType,
   mapping?: ColumnMapping,
-  destination: "unassigned" | "vault" = "unassigned",
+  destination: "unassigned" | "vault" | "self" = "unassigned",
+  // Required (and only meaningful) when destination is "self" — assigns
+  // every imported lead straight to this agent instead of leaving it
+  // unassigned or dropping it in the shared vault.
+  assignToAgentId?: string,
 ) {
   const { rows, errors } = parseLeadsCsv(fileContent, mapping);
   const duplicates: DuplicateDetail[] = [];
@@ -261,6 +265,8 @@ export async function importLeadsFromCsv(
   });
 
   const isVault = destination === "vault";
+  const isSelf = destination === "self" && !!assignToAgentId;
+  const now = new Date();
 
   for (let i = 0; i < uniqueRows.length; i += IMPORT_BATCH_SIZE) {
     const chunk = uniqueRows.slice(i, i + IMPORT_BATCH_SIZE);
@@ -275,6 +281,7 @@ export async function importLeadsFromCsv(
         isVaulted: isVault,
         vaultOrigin: isVault,
         sourceImportId: importRecord.id,
+        ...(isSelf ? { assignedAgentId: assignToAgentId, assignedAt: now } : {}),
       })),
     });
   }
