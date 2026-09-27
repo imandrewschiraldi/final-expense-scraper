@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { LEAD_STATUSES, LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, isLeadType } from "@/lib/leadType";
 import { formatPhone } from "@/lib/formatPhone";
+import { formatDob } from "@/lib/formatDob";
 import { Prisma } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
@@ -44,12 +45,29 @@ export async function GET(req: NextRequest) {
       "Last Name": lead.lastName,
       Phone: formatPhone(lead.phone),
       State: lead.state,
-      "Date of Birth": format(lead.dateOfBirth, "MM/dd/yyyy"),
+      "Date of Birth": formatDob(lead.dateOfBirth),
       "Lead Type": LEAD_TYPE_LABELS[lead.leadType],
       Status: LEAD_STATUS_LABELS[lead.status],
       "Assigned Agent": lead.assignedAgent?.name ?? "Unassigned",
       Vault: lead.isVaulted ? "Yes" : "No",
       Archived: lead.isArchived ? "Yes" : "No",
+      Email: lead.email ?? "",
+      Address: lead.address ?? "",
+      Zip: lead.zip ?? "",
+      County: lead.county ?? "",
+      Beneficiary: lead.beneficiary ?? "",
+      "Beneficiary Relationship": lead.beneficiaryRelationship ?? "",
+      Gender: lead.gender ?? "",
+      "Marital Status": lead.maritalStatus ?? "",
+      Height: lead.height ?? "",
+      Weight: lead.weight ?? "",
+      "Tobacco Use": lead.tobaccoUse == null ? "" : lead.tobaccoUse ? "Yes" : "No",
+      Occupation: lead.occupation ?? "",
+      Income: lead.income ?? "",
+      "Existing Coverage": lead.existingCoverage ?? "",
+      "Coverage Requested": lead.coverageAmountRequested ?? "",
+      "Military Branch": lead.militaryBranch ?? "",
+      "Source Notes": lead.vendorNotes ?? "",
     })),
   );
 

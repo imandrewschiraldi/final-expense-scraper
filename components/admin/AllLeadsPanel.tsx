@@ -6,8 +6,8 @@ import { Input, Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { StatCard } from "@/components/admin/StatCard";
-import { format } from "date-fns";
 import { formatPhone } from "@/lib/formatPhone";
+import { formatDob } from "@/lib/formatDob";
 import { LEAD_TYPE_LABELS, LEAD_TYPES, LeadType } from "@/lib/leadType";
 import { LEAD_STATUS_LABELS, LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
 import { US_STATES } from "@/lib/usStates";
@@ -18,7 +18,7 @@ type Lead = {
   lastName: string;
   phone: string;
   state: string;
-  dateOfBirth: string;
+  dateOfBirth: string | null;
   leadType: LeadType;
   status: LeadStatus;
   isArchived: boolean;
@@ -577,7 +577,7 @@ export function AllLeadsPanel() {
                   </td>
                   <td className="py-2 pr-4 text-muted">{formatPhone(lead.phone)}</td>
                   <td className="py-2 pr-4 text-muted">{lead.state}</td>
-                  <td className="py-2 pr-4 text-muted">{format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}</td>
+                  <td className="py-2 pr-4 text-muted">{formatDob(lead.dateOfBirth)}</td>
                   <td className="py-2 pr-4 text-muted">{LEAD_TYPE_LABELS[lead.leadType]}</td>
                   <td className="py-2 pr-4">
                     <StatusBadge status={lead.status} />

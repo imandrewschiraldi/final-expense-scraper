@@ -96,11 +96,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       editData.state = trimmed;
     }
     if (dateOfBirth !== undefined) {
-      const parsed = new Date(dateOfBirth);
-      if (Number.isNaN(parsed.getTime())) {
-        return NextResponse.json({ error: "A valid date of birth is required" }, { status: 400 });
+      if (!dateOfBirth.trim()) {
+        // Date of birth is optional — an empty value clears it.
+        editData.dateOfBirth = null;
+      } else {
+        const parsed = new Date(dateOfBirth);
+        if (Number.isNaN(parsed.getTime())) {
+          return NextResponse.json({ error: "Invalid date of birth" }, { status: 400 });
+        }
+        editData.dateOfBirth = parsed;
       }
-      editData.dateOfBirth = parsed;
     }
   }
 

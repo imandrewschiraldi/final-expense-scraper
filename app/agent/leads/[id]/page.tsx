@@ -50,7 +50,7 @@ export default async function AgentLeadDetailPage({
     <LeadDetailPanel
       lead={{
         ...lead,
-        dateOfBirth: lead.dateOfBirth.toISOString(),
+        dateOfBirth: lead.dateOfBirth?.toISOString() ?? null,
         notes: lead.notes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString() })),
         contactLogEntries: lead.contactLogEntries.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
       }}

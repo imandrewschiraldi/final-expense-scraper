@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { format } from "date-fns";
 import { formatPhone } from "@/lib/formatPhone";
+import { formatDob } from "@/lib/formatDob";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 
 type Lead = {
@@ -13,7 +13,7 @@ type Lead = {
   lastName: string;
   phone: string;
   state: string;
-  dateOfBirth: string;
+  dateOfBirth: string | null;
   leadType: LeadType;
   assignedAgent: { id: string; name: string } | null;
 };
@@ -242,7 +242,7 @@ export function VaultAdminPanel() {
                   </td>
                   <td className="py-2 pr-4 text-muted">{formatPhone(lead.phone)}</td>
                   <td className="py-2 pr-4 text-muted">{lead.state}</td>
-                  <td className="py-2 pr-4 text-muted">{format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}</td>
+                  <td className="py-2 pr-4 text-muted">{formatDob(lead.dateOfBirth)}</td>
                   <td className="py-2 pr-4 text-muted">{LEAD_TYPE_LABELS[lead.leadType]}</td>
                   <td className="py-2 pr-4 text-muted">{lead.assignedAgent?.name ?? "—"}</td>
                 </tr>

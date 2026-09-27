@@ -39,7 +39,7 @@ export default async function AgentDashboardPage() {
       </div>
 
       <AgentLeadList
-        initialLeads={leads.map((l) => ({ ...l, dateOfBirth: l.dateOfBirth.toISOString() }))}
+        initialLeads={leads.map((l) => ({ ...l, dateOfBirth: l.dateOfBirth?.toISOString() ?? null }))}
       />
     </div>
   );

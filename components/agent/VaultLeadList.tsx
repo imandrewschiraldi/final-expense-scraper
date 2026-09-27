@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 import { formatPhone } from "@/lib/formatPhone";
+import { formatDob } from "@/lib/formatDob";
 
 type Lead = {
   id: string;
@@ -16,7 +16,7 @@ type Lead = {
   lastName: string;
   phone: string;
   state: string;
-  dateOfBirth: string;
+  dateOfBirth: string | null;
   status: LeadStatus;
   leadType: LeadType;
 };
@@ -110,7 +110,7 @@ export function VaultLeadList() {
                 </td>
                 <td className="px-4 py-3 text-muted">{formatPhone(lead.phone)}</td>
                 <td className="px-4 py-3 text-muted">{lead.state}</td>
-                <td className="px-4 py-3 text-muted">{format(new Date(lead.dateOfBirth), "MM/dd/yyyy")}</td>
+                <td className="px-4 py-3 text-muted">{formatDob(lead.dateOfBirth)}</td>
                 <td className="px-4 py-3 text-muted">{LEAD_TYPE_LABELS[lead.leadType]}</td>
                 <td className="px-4 py-3">
                   <StatusBadge status={lead.status} />

@@ -45,5 +45,7 @@ export function guessMapping(headers: string[]): MappingState {
 export function mappingIsComplete(m: MappingState | null): m is MappingState {
   if (!m) return false;
   const nameOk = m.nameMode === "single" ? !!m.nameField : !!m.firstNameField;
-  return nameOk && !!m.phoneField && !!m.dobField && !!m.stateField;
+  // dobField is intentionally not required — date of birth is optional at
+  // intake. Only name, phone, and state are mandatory.
+  return nameOk && !!m.phoneField && !!m.stateField;
 }

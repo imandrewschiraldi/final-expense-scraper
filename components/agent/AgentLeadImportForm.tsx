@@ -93,10 +93,11 @@ export function AgentLeadImportForm({ onImported }: { onImported: () => void }) 
   return (
     <div className="mb-6 space-y-3 rounded-[10px] border border-copper-dim bg-surface2 p-4">
       <p className="text-sm text-muted">
-        Columns expected: <span className="text-teal-light">Name</span> (or First Name / Last Name),{" "}
-        <span className="text-teal-light">Phone</span>, <span className="text-teal-light">Date of Birth</span>,{" "}
-        <span className="text-teal-light">State</span>. Leads land straight in your book, ready to work. Rows with
-        a phone number already in the system are skipped as duplicates.
+        Required columns: <span className="text-teal-light">Name</span> (or First Name / Last Name),{" "}
+        <span className="text-teal-light">Phone</span>, <span className="text-teal-light">State</span>. Date of
+        Birth and other details (email, address, ZIP, beneficiary, etc.) are optional and picked up automatically
+        if present. Leads land straight in your book, ready to work. Rows with a phone number already in the
+        system are skipped as duplicates.
       </p>
 
       <label className="block">
@@ -181,7 +182,7 @@ export function AgentLeadImportForm({ onImported }: { onImported: () => void }) 
               onChange={(v) => setMapping({ ...mapping, phoneField: v })}
             />
             <ColumnSelect
-              label="Date of Birth"
+              label="Date of Birth (optional)"
               value={mapping.dobField}
               headers={headers}
               onChange={(v) => setMapping({ ...mapping, dobField: v })}
