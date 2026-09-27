@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState, FormEvent, ChangeEvent } from "react";
+import { useRef, useState, FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { sniffCsvHeaders } from "@/lib/csvHeaders";
 import { guessMapping, mappingIsComplete, type MappingState } from "@/lib/csvMapping";
 import { ColumnSelect } from "@/components/shared/ColumnSelect";
+import { FileDropZone } from "@/components/shared/FileDropZone";
 import { LEAD_TYPES, LEAD_TYPE_LABELS, type LeadType } from "@/lib/leadType";
 import { PageHeading } from "@/components/portal/PageHeading";
 
@@ -31,14 +32,15 @@ export default function ImportLeadsPage() {
   const [mapping, setMapping] = useState<MappingState | null>(null);
   const [leadType, setLeadType] = useState<LeadType | "">("");
   const [destination, setDestination] = useState<"unassigned" | "vault">("unassigned");
+  const [fileCount, setFileCount] = useState(0);
 
-  async function handleFilesChosen(e: ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
+  async function handleFilesChosen(files: FileList | null) {
     setError(null);
     setFileResults(null);
     if (!files || files.length === 0) {
       setHeaders(null);
       setMapping(null);
+      setFileCount(0);
       return;
     }
     const first = files[0];
@@ -47,6 +49,7 @@ export default function ImportLeadsPage() {
     setHeaders(detected);
     setPreviewFilename(first.name);
     setMapping(guessMapping(detected));
+    setFileCount(files.length);
   }
 
   async function importOneFile(
@@ -117,6 +120,7 @@ export default function ImportLeadsPage() {
     setMapping(null);
     setLeadType("");
     setDestination("unassigned");
+    setFileCount(0);
   }
 
   const totals = fileResults?.reduce(
@@ -147,8 +151,8 @@ export default function ImportLeadsPage() {
           Birth is optional. A ton of other fields — email, address, ZIP, county, beneficiary, gender, marital
           status, height/weight, tobacco use, occupation, income, existing coverage, coverage amount requested,
           military branch, notes — are picked up automatically from matching column headers if present, no mapping
-          needed. Rows with a phone number already in the system (or already in another file you're uploading in
-          the same batch) are skipped as duplicates. You can select multiple CSV files at once — they'll be
+          needed. Rows with a phone number already in the system (or already in another file you&apos;re uploading
+          in the same batch) are skipped as duplicates. You can select multiple CSV files at once — they&apos;ll be
           imported one after another.
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -196,15 +200,20 @@ export default function ImportLeadsPage() {
             </div>
           </div>
 
-          <input
-            ref={fileRef}
-            type="file"
+          <FileDropZone
+            inputRef={fileRef}
             accept=".csv"
             multiple
-            required
             disabled={loading}
-            onChange={handleFilesChosen}
-            className="block w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-50"
+            onFilesChosen={handleFilesChosen}
+            hint="Drop CSV file(s) here, or click to browse. You can select multiple files."
+            selectedLabel={
+              fileCount > 0
+                ? fileCount === 1
+                  ? previewFilename
+                  : `${fileCount.toLocaleString()} files selected`
+                : undefined
+            }
           />
 
           {headers && mapping && (

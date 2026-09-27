@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState, ChangeEvent } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { sniffCsvHeaders } from "@/lib/csvHeaders";
 import { guessMapping, mappingIsComplete, type MappingState } from "@/lib/csvMapping";
 import { ColumnSelect } from "@/components/shared/ColumnSelect";
+import { FileDropZone } from "@/components/shared/FileDropZone";
 import { LEAD_TYPES, LEAD_TYPE_LABELS, type LeadType } from "@/lib/leadType";
 
 type ImportResult = {
@@ -30,13 +31,14 @@ export function AgentLeadImportForm({ onImported }: { onImported: () => void }) 
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleFileChosen(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function handleFileChosen(files: FileList | null) {
+    const file = files?.[0];
     setError(null);
     setResult(null);
     if (!file) {
       setHeaders(null);
       setMapping(null);
+      setPreviewFilename("");
       return;
     }
     const text = await file.text();
@@ -83,6 +85,7 @@ export function AgentLeadImportForm({ onImported }: { onImported: () => void }) 
       setHeaders(null);
       setMapping(null);
       setLeadType("");
+      setPreviewFilename("");
     } catch {
       setError("Network error during upload");
     } finally {
@@ -117,13 +120,13 @@ export function AgentLeadImportForm({ onImported }: { onImported: () => void }) 
         </select>
       </label>
 
-      <input
-        ref={fileRef}
-        type="file"
+      <FileDropZone
+        inputRef={fileRef}
         accept=".csv"
         disabled={loading}
-        onChange={handleFileChosen}
-        className="block w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-50"
+        onFilesChosen={handleFileChosen}
+        hint="Drop a CSV file here, or click to browse."
+        selectedLabel={previewFilename || undefined}
       />
 
       {headers && mapping && (
