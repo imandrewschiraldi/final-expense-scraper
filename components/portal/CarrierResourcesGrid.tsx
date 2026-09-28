@@ -43,7 +43,7 @@ export function CarrierResourcesGrid() {
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
       {carriers.map((carrier, i) => (
         <div key={carrier.id} className={isTrailingOdd(i) ? "lg:col-span-2 lg:mx-auto lg:w-[calc(50%-1rem)]" : undefined}>
-          <h2 className="font-condensed mb-3 text-center text-2xl font-extrabold tracking-wide text-copper uppercase">
+          <h2 className="font-poppins mb-3 text-center text-2xl font-extrabold tracking-wide text-copper uppercase">
             {carrier.name}
           </h2>
 

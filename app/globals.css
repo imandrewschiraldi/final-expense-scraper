@@ -61,6 +61,7 @@
   --font-condensed: var(--font-barlow-condensed);
   --font-sans: var(--font-barlow);
   --font-scoreboard: var(--font-scoreboard);
+  --font-poppins: var(--font-poppins);
 }
 
 body {
