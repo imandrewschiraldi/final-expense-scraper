@@ -1,37 +1,34 @@
-"use client";
-
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Bot } from "lucide-react";
+import { AccentCard } from "@/components/ui/Card";
 
 const ASK_INTEGRITY_URL = "https://connect.integrity.com/agent/ask-integrity/sales-coach";
 
 /**
- * A single third-party tool embedded via iframe — same shape as QuoterTool
- * (bounded height, header bar with an "Open in New Tab" fallback, light
- * mode only), just without the multi-tool switcher since there's only one
- * source here. Integrity isn't Tier 1's own tool, so there's no "?embed=1"
- * mode to request — it iframes as-is, same as the Quote Tool's embeds.
+ * Integrity's site sends a frame-blocking security header (X-Frame-Options /
+ * CSP frame-ancestors), so unlike the Quote Tool's embeds it refuses to
+ * render inside an iframe at all — confirmed as a hard "refused to connect"
+ * in the browser, not something any client-side fix here can work around.
+ * This is a launch card instead: same tab, opens in a new tab.
  */
 export function AskIntegrityTool() {
   return (
-    <div className="relative mb-8 flex h-[70vh] flex-col overflow-hidden rounded-lg border border-border">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-4 py-3">
-        <span className="font-condensed text-[13px] font-bold tracking-[0.05em] text-muted uppercase">
-          Ask Integrity
-        </span>
-        <a
-          href={ASK_INTEGRITY_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-condensed flex items-center gap-1.5 rounded-lg border-[1.5px] border-border px-3 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper hover:text-foreground"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Open in New Tab</span>
-        </a>
+    <AccentCard className="mb-8 flex flex-col items-center gap-4 py-12 text-center">
+      <Bot className="h-10 w-10 text-copper" />
+      <div>
+        <h2 className="font-condensed text-xl font-extrabold tracking-wide text-white uppercase">Ask Integrity</h2>
+        <p className="mt-2 max-w-md text-sm text-muted">
+          Integrity&apos;s sales coach doesn&apos;t allow itself to be embedded here — it opens in its own tab instead.
+        </p>
       </div>
-
-      <div className="relative flex-1 overflow-hidden bg-white">
-        <iframe src={ASK_INTEGRITY_URL} title="Ask Integrity" className="h-full w-full border-0" />
-      </div>
-    </div>
+      <a
+        href={ASK_INTEGRITY_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-condensed flex items-center gap-2 rounded-lg border-[1.5px] border-copper bg-copper px-6 py-3 text-[13px] font-bold tracking-[0.05em] text-black uppercase transition-colors hover:bg-copper/90"
+      >
+        <ExternalLink className="h-4 w-4" />
+        Open Ask Integrity
+      </a>
+    </AccentCard>
   );
 }
