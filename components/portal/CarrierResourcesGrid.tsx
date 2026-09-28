@@ -47,7 +47,7 @@ export function CarrierResourcesGrid() {
             {carrier.name}
           </h2>
 
-          <div className="rounded-lg bg-copper p-5 shadow-md">
+          <div className="rounded-lg bg-copper-dim p-5 shadow-md">
             {carrier.contacts.length > 0 && (
               <div className="mb-4 space-y-2 text-center">
                 {carrier.contacts.map((contact) => (
@@ -74,8 +74,8 @@ export function CarrierResourcesGrid() {
                     className={cn(
                       "font-condensed block rounded-md px-4 py-2.5 text-center text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
                       link.isAgentPortal
-                        ? "bg-white text-copper hover:bg-white/90"
-                        : "bg-copper-dim text-white hover:bg-copper-dim/80",
+                        ? "bg-white text-copper-dim hover:bg-white/90"
+                        : "bg-copper text-white hover:bg-copper/80",
                     )}
                   >
                     {link.label}
