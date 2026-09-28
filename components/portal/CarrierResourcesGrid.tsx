@@ -40,7 +40,7 @@ export function CarrierResourcesGrid() {
   const isTrailingOdd = (i: number) => carriers.length % 2 === 1 && i === carriers.length - 1;
 
   return (
-    <div className="grid grid-cols-1 justify-center gap-x-6 gap-y-8 lg:grid-cols-[repeat(2,24rem)]">
+    <div className="grid grid-cols-1 justify-center gap-x-14 gap-y-8 lg:grid-cols-[repeat(2,24rem)]">
       {carriers.map((carrier, i) => (
         <div
           key={carrier.id}
