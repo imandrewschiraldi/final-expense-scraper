@@ -1,9 +1,19 @@
+import Image from "next/image";
 import { AskIntegrityTool } from "@/components/portal/AskIntegrityTool";
 
 export default function AskIntegrityPage() {
   return (
     <div>
-      <h1 className="mt-4 mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Ask Integrity®</h1>
+      <div className="mt-4 mb-10 flex justify-center">
+        <Image
+          src="/ask-integrity-logo.png"
+          alt="Ask Integrity"
+          width={1000}
+          height={251}
+          className="h-9 w-auto"
+          priority
+        />
+      </div>
       <AskIntegrityTool />
     </div>
   );
