@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Laptop } from "lucide-react";
 
 const ASK_INTEGRITY_URL = "https://connect.integrity.com/agent/ask-integrity/sales-coach";
@@ -9,15 +10,12 @@ const ASK_INTEGRITY_URL = "https://connect.integrity.com/agent/ask-integrity/sal
  * in the browser, not something any client-side fix here can work around.
  * This instead replicates the tile Integrity's own "Ask Integrity" page
  * shows for its Sales Coach — the whole tile is the link, opening the real
- * tool in a new tab. The navy circular mark is a recreation (not their
- * actual logo file) — swap in the real asset if/when it's provided.
+ * tool in a new tab.
  */
 export function AskIntegrityTool() {
   return (
     <div className="mb-8 flex flex-col items-center gap-6 py-8">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#1a2f5c] bg-[#1a2f5c]">
-        <span className="font-serif text-2xl font-bold text-white">I</span>
-      </div>
+      <Image src="/ask-integrity-icon.png" alt="" width={251} height={251} className="h-14 w-14" />
 
       <a
         href={ASK_INTEGRITY_URL}
