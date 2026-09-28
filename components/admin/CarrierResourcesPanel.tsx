@@ -8,7 +8,7 @@ import { Trash2, ChevronUp, ChevronDown } from "lucide-react";
 
 type Contact = { id: string; label: string; phone: string; order: number };
 type Link = { id: string; label: string; url: string; isAgentPortal: boolean; order: number };
-type Carrier = { id: string; name: string; contacts: Contact[]; links: Link[] };
+type Carrier = { id: string; name: string; order: number; contacts: Contact[]; links: Link[] };
 
 function AddContactForm({ carrierId, onAdded }: { carrierId: string; onAdded: () => void }) {
   const [label, setLabel] = useState("");
@@ -167,6 +167,15 @@ export function CarrierResourcesPanel() {
     load();
   }
 
+  async function moveCarrier(id: string, direction: "up" | "down") {
+    await fetch(`/api/admin/carriers/${id}/move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ direction }),
+    });
+    load();
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -175,7 +184,8 @@ export function CarrierResourcesPanel() {
         </CardHeader>
         <p className="mb-3 text-sm text-muted">
           Same carrier list as Carrier Rates — adding one here (or there) makes it available in both places. Give it
-          phone contacts and link buttons below for the agent-facing Carrier Resources page.
+          phone contacts and link buttons below for the agent-facing Carrier Resources page. New carriers are
+          appended to the end of the grid — use the arrows on each carrier below to reorder them.
         </p>
         <div className="flex flex-wrap items-end gap-2">
           <Input
@@ -197,10 +207,30 @@ export function CarrierResourcesPanel() {
         <p className="text-sm text-muted">No carriers yet — add one above to start building its resources.</p>
       )}
 
-      {carriers.map((carrier) => (
+      {carriers.map((carrier, i) => (
         <Card key={carrier.id}>
           <CardHeader>
             <CardTitle>{carrier.name}</CardTitle>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => moveCarrier(carrier.id, "up")}
+                disabled={i === 0}
+                title="Move up in the agent-facing grid"
+                className="text-muted hover:text-foreground disabled:opacity-30"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => moveCarrier(carrier.id, "down")}
+                disabled={i === carriers.length - 1}
+                title="Move down in the agent-facing grid"
+                className="text-muted hover:text-foreground disabled:opacity-30"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
           </CardHeader>
 
           <div className="mb-5">

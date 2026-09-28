@@ -9,7 +9,7 @@ export async function GET() {
 
   const carriers = await db.carrier.findMany({
     where: { OR: [{ contacts: { some: {} } }, { links: { some: {} } }] },
-    orderBy: { name: "asc" },
+    orderBy: [{ order: "asc" }, { name: "asc" }],
     select: {
       id: true,
       name: true,
