@@ -42,8 +42,11 @@ export function CarrierResourcesGrid() {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
       {carriers.map((carrier, i) => (
-        <div key={carrier.id} className={isTrailingOdd(i) ? "lg:col-span-2 lg:mx-auto lg:w-[calc(50%-1rem)]" : undefined}>
-          <h2 className="font-poppins mb-3 text-center text-2xl font-extrabold tracking-wide text-copper uppercase">
+        <div
+          key={carrier.id}
+          className={cn("mx-auto w-full max-w-sm", isTrailingOdd(i) && "lg:col-span-2")}
+        >
+          <h2 className="font-poppins mb-3 text-center text-2xl font-black tracking-wide text-copper uppercase">
             {carrier.name}
           </h2>
 
@@ -52,10 +55,10 @@ export function CarrierResourcesGrid() {
               <div className="mb-4 space-y-2 text-center">
                 {carrier.contacts.map((contact) => (
                   <div key={contact.id}>
-                    <p className="font-condensed text-[11px] font-bold tracking-[0.1em] text-white/90 uppercase">
+                    <p className="font-condensed text-xs font-bold tracking-[0.1em] text-white/90 uppercase">
                       {contact.label}:
                     </p>
-                    <a href={telHref(contact.phone)} className="text-base font-extrabold text-white hover:underline">
+                    <a href={telHref(contact.phone)} className="text-lg font-extrabold text-white hover:underline">
                       {contact.phone}
                     </a>
                   </div>
@@ -72,7 +75,7 @@ export function CarrierResourcesGrid() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "font-condensed block rounded-md px-4 py-2.5 text-center text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+                      "font-condensed block rounded-md px-4 py-3 text-center text-sm font-bold tracking-[0.05em] uppercase transition-colors",
                       link.isAgentPortal
                         ? "bg-white text-copper-dim hover:bg-white/90"
                         : "bg-copper text-white hover:bg-copper/80",

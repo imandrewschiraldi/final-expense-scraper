@@ -28,7 +28,7 @@ const orbitron = Orbitron({
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
