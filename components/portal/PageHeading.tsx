@@ -21,7 +21,7 @@ const HEADINGS = {
   "all-leads": { width: 391, height: 45 },
   "assign-leads": { width: 511, height: 45 },
   "quote-tool": { width: 430, height: 48 },
-  "carrier-resources": { width: 762, height: 62 },
+  "carrier-resources": { width: 746, height: 43 },
 } as const;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;
