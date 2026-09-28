@@ -11,7 +11,11 @@ import { usePathname } from "next/navigation";
 // — that heading has to sit in the same centered column every other page's
 // heading does, so the embed below it stays in that column too rather than
 // suddenly bleeding to the viewport edges right under a centered title.
-const FULL_BLEED_PREFIXES = ["/portal/scripts", "/portal/commission-calculator"];
+// Carrier Resources also opts in — its title/description banner is meant
+// to be a full-width band directly under the header's copper line, edge to
+// edge, with the carrier grid below it re-centered back into its own
+// max-w-6xl wrapper (see carrier-resources/page.tsx).
+const FULL_BLEED_PREFIXES = ["/portal/scripts", "/portal/commission-calculator", "/portal/carrier-resources"];
 
 export function ContentContainer({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
