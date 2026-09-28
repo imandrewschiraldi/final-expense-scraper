@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Barlow, Orbitron, Poppins } from "next/font/google";
+import { Barlow_Condensed, Barlow, Orbitron, Montserrat } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -22,11 +22,10 @@ const orbitron = Orbitron({
   weight: ["600", "700", "900"],
 });
 
-// Rounded geometric sans matching Carrier Resources' reference layout
-// (fflamerica.com/carriers) — used only for that page's title and each
-// carrier's name, not app-wide.
-const poppins = Poppins({
-  variable: "--font-poppins",
+// Geometric sans for Carrier Resources' carrier names — distinct from the
+// app's default Barlow, used only there, not app-wide.
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
   weight: ["600", "700", "800", "900"],
 });
@@ -73,7 +72,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} ${poppins.variable} h-full antialiased`}
+      className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} ${montserrat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

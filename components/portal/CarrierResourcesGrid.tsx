@@ -46,7 +46,7 @@ export function CarrierResourcesGrid() {
           key={carrier.id}
           className={cn("mx-auto w-full max-w-sm", isTrailingOdd(i) && "lg:col-span-2")}
         >
-          <h2 className="font-poppins mb-3 text-center text-2xl font-black tracking-wide text-copper uppercase">
+          <h2 className="font-montserrat mb-3 text-center text-2xl font-black tracking-wide text-white uppercase">
             {carrier.name}
           </h2>
 
