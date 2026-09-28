@@ -7,7 +7,7 @@ export async function GET() {
   if ("error" in guard) return guard.error;
 
   const carriers = await db.carrier.findMany({
-    orderBy: { name: "asc" },
+    orderBy: [{ order: "asc" }, { name: "asc" }],
     include: {
       plans: { orderBy: { name: "asc" } },
       contacts: { orderBy: { order: "asc" } },
@@ -18,6 +18,7 @@ export async function GET() {
   return NextResponse.json({ carriers });
 }
 
+/** Creates a carrier, appended to the end of the existing Carrier Resources display order. */
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin();
   if ("error" in guard) return guard.error;
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
   const existing = await db.carrier.findUnique({ where: { name: cleaned } });
   if (existing) return NextResponse.json({ error: "A carrier with that name already exists" }, { status: 409 });
 
-  const carrier = await db.carrier.create({ data: { name: cleaned } });
+  const last = await db.carrier.findFirst({ orderBy: { order: "desc" } });
+  const carrier = await db.carrier.create({ data: { name: cleaned, order: (last?.order ?? -1) + 1 } });
   return NextResponse.json({ carrier: { ...carrier, plans: [], contacts: [], links: [] } }, { status: 201 });
 }

@@ -35,10 +35,18 @@ export function CarrierResourcesGrid() {
     return <p className="text-sm text-muted">No carrier resources have been added yet.</p>;
   }
 
+  // When the last row has a lone leftover carrier (odd total count), span
+  // it across both columns and center it instead of leaving it stuck on
+  // the left.
+  const isTrailingOdd = (i: number) => carriers.length % 2 === 1 && i === carriers.length - 1;
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      {carriers.map((carrier) => (
-        <AccentCard key={carrier.id}>
+      {carriers.map((carrier, i) => (
+        <AccentCard
+          key={carrier.id}
+          className={isTrailingOdd(i) ? "lg:col-span-2 lg:mx-auto lg:w-[calc(50%-0.75rem)]" : undefined}
+        >
           <h2 className="font-condensed mb-4 text-center text-xl font-extrabold tracking-wide text-white uppercase">
             {carrier.name}
           </h2>
