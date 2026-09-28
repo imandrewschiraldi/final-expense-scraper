@@ -15,7 +15,7 @@ const ASK_INTEGRITY_URL = "https://connect.integrity.com/agent/ask-integrity/sal
 export function AskIntegrityTool() {
   return (
     <div className="mb-8 flex flex-col items-center gap-8 py-8">
-      <Image src="/ask-integrity-icon.png" alt="" width={251} height={251} className="h-32 w-32" />
+      <Image src="/ask-integrity-icon.png" alt="" width={554} height={554} className="h-32 w-32" />
 
       <a
         href={ASK_INTEGRITY_URL}
