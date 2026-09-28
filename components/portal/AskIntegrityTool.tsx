@@ -1,5 +1,4 @@
-import { ExternalLink, Bot } from "lucide-react";
-import { AccentCard } from "@/components/ui/Card";
+import { Laptop } from "lucide-react";
 
 const ASK_INTEGRITY_URL = "https://connect.integrity.com/agent/ask-integrity/sales-coach";
 
@@ -8,27 +7,34 @@ const ASK_INTEGRITY_URL = "https://connect.integrity.com/agent/ask-integrity/sal
  * CSP frame-ancestors), so unlike the Quote Tool's embeds it refuses to
  * render inside an iframe at all — confirmed as a hard "refused to connect"
  * in the browser, not something any client-side fix here can work around.
- * This is a launch card instead: same tab, opens in a new tab.
+ * This instead replicates the tile Integrity's own "Ask Integrity" page
+ * shows for its Sales Coach — the whole tile is the link, opening the real
+ * tool in a new tab. The navy circular mark is a recreation (not their
+ * actual logo file) — swap in the real asset if/when it's provided.
  */
 export function AskIntegrityTool() {
   return (
-    <AccentCard className="mb-8 flex flex-col items-center gap-4 py-12 text-center">
-      <Bot className="h-10 w-10 text-copper" />
-      <div>
-        <h2 className="font-condensed text-xl font-extrabold tracking-wide text-white uppercase">Ask Integrity</h2>
-        <p className="mt-2 max-w-md text-sm text-muted">
-          Integrity&apos;s sales coach doesn&apos;t allow itself to be embedded here — it opens in its own tab instead.
-        </p>
+    <div className="mb-8 flex flex-col items-center gap-6 py-8">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#1a2f5c] bg-[#1a2f5c]">
+        <span className="font-serif text-2xl font-bold text-white">I</span>
       </div>
+
       <a
         href={ASK_INTEGRITY_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="font-condensed flex items-center gap-2 rounded-lg border-[1.5px] border-copper bg-copper px-6 py-3 text-[13px] font-bold tracking-[0.05em] text-black uppercase transition-colors hover:bg-copper/90"
+        className="flex w-full max-w-xs items-start gap-3 rounded-lg border border-black/10 bg-white p-4 text-left shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg"
       >
-        <ExternalLink className="h-4 w-4" />
-        Open Ask Integrity
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#e8edf7]">
+          <Laptop className="h-5 w-5 text-[#1a2f5c]" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-[#1a2f5c]">Sales Coach</p>
+          <p className="mt-1 text-xs text-gray-500">
+            Practice sales objections and scenarios using Ask Integrity® personas.
+          </p>
+        </div>
       </a>
-    </AccentCard>
+    </div>
   );
 }
