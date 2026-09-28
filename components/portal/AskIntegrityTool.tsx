@@ -14,21 +14,21 @@ const ASK_INTEGRITY_URL = "https://connect.integrity.com/agent/ask-integrity/sal
  */
 export function AskIntegrityTool() {
   return (
-    <div className="mb-8 flex flex-col items-center gap-6 py-8">
-      <Image src="/ask-integrity-icon.png" alt="" width={251} height={251} className="h-14 w-14" />
+    <div className="mb-8 flex flex-col items-center gap-8 py-8">
+      <Image src="/ask-integrity-icon.png" alt="" width={251} height={251} className="h-32 w-32" />
 
       <a
         href={ASK_INTEGRITY_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex w-full max-w-xs items-start gap-3 rounded-lg border border-black/10 bg-white p-4 text-left shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg"
+        className="flex w-full max-w-2xl items-start gap-5 rounded-lg border border-black/10 bg-white p-8 text-left shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#e8edf7]">
-          <Laptop className="h-5 w-5 text-[#1a2f5c]" />
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-[#e8edf7]">
+          <Laptop className="h-10 w-10 text-[#1a2f5c]" />
         </div>
         <div>
-          <p className="text-sm font-bold text-[#1a2f5c]">Sales Coach</p>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="text-xl font-bold text-[#1a2f5c]">Sales Coach</p>
+          <p className="mt-2 text-base text-gray-500">
             Practice sales objections and scenarios using Ask Integrity® personas.
           </p>
         </div>
