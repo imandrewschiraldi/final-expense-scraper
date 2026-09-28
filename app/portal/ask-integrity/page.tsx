@@ -10,7 +10,7 @@ export default function AskIntegrityPage() {
           alt="Ask Integrity"
           width={1000}
           height={251}
-          className="h-9 w-auto"
+          className="h-11 w-auto"
           priority
         />
       </div>
