@@ -50,7 +50,7 @@ export function CarrierResourcesGrid() {
             {carrier.name}
           </h2>
 
-          <div className="rounded-lg bg-copper-dim p-5 shadow-md">
+          <div className="rounded-lg bg-gradient-to-b from-[#8f5a30] to-[#5e3a1e] p-5 shadow-[0_16px_32px_-8px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-3px_6px_rgba(0,0,0,0.35)]">
             {carrier.contacts.length > 0 && (
               <div className="mb-4 space-y-2 text-center">
                 {carrier.contacts.map((contact) => (
@@ -75,10 +75,10 @@ export function CarrierResourcesGrid() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "font-condensed block rounded-md px-4 py-3 text-center text-sm font-bold tracking-[0.05em] uppercase transition-colors",
+                      "font-condensed block rounded-md px-4 py-3 text-center text-sm font-bold tracking-[0.05em] uppercase transition-all active:translate-y-px",
                       link.isAgentPortal
-                        ? "bg-white text-copper-dim hover:bg-white/90"
-                        : "bg-copper text-white hover:bg-copper/80",
+                        ? "bg-white text-copper-dim shadow-[0_3px_6px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white/90"
+                        : "bg-gradient-to-b from-copper to-[#a8642f] text-white shadow-[0_3px_6px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110",
                     )}
                   >
                     {link.label}
