@@ -270,7 +270,10 @@ export function Sidebar({
         )}
       >
         <div
-          className={cn("flex shrink-0 items-center px-3", collapsed ? "justify-center" : "justify-between")}
+          className={cn(
+            "flex shrink-0 items-center border-b-2 border-copper px-3",
+            collapsed ? "justify-center" : "justify-between",
+          )}
           style={{ height: HEADER_HEIGHT }}
         >
           <Link href="/portal/dashboard" className="block shrink-0">
