@@ -270,10 +270,7 @@ export function Sidebar({
         )}
       >
         <div
-          className={cn(
-            "flex shrink-0 items-center border-b-2 border-copper px-3",
-            collapsed ? "justify-center" : "justify-between",
-          )}
+          className={cn("flex shrink-0 items-center px-3", collapsed ? "justify-center" : "justify-between")}
           style={{ height: HEADER_HEIGHT }}
         >
           <Link href="/portal/dashboard" className="block shrink-0">
@@ -301,6 +298,12 @@ export function Sidebar({
             </button>
           )}
         </div>
+        {/* A separate bar right after the fixed-height header row, not a
+            border on it — matches HeaderDivider's own placement exactly
+            (a 2px bar starting at top: HEADER_HEIGHT), so the two lines
+            land pixel-aligned instead of a border-box border sitting 2px
+            higher, inside the row itself. */}
+        <div className="h-0.5 shrink-0 bg-copper" />
 
         {collapsed && (
           <button
