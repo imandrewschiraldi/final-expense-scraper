@@ -253,7 +253,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                   <td className="py-2 pr-4">
                     <input
                       type="text"
-                      placeholder="—"
+                      placeholder="e.g. 115"
                       className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-sm text-white placeholder:text-muted focus:border-copper focus:outline-none"
                       value={compLevelDrafts[agent.id] ?? agent.compLevel ?? ""}
                       onChange={(e) => setCompLevelDrafts((prev) => ({ ...prev, [agent.id]: e.target.value }))}

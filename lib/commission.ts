@@ -11,11 +11,13 @@
  *  about what the sale itself is worth. */
 export const COMMISSION_ADVANCE_RATE = 0.75;
 
-/** Parses a comp level string like "80%" into a 0-1 fraction. Same regex
- *  personalDashboard.ts already used for the INCOME goal calculation. */
+/** Parses a comp level string into a 0-1 fraction — accepts "80%" or a bare
+ *  "80", since the admin Comp Level field is free text and agents are as
+ *  likely to type one as the other. Shared with personalDashboard.ts for
+ *  the INCOME goal calculation. */
 export function parseCompLevelPercent(compLevel: string | null | undefined): number | null {
   if (!compLevel) return null;
-  const match = compLevel.match(/(\d+(?:\.\d+)?)\s*%/);
+  const match = compLevel.match(/(\d+(?:\.\d+)?)/);
   if (!match) return null;
   const pct = Number(match[1]);
   return Number.isFinite(pct) ? pct / 100 : null;
