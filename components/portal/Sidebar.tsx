@@ -305,7 +305,7 @@ export function Sidebar({
             (a 2px bar starting at top: HEADER_HEIGHT), so the two lines
             land pixel-aligned instead of a border-box border sitting 2px
             higher, inside the row itself. */}
-        <div className="h-0.5 shrink-0 bg-copper" />
+        <div className="metal-copper-line h-0.5 shrink-0" />
 
         {collapsed && (
           <button

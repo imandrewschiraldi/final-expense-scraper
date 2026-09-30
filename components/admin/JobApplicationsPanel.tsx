@@ -64,7 +64,7 @@ const STATUS_LABEL = Object.fromEntries(APPLICATION_STATUSES.map((s) => [s.id, s
 function licensedBadge(licensed: boolean | null) {
   if (licensed === null) return <span className="text-muted">—</span>;
   return licensed ? (
-    <span className="rounded border border-green-light/40 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-green-light">
+    <span className="metal-green-surface rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-black">
       LICENSED
     </span>
   ) : (

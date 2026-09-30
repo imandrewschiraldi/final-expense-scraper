@@ -55,8 +55,8 @@ function KpiTile({ index, entry }: { index: number; entry: RecruitingKpiEntry })
           )}
         >
           <div className="flex items-center justify-between">
-            <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", entry.active ? "bg-copper/20" : "bg-copper/10")}>
-              <Icon className="h-4.5 w-4.5 text-copper" />
+            <div className="metal-copper-surface flex h-9 w-9 items-center justify-center rounded-lg">
+              <Icon className="h-4.5 w-4.5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)]" />
             </div>
             <DeltaBadge value={entry.value} previousValue={entry.previousValue} />
           </div>

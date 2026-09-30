@@ -2,16 +2,23 @@
 // and grouping used by both the admin panel (rendering the funnel/table)
 // and the API routes (validating a status PATCH).
 
+// Colors below are the approved metallic palette's flat base tones — the
+// exact same hexes the metallic treatment (lib/metallic.ts) builds its
+// gradients from. Copper/Green/Red are pixel-identical to the button
+// colors on purpose (Contacted/Hired/Licensed = primary, Onboarded = success,
+// Rejected = danger) so a funnel bar and the button for the same action
+// always match. Gray/Blue/Amber have no button equivalent, tuned to the
+// same depth instead.
 export const APPLICATION_STATUSES = [
-  { id: "NEW", label: "New", color: "#8A8A85" },
-  { id: "CONTACTED", label: "Contacted", color: "#D98B4A" },
-  { id: "SCHEDULED", label: "Scheduled", color: "#E8A467" },
-  { id: "INTERVIEWED", label: "Interviewed", color: "#4A90D9" },
-  { id: "HIRED", label: "Hired", color: "#E8853D" },
-  { id: "PRE_LICENSING", label: "Pre-Licensing", color: "#8A8A85" },
-  { id: "LICENSED", label: "Licensed", color: "#D98B4A" },
-  { id: "ONBOARDED", label: "Onboarded", color: "#5CB85C" },
-  { id: "REJECTED", label: "Rejected", color: "#C24A4A" },
+  { id: "NEW", label: "New", color: "#7f7f7a" },
+  { id: "CONTACTED", label: "Contacted", color: "#a85a28" },
+  { id: "SCHEDULED", label: "Scheduled", color: "#a7764a" },
+  { id: "INTERVIEWED", label: "Interviewed", color: "#3a70a9" },
+  { id: "HIRED", label: "Hired", color: "#a85a28" },
+  { id: "PRE_LICENSING", label: "Pre-Licensing", color: "#7f7f7a" },
+  { id: "LICENSED", label: "Licensed", color: "#a85a28" },
+  { id: "ONBOARDED", label: "Onboarded", color: "#27ae60" },
+  { id: "REJECTED", label: "Rejected", color: "#c0392b" },
 ] as const;
 
 export type ApplicationStatusId = (typeof APPLICATION_STATUSES)[number]["id"];
