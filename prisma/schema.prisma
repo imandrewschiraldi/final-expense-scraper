@@ -39,6 +39,14 @@ enum PolicyStatus {
   CHARGEBACK
 }
 
+enum RecruitStatus {
+  NEW
+  DMD
+  REPLIED
+  HIRED
+  PASS
+}
+
 enum GoalCategory {
   MONTHLY_AP
   ANNUAL_AP
@@ -572,4 +580,28 @@ model ChatChannelMember {
   @@unique([channelId, userId])
   @@index([userId])
   @@map("chat_channel_members")
+}
+
+/// One row per sourced recruiting candidate from the Recruiting Radar tool
+/// (Admin-only) — an Apollo.io people-search result tagged with which
+/// background/market search found it. dedupeKey (`name|company`) is the
+/// same dedup identity the reference tool used, enforced here via a unique
+/// constraint instead of an in-memory Set.
+model RecruitProspect {
+  id          String        @id @default(cuid())
+  name        String
+  title       String
+  company     String
+  location    String
+  linkedinUrl String?
+  yearsExp    String?
+  status      RecruitStatus @default(NEW)
+  category    String
+  market      String
+  dedupeKey   String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status])
+  @@map("recruit_prospects")
 }

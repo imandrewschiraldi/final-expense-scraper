@@ -23,6 +23,7 @@ import {
   Percent,
   Landmark,
   Bot,
+  Radar,
   ChevronsLeft,
   ChevronsRight,
   X,
@@ -67,6 +68,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"] },
   { href: "/admin/carriers", label: "Carrier Rates", icon: Percent, roles: ["ADMIN"] },
   { href: "/admin/carrier-resources", label: "Manage Carrier Resources", icon: Landmark, roles: ["ADMIN"] },
+  { href: "/admin/recruiting-radar", label: "Recruiting Radar", icon: Radar, roles: ["ADMIN"] },
 ];
 
 // "/admin/leads" is a strict prefix of "/admin/leads/vault", so a plain
