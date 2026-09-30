@@ -106,6 +106,22 @@ function extractField(objects: Record<string, unknown>[], keys: string[]): strin
   return null;
 }
 
+/**
+ * The applicant's actual submission date, not the moment we happened to
+ * receive this webhook call — those diverge badly for a backfill, where
+ * hundreds of historical applications arrive in one burst out of
+ * chronological order. Falls back to "now" when Base44 doesn't supply one
+ * or it doesn't parse.
+ */
+function extractAppliedAt(objects: Record<string, unknown>[]): Date {
+  const raw = extractField(objects, ["created_date", "createdDate", "submitted_at", "submittedAt", "applied_at", "appliedAt"]);
+  if (raw) {
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return new Date();
+}
+
 export async function POST(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -196,6 +212,7 @@ export async function POST(req: NextRequest) {
       "intro_video_url",
       "video_link",
     ]),
+    appliedAt: extractAppliedAt(objects),
     rawPayload: body as object,
   };
 

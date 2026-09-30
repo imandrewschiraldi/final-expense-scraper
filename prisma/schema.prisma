@@ -698,6 +698,12 @@ model JobApplication {
   socialHandle  String?
   videoUrl      String?
   status        ApplicationStatus             @default(NEW)
+  /// The applicant's actual submission date, from Base44's own
+  /// created_date — distinct from createdAt (when *we* inserted the row),
+  /// which is meaningless for ordering once a backfill imports many
+  /// applications out of chronological order in one burst. Falls back to
+  /// createdAt when Base44 doesn't supply one.
+  appliedAt     DateTime                      @default(now())
   rawPayload    Json
   createdAt     DateTime                      @default(now())
   updatedAt     DateTime                      @updatedAt

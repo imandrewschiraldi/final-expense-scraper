@@ -37,7 +37,7 @@ type Application = {
   socialHandle: string | null;
   videoUrl: string | null;
   status: ApplicationStatusId;
-  createdAt: string;
+  appliedAt: string;
 };
 
 const STATUS_ICON: Record<ApplicationStatusId, typeof Users> = {
@@ -106,7 +106,7 @@ function ApplicationDetailModal({
             <DetailField label="Experience" value={application.experience ?? "—"} />
             <DetailField label="Instagram / LinkedIn" value={application.socialHandle ?? "—"} />
             <DetailField label="Licensed" value={licensedBadge(application.licensed)} />
-            <DetailField label="Applied" value={new Date(application.createdAt).toLocaleDateString()} />
+            <DetailField label="Applied" value={new Date(application.appliedAt).toLocaleDateString()} />
           </div>
 
           <div>
@@ -344,7 +344,7 @@ export function JobApplicationsPanel() {
                         <span className="text-muted">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-muted">{new Date(a.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-muted">{new Date(a.appliedAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
