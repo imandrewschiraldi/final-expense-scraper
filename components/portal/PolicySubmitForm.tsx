@@ -34,6 +34,16 @@ type SoldLead = { id: string; firstName: string; lastName: string; phone: string
 export type CarrierPlan = { id: string; name: string };
 export type CarrierWithPlans = { id: string; name: string; plans: CarrierPlan[] };
 
+/** The plans for one named carrier, scoping a Rate Plan picker so it never
+ *  shows another carrier's products (e.g. Ethos's products for a Corebridge
+ *  sale). Matches case/whitespace-insensitively since free-text `carrier`
+ *  values on older policies may not byte-match the Carrier record's name. */
+export function plansForCarrierName(carriers: CarrierWithPlans[], carrierName: string | null | undefined): CarrierPlan[] {
+  if (!carrierName?.trim()) return [];
+  const norm = carrierName.trim().toLowerCase();
+  return carriers.find((c) => c.name.trim().toLowerCase() === norm)?.plans ?? [];
+}
+
 const emptyForm = {
   leadId: "",
   clientName: "",
@@ -58,6 +68,9 @@ export function PolicySubmitForm({
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Off by default: pick a real carrier so the Rate Plan list below scopes
+  // to it. Only drops to free text for a carrier that isn't set up yet.
+  const [manualCarrier, setManualCarrier] = useState(false);
 
   useEffect(() => {
     if (isAgent) {
@@ -71,19 +84,19 @@ export function PolicySubmitForm({
   useEffect(() => {
     fetch("/api/portal/carrier-plans")
       .then((res) => (res.ok ? res.json() : { carriers: [] }))
-      .then((data) => setCarriers((data.carriers ?? []).filter((c: CarrierWithPlans) => c.plans.length > 0)))
+      .then((data) => setCarriers(data.carriers ?? []))
       .catch(() => setCarriers([]));
   }, []);
 
-  function onCarrierPlanSelect(carrierPlanId: string) {
-    const owningCarrier = carriers.find((c) => c.plans.some((p) => p.id === carrierPlanId));
-    setForm((f) => ({
-      ...f,
-      carrierPlanId,
-      // Only fills the free-text carrier field when it's empty, so this
-      // never clobbers something already typed by hand.
-      carrier: !f.carrier.trim() && owningCarrier ? owningCarrier.name : f.carrier,
-    }));
+  // The Rate Plan list is scoped to whichever carrier is selected — a
+  // policy sold with Corebridge should never offer Ethos's products.
+  const plansForCarrier = plansForCarrierName(carriers, form.carrier);
+
+  function onCarrierSelect(carrier: string) {
+    setForm((f) => {
+      const stillValid = plansForCarrierName(carriers, carrier).some((p) => p.id === f.carrierPlanId);
+      return { ...f, carrier, carrierPlanId: stillValid ? f.carrierPlanId : "" };
+    });
   }
 
   function onLeadSelect(leadId: string) {
@@ -153,11 +166,42 @@ export function PolicySubmitForm({
           onChange={(e) => setForm({ ...form, clientPhone: e.target.value })}
         />
         <Input placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-        <Input
-          placeholder="Carrier"
-          value={form.carrier}
-          onChange={(e) => setForm({ ...form, carrier: e.target.value })}
-        />
+        {manualCarrier || carriers.length === 0 ? (
+          <div className="flex gap-1.5">
+            <Input
+              placeholder="Carrier"
+              value={form.carrier}
+              onChange={(e) => setForm({ ...form, carrier: e.target.value })}
+            />
+            {carriers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setManualCarrier(false)}
+                className="shrink-0 text-xs whitespace-nowrap text-muted underline hover:text-primary"
+              >
+                Pick from list
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex gap-1.5">
+            <Select value={form.carrier} onChange={(e) => onCarrierSelect(e.target.value)}>
+              <option value="">— Select Carrier —</option>
+              {carriers.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            <button
+              type="button"
+              onClick={() => setManualCarrier(true)}
+              className="shrink-0 text-xs whitespace-nowrap text-muted underline hover:text-primary"
+            >
+              Not listed
+            </button>
+          </div>
+        )}
         <Select value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })}>
           <option value="">— Select Product —</option>
           {PRODUCTS.map((p) => (
@@ -175,23 +219,23 @@ export function PolicySubmitForm({
           onChange={(e) => setForm({ ...form, annualPremium: e.target.value })}
         />
       </div>
-      {carriers.length > 0 && (
+      {form.carrier.trim() && (
         <div>
           <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
             Rate Plan (optional — drives Commissions Paid)
           </label>
-          <Select value={form.carrierPlanId} onChange={(e) => onCarrierPlanSelect(e.target.value)}>
-            <option value="">— Not rated / not listed —</option>
-            {carriers.map((c) => (
-              <optgroup key={c.id} label={c.name}>
-                {c.plans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {c.name} — {p.name}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </Select>
+          {plansForCarrier.length === 0 ? (
+            <p className="text-xs text-muted">No rate plans configured for {form.carrier} yet.</p>
+          ) : (
+            <Select value={form.carrierPlanId} onChange={(e) => setForm((f) => ({ ...f, carrierPlanId: e.target.value }))}>
+              <option value="">— Not rated —</option>
+              {plansForCarrier.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
+          )}
         </div>
       )}
       <div>

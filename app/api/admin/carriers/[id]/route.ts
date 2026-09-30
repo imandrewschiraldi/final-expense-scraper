@@ -13,6 +13,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const cleaned = name?.trim();
   if (!cleaned) return NextResponse.json({ error: "Name is required" }, { status: 400 });
 
+  const existing = await db.carrier.findUnique({ where: { name: cleaned } });
+  if (existing && existing.id !== id) {
+    return NextResponse.json({ error: "A carrier with that name already exists" }, { status: 409 });
+  }
+
   const carrier = await db.carrier.update({ where: { id }, data: { name: cleaned } });
   return NextResponse.json({ carrier });
 }
