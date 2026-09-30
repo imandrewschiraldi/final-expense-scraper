@@ -1,9 +1,10 @@
 import { RecruitingRadarPanel } from "@/components/admin/RecruitingRadarPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export default function RecruitingRadarPage() {
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Recruiting Radar</h1>
+      <PageHeading slug="recruiting-radar" alt="Recruiting Radar" />
       <RecruitingRadarPanel />
     </div>
   );
