@@ -47,6 +47,22 @@ enum RecruitStatus {
   PASS
 }
 
+/// The job-application funnel (distinct from RecruitStatus, which tracks
+/// outbound-sourced Apollo prospects): NEW through HIRED is the interview
+/// pipeline; PRE_LICENSING/LICENSED/ONBOARDED are the post-hire onboarding
+/// stages; REJECTED is reachable from any stage in either half.
+enum ApplicationStatus {
+  NEW
+  CONTACTED
+  SCHEDULED
+  INTERVIEWED
+  HIRED
+  PRE_LICENSING
+  LICENSED
+  ONBOARDED
+  REJECTED
+}
+
 enum GoalCategory {
   MONTHLY_AP
   ANNUAL_AP
@@ -87,22 +103,23 @@ model User {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  downlines              User[]                 @relation("ManagerHierarchy")
-  assignedLeads          Lead[]                 @relation("AssignedLeads")
+  downlines              User[]                        @relation("ManagerHierarchy")
+  assignedLeads          Lead[]                        @relation("AssignedLeads")
   notes                  LeadNote[]
   contactLogEntries      ContactLogEntry[]
   imports                Import[]
   notifications          Notification[]
   assignmentFlags        AssignmentRunFlag[]
   trainingProgress       TrainingProgress[]
-  policies               Policy[]               @relation("AgentPolicies")
+  policies               Policy[]                      @relation("AgentPolicies")
   goals                  Goal[]
-  policyStatusChanges    PolicyStatusHistory[]  @relation("PolicyStatusChangedBy")
-  recruitStatusChanges   RecruitStatusHistory[] @relation("RecruitStatusChangedBy")
+  policyStatusChanges    PolicyStatusHistory[]         @relation("PolicyStatusChangedBy")
+  recruitStatusChanges   RecruitStatusHistory[]        @relation("RecruitStatusChangedBy")
+  jobApplicationChanges  JobApplicationStatusHistory[] @relation("JobApplicationStatusChangedBy")
   chatMessages           ChatMessage[]
   chatReads              ChatRead[]
   chatReactions          ChatReaction[]
-  chatPins               ChatMessage[]          @relation("ChatPinnedBy")
+  chatPins               ChatMessage[]                 @relation("ChatPinnedBy")
   chatChannelMemberships ChatChannelMember[]
 
   @@map("users")
@@ -652,4 +669,48 @@ model RecruitStatusHistory {
   @@index([toStatus, createdAt])
   @@index([prospectId, createdAt])
   @@map("recruit_status_history")
+}
+
+/// One inbound applicant from the Base44 "Apply Now" job-application site,
+/// delivered via the webhook in app/api/webhooks/base44-applications —
+/// distinct from RecruitProspect, which is outbound-sourced via Apollo.
+/// rawPayload keeps the exact webhook body Base44 sent, so a field-mapping
+/// mistake can be fixed retroactively without losing data.
+model JobApplication {
+  id            String                        @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  state         String?
+  experience    String?
+  /// True/false when Base44's payload could be read as licensed/unlicensed
+  /// unambiguously; null when absent or not recognized — see rawPayload.
+  licensed      Boolean?
+  videoUrl      String?
+  status        ApplicationStatus             @default(NEW)
+  rawPayload    Json
+  createdAt     DateTime                      @default(now())
+  updatedAt     DateTime                      @updatedAt
+  statusHistory JobApplicationStatusHistory[]
+
+  @@index([status])
+  @@map("job_applications")
+}
+
+/// One status transition on a JobApplication — same purpose and shape as
+/// RecruitStatusHistory, kept as a separate table since the two funnels
+/// (outbound prospects vs. inbound applicants) are conceptually distinct.
+model JobApplicationStatusHistory {
+  id            String             @id @default(cuid())
+  applicationId String
+  application   JobApplication     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  changedById   String?
+  changedBy     User?              @relation("JobApplicationStatusChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime           @default(now())
+
+  @@index([toStatus, createdAt])
+  @@index([applicationId, createdAt])
+  @@map("job_application_status_history")
 }

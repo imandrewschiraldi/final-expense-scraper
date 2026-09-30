@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Users, ListTodo, Send, MessageCircle, UserCheck, UserX, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Users, ListTodo, Send, MessageCircle, UserCheck, UserX, Search, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -49,6 +50,8 @@ function csvEscape(value: string) {
 }
 
 export function RecruitingRadarPanel() {
+  const router = useRouter();
+  const [applicationsCount, setApplicationsCount] = useState<{ total: number; new: number } | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<Set<CategoryKey>>(new Set(["d2d"]));
   const [selectedMarkets, setSelectedMarkets] = useState<Set<MarketId>>(new Set(["tampa"]));
   const [prospects, setProspects] = useState<Prospect[]>([]);
@@ -79,6 +82,13 @@ export function RecruitingRadarPanel() {
   useEffect(() => {
     loadProspects();
   }, [loadProspects]);
+
+  useEffect(() => {
+    fetch("/api/admin/job-applications/count")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setApplicationsCount({ total: data.total, new: data.new }))
+      .catch(() => {});
+  }, []);
 
   function toggleCategory(key: CategoryKey) {
     setSelectedCategories((prev) => {
@@ -298,8 +308,18 @@ export function RecruitingRadarPanel() {
       });
     }
 
+    entries.push({
+      key: "APPLICATIONS",
+      label: "Applications",
+      value: applicationsCount?.total ?? 0,
+      icon: ClipboardList,
+      onClick: () => router.push("/admin/job-applications"),
+      active: false,
+      caption: applicationsCount && applicationsCount.new > 0 ? `${applicationsCount.new} new` : "Job Applications",
+    });
+
     return entries;
-  }, [prospects, range, viewFilter, liveCounts]);
+  }, [prospects, range, viewFilter, liveCounts, applicationsCount, router]);
 
   const visibleProspects = viewFilter === "ALL" ? prospects : prospects.filter((p) => p.status === viewFilter);
   const comboCount = selectedCategories.size * selectedMarkets.size;
