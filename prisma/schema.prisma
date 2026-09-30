@@ -370,18 +370,42 @@ model CarrierPlan {
   carrierId        String
   carrier          Carrier  @relation(fields: [carrierId], references: [id], onDelete: Cascade)
   name             String
-  /// Fraction of the agent's own comp level this plan pays — 1.0000 means
+  /// Fallback fraction of the agent's own comp level this plan pays, used
+  /// only when no exact CarrierPlanRate row exists for the agent's comp
+  /// level (e.g. before the real grid has been entered). 1.0000 means
   /// "pays the agent's full contract level", 0.9375 means "pays 93.75% of
-  /// it". Multiplied by the agent's parsed compLevel to get the actual
+  /// it". Multiplied by the agent's parsed compLevel to get the fallback
   /// commission rate for a sale of this plan.
   payoutMultiplier Decimal  @db.Decimal(5, 4)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   policies Policy[]
+  rates    CarrierPlanRate[]
 
   @@unique([carrierId, name])
   @@map("carrier_plans")
+}
+
+/// One row of a real row-by-row comp grid (e.g. FFL's 80-145 table) — the
+/// actual payout percentage a specific product pays at one exact agent
+/// comp level, straight from the carrier's grid rather than a computed
+/// proportion. When a row exists for the agent's exact compLevel, it's
+/// used directly instead of CarrierPlan.payoutMultiplier.
+model CarrierPlanRate {
+  id            String      @id @default(cuid())
+  carrierPlanId String
+  carrierPlan   CarrierPlan @relation(fields: [carrierPlanId], references: [id], onDelete: Cascade)
+  /// The comp level this row applies to, e.g. 115 for "115%".
+  compLevel     Int
+  /// The actual payout fraction at this level for this product — not a
+  /// multiplier on top of compLevel, the real number straight off the grid.
+  payoutPercent Decimal     @db.Decimal(5, 4)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([carrierPlanId, compLevel])
+  @@map("carrier_plan_rates")
 }
 
 /// A labeled phone number on the Carrier Resources page (e.g. "Customer

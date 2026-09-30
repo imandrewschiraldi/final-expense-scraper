@@ -17,6 +17,14 @@ export function parseCompLevelPercent(compLevel: string | null | undefined): num
   return Number.isFinite(pct) ? pct / 100 : null;
 }
 
+/** Parses a comp level string like "115%" into the raw tier number (115),
+ *  for matching against a CarrierPlanRate grid row's compLevel column —
+ *  the grid is keyed by the whole number, not the 0-1 fraction. */
+export function parseCompLevelNumber(compLevel: string | null | undefined): number | null {
+  const pct = parseCompLevelPercent(compLevel);
+  return pct === null ? null : Math.round(pct * 100);
+}
+
 /**
  * The commission actually advanced on a sale: AP × the 9-month advance ×
  * the agent's own comp level × how much of that level this specific
@@ -33,4 +41,20 @@ export function computeCommissionAmount({
   payoutMultiplier: number;
 }): number {
   return annualPremium * COMMISSION_ADVANCE_RATE * compLevelPercent * payoutMultiplier;
+}
+
+/**
+ * The commission for a sale when an exact CarrierPlanRate grid row exists
+ * for the agent's comp level: AP × the 9-month advance × that row's payout
+ * percent directly — the grid value already is the actual payout for that
+ * level/product combination, not a fraction to multiply against compLevel.
+ */
+export function computeCommissionAmountFromGrid({
+  annualPremium,
+  gridPayoutPercent,
+}: {
+  annualPremium: number;
+  gridPayoutPercent: number;
+}): number {
+  return annualPremium * COMMISSION_ADVANCE_RATE * gridPayoutPercent;
 }
