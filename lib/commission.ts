@@ -4,7 +4,11 @@
 
 /** The "9-month advance" — the fraction of first-year commission a carrier
  *  fronts immediately; the rest trickles in as earned over the policy's
- *  final three months. One constant for every carrier for now. */
+ *  final three months. One constant for every carrier for now. Applied at
+ *  display time only (e.g. the Commissions Paid card's Advance toggle) —
+ *  the stored commissionAmount itself is always the full, un-advanced
+ *  figure, since the advance is a payment-timing convention, not a fact
+ *  about what the sale itself is worth. */
 export const COMMISSION_ADVANCE_RATE = 0.75;
 
 /** Parses a comp level string like "80%" into a 0-1 fraction. Same regex
@@ -26,10 +30,11 @@ export function parseCompLevelNumber(compLevel: string | null | undefined): numb
 }
 
 /**
- * The commission actually advanced on a sale: AP × the 9-month advance ×
- * the agent's own comp level × how much of that level this specific
- * carrier plan pays out (its payoutMultiplier — 1 means "full level", less
- * than 1 means the plan pays a reduced share of the agent's contract).
+ * The full first-year commission a sale is worth: AP × the agent's own comp
+ * level × how much of that level this specific carrier plan pays out (its
+ * payoutMultiplier — 1 means "full level", less than 1 means the plan pays
+ * a reduced share of the agent's contract). Not advance-adjusted — see
+ * COMMISSION_ADVANCE_RATE for that.
  */
 export function computeCommissionAmount({
   annualPremium,
@@ -40,14 +45,15 @@ export function computeCommissionAmount({
   compLevelPercent: number;
   payoutMultiplier: number;
 }): number {
-  return annualPremium * COMMISSION_ADVANCE_RATE * compLevelPercent * payoutMultiplier;
+  return annualPremium * compLevelPercent * payoutMultiplier;
 }
 
 /**
- * The commission for a sale when an exact CarrierPlanRate grid row exists
- * for the agent's comp level: AP × the 9-month advance × that row's payout
- * percent directly — the grid value already is the actual payout for that
- * level/product combination, not a fraction to multiply against compLevel.
+ * The full first-year commission a sale is worth when an exact
+ * CarrierPlanRate grid row exists for the agent's comp level: AP × that
+ * row's payout percent directly — the grid value already is the actual
+ * payout for that level/product combination, not a fraction to multiply
+ * against compLevel. Not advance-adjusted — see COMMISSION_ADVANCE_RATE.
  */
 export function computeCommissionAmountFromGrid({
   annualPremium,
@@ -56,5 +62,5 @@ export function computeCommissionAmountFromGrid({
   annualPremium: number;
   gridPayoutPercent: number;
 }): number {
-  return annualPremium * COMMISSION_ADVANCE_RATE * gridPayoutPercent;
+  return annualPremium * gridPayoutPercent;
 }
