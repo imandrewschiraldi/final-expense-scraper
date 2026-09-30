@@ -16,10 +16,15 @@ export type ApolloPerson = {
 export class ApolloSearchError extends Error {}
 
 /**
- * Calls Apollo's People Search endpoint with the same shape the reference
- * tool used: only the first 5 titles of a category, per_page 10, page 1 (no
- * pagination loop — a known limitation carried over intentionally to match
- * the as-built tool exactly).
+ * Calls Apollo's People Search endpoint for one category/market combo.
+ * Sends every title a category defines (previously only the first 5 were
+ * sent) and asks for a full page of 100 (Apollo's per-request max) instead
+ * of 10 — both were shortcuts carried over from an early reference build,
+ * not deliberate limits. Still a single page per combo (no pagination
+ * loop): with ~7 categories × 16 markets, one page each already sources on
+ * the order of a thousand-plus candidates per sweep, and looping pages
+ * further would burn through Apollo credits fast for little extra value
+ * given how the dedupe/cooldown workflow is actually used.
  */
 export async function searchApolloPeople(titles: string[], locations: string[], marketLabel: string): Promise<ApolloPerson[]> {
   const apiKey = process.env.APOLLO_API_KEY;
@@ -35,9 +40,9 @@ export async function searchApolloPeople(titles: string[], locations: string[], 
       "x-api-key": apiKey,
     },
     body: JSON.stringify({
-      person_titles: titles.slice(0, 5),
+      person_titles: titles,
       person_locations: locations,
-      per_page: 10,
+      per_page: 100,
       page: 1,
     }),
   });

@@ -87,21 +87,22 @@ model User {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  downlines              User[]                @relation("ManagerHierarchy")
-  assignedLeads          Lead[]                @relation("AssignedLeads")
+  downlines              User[]                 @relation("ManagerHierarchy")
+  assignedLeads          Lead[]                 @relation("AssignedLeads")
   notes                  LeadNote[]
   contactLogEntries      ContactLogEntry[]
   imports                Import[]
   notifications          Notification[]
   assignmentFlags        AssignmentRunFlag[]
   trainingProgress       TrainingProgress[]
-  policies               Policy[]              @relation("AgentPolicies")
+  policies               Policy[]               @relation("AgentPolicies")
   goals                  Goal[]
-  policyStatusChanges    PolicyStatusHistory[] @relation("PolicyStatusChangedBy")
+  policyStatusChanges    PolicyStatusHistory[]  @relation("PolicyStatusChangedBy")
+  recruitStatusChanges   RecruitStatusHistory[] @relation("RecruitStatusChangedBy")
   chatMessages           ChatMessage[]
   chatReads              ChatRead[]
   chatReactions          ChatReaction[]
-  chatPins               ChatMessage[]         @relation("ChatPinnedBy")
+  chatPins               ChatMessage[]          @relation("ChatPinnedBy")
   chatChannelMemberships ChatChannelMember[]
 
   @@map("users")
@@ -614,20 +615,41 @@ model ChatChannelMember {
 /// same dedup identity the reference tool used, enforced here via a unique
 /// constraint instead of an in-memory Set.
 model RecruitProspect {
-  id          String        @id @default(cuid())
-  name        String
-  title       String
-  company     String
-  location    String
-  linkedinUrl String?
-  yearsExp    String?
-  status      RecruitStatus @default(NEW)
-  category    String
-  market      String
-  dedupeKey   String        @unique
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String                 @id @default(cuid())
+  name          String
+  title         String
+  company       String
+  location      String
+  linkedinUrl   String?
+  yearsExp      String?
+  status        RecruitStatus          @default(NEW)
+  category      String
+  market        String
+  dedupeKey     String                 @unique
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  statusHistory RecruitStatusHistory[]
 
   @@index([status])
   @@map("recruit_prospects")
+}
+
+/// One status transition on a prospect (e.g. NEW -> DMD) — lets the
+/// Recruiting Radar dashboard show real outreach activity ("14 DM'd this
+/// week") instead of just a live snapshot, since the pool itself is
+/// typically sourced once in bulk and worked over months. Mirrors
+/// PolicyStatusHistory.
+model RecruitStatusHistory {
+  id          String          @id @default(cuid())
+  prospectId  String
+  prospect    RecruitProspect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  fromStatus  RecruitStatus?
+  toStatus    RecruitStatus
+  changedById String?
+  changedBy   User?           @relation("RecruitStatusChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime        @default(now())
+
+  @@index([toStatus, createdAt])
+  @@index([prospectId, createdAt])
+  @@map("recruit_status_history")
 }
