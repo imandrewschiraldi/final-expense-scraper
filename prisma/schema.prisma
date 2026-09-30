@@ -686,6 +686,11 @@ model JobApplication {
   /// True/false when Base44's payload could be read as licensed/unlicensed
   /// unambiguously; null when absent or not recognized — see rawPayload.
   licensed      Boolean?
+  /// "Full-Time" / "Part-Time" as submitted — free text rather than an enum
+  /// since Base44's own wording for this isn't confirmed yet.
+  availability  String?
+  /// The Instagram/LinkedIn handle or URL field from the apply form.
+  socialHandle  String?
   videoUrl      String?
   status        ApplicationStatus             @default(NEW)
   rawPayload    Json

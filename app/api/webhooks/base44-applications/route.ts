@@ -98,16 +98,36 @@ export async function POST(req: NextRequest) {
     extractField(objects, ["email", "applicant_email"]) ??
     "(name unknown)";
 
-  const licensedObj = objects.find((o) => "licensed" in o || "licensing_status" in o || "licensingStatus" in o) ?? objects[0];
+  const licensedObj =
+    objects.find((o) => "licensed" in o || "licensing_status" in o || "licensingStatus" in o || "license_status" in o) ??
+    objects[0];
 
   const application = await db.jobApplication.create({
     data: {
       name,
       email: extractField(objects, ["email", "applicant_email"]),
       phone: extractField(objects, ["phone", "phone_number", "phoneNumber"]),
-      state: extractField(objects, ["state", "applicant_state"]),
-      experience: extractField(objects, ["experience", "years_experience", "yearsExperience"]),
+      // Base44's own portal labels this "Location", not "State" — both
+      // guessed since the webhook's actual key naming isn't confirmed.
+      state: extractField(objects, ["state", "applicant_state", "location", "city_state"]),
+      experience: extractField(objects, [
+        "experience",
+        "years_experience",
+        "yearsExperience",
+        "sales_experience",
+        "salesExperience",
+      ]),
       licensed: parseLicensed(licensedObj),
+      availability: extractField(objects, ["availability", "work_availability", "workAvailability"]),
+      socialHandle: extractField(objects, [
+        "instagram_linkedin",
+        "instagramLinkedin",
+        "social",
+        "social_handle",
+        "socialHandle",
+        "instagram",
+        "linkedin",
+      ]),
       videoUrl: extractField(objects, ["video", "video_url", "videoUrl", "intro_video", "introVideo", "video_link"]),
       rawPayload: body as object,
     },

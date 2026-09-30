@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Users,
   UserPlus,
@@ -13,9 +14,12 @@ import {
   BadgeCheck,
   CheckCircle2,
   PlayCircle,
+  ArrowLeft,
+  Search,
 } from "lucide-react";
-import { Select } from "@/components/ui/Input";
+import { Select, Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/cn";
 import { RecruitingKpiTiles, type RecruitingKpiEntry } from "@/components/admin/RecruitingKpiTiles";
 import { FunnelBars } from "@/components/admin/FunnelBars";
@@ -29,6 +33,8 @@ type Application = {
   state: string | null;
   experience: string | null;
   licensed: boolean | null;
+  availability: string | null;
+  socialHandle: string | null;
   videoUrl: string | null;
   status: ApplicationStatusId;
   createdAt: string;
@@ -62,11 +68,81 @@ function licensedBadge(licensed: boolean | null) {
   );
 }
 
+function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <p className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">{label}</p>
+      <div className="mt-0.5 text-sm text-white">{value}</div>
+    </div>
+  );
+}
+
+function ApplicationDetailModal({
+  application,
+  onClose,
+  onUpdateStatus,
+  updating,
+}: {
+  application: Application | null;
+  onClose: () => void;
+  onUpdateStatus: (id: string, status: ApplicationStatusId) => void;
+  updating: boolean;
+}) {
+  return (
+    <Modal open={application !== null} onClose={onClose} title={application?.name ?? ""} maxWidthClassName="max-w-xl">
+      {application && (
+        <div className="space-y-5">
+          {application.videoUrl ? (
+            <video controls className="w-full rounded-lg border border-border bg-black" src={application.videoUrl} />
+          ) : (
+            <p className="rounded-lg border border-border/60 p-3 text-xs text-muted">No intro video submitted.</p>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <DetailField label="Email" value={application.email ?? "—"} />
+            <DetailField label="Phone" value={application.phone ?? "—"} />
+            <DetailField label="State" value={application.state ?? "—"} />
+            <DetailField label="Availability" value={application.availability ?? "—"} />
+            <DetailField label="Experience" value={application.experience ?? "—"} />
+            <DetailField label="Instagram / LinkedIn" value={application.socialHandle ?? "—"} />
+            <DetailField label="Licensed" value={licensedBadge(application.licensed)} />
+            <DetailField label="Applied" value={new Date(application.createdAt).toLocaleDateString()} />
+          </div>
+
+          <div>
+            <p className="font-condensed mb-2 text-[11px] font-bold tracking-[0.12em] text-muted uppercase">Update Status</p>
+            <div className="flex flex-wrap gap-2">
+              {APPLICATION_STATUSES.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  disabled={updating}
+                  onClick={() => onUpdateStatus(application.id, s.id)}
+                  className={cn(
+                    "font-condensed rounded-lg border-[1.5px] px-3 py-1.5 text-[12px] font-bold tracking-[0.05em] uppercase transition-colors",
+                    application.status === s.id
+                      ? "border-copper bg-copper text-black"
+                      : "border-border text-muted hover:border-copper hover:text-foreground",
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 export function JobApplicationsPanel() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewFilter, setViewFilter] = useState<ApplicationStatusId | "ALL">("ALL");
+  const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/job-applications");
@@ -143,10 +219,28 @@ export function JobApplicationsPanel() {
   const hireRate = liveCounts.ALL > 0 ? (liveCounts.HIRED ?? 0) / liveCounts.ALL : 0;
   const onboardRate = (liveCounts.HIRED ?? 0) > 0 ? (liveCounts.ONBOARDED ?? 0) / (liveCounts.HIRED ?? 1) : 0;
 
-  const visibleApplications = viewFilter === "ALL" ? applications : applications.filter((a) => a.status === viewFilter);
+  const statusFiltered = viewFilter === "ALL" ? applications : applications.filter((a) => a.status === viewFilter);
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleApplications = normalizedSearch
+    ? statusFiltered.filter(
+        (a) => a.name.toLowerCase().includes(normalizedSearch) || (a.email ?? "").toLowerCase().includes(normalizedSearch),
+      )
+    : statusFiltered;
+
+  const selectedApplication = applications.find((a) => a.id === selectedId) ?? null;
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href="/admin/recruiting-radar"
+          className="font-condensed flex items-center gap-1.5 text-[13px] font-bold tracking-[0.05em] text-muted uppercase hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Recruiting Radar
+        </Link>
+      </div>
+
       <p className="max-w-2xl text-sm text-muted">
         Every applicant from the Apply Now form, funneled from first contact through onboarding — submissions land
         here automatically the moment someone applies.
@@ -173,6 +267,16 @@ export function JobApplicationsPanel() {
             />
           </div>
 
+          <div className="relative max-w-xs">
+            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
+            <Input
+              placeholder="Search by name or email"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
           <div className="overflow-x-auto rounded-[10px] border border-border bg-surface">
             <table className="w-full text-left text-sm">
               <thead>
@@ -188,6 +292,13 @@ export function JobApplicationsPanel() {
                 </tr>
               </thead>
               <tbody>
+                {visibleApplications.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-6 text-center text-muted">
+                      No applications match &ldquo;{search}&rdquo;.
+                    </td>
+                  </tr>
+                )}
                 {visibleApplications.map((a) => (
                   <tr
                     key={a.id}
@@ -207,7 +318,15 @@ export function JobApplicationsPanel() {
                         ))}
                       </Select>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-white">{a.name}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(a.id)}
+                        className="font-semibold text-white hover:text-copper hover:underline"
+                      >
+                        {a.name}
+                      </button>
+                    </td>
                     <td className="px-4 py-3 text-muted">
                       {a.email && <div>{a.email}</div>}
                       {a.phone && <div>{a.phone}</div>}
@@ -217,7 +336,7 @@ export function JobApplicationsPanel() {
                     <td className="px-4 py-3">{licensedBadge(a.licensed)}</td>
                     <td className="px-4 py-3">
                       {a.videoUrl ? (
-                        <Button variant="secondary" className="!px-3 !py-1.5 text-xs" onClick={() => window.open(a.videoUrl!, "_blank")}>
+                        <Button variant="secondary" className="!px-3 !py-1.5 text-xs" onClick={() => setSelectedId(a.id)}>
                           <PlayCircle className="mr-1 h-3.5 w-3.5" />
                           Watch
                         </Button>
@@ -233,6 +352,15 @@ export function JobApplicationsPanel() {
           </div>
         </>
       )}
+
+      <ApplicationDetailModal
+        application={selectedApplication}
+        onClose={() => setSelectedId(null)}
+        onUpdateStatus={(id, status) => {
+          updateStatus(id, status);
+        }}
+        updating={updatingId === selectedId}
+      />
     </div>
   );
 }
