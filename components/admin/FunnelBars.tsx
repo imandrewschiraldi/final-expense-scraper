@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
+import { metallicGradient } from "@/lib/metallic";
 
 type FunnelRow = { id: string; label: string; count: number; color: string };
 
@@ -39,7 +40,7 @@ export function FunnelBars({
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.05]">
                 <div
                   className={cn("h-full rounded-full")}
-                  style={{ width: `${Math.max(percent, r.count > 0 ? 2 : 0)}%`, backgroundColor: r.color }}
+                  style={{ width: `${Math.max(percent, r.count > 0 ? 2 : 0)}%`, backgroundImage: metallicGradient(r.color) }}
                 />
               </div>
               <span className="w-10 shrink-0 text-right text-muted">{r.count}</span>

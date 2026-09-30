@@ -35,11 +35,16 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   NOT_INTERESTED: "Not Interested",
 };
 
+// NEW/SOLD/NOT_INTERESTED use the approved metallic copper/green/red
+// surfaces (same palette as buttons/KPI tiles/funnel bars — see
+// app/globals.css's .metal-*-surface classes). CONTACTED/NO_ANSWER/
+// APPOINTMENT_BOOKING (teal/muted/gold) stay flat — those colors were
+// never part of the metallic pass.
 export const LEAD_STATUS_COLORS: Record<LeadStatus, { bg: string; text: string; border: string }> = {
-  NEW: { bg: "bg-copper/20", text: "text-copper", border: "border-transparent" },
+  NEW: { bg: "metal-copper-surface", text: "text-white", border: "border-transparent" },
   CONTACTED: { bg: "bg-teal/20", text: "text-teal-light", border: "border-transparent" },
   NO_ANSWER: { bg: "bg-muted/20", text: "text-muted", border: "border-transparent" },
   APPOINTMENT_BOOKING: { bg: "bg-gold/20", text: "text-gold", border: "border-transparent" },
-  SOLD: { bg: "bg-green/20", text: "text-green-light", border: "border-transparent" },
-  NOT_INTERESTED: { bg: "bg-red/20", text: "text-red-light", border: "border-transparent" },
+  SOLD: { bg: "metal-green-surface", text: "text-black", border: "border-transparent" },
+  NOT_INTERESTED: { bg: "metal-red-surface", text: "text-white", border: "border-transparent" },
 };

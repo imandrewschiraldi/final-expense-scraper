@@ -1,14 +1,17 @@
 "use client";
 
-import { cn } from "@/lib/cn";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
+import { metallicGradient } from "@/lib/metallic";
 
 type StatusBreakdown = { status: string; count: number; percent: number };
 
+// Issued/Chargeback reuse the exact green/red the success/danger buttons
+// use elsewhere; Submitted has no button equivalent so it sits on the
+// same blue tuned for Interviewed in the Job Applications funnel.
 const STATUS_COLORS: Record<string, string> = {
-  SUBMITTED: "bg-blue-light",
-  ISSUED: "bg-green-light",
-  CHARGEBACK: "bg-red-light",
+  SUBMITTED: "#3a70a9",
+  ISSUED: "#27ae60",
+  CHARGEBACK: "#c0392b",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -39,8 +42,11 @@ export function StatusAnalytics({
             <span className="w-24 shrink-0 text-muted">{STATUS_LABELS[b.status] ?? b.status}</span>
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.05]">
               <div
-                className={cn("h-full rounded-full", STATUS_COLORS[b.status] ?? "bg-copper")}
-                style={{ width: `${Math.max(b.percent, b.count > 0 ? 2 : 0)}%` }}
+                className="h-full rounded-full"
+                style={{
+                  width: `${Math.max(b.percent, b.count > 0 ? 2 : 0)}%`,
+                  backgroundImage: metallicGradient(STATUS_COLORS[b.status] ?? "#a85a28"),
+                }}
               />
             </div>
             <span className="w-16 shrink-0 text-right text-muted">

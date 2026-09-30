@@ -31,6 +31,35 @@
   --blue-light: #74b9ff;
   --gold: #d4af37;
   --radius: 10px;
+
+  /* Metallic gradient stops — the "flat brand color -> real metal" palette
+     approved for buttons, KPI icon tiles, funnel/status bars, and small
+     standalone badges. Copper is sampled pixel-by-pixel from the actual
+     Tier 1 Financial logo mark (public/tier1-logo.jpg); everything else is
+     derived at the same ratios the logo itself uses (~38% toward white for
+     the highlight, ~45% toward black for the shadow) so every color reads
+     at the same metallic "depth". Kept separate from the flat --copper/
+     --green/--red tokens above (those stay untouched for existing flat
+     uses — text labels, focus rings, etc.) — only these -metal tokens
+     drive the gradient treatment. Gray and blue have no brand button to
+     anchor to, so they're tuned to sit at the same depth as the rest.
+     See lib/metallic.ts for the JS-side version of this same table. */
+  --copper-metal: #a85a28;
+  --copper-metal-hi: #d9a478;
+  --copper-metal-dk: #3d1600;
+  --green-metal-hi: #79cd9c;
+  --green-metal-dk: #156035;
+  --red-metal-hi: #d8847c;
+  --red-metal-dk: #6a1f18;
+  --gray-metal: #7f7f7a;
+  --gray-metal-hi: #b0b0ad;
+  --gray-metal-dk: #464643;
+  --blue-metal: #3a70a9;
+  --blue-metal-hi: #85a6ca;
+  --blue-metal-dk: #203e5d;
+  --amber-metal: #a7764a;
+  --amber-metal-hi: #c8aa8f;
+  --amber-metal-dk: #5c4129;
 }
 
 @theme inline {
@@ -70,6 +99,110 @@ body {
   font-family: var(--font-barlow), Arial, Helvetica, sans-serif;
   font-size: 15px;
   line-height: 1.6;
+}
+
+/* ---- Metallic treatment ----
+   A diagonal sweep (dark -> highlight -> base -> highlight -> dark) reused
+   everywhere a "metal" surface is called for: KPI icon tiles and solid
+   badges/buttons. Tiles/badges keep their icon or text a flat white/black
+   on top (see each component) rather than a second gradient, since
+   gradient-on-gradient stops being legible fast. */
+.metal-copper-surface {
+  background-image: linear-gradient(
+    135deg,
+    var(--copper-metal-hi) 0%,
+    var(--copper-metal) 30%,
+    var(--copper-metal-dk) 55%,
+    var(--copper-metal) 80%,
+    var(--copper-metal-hi) 100%
+  );
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+}
+.metal-green-surface {
+  background-image: linear-gradient(
+    135deg,
+    var(--green-metal-hi) 0%,
+    var(--green) 32%,
+    var(--green-metal-dk) 55%,
+    var(--green) 80%,
+    var(--green-metal-hi) 100%
+  );
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+}
+.metal-red-surface {
+  background-image: linear-gradient(
+    135deg,
+    var(--red-metal-hi) 0%,
+    var(--red) 32%,
+    var(--red-metal-dk) 55%,
+    var(--red) 80%,
+    var(--red-metal-hi) 100%
+  );
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* Outline buttons (primary/secondary/danger): a gradient border via the
+   double-background trick — an opaque inner layer the exact color of the
+   card these buttons actually sit on (PremiumPanel's --surface) masks the
+   middle of the gradient, leaving only the border ring visible. Falls
+   back to a flat border if a button ever sits on a different background
+   (the seam is a 1.5px mismatch at most, not worth a JS solution for). */
+.btn-metal-copper {
+  border: 1.5px solid transparent;
+  background-image:
+    linear-gradient(var(--surface), var(--surface)),
+    linear-gradient(135deg, var(--copper-metal-hi), var(--copper-metal) 35%, var(--copper-metal-dk) 60%, var(--copper-metal) 85%, var(--copper-metal-hi));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  color: var(--copper-metal-hi);
+}
+.btn-metal-copper:hover {
+  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 30%, var(--copper-metal-dk) 55%, var(--copper-metal) 80%, var(--copper-metal-hi) 100%);
+  color: #000;
+}
+.btn-metal-red {
+  border: 1.5px solid transparent;
+  background-image:
+    linear-gradient(var(--surface), var(--surface)),
+    linear-gradient(135deg, var(--red-metal-hi), var(--red) 35%, var(--red-metal-dk) 60%, var(--red) 85%, var(--red-metal-hi));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  color: var(--red-metal-hi);
+}
+.btn-metal-red:hover {
+  background-image: linear-gradient(135deg, var(--red-metal-hi) 0%, var(--red) 30%, var(--red-metal-dk) 55%, var(--red) 80%, var(--red-metal-hi) 100%);
+  color: #fff;
+}
+/* Success: solid fill at rest, like today — just metal instead of flat. */
+.btn-metal-green {
+  color: #0d1f0d;
+  border: 1.5px solid var(--green-metal-dk);
+  background-image: linear-gradient(135deg, var(--green-metal-hi) 0%, var(--green) 32%, var(--green-metal-dk) 55%, var(--green) 80%, var(--green-metal-hi) 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+}
+.btn-metal-green:hover {
+  opacity: 0.88;
+}
+
+/* The copper line under the header (HeaderDivider.tsx + Sidebar.tsx) — a
+   horizontal sweep rather than diagonal, since it's a thin, wide bar. */
+.metal-copper-line {
+  background-image: linear-gradient(
+    90deg,
+    var(--copper-metal-dk) 0%,
+    var(--copper-metal-hi) 22%,
+    var(--copper-metal) 45%,
+    var(--copper-metal-hi) 68%,
+    var(--copper-metal-dk) 100%
+  );
 }
 
 h1,
