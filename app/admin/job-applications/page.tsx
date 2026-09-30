@@ -1,11 +1,10 @@
 import { JobApplicationsPanel } from "@/components/admin/JobApplicationsPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export default function JobApplicationsPage() {
   return (
     <div>
-      <h1 className="font-condensed mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">
-        Job Applications
-      </h1>
+      <PageHeading slug="job-applications" alt="Applications" />
       <JobApplicationsPanel />
     </div>
   );
