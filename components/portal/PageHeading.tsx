@@ -23,6 +23,7 @@ const HEADINGS = {
   "quote-tool": { width: 430, height: 48 },
   "carrier-resources": { width: 746, height: 43 },
   "recruiting-radar": { width: 695, height: 43 },
+  "job-applications": { width: 528, height: 43 },
 } as const;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;
