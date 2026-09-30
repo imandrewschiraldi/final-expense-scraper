@@ -34,8 +34,8 @@ function csvEscape(value: string) {
 }
 
 export function RecruitingRadarPanel() {
-  const [category, setCategory] = useState<CategoryKey>("d2d");
-  const [market, setMarket] = useState<MarketId>("tampa");
+  const [selectedCategories, setSelectedCategories] = useState<Set<CategoryKey>>(new Set(["d2d"]));
+  const [selectedMarkets, setSelectedMarkets] = useState<Set<MarketId>>(new Set(["tampa"]));
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
@@ -57,6 +57,24 @@ export function RecruitingRadarPanel() {
     loadProspects();
   }, [loadProspects]);
 
+  function toggleCategory(key: CategoryKey) {
+    setSelectedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function toggleMarket(id: MarketId) {
+    setSelectedMarkets((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   async function runOneSearch(catKey: CategoryKey, mktId: MarketId): Promise<number> {
     const res = await fetch("/api/admin/recruiting/search", {
       method: "POST",
@@ -69,37 +87,18 @@ export function RecruitingRadarPanel() {
     return data.added as number;
   }
 
-  async function handleSearch() {
-    const cat = CATEGORIES[category];
-    const mkt = MARKETS.find((m) => m.id === market)!;
-    setLoading(true);
-    setErrorMsg("");
-    setStatusMsg(`Searching ${cat.label} — ${mkt.label}…`);
-    try {
-      const added = await runOneSearch(category, market);
-      setStatusMsg(`Done — ${added} found in ${mkt.label}.`);
-    } catch (e) {
-      setErrorMsg(`${cat.label} — ${mkt.label}: ${e instanceof Error ? e.message : "Search failed"}`);
-      setStatusMsg("");
-    } finally {
-      setLoading(false);
-    }
+  function handleSearch() {
+    const combos: [CategoryKey, MarketId][] = [];
+    for (const c of selectedCategories) for (const m of selectedMarkets) combos.push([c, m]);
+    if (combos.length === 0) return;
+    runSweep(combos, "Search complete");
   }
 
-  async function handleAllMarkets() {
-    setLoading(true);
-    setErrorMsg("");
-    cancelRef.current = false;
-    for (const m of MARKETS) {
-      if (cancelRef.current) break;
-      try {
-        await runOneSearch(category, m.id);
-      } catch (e) {
-        setErrorMsg((prev) => prev || (e instanceof Error ? e.message : "Search failed"));
-      }
-    }
-    setLoading(false);
-    setStatusMsg("Market sweep complete.");
+  function handleAllMarkets() {
+    if (selectedCategories.size === 0) return;
+    const combos: [CategoryKey, MarketId][] = [];
+    for (const c of selectedCategories) for (const m of MARKETS) combos.push([c, m.id]);
+    runSweep(combos, "Market sweep complete");
   }
 
   async function runSweep(combos: [CategoryKey, MarketId][], doneLabel: string) {
@@ -214,18 +213,29 @@ export function RecruitingRadarPanel() {
       </p>
 
       <div>
-        <label className="font-condensed mb-2 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
-          Background
-        </label>
+        <div className="mb-2 flex items-center justify-between">
+          <label className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+            Background <span className="normal-case text-muted/60">(select any number)</span>
+          </label>
+          {selectedCategories.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setSelectedCategories(new Set())}
+              className="text-xs font-semibold text-muted hover:text-foreground"
+            >
+              Clear
+            </button>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(CATEGORIES) as CategoryKey[]).map((key) => (
             <button
               key={key}
               type="button"
-              onClick={() => setCategory(key)}
+              onClick={() => toggleCategory(key)}
               className={cn(
                 "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-left text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-                category === key
+                selectedCategories.has(key)
                   ? "border-copper bg-copper text-black"
                   : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
               )}
@@ -238,18 +248,29 @@ export function RecruitingRadarPanel() {
       </div>
 
       <div>
-        <label className="font-condensed mb-2 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
-          Market
-        </label>
+        <div className="mb-2 flex items-center justify-between">
+          <label className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+            Market <span className="normal-case text-muted/60">(select any number)</span>
+          </label>
+          {selectedMarkets.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setSelectedMarkets(new Set())}
+              className="text-xs font-semibold text-muted hover:text-foreground"
+            >
+              Clear
+            </button>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
           {MARKETS.map((m) => (
             <button
               key={m.id}
               type="button"
-              onClick={() => setMarket(m.id)}
+              onClick={() => toggleMarket(m.id)}
               className={cn(
                 "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-                market === m.id
+                selectedMarkets.has(m.id)
                   ? "border-copper bg-copper text-black"
                   : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
               )}
@@ -261,11 +282,13 @@ export function RecruitingRadarPanel() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={handleSearch} disabled={loading}>
-          {loading && !sweeping ? "Searching..." : `Search ${CATEGORIES[category].label}`}
+        <Button onClick={handleSearch} disabled={loading || selectedCategories.size === 0 || selectedMarkets.size === 0}>
+          {loading && !sweeping
+            ? "Searching..."
+            : `Search Selected (${selectedCategories.size * selectedMarkets.size})`}
         </Button>
-        <Button variant="secondary" onClick={handleAllMarkets} disabled={loading}>
-          Run all {MARKETS.length} markets
+        <Button variant="secondary" onClick={handleAllMarkets} disabled={loading || selectedCategories.size === 0}>
+          Run selected backgrounds × all {MARKETS.length} markets
         </Button>
         <Button onClick={handleHotCombos} disabled={loading}>
           Run hot combos ({HOT_COMBOS.length})
