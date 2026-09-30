@@ -7,7 +7,8 @@ import {
 } from "@/lib/commission";
 
 /**
- * Resolves the commission snapshot for a policy at write time.
+ * Resolves the full (not advance-adjusted) commission snapshot for a
+ * policy at write time.
  *
  * Prefers an exact CarrierPlanRate grid row for the agent's comp level
  * (the real row-by-row carrier grid, e.g. FFL's 80-145 table) when one

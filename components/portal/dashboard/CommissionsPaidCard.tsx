@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { useCountUp } from "@/lib/useCountUp";
 import { CommissionsPaidCardData } from "@/lib/personalDashboardShared";
 import { DashboardRange } from "@/lib/dashboardRange";
+import { COMMISSION_ADVANCE_RATE } from "@/lib/commission";
 
 const RANGE_PILL_LABEL: Record<DashboardRange, string> = {
   daily: "Today",
@@ -32,9 +34,16 @@ const currency = (n: number) =>
  * exact same copper the rest of the app already uses.
  */
 export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCardData; range: DashboardRange }) {
-  const animated = useCountUp(data.value);
-  const delta = data.value - data.previousValue;
-  const showDelta = range !== "all" && data.previousValue > 0;
+  // Off by default: the headline number is the full commission the
+  // business written is worth. Toggling Advance shows what's actually
+  // been advanced so far — the same figure × the 9-month advance rate.
+  const [showAdvance, setShowAdvance] = useState(false);
+  const multiplier = showAdvance ? COMMISSION_ADVANCE_RATE : 1;
+  const value = data.value * multiplier;
+  const previousValue = data.previousValue * multiplier;
+  const animated = useCountUp(value);
+  const delta = value - previousValue;
+  const showDelta = range !== "all" && previousValue > 0;
   const isUp = delta >= 0;
   const DeltaIcon = isUp ? ArrowUpRight : ArrowDownRight;
 
@@ -48,14 +57,26 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
           "0 0 0 1px rgba(200,121,65,.06) inset, 0 30px 80px -30px rgba(200,121,65,.3), 0 24px 48px -28px rgba(0,0,0,.8)",
       }}
     >
-      <div className="mb-2.5 flex items-center justify-end">
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setShowAdvance((s) => !s)}
+          aria-pressed={showAdvance}
+          className={`rounded-full border px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] uppercase transition-colors ${
+            showAdvance
+              ? "border-copper bg-copper/15 text-copper"
+              : "border-white/[0.12] text-muted hover:text-foreground"
+          }`}
+        >
+          Advance
+        </button>
         <span className="rounded-full border border-white/[0.12] px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] text-muted uppercase">
           {RANGE_PILL_LABEL[range]}
         </span>
       </div>
 
       <p className="font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] text-copper uppercase">
-        Commissions Paid
+        Commissions Paid{showAdvance ? " · 75% Advance" : ""}
       </p>
       <p
         className="font-scoreboard text-[68px] leading-none font-black tracking-tight"
@@ -67,7 +88,7 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
           filter: "drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 48px rgba(200,121,65,.55))",
         }}
       >
-        {currency(animated ?? data.value)}
+        {currency(animated ?? value)}
       </p>
 
       <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
