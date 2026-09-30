@@ -23,7 +23,13 @@ import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/cn";
 import { RecruitingKpiTiles, type RecruitingKpiEntry } from "@/components/admin/RecruitingKpiTiles";
 import { FunnelBars } from "@/components/admin/FunnelBars";
-import { APPLICATION_STATUSES, MAIN_FUNNEL_STATUSES, ONBOARDING_FUNNEL_STATUSES, type ApplicationStatusId } from "@/lib/jobApplications";
+import {
+  APPLICATION_STATUSES,
+  MAIN_FUNNEL_STATUSES,
+  ONBOARDING_FUNNEL_STATUSES,
+  HIRED_OR_LATER_STATUSES,
+  type ApplicationStatusId,
+} from "@/lib/jobApplications";
 
 type Application = {
   id: string;
@@ -37,7 +43,7 @@ type Application = {
   socialHandle: string | null;
   videoUrl: string | null;
   status: ApplicationStatusId;
-  createdAt: string;
+  appliedAt: string;
 };
 
 const STATUS_ICON: Record<ApplicationStatusId, typeof Users> = {
@@ -106,7 +112,7 @@ function ApplicationDetailModal({
             <DetailField label="Experience" value={application.experience ?? "—"} />
             <DetailField label="Instagram / LinkedIn" value={application.socialHandle ?? "—"} />
             <DetailField label="Licensed" value={licensedBadge(application.licensed)} />
-            <DetailField label="Applied" value={new Date(application.createdAt).toLocaleDateString()} />
+            <DetailField label="Applied" value={new Date(application.appliedAt).toLocaleDateString()} />
           </div>
 
           <div>
@@ -173,7 +179,12 @@ export function JobApplicationsPanel() {
 
   const liveCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: applications.length };
-    for (const s of APPLICATION_STATUSES) counts[s.id] = applications.filter((a) => a.status === s.id).length;
+    for (const s of APPLICATION_STATUSES) {
+      counts[s.id] =
+        s.id === "HIRED"
+          ? applications.filter((a) => HIRED_OR_LATER_STATUSES.includes(a.status)).length
+          : applications.filter((a) => a.status === s.id).length;
+    }
     return counts;
   }, [applications]);
 
@@ -344,7 +355,7 @@ export function JobApplicationsPanel() {
                         <span className="text-muted">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-muted">{new Date(a.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-muted">{new Date(a.appliedAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>

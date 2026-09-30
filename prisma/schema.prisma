@@ -678,6 +678,11 @@ model RecruitStatusHistory {
 /// mistake can be fixed retroactively without losing data.
 model JobApplication {
   id            String                        @id @default(cuid())
+  /// Base44's own record id ("id" in the webhook payload) — lets repeat
+  /// deliveries (edits, backfills, resends) upsert the same row instead of
+  /// creating a duplicate. Null only for rows created before this existed
+  /// or without an id in the payload.
+  base44Id      String?                       @unique
   name          String
   email         String?
   phone         String?
@@ -693,6 +698,12 @@ model JobApplication {
   socialHandle  String?
   videoUrl      String?
   status        ApplicationStatus             @default(NEW)
+  /// The applicant's actual submission date, from Base44's own
+  /// created_date — distinct from createdAt (when *we* inserted the row),
+  /// which is meaningless for ordering once a backfill imports many
+  /// applications out of chronological order in one burst. Falls back to
+  /// createdAt when Base44 doesn't supply one.
+  appliedAt     DateTime                      @default(now())
   rawPayload    Json
   createdAt     DateTime                      @default(now())
   updatedAt     DateTime                      @updatedAt

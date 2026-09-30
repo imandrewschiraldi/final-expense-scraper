@@ -12,7 +12,7 @@ export async function GET() {
   if ("error" in guard) return guard.error;
 
   const applications = await db.jobApplication.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: { appliedAt: "desc" },
     include: {
       statusHistory: {
         select: { toStatus: true, createdAt: true },
