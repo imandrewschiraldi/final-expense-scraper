@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { Trash2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
 
 type Rate = { compLevel: number; payoutPercent: string };
 type Plan = { id: string; name: string; payoutMultiplier: string; rates: Rate[] };
@@ -76,6 +76,80 @@ function AddPlanForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
         {saving ? "Adding..." : "Add Plan"}
       </Button>
       {error && <p className="w-full text-xs text-red-light">{error}</p>}
+    </div>
+  );
+}
+
+function CarrierName({ carrier, onRenamed }: { carrier: Carrier; onRenamed: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(carrier.name);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function cancel() {
+    setEditing(false);
+    setName(carrier.name);
+    setError(null);
+  }
+
+  async function save() {
+    const cleaned = name.trim();
+    if (!cleaned || cleaned === carrier.name) {
+      cancel();
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const res = await fetch(`/api/admin/carriers/${carrier.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: cleaned }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setEditing(false);
+      onRenamed();
+    } else {
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "Failed to rename carrier");
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex flex-1 flex-wrap items-center gap-2">
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save();
+            if (e.key === "Escape") cancel();
+          }}
+          autoFocus
+          className="w-56"
+        />
+        <Button variant="secondary" onClick={save} disabled={saving || !name.trim()}>
+          {saving ? "Saving..." : "Save"}
+        </Button>
+        <Button variant="ghost" onClick={cancel}>
+          Cancel
+        </Button>
+        {error && <p className="w-full text-xs text-red-light">{error}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="group flex items-center gap-2">
+      <CardTitle>{carrier.name}</CardTitle>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        aria-label={`Rename ${carrier.name}`}
+        className="text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-primary"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
@@ -248,7 +322,7 @@ export function CarrierRatesPanel() {
       {carriers.map((carrier) => (
         <Card key={carrier.id}>
           <CardHeader>
-            <CardTitle>{carrier.name}</CardTitle>
+            <CarrierName carrier={carrier} onRenamed={load} />
             <Button variant="ghost" onClick={() => deleteCarrier(carrier.id, carrier.name)}>
               <Trash2 className="h-4 w-4" />
             </Button>

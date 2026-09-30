@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
   PolicySubmitForm,
+  plansForCarrierName,
   type PolicyStatus,
   type SubmittedPolicy,
   type CarrierWithPlans,
@@ -43,7 +44,7 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
   useEffect(() => {
     fetch("/api/portal/carrier-plans")
       .then((res) => (res.ok ? res.json() : { carriers: [] }))
-      .then((data) => setCarriers((data.carriers ?? []).filter((c: CarrierWithPlans) => c.plans.length > 0)))
+      .then((data) => setCarriers(data.carriers ?? []))
       .catch(() => setCarriers([]));
   }, []);
 
@@ -148,6 +149,14 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
               )}
               {policies.map((p) => {
                 const isDemo = p.id.startsWith("demo-");
+                // Scope the Rate Plan options to this row's own carrier, so
+                // a Corebridge sale never offers Ethos's products. Falls
+                // back to the full grouped list only if the policy's
+                // free-text carrier doesn't match a known Carrier record.
+                const carrierMatch = carriers.find(
+                  (c) => c.name.trim().toLowerCase() === p.carrier.trim().toLowerCase(),
+                );
+                const scopedPlans = carrierMatch ? plansForCarrierName(carriers, p.carrier) : null;
                 return (
                 <tr key={p.id} className="border-b border-border/60 hover:bg-surface2">
                   <td className="py-2 pr-4 text-white">{p.clientName}</td>
@@ -166,15 +175,21 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                         className="min-w-[160px] py-1 text-xs"
                       >
                         <option value="">— Not rated —</option>
-                        {carriers.map((c) => (
-                          <optgroup key={c.id} label={c.name}>
-                            {c.plans.map((plan) => (
+                        {scopedPlans
+                          ? scopedPlans.map((plan) => (
                               <option key={plan.id} value={plan.id}>
-                                {c.name} — {plan.name}
+                                {plan.name}
                               </option>
+                            ))
+                          : carriers.map((c) => (
+                              <optgroup key={c.id} label={c.name}>
+                                {c.plans.map((plan) => (
+                                  <option key={plan.id} value={plan.id}>
+                                    {c.name} — {plan.name}
+                                  </option>
+                                ))}
+                              </optgroup>
                             ))}
-                          </optgroup>
-                        ))}
                       </Select>
                     )}
                   </td>
