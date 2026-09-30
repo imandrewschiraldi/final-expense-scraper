@@ -4,16 +4,19 @@ import { db } from "@/lib/db";
 
 /**
  * Inbound webhook for the Base44 "Apply Now" job-application site — an
- * external, unauthenticated caller, so the secret token in the URL path is
- * the only gate (checked with a timing-safe comparison rather than `===`
- * to avoid leaking the correct value one byte at a time via response
- * timing). Not a session-based admin route, so lib/apiAuth's requireAdmin
- * doesn't apply here.
+ * external, unauthenticated caller, so the X-Webhook-Secret header is the
+ * only gate (checked with a timing-safe comparison rather than `===` to
+ * avoid leaking the correct value one byte at a time via response timing).
+ * Not a session-based admin route, so lib/apiAuth's requireAdmin doesn't
+ * apply here. Header-based rather than a token embedded in the URL since
+ * Base44's own webhook setup offered it as a first-class option — keeps
+ * the secret out of URLs, logs, and browser history.
  */
-function isAuthorized(token: string): boolean {
+function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.BASE44_WEBHOOK_SECRET;
-  if (!secret) return false;
-  const a = Buffer.from(token);
+  const provided = req.headers.get("x-webhook-secret");
+  if (!secret || !provided) return false;
+  const a = Buffer.from(provided);
   const b = Buffer.from(secret);
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
@@ -71,9 +74,8 @@ function extractField(objects: Record<string, unknown>[], keys: string[]): strin
   return null;
 }
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
-  if (!isAuthorized(token)) {
+export async function POST(req: NextRequest) {
+  if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
