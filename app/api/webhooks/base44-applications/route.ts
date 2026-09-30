@@ -86,10 +86,17 @@ export async function POST(req: NextRequest) {
 
   const objects = candidateObjects(body);
 
-  const name = extractField(objects, ["name", "full_name", "fullName", "applicant_name"]);
-  if (!name) {
-    return NextResponse.json({ error: "Could not find an applicant name in the payload" }, { status: 422 });
-  }
+  // Never reject a real submission over a field-mapping guess gone wrong —
+  // rawPayload below is the source of truth either way, and a dropped
+  // application is worse than one that shows up with "(name unknown)" and
+  // needs a manual fix. Logged so the actual shape can be read out of
+  // Vercel's runtime logs the moment a real submission comes through.
+  console.log("[base44-webhook] received payload:", JSON.stringify(body));
+
+  const name =
+    extractField(objects, ["name", "full_name", "fullName", "applicant_name"]) ??
+    extractField(objects, ["email", "applicant_email"]) ??
+    "(name unknown)";
 
   const licensedObj = objects.find((o) => "licensed" in o || "licensing_status" in o || "licensingStatus" in o) ?? objects[0];
 
