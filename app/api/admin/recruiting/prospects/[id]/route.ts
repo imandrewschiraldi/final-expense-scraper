@@ -5,7 +5,12 @@ import { RECRUIT_STATUSES } from "@/lib/recruitingRadar";
 
 const STATUS_IDS = RECRUIT_STATUSES.map((s) => s.id);
 
-/** Updates a prospect's pipeline status (To Contact / DM'd / Replied / Hired / Pass). */
+/**
+ * Updates a prospect's pipeline status (To Contact / DM'd / Replied / Hired
+ * / Pass), logging a RecruitStatusHistory row whenever the status actually
+ * changes — that log is what lets the dashboard show real outreach
+ * activity ("14 DM'd this week") instead of just a live snapshot.
+ */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin();
   if ("error" in guard) return guard.error;
@@ -16,16 +21,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const prospect = await db.recruitProspect
-    .update({
-      where: { id },
-      data: { status: status as (typeof STATUS_IDS)[number] },
-    })
-    .catch(() => null);
-
-  if (!prospect) {
+  const existing = await db.recruitProspect.findUnique({ where: { id }, select: { status: true } });
+  if (!existing) {
     return NextResponse.json({ error: "Prospect not found" }, { status: 404 });
   }
+
+  const nextStatus = status as (typeof STATUS_IDS)[number];
+  const prospect = await db.recruitProspect.update({
+    where: { id },
+    data: {
+      status: nextStatus,
+      ...(nextStatus !== existing.status
+        ? {
+            statusHistory: {
+              create: { fromStatus: existing.status, toStatus: nextStatus, changedById: guard.session.user.id },
+            },
+          }
+        : {}),
+    },
+    include: { statusHistory: { select: { toStatus: true, createdAt: true }, orderBy: { createdAt: "asc" } } },
+  });
 
   return NextResponse.json({ prospect });
 }

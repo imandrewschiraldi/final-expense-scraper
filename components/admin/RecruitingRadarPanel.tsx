@@ -1,10 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Users, ListTodo, Send, MessageCircle, UserCheck, UserX, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
-import { StatCard } from "@/components/admin/StatCard";
+import { Modal } from "@/components/ui/Modal";
+import { DashboardRangeSelect } from "@/components/portal/dashboard/DashboardRangeSelect";
+import { RecruitingKpiTiles, type RecruitingKpiEntry } from "@/components/admin/RecruitingKpiTiles";
 import { cn } from "@/lib/cn";
+import { rangeSince, previousRangeWindow, DashboardRange } from "@/lib/dashboardRange";
 import {
   CATEGORIES,
   MARKETS,
@@ -15,6 +19,8 @@ import {
   type MarketId,
   type RecruitStatusId,
 } from "@/lib/recruitingRadar";
+
+type StatusEvent = { toStatus: RecruitStatusId; createdAt: string };
 
 type Prospect = {
   id: string;
@@ -27,6 +33,15 @@ type Prospect = {
   category: string;
   market: string;
   dedupeKey: string;
+  statusHistory: StatusEvent[];
+};
+
+const STATUS_ICON: Record<RecruitStatusId, typeof Send> = {
+  NEW: ListTodo,
+  DMD: Send,
+  REPLIED: MessageCircle,
+  HIRED: UserCheck,
+  PASS: UserX,
 };
 
 function csvEscape(value: string) {
@@ -38,11 +53,19 @@ export function RecruitingRadarPanel() {
   const [selectedMarkets, setSelectedMarkets] = useState<Set<MarketId>>(new Set(["tampa"]));
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(false);
+  // Copy-action confirmations (Copy DM / Copy Info / Copy CSV) — shown
+  // below the table, outside the search modal.
   const [statusMsg, setStatusMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  // Sweep progress/result messages — shown inside the search modal, kept
+  // separate so a leftover "search complete" toast doesn't linger over the
+  // table once the modal's closed.
+  const [searchMsg, setSearchMsg] = useState("");
+  const [searchError, setSearchError] = useState("");
   const [viewFilter, setViewFilter] = useState<RecruitStatusId | "ALL">("ALL");
   const [sweeping, setSweeping] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number; failed: number } | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [range, setRange] = useState<DashboardRange>("monthly");
   const cancelRef = useRef(false);
 
   const loadProspects = useCallback(async () => {
@@ -83,7 +106,9 @@ export function RecruitingRadarPanel() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error ?? "Apollo search failed");
-    if (data.added > 0) setProspects((prev) => [...data.prospects, ...prev]);
+    if (data.added > 0) {
+      setProspects((prev) => [...data.prospects.map((p: Prospect) => ({ ...p, statusHistory: [] })), ...prev]);
+    }
     return data.added as number;
   }
 
@@ -105,8 +130,8 @@ export function RecruitingRadarPanel() {
     cancelRef.current = false;
     setLoading(true);
     setSweeping(true);
-    setErrorMsg("");
-    setStatusMsg("");
+    setSearchError("");
+    setSearchMsg("");
     const total = combos.length;
     let done = 0;
     let failed = 0;
@@ -135,8 +160,8 @@ export function RecruitingRadarPanel() {
     setLoading(false);
     setSweeping(false);
     setProgress(null);
-    if (firstError) setErrorMsg(`First failure: ${firstError}`);
-    setStatusMsg(
+    if (firstError) setSearchError(`First failure: ${firstError}`);
+    setSearchMsg(
       cancelRef.current
         ? `Stopped after ${done} of ${total} searches${failed ? ` (${failed} failed)` : ""}.`
         : `${doneLabel} — ${total} searches run${failed ? `, ${failed} failed` : ""}.`,
@@ -160,12 +185,18 @@ export function RecruitingRadarPanel() {
   }
 
   async function updateStatus(id: string, status: RecruitStatusId) {
-    setProspects((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
-    await fetch(`/api/admin/recruiting/prospects/${id}`, {
+    const prev = prospects.find((p) => p.id === id);
+    if (!prev || prev.status === status) return;
+    setProspects((all) => all.map((p) => (p.id === id ? { ...p, status } : p)));
+    const res = await fetch(`/api/admin/recruiting/prospects/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
+    if (res.ok) {
+      const data = await res.json();
+      setProspects((all) => all.map((p) => (p.id === id ? { ...p, ...data.prospect } : p)));
+    }
   }
 
   function copyDm(p: Prospect) {
@@ -200,157 +231,111 @@ export function RecruitingRadarPanel() {
     setStatusMsg(`Copied ${prospects.length} rows as CSV.`);
   }
 
-  const counts: Record<string, number> = { ALL: prospects.length };
-  for (const s of RECRUIT_STATUSES) counts[s.id] = prospects.filter((p) => p.status === s.id).length;
+  // Live current-state counts (used both for the "currently sitting here"
+  // captions and to drive the table filter when a tile is clicked).
+  const liveCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: prospects.length };
+    for (const s of RECRUIT_STATUSES) counts[s.id] = prospects.filter((p) => p.status === s.id).length;
+    return counts;
+  }, [prospects]);
+
+  // Time-windowed activity counts — how many prospects were actually moved
+  // INTO a given status within the selected range, not how many currently
+  // sit there. This is what makes the dashboard useful for a pool that was
+  // sourced once and worked over months: "14 DM'd this week" is a real
+  // activity signal, "14 currently DM'd" isn't.
+  const kpiEntries = useMemo<RecruitingKpiEntry[]>(() => {
+    const since = rangeSince(range);
+    const prevWindow = previousRangeWindow(range);
+
+    function countSince(statusId: RecruitStatusId, from: Date | null): number {
+      let n = 0;
+      for (const p of prospects) {
+        for (const h of p.statusHistory) {
+          if (h.toStatus !== statusId) continue;
+          if (from === null || new Date(h.createdAt) >= from) n++;
+        }
+      }
+      return n;
+    }
+
+    function countInWindow(statusId: RecruitStatusId, start: Date, end: Date): number {
+      let n = 0;
+      for (const p of prospects) {
+        for (const h of p.statusHistory) {
+          if (h.toStatus !== statusId) continue;
+          const t = new Date(h.createdAt);
+          if (t >= start && t < end) n++;
+        }
+      }
+      return n;
+    }
+
+    const entries: RecruitingKpiEntry[] = [
+      {
+        key: "ALL",
+        label: "Total Sourced",
+        value: liveCounts.ALL,
+        icon: Users,
+        onClick: () => setViewFilter("ALL"),
+        active: viewFilter === "ALL",
+      },
+    ];
+
+    for (const s of RECRUIT_STATUSES) {
+      const isBacklog = s.id === "NEW";
+      const value = isBacklog ? liveCounts.NEW : countSince(s.id, since);
+      const previousValue = isBacklog || !prevWindow ? undefined : countInWindow(s.id, prevWindow.start, prevWindow.end);
+      entries.push({
+        key: s.id,
+        label: isBacklog ? s.label : `${s.label}${range === "all" ? "" : ` (${range === "daily" ? "today" : range === "weekly" ? "this week" : range === "monthly" ? "this month" : "this year"})`}`,
+        value,
+        previousValue,
+        icon: STATUS_ICON[s.id],
+        onClick: () => setViewFilter(s.id),
+        active: viewFilter === s.id,
+        caption: isBacklog ? undefined : `${liveCounts[s.id] ?? 0} currently`,
+      });
+    }
+
+    return entries;
+  }, [prospects, range, viewFilter, liveCounts]);
 
   const visibleProspects = viewFilter === "ALL" ? prospects : prospects.filter((p) => p.status === viewFilter);
+  const comboCount = selectedCategories.size * selectedMarkets.size;
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted">
-        State-of-the-art recruiting funnel — sources candidates from Apollo by background and market, dedupes
-        automatically, and everything saves here so the whole team sees the same pipeline.
-      </p>
-
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <label className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
-            Background <span className="normal-case text-muted/60">(select any number)</span>
-          </label>
-          {selectedCategories.size > 0 && (
-            <button
-              type="button"
-              onClick={() => setSelectedCategories(new Set())}
-              className="text-xs font-semibold text-muted hover:text-foreground"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(Object.keys(CATEGORIES) as CategoryKey[]).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => toggleCategory(key)}
-              className={cn(
-                "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-left text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-                selectedCategories.has(key)
-                  ? "border-copper bg-copper text-black"
-                  : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
-              )}
-            >
-              {CATEGORIES[key].label}
-              <span className="ml-1.5 font-normal normal-case opacity-70">· {CATEGORIES[key].sub}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <label className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
-            Market <span className="normal-case text-muted/60">(select any number)</span>
-          </label>
-          {selectedMarkets.size > 0 && (
-            <button
-              type="button"
-              onClick={() => setSelectedMarkets(new Set())}
-              className="text-xs font-semibold text-muted hover:text-foreground"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {MARKETS.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => toggleMarket(m.id)}
-              className={cn(
-                "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-                selectedMarkets.has(m.id)
-                  ? "border-copper bg-copper text-black"
-                  : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
-              )}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={handleSearch} disabled={loading || selectedCategories.size === 0 || selectedMarkets.size === 0}>
-          {loading && !sweeping
-            ? "Searching..."
-            : `Search Selected (${selectedCategories.size * selectedMarkets.size})`}
-        </Button>
-        <Button variant="secondary" onClick={handleAllMarkets} disabled={loading || selectedCategories.size === 0}>
-          Run selected backgrounds × all {MARKETS.length} markets
-        </Button>
-        <Button onClick={handleHotCombos} disabled={loading}>
-          Run hot combos ({HOT_COMBOS.length})
-        </Button>
-        <Button variant="secondary" onClick={handleEverything} disabled={loading}>
-          Run everything ({Object.keys(CATEGORIES).length * MARKETS.length})
-        </Button>
-        {sweeping && (
-          <Button variant="danger" onClick={handleStop}>
-            Stop
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-2xl text-sm text-muted">
+          State-of-the-art recruiting funnel — sources candidates from Apollo by background and market, dedupes
+          automatically, and everything saves here so the whole team sees the same pipeline.
+        </p>
+        <div className="flex items-center gap-2">
+          <DashboardRangeSelect value={range} onChange={setRange} />
+          <Button onClick={() => setSearchOpen(true)}>
+            <Search className="mr-1.5 h-4 w-4" />
+            Search for New Prospects
           </Button>
-        )}
-        {prospects.length > 0 && (
+        </div>
+      </div>
+
+      <RecruitingKpiTiles entries={kpiEntries} />
+
+      {statusMsg && <p className="text-sm text-muted">{statusMsg}</p>}
+
+      {prospects.length > 0 && (
+        <div className="flex justify-end">
           <Button variant="ghost" onClick={copyAllCsv}>
             Copy all as CSV ({prospects.length})
           </Button>
-        )}
-      </div>
-
-      {progress && (
-        <div className="max-w-md">
-          <div className="mb-1 flex justify-between text-xs font-semibold text-muted">
-            <span>
-              Sweeping... {progress.done}/{progress.total} searches
-            </span>
-            <span>
-              {prospects.length} prospects{progress.failed > 0 ? ` · ${progress.failed} failed` : ""}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-surface2">
-            <div
-              className="h-full bg-copper transition-all duration-300"
-              style={{ width: `${(progress.done / progress.total) * 100}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {statusMsg && <p className="text-sm text-muted">{statusMsg}</p>}
-      {errorMsg && <p className="text-sm text-red-light">{errorMsg}</p>}
-
-      {prospects.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-          <button type="button" onClick={() => setViewFilter("ALL")} className="text-left">
-            <StatCard label="Total Scraped" value={counts.ALL} accent="copper" />
-          </button>
-          {RECRUIT_STATUSES.map((s) => (
-            <button key={s.id} type="button" onClick={() => setViewFilter(s.id)} className="text-left">
-              <StatCard
-                label={s.label}
-                value={counts[s.id] ?? 0}
-                accent={s.id === "HIRED" ? "green" : s.id === "PASS" ? "red" : "teal"}
-              />
-            </button>
-          ))}
         </div>
       )}
 
       {prospects.length === 0 ? (
         <p className="text-sm text-muted">
-          Pick a background and a market, then hit search. Results stack up here — dedupe is automatic and
-          everything saves for the whole team.
+          Hit &ldquo;Search for New Prospects&rdquo; above to pick a background and market — results stack up here,
+          dedupe is automatic, and everything saves for the whole team.
         </p>
       ) : (
         <div className="overflow-x-auto rounded-[10px] border border-border bg-surface">
@@ -420,6 +405,121 @@ export function RecruitingRadarPanel() {
           </table>
         </div>
       )}
+
+      <Modal open={searchOpen} onClose={() => setSearchOpen(false)} title="Search for New Prospects">
+        <div className="space-y-5">
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+                Background <span className="normal-case text-muted/60">(select any number)</span>
+              </label>
+              {selectedCategories.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategories(new Set())}
+                  className="text-xs font-semibold text-muted hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(CATEGORIES) as CategoryKey[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleCategory(key)}
+                  className={cn(
+                    "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-left text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+                    selectedCategories.has(key)
+                      ? "border-copper bg-copper text-black"
+                      : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
+                  )}
+                >
+                  {CATEGORIES[key].label}
+                  <span className="ml-1.5 font-normal normal-case opacity-70">· {CATEGORIES[key].sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+                Market <span className="normal-case text-muted/60">(select any number)</span>
+              </label>
+              {selectedMarkets.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedMarkets(new Set())}
+                  className="text-xs font-semibold text-muted hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {MARKETS.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => toggleMarket(m.id)}
+                  className={cn(
+                    "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+                    selectedMarkets.has(m.id)
+                      ? "border-copper bg-copper text-black"
+                      : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+            <Button onClick={handleSearch} disabled={loading || selectedCategories.size === 0 || selectedMarkets.size === 0}>
+              {loading && !sweeping ? "Searching..." : `Search Selected (${comboCount})`}
+            </Button>
+            <Button variant="secondary" onClick={handleAllMarkets} disabled={loading || selectedCategories.size === 0}>
+              Selected backgrounds × all {MARKETS.length} markets
+            </Button>
+            <Button onClick={handleHotCombos} disabled={loading}>
+              Hot combos ({HOT_COMBOS.length})
+            </Button>
+            <Button variant="secondary" onClick={handleEverything} disabled={loading}>
+              Everything ({Object.keys(CATEGORIES).length * MARKETS.length})
+            </Button>
+            {sweeping && (
+              <Button variant="danger" onClick={handleStop}>
+                Stop
+              </Button>
+            )}
+          </div>
+
+          {progress && (
+            <div>
+              <div className="mb-1 flex justify-between text-xs font-semibold text-muted">
+                <span>
+                  Sweeping... {progress.done}/{progress.total} searches
+                </span>
+                <span>
+                  {prospects.length} prospects{progress.failed > 0 ? ` · ${progress.failed} failed` : ""}
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-surface2">
+                <div
+                  className="h-full bg-copper transition-all duration-300"
+                  style={{ width: `${(progress.done / progress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {searchMsg && <p className="text-sm text-muted">{searchMsg}</p>}
+          {searchError && <p className="text-sm text-red-light">{searchError}</p>}
+        </div>
+      </Modal>
     </div>
   );
 }

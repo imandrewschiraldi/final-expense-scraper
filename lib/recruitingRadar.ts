@@ -20,9 +20,6 @@ export type Category = {
   dmIndustry: string;
 };
 
-// Only the first 5 titles of each list are actually sent to Apollo's
-// person_titles (see lib/apollo.ts) — matches the reference build, which
-// defined a couple extra titles per category that were never queried.
 export const CATEGORIES: Record<CategoryKey, Category> = {
   d2d: {
     label: "Door-to-Door",
