@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
+import { resolveStateCode } from "@/lib/usStates";
+import type { ApplicationStatusId } from "@/lib/jobApplications";
 
 /**
  * Inbound webhook for the Base44 "Apply Now" job-application site — an
@@ -40,7 +42,15 @@ function firstString(obj: Record<string, unknown>, keys: string[]): string | nul
 }
 
 function parseLicensed(obj: Record<string, unknown>): boolean | null {
-  const raw = firstString(obj, ["licensed", "licensing_status", "licensingStatus", "license_status", "is_licensed"]);
+  const raw = firstString(obj, [
+    "licensed",
+    "license",
+    "licensing",
+    "licensing_status",
+    "licensingStatus",
+    "license_status",
+    "is_licensed",
+  ]);
   if (raw === null) {
     const bool = obj.licensed;
     if (typeof bool === "boolean") return bool;
@@ -52,6 +62,28 @@ function parseLicensed(obj: Record<string, unknown>): boolean | null {
   }
   if (normalized.includes("licensed") || normalized === "yes" || normalized === "true") return true;
   return null;
+}
+
+/**
+ * Base44's own pipeline stage for the applicant (their "hiring_status"),
+ * mapped onto our ApplicationStatus enum by keyword rather than exact
+ * match, since the real values seen so far ("New", "Rejected", "Onboarded",
+ * "Pre-Licensing Course") don't share one casing/wording convention.
+ * Ordered most-specific-first so e.g. "Pre-Licensing Course" doesn't fall
+ * through to a looser "licensed" match.
+ */
+function mapHiringStatus(raw: string | null): ApplicationStatusId {
+  if (!raw) return "NEW";
+  const s = raw.toLowerCase();
+  if (s.includes("reject")) return "REJECTED";
+  if (s.includes("onboard")) return "ONBOARDED";
+  if (s.includes("pre-licens") || s.includes("pre licens") || s.includes("prelicens")) return "PRE_LICENSING";
+  if (s.includes("licensed")) return "LICENSED";
+  if (s.includes("hired")) return "HIRED";
+  if (s.includes("interview")) return "INTERVIEWED";
+  if (s.includes("schedul")) return "SCHEDULED";
+  if (s.includes("contact")) return "CONTACTED";
+  return "NEW";
 }
 
 function candidateObjects(body: Record<string, unknown>): Record<string, unknown>[] {
@@ -99,39 +131,83 @@ export async function POST(req: NextRequest) {
     "(name unknown)";
 
   const licensedObj =
-    objects.find((o) => "licensed" in o || "licensing_status" in o || "licensingStatus" in o || "license_status" in o) ??
-    objects[0];
+    objects.find(
+      (o) =>
+        "licensed" in o ||
+        "license" in o ||
+        "licensing" in o ||
+        "licensing_status" in o ||
+        "licensingStatus" in o ||
+        "license_status" in o,
+    ) ?? objects[0];
 
-  const application = await db.jobApplication.create({
-    data: {
-      name,
-      email: extractField(objects, ["email", "applicant_email"]),
-      phone: extractField(objects, ["phone", "phone_number", "phoneNumber"]),
-      // Base44's own portal labels this "Location", not "State" — both
-      // guessed since the webhook's actual key naming isn't confirmed.
-      state: extractField(objects, ["state", "applicant_state", "location", "city_state"]),
-      experience: extractField(objects, [
-        "experience",
-        "years_experience",
-        "yearsExperience",
-        "sales_experience",
-        "salesExperience",
-      ]),
-      licensed: parseLicensed(licensedObj),
-      availability: extractField(objects, ["availability", "work_availability", "workAvailability"]),
-      socialHandle: extractField(objects, [
-        "instagram_linkedin",
-        "instagramLinkedin",
-        "social",
-        "social_handle",
-        "socialHandle",
-        "instagram",
-        "linkedin",
-      ]),
-      videoUrl: extractField(objects, ["video", "video_url", "videoUrl", "intro_video", "introVideo", "video_link"]),
-      rawPayload: body as object,
-    },
-  });
+  const base44Id = extractField(objects, ["id", "application_id", "applicationId"]);
+  const state = extractField(objects, ["state", "applicant_state", "location", "city_state"]);
+  const hiringStatus = extractField(objects, ["hiring_status", "status", "pipeline_status", "stage"]);
+
+  // A hard business rule, not a manual pipeline step: insurance licensing is
+  // state-by-state, so anyone not submitting a real US state can never be
+  // hired regardless of what Base44's own hiring_status says. resolveStateCode
+  // tolerates messy real-world input (full names, codes, typos), so this
+  // only rejects genuinely non-US locations like "London" or "Nigeria".
+  const status: ApplicationStatusId =
+    state && !resolveStateCode(state) ? "REJECTED" : mapHiringStatus(hiringStatus);
+
+  // status is kept separate from the shared fields below (rather than in one
+  // object) so the update half of the upsert can leave it out entirely —
+  // the admin UI owns the pipeline going forward, so a resend from Base44
+  // (edits/backfills) should never silently reset a status we're already
+  // tracking here. The state-rejection rule is re-derived fresh on every
+  // create regardless.
+  const sharedFields = {
+    base44Id,
+    name,
+    email: extractField(objects, ["email", "applicant_email"]),
+    phone: extractField(objects, ["phone", "phone_number", "phoneNumber"]),
+    state,
+    experience: extractField(objects, [
+      "experience",
+      "years_experience",
+      "yearsExperience",
+      "sales_experience",
+      "salesExperience",
+      "sales_background",
+      "background",
+    ]),
+    licensed: parseLicensed(licensedObj),
+    availability: extractField(objects, ["availability", "work_availability", "workAvailability"]),
+    socialHandle: extractField(objects, [
+      "instagram_linkedin",
+      "instagramLinkedin",
+      "social",
+      "social_handle",
+      "socialHandle",
+      "instagram",
+      "linkedin",
+      "social_media",
+      "social_link",
+    ]),
+    videoUrl: extractField(objects, [
+      "video",
+      "video_url",
+      "videoUrl",
+      "intro_video",
+      "introVideo",
+      "intro_video_url",
+      "video_link",
+    ]),
+    rawPayload: body as object,
+  };
+
+  // Base44 resends the same application on edits/backfills, so dedupe on
+  // its own record id rather than creating a new row every time.
+  const application = base44Id
+    ? await db.jobApplication.upsert({
+        where: { base44Id },
+        create: { ...sharedFields, status },
+        update: sharedFields,
+      })
+    : await db.jobApplication.create({ data: { ...sharedFields, status } });
 
   return NextResponse.json({ ok: true, id: application.id });
 }
