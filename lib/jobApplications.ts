@@ -22,6 +22,14 @@ export const MAIN_FUNNEL_STATUSES: ApplicationStatusId[] = ["NEW", "CONTACTED", 
 /** Post-hire onboarding stages, shown as a secondary funnel once someone reaches HIRED. */
 export const ONBOARDING_FUNNEL_STATUSES: ApplicationStatusId[] = ["PRE_LICENSING", "LICENSED", "ONBOARDED"];
 
+/**
+ * Moving into onboarding doesn't mean someone is no longer hired — they're
+ * further along, not a different outcome. Anything counting "how many have
+ * we hired" (the Hired dashboard card, the main funnel's Hired bar, hire
+ * rate) should include these stages too, not just the literal HIRED status.
+ */
+export const HIRED_OR_LATER_STATUSES: ApplicationStatusId[] = ["HIRED", ...ONBOARDING_FUNNEL_STATUSES];
+
 export function statusLabel(id: string): string {
   return APPLICATION_STATUSES.find((s) => s.id === id)?.label ?? id;
 }

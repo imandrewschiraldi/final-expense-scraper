@@ -23,7 +23,13 @@ import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/cn";
 import { RecruitingKpiTiles, type RecruitingKpiEntry } from "@/components/admin/RecruitingKpiTiles";
 import { FunnelBars } from "@/components/admin/FunnelBars";
-import { APPLICATION_STATUSES, MAIN_FUNNEL_STATUSES, ONBOARDING_FUNNEL_STATUSES, type ApplicationStatusId } from "@/lib/jobApplications";
+import {
+  APPLICATION_STATUSES,
+  MAIN_FUNNEL_STATUSES,
+  ONBOARDING_FUNNEL_STATUSES,
+  HIRED_OR_LATER_STATUSES,
+  type ApplicationStatusId,
+} from "@/lib/jobApplications";
 
 type Application = {
   id: string;
@@ -173,7 +179,12 @@ export function JobApplicationsPanel() {
 
   const liveCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: applications.length };
-    for (const s of APPLICATION_STATUSES) counts[s.id] = applications.filter((a) => a.status === s.id).length;
+    for (const s of APPLICATION_STATUSES) {
+      counts[s.id] =
+        s.id === "HIRED"
+          ? applications.filter((a) => HIRED_OR_LATER_STATUSES.includes(a.status)).length
+          : applications.filter((a) => a.status === s.id).length;
+    }
     return counts;
   }, [applications]);
 
