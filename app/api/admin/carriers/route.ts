@@ -9,7 +9,7 @@ export async function GET() {
   const carriers = await db.carrier.findMany({
     orderBy: [{ order: "asc" }, { name: "asc" }],
     include: {
-      plans: { orderBy: { name: "asc" } },
+      plans: { orderBy: { name: "asc" }, include: { rates: { orderBy: { compLevel: "asc" } } } },
       contacts: { orderBy: { order: "asc" } },
       links: { orderBy: { order: "asc" } },
     },
