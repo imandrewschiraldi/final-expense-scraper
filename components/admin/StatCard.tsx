@@ -1,5 +1,3 @@
-import { cn } from "@/lib/cn";
-
 export function StatCard({
   label,
   value,
@@ -20,8 +18,8 @@ export function StatCard({
   return (
     <div className="rounded-[10px] border border-border bg-surface p-5">
       <p className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">{label}</p>
-      <p className={cn("font-condensed mt-1 text-[40px] leading-none font-black", accentClass)}>
-        {value.toLocaleString()}
+      <p className="font-condensed mt-1 text-[40px] leading-none font-black">
+        <span className={accentClass}>{value.toLocaleString()}</span>
       </p>
     </div>
   );

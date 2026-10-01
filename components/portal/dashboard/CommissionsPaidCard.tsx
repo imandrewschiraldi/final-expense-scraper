@@ -73,16 +73,18 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
         </span>
       </div>
 
-      <p className="metal-copper-text font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] uppercase">
-        Commissions Paid{showAdvance ? " · 75% Advance" : ""}
+      <p className="font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] uppercase">
+        <span className="metal-copper-text">
+          Commissions Paid{showAdvance ? " · 75% Advance" : ""}
+        </span>
       </p>
       <p
-        className="metal-copper-text font-scoreboard text-[68px] leading-none font-black tracking-tight"
+        className="font-scoreboard text-[68px] leading-none font-black tracking-tight"
         style={{
           filter: "drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 48px rgba(200,121,65,.55))",
         }}
       >
-        {currency(animated ?? value)}
+        <span className="metal-copper-text">{currency(animated ?? value)}</span>
       </p>
 
       <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
