@@ -7,18 +7,22 @@ import { cn } from "@/lib/cn";
 const QUOTE_TOOLS = {
   FINAL_EXPENSE: {
     label: "FEX Quoter",
-    src: "https://app.insurancetoolkits.com/fex/lite?token=zfq-hD_l8Am4ZasAkK7HZuR5wS2BHJijhzgMnzmc",
+    src: "https://app.insurancetoolkits.com/fex/lite?token=i_Eren7OQecbZoJlQWWM4uWF4TrjCb4sZ2Io42DO",
   },
   TERM_LIFE: {
     label: "Term Quoter",
-    src: "https://app.insurancetoolkits.com/term/lite?token=zfq-hD_l8Am4ZasAkK7HZuR5wS2BHJijhzgMnzmc",
+    src: "https://app.insurancetoolkits.com/term/lite?token=i_Eren7OQecbZoJlQWWM4uWF4TrjCb4sZ2Io42DO",
+  },
+  IUL: {
+    label: "IUL Quoter",
+    src: "https://app.insurancetoolkits.com/iul/lite?token=i_Eren7OQecbZoJlQWWM4uWF4TrjCb4sZ2Io42DO",
   },
 } as const;
 
 type QuoteToolKey = keyof typeof QUOTE_TOOLS;
 
 /**
- * Two third-party quoting tools switched by a button bar and embedded via
+ * Three third-party quoting tools switched by a button bar and embedded via
  * iframe. Unlike Scripts/Commission Calculator, these aren't Tier 1's own
  * tools, so there's no "?embed=1" mode to hide their branding — each one
  * just iframes as-is, light mode only (an earlier Dark Mode option, a CSS
