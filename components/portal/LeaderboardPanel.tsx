@@ -119,7 +119,7 @@ export function LeaderboardPanel() {
                         <Crown className="h-4 w-4 fill-copper text-copper sm:h-6 sm:w-6" />
                       </motion.div>
                     )}
-                    <span className="font-scoreboard mt-2 text-sm font-bold text-copper sm:mt-3 sm:text-2xl">
+                    <span className="metal-copper-text font-scoreboard mt-2 text-sm font-bold sm:mt-3 sm:text-2xl">
                       #{i + 1}
                     </span>
                     {isPlaceholder ? (
@@ -139,7 +139,7 @@ export function LeaderboardPanel() {
                     </span>
                     <AnimatedAP
                       value={isPlaceholder ? 0 : agent.issuedAP}
-                      className="font-scoreboard text-sm font-bold text-copper drop-shadow-[0_0_18px_rgba(200,121,65,0.3)] sm:text-2xl"
+                      className="metal-copper-text font-scoreboard text-sm font-bold drop-shadow-[0_0_18px_rgba(200,121,65,0.3)] sm:text-2xl"
                     />
                     <span className="text-[10px] text-muted sm:text-xs">
                       {isPlaceholder ? "—" : `${agent.issuedCount} issued`}
@@ -162,7 +162,7 @@ export function LeaderboardPanel() {
                     <span className="font-scoreboard w-8 shrink-0 text-muted">#{i + 4}</span>
                     <Avatar url={agent.profileImageUrl} name={agent.name} sizeClassName="h-7 w-7" />
                     <span className="min-w-0 flex-1 truncate text-white">{agent.name}</span>
-                    <AnimatedAP value={agent.issuedAP} className="font-scoreboard shrink-0 text-copper" />
+                    <AnimatedAP value={agent.issuedAP} className="metal-copper-text font-scoreboard shrink-0" />
                   </motion.div>
                 ))}
               </div>
