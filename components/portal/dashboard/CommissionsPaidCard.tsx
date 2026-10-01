@@ -52,9 +52,9 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
       className="relative mb-5 overflow-hidden rounded-[20px] border border-copper/30 p-[18px_28px]"
       style={{
         background:
-          "radial-gradient(130% 160% at 100% 0%, rgba(168,90,40,.20), transparent 60%), linear-gradient(160deg,#0d0d0d 0%,#080808 60%,#000 100%)",
+          "radial-gradient(130% 160% at 100% 0%, rgba(200,121,65,.20), transparent 60%), linear-gradient(160deg,#0d0d0d 0%,#080808 60%,#000 100%)",
         boxShadow:
-          "0 0 0 1px rgba(168,90,40,.06) inset, 0 30px 80px -30px rgba(168,90,40,.3), 0 24px 48px -28px rgba(0,0,0,.8)",
+          "0 0 0 1px rgba(200,121,65,.06) inset, 0 30px 80px -30px rgba(200,121,65,.3), 0 24px 48px -28px rgba(0,0,0,.8)",
       }}
     >
       <div className="mb-2.5 flex items-center justify-between gap-2">
@@ -79,7 +79,7 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
       <p
         className="metal-copper-text font-scoreboard text-[68px] leading-none font-black tracking-tight"
         style={{
-          filter: "drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 48px rgba(168,90,40,.55))",
+          filter: "drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 48px rgba(200,121,65,.55))",
         }}
       >
         {currency(animated ?? value)}
