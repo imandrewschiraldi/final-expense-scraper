@@ -227,23 +227,31 @@ body {
    currently flat text-copper/text-green/text-red (Leaderboard AP figures,
    Commissions Paid, vault totals, stat-card accents). Needs a real
    background behind it (not transparent) since -webkit-text-fill-color
-   punches a hole straight through to whatever's behind the text. */
+   punches a hole straight through to whatever's behind the text.
+
+   The base color dominates (wide bands at each end) with a single crisp
+   highlight streak crossing the middle — not three separate highlight
+   peaks. A wide element (a heading, a big dollar figure) spends most of
+   its width interpolating BETWEEN stops, so spreading the highlight
+   across three points (as the surface/badge gradients do, fine at icon
+   size) makes most of the rendered text read as the lighter blend color
+   instead of the rich base tone. */
 .metal-copper-text {
-  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 40%, var(--copper-metal-hi) 55%, var(--copper-metal) 70%, var(--copper-metal-hi) 100%);
+  background-image: linear-gradient(100deg, var(--copper-metal) 0%, var(--copper-metal) 38%, var(--copper-metal-hi) 50%, var(--copper-metal) 62%, var(--copper-metal) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
 .metal-green-text {
-  background-image: linear-gradient(135deg, var(--green-metal-hi) 0%, var(--green) 40%, var(--green-metal-hi) 55%, var(--green) 70%, var(--green-metal-hi) 100%);
+  background-image: linear-gradient(100deg, var(--green) 0%, var(--green) 38%, var(--green-metal-hi) 50%, var(--green) 62%, var(--green) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
 .metal-red-text {
-  background-image: linear-gradient(135deg, var(--red-metal-hi) 0%, var(--red) 40%, var(--red-metal-hi) 55%, var(--red) 70%, var(--red-metal-hi) 100%);
+  background-image: linear-gradient(100deg, var(--red) 0%, var(--red) 38%, var(--red-metal-hi) 50%, var(--red) 62%, var(--red) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
