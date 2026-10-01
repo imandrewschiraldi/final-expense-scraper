@@ -60,6 +60,23 @@
   --amber-metal: #a7764a;
   --amber-metal-hi: #c8aa8f;
   --amber-metal-dk: #5c4129;
+
+  /* Metallic stops for DistributionAnalytics' donut-chart categorical
+     palette (Carrier/Product Analytics) — a rotating set of 6 distinct
+     colors with no brand/status meaning of their own (unlike the tokens
+     above), so each gets its own hi/dk pair derived at the same ratios
+     rather than reusing a button color. Copper reuses --copper-metal-*
+     above since it's literally the same brand copper. */
+  --teal-light-metal-hi: #b0e9e8;
+  --teal-light-metal-dk: #467878;
+  --blue-light-metal-hi: #a9d4ff;
+  --blue-light-metal-dk: #40668c;
+  --green-light-metal-hi: #aeffae;
+  --green-light-metal-dk: #458c45;
+  --red-light-metal-hi: #ffa3a3;
+  --red-light-metal-dk: #8c3b3b;
+  --copper-dim-metal-hi: #ad8f78;
+  --copper-dim-metal-dk: #432915;
 }
 
 @theme inline {
@@ -190,6 +207,47 @@ body {
 }
 .btn-metal-green:hover {
   opacity: 0.88;
+}
+
+/* The "selected toggle/tab/filter pill" pattern — duplicated by hand as
+   `border-copper bg-copper text-black` across many toggle groups instead
+   of the shared Button component (scope switches, archive/active view
+   toggles, pinned-messages filter, etc). One class, applied everywhere
+   that pattern appeared. */
+.toggle-pill-active {
+  border-color: transparent;
+  color: #000;
+  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 30%, var(--copper-metal-dk) 55%, var(--copper-metal) 80%, var(--copper-metal-hi) 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+}
+
+/* Metallic gradient TEXT — for standalone large numbers/labels that are
+   currently flat text-copper/text-green/text-red (Leaderboard AP figures,
+   Commissions Paid, vault totals, stat-card accents). Needs a real
+   background behind it (not transparent) since -webkit-text-fill-color
+   punches a hole straight through to whatever's behind the text. */
+.metal-copper-text {
+  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 40%, var(--copper-metal-hi) 55%, var(--copper-metal) 70%, var(--copper-metal-hi) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.metal-green-text {
+  background-image: linear-gradient(135deg, var(--green-metal-hi) 0%, var(--green) 40%, var(--green-metal-hi) 55%, var(--green) 70%, var(--green-metal-hi) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.metal-red-text {
+  background-image: linear-gradient(135deg, var(--red-metal-hi) 0%, var(--red) 40%, var(--red-metal-hi) 55%, var(--red) 70%, var(--red-metal-hi) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 /* The copper line under the header (HeaderDivider.tsx + Sidebar.tsx) — a

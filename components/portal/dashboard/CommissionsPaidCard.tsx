@@ -29,9 +29,9 @@ const currency = (n: number) =>
 /**
  * The dashboard's hero stat — deliberately its own card, not a KpiGrid
  * tile, since it's meant to be photogenic enough to screenshot on its own.
- * The number's gradient is sampled directly from public/headings/dashboard.png
- * (the page's own graphic heading) rather than invented, so it reads as the
- * exact same copper the rest of the app already uses.
+ * The number uses the shared .metal-copper-text gradient (app/globals.css,
+ * sampled from the real logo) so it reads as the exact same copper the
+ * rest of the app uses.
  */
 export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCardData; range: DashboardRange }) {
   // Off by default: the headline number is the full commission the
@@ -63,9 +63,7 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
           onClick={() => setShowAdvance((s) => !s)}
           aria-pressed={showAdvance}
           className={`rounded-full border px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] uppercase transition-colors ${
-            showAdvance
-              ? "border-copper bg-copper/15 text-copper"
-              : "border-white/[0.12] text-muted hover:text-foreground"
+            showAdvance ? "toggle-pill-active" : "border-white/[0.12] text-muted hover:text-foreground"
           }`}
         >
           Advance
@@ -75,16 +73,12 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
         </span>
       </div>
 
-      <p className="font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] text-copper uppercase">
+      <p className="metal-copper-text font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] uppercase">
         Commissions Paid{showAdvance ? " · 75% Advance" : ""}
       </p>
       <p
-        className="font-scoreboard text-[68px] leading-none font-black tracking-tight"
+        className="metal-copper-text font-scoreboard text-[68px] leading-none font-black tracking-tight"
         style={{
-          background: "linear-gradient(90deg, #d88a4a 0%, #c37135 45%, #994022 100%)",
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
           filter: "drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 48px rgba(200,121,65,.55))",
         }}
       >

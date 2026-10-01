@@ -10,11 +10,11 @@ export function StatCard({
   accent: "copper" | "teal" | "green" | "gold" | "red";
 }) {
   const accentClass = {
-    copper: "text-copper",
+    copper: "metal-copper-text",
     teal: "text-teal-light",
-    green: "text-green-light",
+    green: "metal-green-text",
     gold: "text-gold",
-    red: "text-red-light",
+    red: "metal-red-text",
   }[accent];
 
   return (

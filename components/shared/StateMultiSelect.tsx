@@ -45,7 +45,7 @@ export function StateMultiSelect({
               className={cn(
                 "font-condensed rounded-md border-[1.5px] px-1 py-1.5 text-[12px] font-bold tracking-[0.03em] uppercase transition-colors",
                 active
-                  ? "border-copper bg-copper text-black"
+                  ? "toggle-pill-active"
                   : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
               )}
             >

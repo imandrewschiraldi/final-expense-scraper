@@ -158,7 +158,7 @@ function SortableChannel({
         onClick={onSelect}
         className={cn(
           "font-condensed flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-bold tracking-[0.04em] uppercase transition-colors",
-          active ? "bg-copper text-black" : "text-muted hover:bg-surface2 hover:text-foreground",
+          active ? "toggle-pill-active" : "text-muted hover:bg-surface2 hover:text-foreground",
         )}
       >
         {canManage && (
@@ -1070,7 +1070,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                   onClick={() => setShowPins((v) => !v)}
                   className={cn(
                     "font-condensed flex shrink-0 items-center gap-1.5 rounded-md border-[1.5px] px-3 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors",
-                    showPins ? "border-copper bg-copper text-black" : "border-copper text-copper hover:bg-copper hover:text-black",
+                    showPins ? "toggle-pill-active" : "btn-metal-copper",
                   )}
                 >
                   <Pin className="h-3 w-3" />
@@ -1167,7 +1167,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               onClick={send}
               disabled={(!draft.trim() && !pendingImage) || sending || !active}
               aria-label="Send"
-              className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border-[1.5px] border-copper text-copper transition-colors hover:bg-copper hover:text-black disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-copper"
+              className="btn-metal-copper flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-40"
             >
               <Send className="h-4 w-4" />
             </button>
@@ -1322,7 +1322,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                     modalAudience === "SPECIFIC" &&
                     modalMemberIds.length === 0)
                 }
-                className="font-condensed rounded-md border-[1.5px] border-copper px-3 py-1.5 text-xs font-bold tracking-[0.08em] text-copper uppercase transition-colors hover:bg-copper hover:text-black disabled:opacity-40"
+                className="btn-metal-copper font-condensed rounded-md px-3 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors disabled:opacity-40"
               >
                 {modal.kind === "archiveChannel" || modal.kind === "deleteMessage" ? "Delete" : "Save"}
               </button>

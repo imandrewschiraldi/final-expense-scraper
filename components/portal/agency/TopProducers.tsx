@@ -31,10 +31,10 @@ export function TopProducers({ producers }: { producers: TopProducer[] }) {
               transition={{ duration: 0.3, delay: i * 0.05 }}
               className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-white/[0.03]"
             >
-              <span className="w-5 shrink-0 text-center font-bold text-copper">{i + 1}</span>
+              <span className="metal-copper-text w-5 shrink-0 text-center font-bold">{i + 1}</span>
               <Avatar url={p.profileImageUrl} name={p.name} />
               <span className="min-w-0 flex-1 truncate text-white">{p.name}</span>
-              <span className="shrink-0 font-semibold text-copper">
+              <span className="metal-copper-text shrink-0 font-semibold">
                 {p.issuedAP.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}
               </span>
             </motion.div>

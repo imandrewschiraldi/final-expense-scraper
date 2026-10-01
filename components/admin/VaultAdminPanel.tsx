@@ -177,7 +177,7 @@ export function VaultAdminPanel() {
             will have their Vault access revoked.
           </p>
           <p className="border-t border-border pt-3">
-            <span className="text-2xl font-extrabold text-copper">{vaultTotal?.toLocaleString() ?? "…"}</span>{" "}
+            <span className="metal-copper-text text-2xl font-extrabold">{vaultTotal?.toLocaleString() ?? "…"}</span>{" "}
             lead(s) currently sitting in the shared vault.
           </p>
         </div>
