@@ -123,15 +123,21 @@ body {
    everywhere a "metal" surface is called for: KPI icon tiles and solid
    badges/buttons. Tiles/badges keep their icon or text a flat white/black
    on top (see each component) rather than a second gradient, since
-   gradient-on-gradient stops being legible fast. */
+   gradient-on-gradient stops being legible fast.
+
+   Copper's stop ORDER (dark at the edges, highlight at 25/75%, base dead
+   center) matches .metal-copper-text/.metal-copper-line exactly — one
+   consistent "Gradient B" shape for every copper metal surface, just
+   reused at each element's own angle. Green/red keep the lighter
+   highlight-at-the-edges shape (unchanged, not part of this pass). */
 .metal-copper-surface {
   background-image: linear-gradient(
     135deg,
-    var(--copper-metal-hi) 0%,
-    var(--copper-metal) 30%,
-    var(--copper-metal-dk) 55%,
-    var(--copper-metal) 80%,
-    var(--copper-metal-hi) 100%
+    var(--copper-metal-dk) 0%,
+    var(--copper-metal-hi) 25%,
+    var(--copper-metal) 50%,
+    var(--copper-metal-hi) 75%,
+    var(--copper-metal-dk) 100%
   );
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
@@ -174,13 +180,13 @@ body {
   border: 1.5px solid transparent;
   background-image:
     linear-gradient(var(--surface), var(--surface)),
-    linear-gradient(135deg, var(--copper-metal-hi), var(--copper-metal) 35%, var(--copper-metal-dk) 60%, var(--copper-metal) 85%, var(--copper-metal-hi));
+    linear-gradient(135deg, var(--copper-metal-dk), var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk));
   background-origin: border-box;
   background-clip: padding-box, border-box;
   color: var(--copper-metal-hi);
 }
 .btn-metal-copper:hover {
-  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 30%, var(--copper-metal-dk) 55%, var(--copper-metal) 80%, var(--copper-metal-hi) 100%);
+  background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
   color: #000;
 }
 .btn-metal-red {
@@ -217,7 +223,7 @@ body {
 .toggle-pill-active {
   border-color: transparent;
   color: #000;
-  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 30%, var(--copper-metal-dk) 55%, var(--copper-metal) 80%, var(--copper-metal-hi) 100%);
+  background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
     inset 0 -2px 3px rgba(0, 0, 0, 0.45);
@@ -265,9 +271,9 @@ body {
   background-image: linear-gradient(
     90deg,
     var(--copper-metal-dk) 0%,
-    var(--copper-metal-hi) 22%,
-    var(--copper-metal) 45%,
-    var(--copper-metal-hi) 68%,
+    var(--copper-metal-hi) 25%,
+    var(--copper-metal) 50%,
+    var(--copper-metal-hi) 75%,
     var(--copper-metal-dk) 100%
   );
 }
