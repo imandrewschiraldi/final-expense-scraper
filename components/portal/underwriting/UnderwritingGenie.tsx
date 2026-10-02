@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import productsData from "@/data/underwriting/products.json";
 import wlConditions from "@/data/underwriting/conditions-whole-life.json";
 import tmConditions from "@/data/underwriting/conditions-term-ul-iul.json";
 import medications from "@/data/underwriting/medications.json";
-import { Condition, Medication, Product, Sheet } from "@/lib/underwriting/types";
-import { bmi } from "@/lib/underwriting/engine";
+import { BandedResults, Condition, Medication, Product, Sheet } from "@/lib/underwriting/types";
+import { BANDS, bmi } from "@/lib/underwriting/engine";
 import { useSheetState } from "@/lib/underwriting/useSheetState";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -19,10 +19,31 @@ const WL_CONDITIONS = wlConditions as Condition[];
 const TM_CONDITIONS = tmConditions as Condition[];
 const MEDICATIONS = medications as Medication;
 
-const SHEETS: { key: Sheet; label: string }[] = [
-  { key: "wl", label: "Final Expense / WL" },
-  { key: "tm", label: "Term · UL · IUL" },
+// Three buttons to match Quote Tool's own FEX/Term/IUL split, even though
+// the underlying data only has two sheets (see package README: the WL
+// sheet, and a combined Term/UL/IUL sheet). Term and IUL share the "tm"
+// sheet — same client intake, same condition search, same engine run —
+// and differ only in which carrier products the results grid shows,
+// filtered by each product's `cov` field.
+type View = "FEX" | "TERM" | "IUL";
+const VIEWS: { key: View; label: string }[] = [
+  { key: "FEX", label: "FEX" },
+  { key: "TERM", label: "Term" },
+  { key: "IUL", label: "IUL" },
 ];
+const VIEW_SHEET: Record<View, Sheet> = { FEX: "wl", TERM: "tm", IUL: "tm" };
+
+function isIulProduct(product: Product) {
+  return /indexed/i.test(product.cov ?? "");
+}
+// FEX's sheet (wholeLife) has no IUL products to begin with, so it never
+// needs filtering; IUL keeps only the indexed products, Term keeps
+// everything else on that sheet (plain term plans and the one non-indexed
+// universal life product).
+function matchesView(product: Product, view: View) {
+  if (view === "FEX") return true;
+  return isIulProduct(product) === (view === "IUL");
+}
 
 const FEET_OPTIONS = [4, 5, 6, 7];
 const INCH_OPTIONS = Array.from({ length: 12 }, (_, i) => i);
@@ -36,11 +57,13 @@ const INCH_OPTIONS = Array.from({ length: 12 }, (_, i) => i);
  * rather than cards reshuffling as they type.
  *
  * Both sheets' state stays mounted simultaneously (two useSheetState
- * calls) so switching tabs never loses what was already entered on the
- * other one.
+ * calls, one per underlying sheet) so switching views never loses what
+ * was already entered on another one — including between Term and IUL,
+ * which share the same "tm" state outright.
  */
 export function UnderwritingGenie() {
-  const [sheet, setSheet] = useState<Sheet>("wl");
+  const [view, setView] = useState<View>("FEX");
+  const sheet = VIEW_SHEET[view];
 
   const wl = useSheetState("wl", products.wholeLife, WL_CONDITIONS);
   const tm = useSheetState("tm", products.termUlIul, TM_CONDITIONS);
@@ -49,20 +72,28 @@ export function UnderwritingGenie() {
 
   const bmiValue = bmi(active.ft, active.inch, parseFloat(active.wt) || 0);
 
+  const displayedResults = useMemo<BandedResults | null>(() => {
+    if (!active.results) return null;
+    if (view === "FEX") return active.results;
+    const filtered = {} as BandedResults;
+    for (const b of BANDS) filtered[b.key] = active.results[b.key].filter((v) => matchesView(v.product, view));
+    return filtered;
+  }, [active.results, view]);
+
   return (
     <div>
       <div className="mb-5 flex items-center gap-2">
-        {SHEETS.map((s) => (
+        {VIEWS.map((v) => (
           <button
-            key={s.key}
+            key={v.key}
             type="button"
-            onClick={() => setSheet(s.key)}
+            onClick={() => setView(v.key)}
             className={cn(
               "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-              sheet === s.key ? "toggle-pill-active" : "border-border text-muted hover:border-copper hover:text-foreground",
+              view === v.key ? "toggle-pill-active" : "border-border text-muted hover:border-copper hover:text-foreground",
             )}
           >
-            {s.label}
+            {v.label}
           </button>
         ))}
       </div>
@@ -142,7 +173,7 @@ export function UnderwritingGenie() {
         )}
       </div>
 
-      <ResultsBands results={active.results} hasSelections={active.selected.length > 0} />
+      <ResultsBands results={displayedResults} hasSelections={active.selected.length > 0} />
 
       <p className="mt-8 text-xs text-muted">
         Internal use only — Tier 1 Financial. This tool summarizes carrier cheat-sheet guidance for field pre-qualification. It is
