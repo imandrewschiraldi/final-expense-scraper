@@ -394,6 +394,45 @@
       "lb": "",
       "ageMin": null,
       "ageMax": null
+    },
+    {
+      "id": "wl_AG",
+      "name": "Americo Eagle Select 1",
+      "cov": "LEVEL",
+      "face": "$5,000 \u2013 $40,000",
+      "age": "40 - 85",
+      "build": "No published build chart \u2014 contact Americo Agent Services (800.231.0801 / Agent.Services@americo.com) for build questions.",
+      "sales": "",
+      "quote": "",
+      "pay": "",
+      "ageMin": 40,
+      "ageMax": 85
+    },
+    {
+      "id": "wl_AH",
+      "name": "Americo Eagle Select 2",
+      "cov": "LEVEL",
+      "face": "$5,000 \u2013 $40,000",
+      "age": "40 - 85",
+      "build": "No published build chart \u2014 contact Americo Agent Services (800.231.0801 / Agent.Services@americo.com) for build questions.",
+      "sales": "",
+      "quote": "",
+      "pay": "",
+      "ageMin": 40,
+      "ageMax": 85
+    },
+    {
+      "id": "wl_AI",
+      "name": "Americo Eagle Select 3",
+      "cov": "GRADED (2-yr waiting period)",
+      "face": "$5,000 \u2013 $25,000",
+      "age": "40 - 75",
+      "build": "No published build chart \u2014 contact Americo Agent Services (800.231.0801 / Agent.Services@americo.com) for build questions.",
+      "sales": "",
+      "quote": "",
+      "pay": "",
+      "ageMin": 40,
+      "ageMax": 75
     }
   ],
   "termUlIul": [
