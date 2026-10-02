@@ -229,15 +229,16 @@ body {
    background behind it (not transparent) since -webkit-text-fill-color
    punches a hole straight through to whatever's behind the text.
 
-   The base color dominates (wide bands at each end) with a single crisp
-   highlight streak crossing the middle — not three separate highlight
-   peaks. A wide element (a heading, a big dollar figure) spends most of
-   its width interpolating BETWEEN stops, so spreading the highlight
-   across three points (as the surface/badge gradients do, fine at icon
-   size) makes most of the rendered text read as the lighter blend color
-   instead of the rich base tone. */
+   Copper uses the same dark/light/dark/light/dark bevel as the icon-tile
+   and badge gradients (.metal-copper-surface, .toggle-pill-active), just
+   on a shallower 100deg angle so it reads as a horizontal sweep across
+   wide text instead of a diagonal corner-to-corner one. Green/red keep
+   the lighter single-streak treatment: base dominant, one highlight
+   crossing the middle — a wide element spends most of its width
+   interpolating BETWEEN stops, so three highlight points (fine at icon
+   size) would wash most of the text out to the lighter blend color. */
 .metal-copper-text {
-  background-image: linear-gradient(100deg, var(--copper-metal) 0%, var(--copper-metal) 38%, var(--copper-metal-hi) 50%, var(--copper-metal) 62%, var(--copper-metal) 100%);
+  background-image: linear-gradient(100deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
