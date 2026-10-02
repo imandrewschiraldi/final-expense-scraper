@@ -668,6 +668,33 @@
     ],
     "beyond": "REVIEW",
     "t": "UHL guide \u2014 Drugs (illegal/abused prescriptions) or alcohol, treatment/advised to have treatment <12 mnths: N \u00b7 Drugs (illegal/abused prescriptions) or alcohol, treatment/advised to have treatment >12 mnths, <2 yrs: N \u00b7 Drugs (illegal/abused prescriptions) or alcohol, treatment/advised to have treatment >2 yrs, <5 yrs: N"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 3,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide: clean record 3+ years \u2192 Select 1 & 2 (Level). Treatment/rehab history within the last 24\u201336 months \u2192 Select 3 only (Graded); Select 3 accepts per the agency's guide. Current/active use still declines on all three tiers regardless of years entered \u2014 confirm with the client."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 3,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide: clean record 3+ years \u2192 Select 1 & 2 (Level). Treatment/rehab history within the last 24\u201336 months \u2192 Select 3 only (Graded); Select 3 accepts per the agency's guide. Current/active use still declines on all three tiers regardless of years entered \u2014 confirm with the client."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: clean record 3+ years \u2192 Select 1 & 2 (Level). Treatment/rehab history within the last 24\u201336 months \u2192 Select 3 only (Graded); Select 3 accepts per the agency's guide. Current/active use still declines on all three tiers regardless of years entered \u2014 confirm with the client."
    }
   }
  },
@@ -937,6 +964,18 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Alzheimer's Disease: N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Alzheimer's/Dementia \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Alzheimer's/Dementia \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: Alzheimer's/Dementia \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -1045,6 +1084,19 @@
    "wl_AF": {
     "k": "decline",
     "t": "Decline"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: amputation due to diabetes \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: amputation due to diabetes \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: amputation due to diabetes \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -2177,6 +2229,18 @@
     "k": "ok",
     "tier": "PREFERRED",
     "t": "Preferred"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: current angina \u2014 automatic decline on all three Eagle Select tiers. Assumes this entry means current/active angina, as specified."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: current angina \u2014 automatic decline on all three Eagle Select tiers. Assumes this entry means current/active angina, as specified."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: current angina \u2014 automatic decline on all three Eagle Select tiers. Assumes this entry means current/active angina, as specified."
    }
   }
  },
@@ -3076,6 +3140,21 @@
     "k": "ok",
     "tier": "APPROVED",
     "t": "UHL guide \u2014 Mild Asthma & no hospitalization w/in past 2yrs: Y"
+   },
+   "wl_AG": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: mild asthma \u2192 Select 1 & 2 (Level); Select 3 also accepts. This entry bundles Mild/Moderate \u2014 the agency's guide only explicitly covers the mild case."
+   },
+   "wl_AH": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: mild asthma \u2192 Select 1 & 2 (Level); Select 3 also accepts. This entry bundles Mild/Moderate \u2014 the agency's guide only explicitly covers the mild case."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: mild asthma \u2192 Select 1 & 2 (Level); Select 3 also accepts. This entry bundles Mild/Moderate \u2014 the agency's guide only explicitly covers the mild case."
    }
   }
  },
@@ -3409,6 +3488,21 @@
     ],
     "beyond": "DECLINE",
     "t": "UHL guide \u2014 Irregular Heart Rhythm <12 mnths: N \u00b7 Irregular Heart Rhythm >12 mnths, <2 yrs: N \u00b7 Irregular Heart Rhythm >2 yrs, <5 yrs: N \u00b7 Irregular Heart Rhythm >5yrs: N"
+   },
+   "wl_AG": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: controlled Afib on standard blood thinners \u2192 Select 1 & 2 (Level); Select 3 also accepts. Assumes the standard/controlled case \u2014 the agency's guide doesn't address uncontrolled Afib or ones off blood thinners."
+   },
+   "wl_AH": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: controlled Afib on standard blood thinners \u2192 Select 1 & 2 (Level); Select 3 also accepts. Assumes the standard/controlled case \u2014 the agency's guide doesn't address uncontrolled Afib or ones off blood thinners."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: controlled Afib on standard blood thinners \u2192 Select 1 & 2 (Level); Select 3 also accepts. Assumes the standard/controlled case \u2014 the agency's guide doesn't address uncontrolled Afib or ones off blood thinners."
    }
   }
  },
@@ -3907,6 +4001,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Bipolar Disorder: N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Bipolar Disorder \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Bipolar Disorder \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Bipolar Disorder \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -4395,6 +4502,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Lung disease/Respiratory Disease (including chronic bronchitis, emphysema, chronic lung disease excluding mild, controlled asthma): N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: chronic bronchitis \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: chronic bronchitis \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: chronic bronchitis \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -4554,6 +4674,33 @@
    "wl_AF": {
     "k": "na",
     "t": "NA"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
    }
   }
  },
@@ -4711,6 +4858,33 @@
    "wl_AF": {
     "k": "review",
     "t": "If younger than 17, Decline"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
    }
   }
  },
@@ -5051,6 +5225,18 @@
    "wl_AF": {
     "k": "decline",
     "t": "Decline"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: active cancer/currently in chemo or radiation \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: active cancer/currently in chemo or radiation \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: active cancer/currently in chemo or radiation \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -5317,6 +5503,33 @@
     ],
     "beyond": "DECLINE",
     "t": "UHL guide \u2014 Cancer diagnosis/Treatment <12mnths: N \u00b7 Cancer diagnosis/Treatment >12mnths, <2yrs: N \u00b7 Cancer diagnosis/Treatment >2yrs, <5 yrs: N \u00b7 Cancer Treatment >5 yrs: N"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 3,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide: cancer-free or in remission more than 2\u20133 years \u2192 Select 1 & 2 (Level) \u2014 used the stricter 3-year reading since the agency's own wording was a range (\"2 to 3 years\"). Within 24 months \u2192 Select 3 only (Graded); Select 3 accepts at any recency per the agency's guide (excludes standard skin cancers)."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 3,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide: cancer-free or in remission more than 2\u20133 years \u2192 Select 1 & 2 (Level) \u2014 used the stricter 3-year reading since the agency's own wording was a range (\"2 to 3 years\"). Within 24 months \u2192 Select 3 only (Graded); Select 3 accepts at any recency per the agency's guide (excludes standard skin cancers)."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: cancer-free or in remission more than 2\u20133 years \u2192 Select 1 & 2 (Level) \u2014 used the stricter 3-year reading since the agency's own wording was a range (\"2 to 3 years\"). Within 24 months \u2192 Select 3 only (Graded); Select 3 accepts at any recency per the agency's guide (excludes standard skin cancers)."
    }
   }
  },
@@ -5977,6 +6190,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Liver disease (including cirrhosis, Hepatitis B or C): N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Cirrhosis, Stage A/B (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Cirrhosis, Stage A/B (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Cirrhosis, Stage A/B (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -6158,6 +6384,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Liver disease (including cirrhosis, Hepatitis B or C): N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Cirrhosis, Stage C (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Cirrhosis, Stage C (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Cirrhosis, Stage C (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -6496,6 +6735,18 @@
     ],
     "beyond": "DECLINE",
     "t": "UHL guide \u2014 Congestive Heart Failure <12 mnths: N \u00b7 Congestive Heart Failure >12 mnths, < 2yrs: N \u00b7 Congestive Heart Failure > 2yrs, < 5yrs: N \u00b7 Congestive Heart Failure >5 yrs: N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Congestive Heart Failure (CHF) \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Congestive Heart Failure (CHF) \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: Congestive Heart Failure (CHF) \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -6780,6 +7031,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 COPD - never on Oxygen: N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: COPD \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: COPD \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: COPD \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -7754,6 +8018,21 @@
    "wl_AF": {
     "k": "review",
     "t": "If younger than 17, Decline"
+   },
+   "wl_AG": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: well-controlled depression or mild anxiety \u2192 Select 1 & 2 (Level); Select 3 also accepts. Assumes the well-controlled/mild case, as specified."
+   },
+   "wl_AH": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: well-controlled depression or mild anxiety \u2192 Select 1 & 2 (Level); Select 3 also accepts. Assumes the well-controlled/mild case, as specified."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: well-controlled depression or mild anxiety \u2192 Select 1 & 2 (Level); Select 3 also accepts. Assumes the well-controlled/mild case, as specified."
    }
   }
  },
@@ -7861,6 +8140,21 @@
    "wl_AF": {
     "k": "na",
     "t": "NA"
+   },
+   "wl_AG": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: well-controlled depression or mild anxiety \u2192 Select 1 & 2 (Level); Select 3 also accepts. Assumes the well-controlled/mild case, as specified."
+   },
+   "wl_AH": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: well-controlled depression or mild anxiety \u2192 Select 1 & 2 (Level); Select 3 also accepts. Assumes the well-controlled/mild case, as specified."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: well-controlled depression or mild anxiety \u2192 Select 1 & 2 (Level); Select 3 also accepts. Assumes the well-controlled/mild case, as specified."
    }
   }
  },
@@ -8100,6 +8394,21 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Diabetes (insulin treatment): N"
+   },
+   "wl_AG": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: standard Type 2 diabetes controlled with oral meds or standard insulin, no vascular complications \u2192 Select 1 & 2 (Level); Select 3 also accepts. Diabetes WITH vascular complications isn't addressed by the agency's guide."
+   },
+   "wl_AH": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: standard Type 2 diabetes controlled with oral meds or standard insulin, no vascular complications \u2192 Select 1 & 2 (Level); Select 3 also accepts. Diabetes WITH vascular complications isn't addressed by the agency's guide."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: standard Type 2 diabetes controlled with oral meds or standard insulin, no vascular complications \u2192 Select 1 & 2 (Level); Select 3 also accepts. Diabetes WITH vascular complications isn't addressed by the agency's guide."
    }
   }
  },
@@ -8214,6 +8523,21 @@
    "wl_AF": {
     "k": "review",
     "t": "If younger than 17, Decline"
+   },
+   "wl_AG": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: standard Type 2 diabetes controlled with oral meds or standard insulin, no vascular complications \u2192 Select 1 & 2 (Level); Select 3 also accepts. Diabetes WITH vascular complications isn't addressed by the agency's guide."
+   },
+   "wl_AH": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: standard Type 2 diabetes controlled with oral meds or standard insulin, no vascular complications \u2192 Select 1 & 2 (Level); Select 3 also accepts. Diabetes WITH vascular complications isn't addressed by the agency's guide."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: standard Type 2 diabetes controlled with oral meds or standard insulin, no vascular complications \u2192 Select 1 & 2 (Level); Select 3 also accepts. Diabetes WITH vascular complications isn't addressed by the agency's guide."
    }
   }
  },
@@ -8349,6 +8673,21 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Diabetes (no insulin): N"
+   },
+   "wl_AG": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: standard Type 2 diabetes controlled with oral meds or standard insulin, no vascular complications \u2192 Select 1 & 2 (Level); Select 3 also accepts. Diabetes WITH vascular complications isn't addressed by the agency's guide."
+   },
+   "wl_AH": {
+    "k": "ok",
+    "tier": "APPROVED",
+    "t": "Agency guide: standard Type 2 diabetes controlled with oral meds or standard insulin, no vascular complications \u2192 Select 1 & 2 (Level); Select 3 also accepts. Diabetes WITH vascular complications isn't addressed by the agency's guide."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: standard Type 2 diabetes controlled with oral meds or standard insulin, no vascular complications \u2192 Select 1 & 2 (Level); Select 3 also accepts. Diabetes WITH vascular complications isn't addressed by the agency's guide."
    }
   }
  },
@@ -9839,6 +10178,33 @@
     ],
     "beyond": "REVIEW",
     "t": "UHL guide \u2014 Drugs (illegal/abused prescriptions) or alcohol, treatment/advised to have treatment <12 mnths: N \u00b7 Drugs (illegal/abused prescriptions) or alcohol, treatment/advised to have treatment >12 mnths, <2 yrs: N \u00b7 Drugs (illegal/abused prescriptions) or alcohol, treatment/advised to have treatment >2 yrs, <5 yrs: N"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 3,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide: clean record 3+ years \u2192 Select 1 & 2 (Level). Treatment/rehab history within the last 24\u201336 months \u2192 Select 3 only (Graded); Select 3 accepts per the agency's guide. Current/active use still declines on all three tiers regardless of years entered \u2014 confirm with the client."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 3,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide: clean record 3+ years \u2192 Select 1 & 2 (Level). Treatment/rehab history within the last 24\u201336 months \u2192 Select 3 only (Graded); Select 3 accepts per the agency's guide. Current/active use still declines on all three tiers regardless of years entered \u2014 confirm with the client."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: clean record 3+ years \u2192 Select 1 & 2 (Level). Treatment/rehab history within the last 24\u201336 months \u2192 Select 3 only (Graded); Select 3 accepts per the agency's guide. Current/active use still declines on all three tiers regardless of years entered \u2014 confirm with the client."
    }
   }
  },
@@ -10374,6 +10740,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Lung disease/Respiratory Disease (including chronic bronchitis, emphysema, chronic lung disease excluding mild, controlled asthma): N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: emphysema \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: emphysema \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: emphysema \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -11441,6 +11820,33 @@
     ],
     "beyond": "DECLINE",
     "t": "UHL guide \u2014 Heart Attack/Heart Surgery <12 mnths: N \u00b7 Heart Attack/Heart Surgery >12 mnths, <2 yrs: N \u00b7 Heart Attack/Heart Surgery >2 yrs, <5 yrs: N \u00b7 Heart Attack/Heart Surgery >5yrs: N"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
    }
   }
  },
@@ -12224,6 +12630,33 @@
     ],
     "beyond": "DECLINE",
     "t": "UHL guide \u2014 Heart Attack/Heart Surgery <12 mnths: N \u00b7 Heart Attack/Heart Surgery >12 mnths, <2 yrs: N \u00b7 Heart Attack/Heart Surgery >2 yrs, <5 yrs: N \u00b7 Heart Attack/Heart Surgery >5yrs: N"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
    }
   }
  },
@@ -14032,6 +14465,18 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Huntington's disease: N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Huntington's chorea \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Huntington's chorea \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: Huntington's chorea \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -14138,6 +14583,18 @@
    "wl_AF": {
     "k": "blank",
     "t": ""
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: current illegal drug use \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: current illegal drug use \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: current illegal drug use \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -14244,6 +14701,18 @@
    "wl_AF": {
     "k": "decline",
     "t": "Decline"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: current incarceration \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: current incarceration \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: current incarceration \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -14416,6 +14885,18 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Kidney dialysis: N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: dialysis \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: dialysis \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: dialysis \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -14579,6 +15060,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Kidney disease/no dialysis (including renal insufficiency): N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Chronic Kidney Disease (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Chronic Kidney Disease (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Chronic Kidney Disease (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -14709,6 +15203,19 @@
     "k": "ok",
     "tier": "STANDARD",
     "t": "Standard"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Kidney Disease, Stage 1\u20132 (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Kidney Disease, Stage 1\u20132 (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Kidney Disease, Stage 1\u20132 (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -14832,6 +15339,19 @@
     "k": "ok",
     "tier": "STANDARD",
     "t": "Standard"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Kidney Disease, Stage 3 (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Kidney Disease, Stage 3 (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Kidney Disease, Stage 3 (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -15080,6 +15600,18 @@
     "k": "ok",
     "tier": "STANDARD",
     "t": "Standard"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: kidney failure \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: kidney failure \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: kidney failure \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -15315,6 +15847,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Kidney disease/no dialysis (including renal insufficiency): N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Kidney/Renal Disease, no dialysis (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Kidney/Renal Disease, no dialysis (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Kidney/Renal Disease, no dialysis (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -15421,6 +15966,19 @@
    "wl_AF": {
     "k": "blank",
     "t": ""
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Liver Disease (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Liver Disease (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Liver Disease (prior to failure) \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -15729,6 +16287,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 SLE (Lupus): N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: systemic Lupus \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: systemic Lupus \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: systemic Lupus \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -16557,6 +17128,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Multiple Sclerosis: N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Multiple Sclerosis \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Multiple Sclerosis \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Multiple Sclerosis \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -17597,6 +18181,18 @@
    "wl_UHL6": {
     "k": "review",
     "t": "UHL guide \u2014 Sleep Apnea - no oxygen use (cpap alright): Y (Maybe Pref'd)"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: continuous oxygen equipment \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: continuous oxygen equipment \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: continuous oxygen equipment \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -18228,6 +18824,19 @@
    "wl_UHL6": {
     "k": "decline",
     "t": "UHL guide \u2014 Parkinson's disease: N"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: Parkinson's disease \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: Parkinson's disease \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide: Parkinson's disease \u2014 Select 3 only (Graded); not eligible for Select 1 or 2."
    }
   }
  },
@@ -18708,6 +19317,18 @@
     ],
     "beyond": "APPROVED",
     "t": "If treated within 2 years, Decline"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: current probation/parole \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: current probation/parole \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: current probation/parole \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -21051,6 +21672,33 @@
     ],
     "beyond": "DECLINE",
     "t": "UHL guide \u2014 Heart Stent <12 months: N \u00b7 Heart Stent >12 mnths, <2 yrs: N \u00b7 Heart Stent >2 yrs, <5 yrs: N \u00b7 Heart Stent >5 yrs: N"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
    }
   }
  },
@@ -21375,6 +22023,33 @@
     ],
     "beyond": "DECLINE",
     "t": "UHL guide \u2014 Stroke w/in 12mnths: N \u00b7 Stroke >12mnths, but <2yrs ago: N \u00b7 Stroke >2 yr, <5yrs: N \u00b7 Stroke >5yrs ago: N"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
    }
   }
  },
@@ -21827,6 +22502,33 @@
    "wl_AF": {
     "k": "review",
     "t": "If younger than 17, Decline"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
    }
   }
  },
@@ -22181,6 +22883,18 @@
    "wl_AF": {
     "k": "decline",
     "t": "Decline"
+   },
+   "wl_AG": {
+    "k": "decline",
+    "t": "Agency guide: terminal diagnosis \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AH": {
+    "k": "decline",
+    "t": "Agency guide: terminal diagnosis \u2014 automatic decline on all three Eagle Select tiers."
+   },
+   "wl_AI": {
+    "k": "decline",
+    "t": "Agency guide: terminal diagnosis \u2014 automatic decline on all three Eagle Select tiers."
    }
   }
  },
@@ -22466,6 +23180,33 @@
     ],
     "beyond": "DECLINE",
     "t": "UHL guide \u2014 TIA w/in 2yrs: N \u00b7 TIA >2 yrs, <5 yrs: N \u00b7 TIA >5yrs: N"
+   },
+   "wl_AG": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AH": {
+    "k": "time",
+    "tiers": [
+     {
+      "max": 2,
+      "out": "DECLINE"
+     }
+    ],
+    "beyond": "APPROVED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
+   },
+   "wl_AI": {
+    "k": "ok",
+    "tier": "GRADED",
+    "t": "Agency guide (Eagle Select): remote history (2+ yrs) of heart attack/stroke/TIA/stent or other heart-circulatory procedure \u2192 Select 1 & 2 (Level). Recent (within 12\u201324 months) \u2192 Select 3 only (Graded). Select 3 accepts this condition at any recency per the agency's guide (no stated exclusion window) \u2014 confirm nothing else disqualifies."
    }
   }
  },
