@@ -1,9 +1,10 @@
 import { UnderwritingGenie } from "@/components/portal/underwriting/UnderwritingGenie";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export default function UnderwritingGeniePage() {
   return (
     <div>
-      <h1 className="font-condensed mb-6 text-2xl font-extrabold tracking-wide text-white uppercase">Underwriting Genie</h1>
+      <PageHeading slug="underwriting-genie" alt="Underwriting Genie" />
       <UnderwritingGenie />
     </div>
   );
