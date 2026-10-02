@@ -1,0 +1,697 @@
+{
+  "metformin": {
+    "wl": 66,
+    "tm": 59,
+    "label": "Diabetes (No Insulin)"
+  },
+  "glipizide": {
+    "wl": 66,
+    "tm": 59,
+    "label": "Diabetes (No Insulin)"
+  },
+  "januvia": {
+    "wl": 66,
+    "tm": 59,
+    "label": "Diabetes (No Insulin)"
+  },
+  "jardiance": {
+    "wl": 66,
+    "tm": 59,
+    "label": "Diabetes (No Insulin)"
+  },
+  "ozempic": {
+    "wl": 66,
+    "tm": 59,
+    "label": "Diabetes (No Insulin)"
+  },
+  "trulicity": {
+    "wl": 66,
+    "tm": 59,
+    "label": "Diabetes (No Insulin)"
+  },
+  "glimepiride": {
+    "wl": 66,
+    "tm": 59,
+    "label": "Diabetes (No Insulin)"
+  },
+  "insulin": {
+    "wl": 64,
+    "tm": 58,
+    "label": "Diabetes (Insulin)"
+  },
+  "lantus": {
+    "wl": 64,
+    "tm": 58,
+    "label": "Diabetes (Insulin)"
+  },
+  "humalog": {
+    "wl": 64,
+    "tm": 58,
+    "label": "Diabetes (Insulin)"
+  },
+  "novolog": {
+    "wl": 64,
+    "tm": 58,
+    "label": "Diabetes (Insulin)"
+  },
+  "tresiba": {
+    "wl": 64,
+    "tm": 58,
+    "label": "Diabetes (Insulin)"
+  },
+  "gabapentin": {
+    "wl": 69,
+    "tm": 61,
+    "label": "Diabetic Complications"
+  },
+  "lyrica": {
+    "wl": 69,
+    "tm": 61,
+    "label": "Diabetic Complications"
+  },
+  "pregabalin": {
+    "wl": 69,
+    "tm": 61,
+    "label": "Diabetic Complications"
+  },
+  "lisinopril": {
+    "wl": 98,
+    "tm": 92,
+    "label": "High Blood Pressure"
+  },
+  "amlodipine": {
+    "wl": 98,
+    "tm": 92,
+    "label": "High Blood Pressure"
+  },
+  "losartan": {
+    "wl": 98,
+    "tm": 92,
+    "label": "High Blood Pressure"
+  },
+  "metoprolol": {
+    "wl": 98,
+    "tm": 92,
+    "label": "High Blood Pressure"
+  },
+  "hydrochlorothiazide": {
+    "wl": 98,
+    "tm": 92,
+    "label": "High Blood Pressure"
+  },
+  "atenolol": {
+    "wl": 98,
+    "tm": 92,
+    "label": "High Blood Pressure"
+  },
+  "carvedilol": {
+    "wl": 51,
+    "tm": 47,
+    "label": "Congestive Heart Failure"
+  },
+  "furosemide": {
+    "wl": 51,
+    "tm": 47,
+    "label": "Congestive Heart Failure"
+  },
+  "lasix": {
+    "wl": 51,
+    "tm": 47,
+    "label": "Congestive Heart Failure"
+  },
+  "entresto": {
+    "wl": 51,
+    "tm": 47,
+    "label": "Congestive Heart Failure"
+  },
+  "spironolactone": {
+    "wl": 51,
+    "tm": 47,
+    "label": "Congestive Heart Failure"
+  },
+  "eliquis": {
+    "wl": 35,
+    "tm": 31,
+    "label": "Blood Clots"
+  },
+  "xarelto": {
+    "wl": 35,
+    "tm": 31,
+    "label": "Blood Clots"
+  },
+  "warfarin": {
+    "wl": 35,
+    "tm": 31,
+    "label": "Blood Clots"
+  },
+  "coumadin": {
+    "wl": 35,
+    "tm": 31,
+    "label": "Blood Clots"
+  },
+  "pradaxa": {
+    "wl": 35,
+    "tm": 31,
+    "label": "Blood Clots"
+  },
+  "plavix": {
+    "wl": 156,
+    "tm": 148,
+    "label": "Stroke"
+  },
+  "clopidogrel": {
+    "wl": 156,
+    "tm": 148,
+    "label": "Stroke"
+  },
+  "brilinta": {
+    "wl": 86,
+    "tm": 80,
+    "label": "Heart Attack"
+  },
+  "nitroglycerin": {
+    "wl": 23,
+    "tm": 17,
+    "label": "Angina"
+  },
+  "nitrostat": {
+    "wl": 23,
+    "tm": 17,
+    "label": "Angina"
+  },
+  "ranexa": {
+    "wl": 23,
+    "tm": 17,
+    "label": "Angina"
+  },
+  "amiodarone": {
+    "wl": 30,
+    "tm": 24,
+    "label": "Atrial Fibrillation"
+  },
+  "digoxin": {
+    "wl": 30,
+    "tm": 24,
+    "label": "Atrial Fibrillation"
+  },
+  "flecainide": {
+    "wl": 30,
+    "tm": 24,
+    "label": "Atrial Fibrillation"
+  },
+  "sotalol": {
+    "wl": 30,
+    "tm": 24,
+    "label": "Atrial Fibrillation"
+  },
+  "albuterol": {
+    "wl": 27,
+    "tm": 21,
+    "label": "Asthma"
+  },
+  "advair": {
+    "wl": 53,
+    "tm": 43,
+    "label": "COPD"
+  },
+  "symbicort": {
+    "wl": 53,
+    "tm": 43,
+    "label": "COPD"
+  },
+  "breo": {
+    "wl": 53,
+    "tm": 43,
+    "label": "COPD"
+  },
+  "spiriva": {
+    "wl": 53,
+    "tm": 43,
+    "label": "COPD"
+  },
+  "trelegy": {
+    "wl": 53,
+    "tm": 43,
+    "label": "COPD"
+  },
+  "anoro": {
+    "wl": 53,
+    "tm": 43,
+    "label": "COPD"
+  },
+  "incruse": {
+    "wl": 53,
+    "tm": 43,
+    "label": "COPD"
+  },
+  "prednisone": {
+    "wl": 140,
+    "tm": 135,
+    "label": "Rheumatoid Arthritis"
+  },
+  "methotrexate": {
+    "wl": 140,
+    "tm": 135,
+    "label": "Rheumatoid Arthritis"
+  },
+  "humira": {
+    "wl": 140,
+    "tm": 135,
+    "label": "Rheumatoid Arthritis"
+  },
+  "enbrel": {
+    "wl": 140,
+    "tm": 135,
+    "label": "Rheumatoid Arthritis"
+  },
+  "plaquenil": {
+    "wl": 114,
+    "tm": 103,
+    "label": "Lupus"
+  },
+  "sertraline": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "zoloft": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "prozac": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "fluoxetine": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "lexapro": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "escitalopram": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "citalopram": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "wellbutrin": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "bupropion": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "effexor": {
+    "wl": 63,
+    "tm": 57,
+    "label": "Depression / Anxiety (Moderate / Severe)"
+  },
+  "venlafaxine": {
+    "wl": 63,
+    "tm": 57,
+    "label": "Depression / Anxiety (Moderate / Severe)"
+  },
+  "cymbalta": {
+    "wl": 63,
+    "tm": 57,
+    "label": "Depression / Anxiety (Moderate / Severe)"
+  },
+  "duloxetine": {
+    "wl": 63,
+    "tm": 57,
+    "label": "Depression / Anxiety (Moderate / Severe)"
+  },
+  "xanax": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "alprazolam": {
+    "wl": 62,
+    "tm": 56,
+    "label": "Depression / Anxiety (Mild)"
+  },
+  "klonopin": {
+    "wl": 63,
+    "tm": 57,
+    "label": "Depression / Anxiety (Moderate / Severe)"
+  },
+  "clonazepam": {
+    "wl": 63,
+    "tm": 57,
+    "label": "Depression / Anxiety (Moderate / Severe)"
+  },
+  "lithium": {
+    "wl": 34,
+    "tm": 29,
+    "label": "Bipolar"
+  },
+  "lamictal": {
+    "wl": 34,
+    "tm": 29,
+    "label": "Bipolar"
+  },
+  "lamotrigine": {
+    "wl": 34,
+    "tm": 29,
+    "label": "Bipolar"
+  },
+  "depakote": {
+    "wl": 34,
+    "tm": 29,
+    "label": "Bipolar"
+  },
+  "abilify": {
+    "wl": 34,
+    "tm": 29,
+    "label": "Bipolar"
+  },
+  "seroquel": {
+    "wl": 147,
+    "tm": 141,
+    "label": "Schizophrenia"
+  },
+  "quetiapine": {
+    "wl": 147,
+    "tm": 141,
+    "label": "Schizophrenia"
+  },
+  "risperdal": {
+    "wl": 147,
+    "tm": 141,
+    "label": "Schizophrenia"
+  },
+  "risperidone": {
+    "wl": 147,
+    "tm": 141,
+    "label": "Schizophrenia"
+  },
+  "zyprexa": {
+    "wl": 147,
+    "tm": 141,
+    "label": "Schizophrenia"
+  },
+  "latuda": {
+    "wl": 34,
+    "tm": 29,
+    "label": "Bipolar"
+  },
+  "aricept": {
+    "wl": 15,
+    "tm": 14,
+    "label": "Alzheimer's or Dementia"
+  },
+  "donepezil": {
+    "wl": 15,
+    "tm": 14,
+    "label": "Alzheimer's or Dementia"
+  },
+  "memantine": {
+    "wl": 15,
+    "tm": 14,
+    "label": "Alzheimer's or Dementia"
+  },
+  "namenda": {
+    "wl": 15,
+    "tm": 14,
+    "label": "Alzheimer's or Dementia"
+  },
+  "keppra": {
+    "wl": 82,
+    "tm": 74,
+    "label": "Epilepsy / Seizures"
+  },
+  "levetiracetam": {
+    "wl": 82,
+    "tm": 74,
+    "label": "Epilepsy / Seizures"
+  },
+  "dilantin": {
+    "wl": 82,
+    "tm": 74,
+    "label": "Epilepsy / Seizures"
+  },
+  "phenytoin": {
+    "wl": 82,
+    "tm": 74,
+    "label": "Epilepsy / Seizures"
+  },
+  "tegretol": {
+    "wl": 82,
+    "tm": 74,
+    "label": "Epilepsy / Seizures"
+  },
+  "carbamazepine": {
+    "wl": 82,
+    "tm": 74,
+    "label": "Epilepsy / Seizures"
+  },
+  "sinemet": {
+    "wl": 134,
+    "tm": 124,
+    "label": "Parkinsons"
+  },
+  "carbidopa": {
+    "wl": 134,
+    "tm": 124,
+    "label": "Parkinsons"
+  },
+  "levodopa": {
+    "wl": 134,
+    "tm": 124,
+    "label": "Parkinsons"
+  },
+  "ropinirole": {
+    "wl": 134,
+    "tm": 124,
+    "label": "Parkinsons"
+  },
+  "suboxone": {
+    "wl": 77,
+    "tm": 69,
+    "label": "Drug Abuse"
+  },
+  "methadone": {
+    "wl": 77,
+    "tm": 69,
+    "label": "Drug Abuse"
+  },
+  "naltrexone": {
+    "wl": 13,
+    "tm": 12,
+    "label": "Alcohol Abuse"
+  },
+  "antabuse": {
+    "wl": 13,
+    "tm": 12,
+    "label": "Alcohol Abuse"
+  },
+  "disulfiram": {
+    "wl": 13,
+    "tm": 12,
+    "label": "Alcohol Abuse"
+  },
+  "vivitrol": {
+    "wl": 77,
+    "tm": 69,
+    "label": "Drug Abuse"
+  },
+  "campral": {
+    "wl": 13,
+    "tm": 12,
+    "label": "Alcohol Abuse"
+  },
+  "oxycodone": {
+    "wl": 47,
+    "tm": 44,
+    "label": "Chronic Pain"
+  },
+  "oxycontin": {
+    "wl": 47,
+    "tm": 44,
+    "label": "Chronic Pain"
+  },
+  "hydrocodone": {
+    "wl": 47,
+    "tm": 44,
+    "label": "Chronic Pain"
+  },
+  "norco": {
+    "wl": 47,
+    "tm": 44,
+    "label": "Chronic Pain"
+  },
+  "percocet": {
+    "wl": 47,
+    "tm": 44,
+    "label": "Chronic Pain"
+  },
+  "morphine": {
+    "wl": 47,
+    "tm": 44,
+    "label": "Chronic Pain"
+  },
+  "fentanyl": {
+    "wl": 47,
+    "tm": 44,
+    "label": "Chronic Pain"
+  },
+  "tramadol": {
+    "wl": 47,
+    "tm": 44,
+    "label": "Chronic Pain"
+  },
+  "tamoxifen": {
+    "wl": 42,
+    "tm": 37,
+    "label": "Cancer"
+  },
+  "anastrozole": {
+    "wl": 42,
+    "tm": 37,
+    "label": "Cancer"
+  },
+  "arimidex": {
+    "wl": 42,
+    "tm": 37,
+    "label": "Cancer"
+  },
+  "letrozole": {
+    "wl": 42,
+    "tm": 37,
+    "label": "Cancer"
+  },
+  "xtandi": {
+    "wl": 42,
+    "tm": 37,
+    "label": "Cancer"
+  },
+  "lupron": {
+    "wl": 42,
+    "tm": 37,
+    "label": "Cancer"
+  },
+  "keytruda": {
+    "wl": 43,
+    "tm": 37,
+    "label": "Cancer (Active"
+  },
+  "epogen": {
+    "wl": 106,
+    "tm": 100,
+    "label": "Kidney Disease (Chronic)"
+  },
+  "procrit": {
+    "wl": 106,
+    "tm": 100,
+    "label": "Kidney Disease (Chronic)"
+  },
+  "renvela": {
+    "wl": 105,
+    "tm": 99,
+    "label": "Kidney Dialysis"
+  },
+  "sevelamer": {
+    "wl": 105,
+    "tm": 99,
+    "label": "Kidney Dialysis"
+  },
+  "calcitriol": {
+    "wl": 106,
+    "tm": 100,
+    "label": "Kidney Disease (Chronic)"
+  },
+  "harvoni": {
+    "wl": 97,
+    "tm": 91,
+    "label": "Hepatitus C"
+  },
+  "epclusa": {
+    "wl": 97,
+    "tm": 91,
+    "label": "Hepatitus C"
+  },
+  "mavyret": {
+    "wl": 97,
+    "tm": 91,
+    "label": "Hepatitus C"
+  },
+  "biktarvy": {
+    "wl": 12,
+    "tm": 11,
+    "label": "AIDS, ARC or HIV"
+  },
+  "truvada": {
+    "wl": 12,
+    "tm": 11,
+    "label": "AIDS, ARC or HIV"
+  },
+  "descovy": {
+    "wl": 12,
+    "tm": 11,
+    "label": "AIDS, ARC or HIV"
+  },
+  "copaxone": {
+    "wl": 122,
+    "tm": 111,
+    "label": "Multiple Sclerosis"
+  },
+  "tecfidera": {
+    "wl": 122,
+    "tm": 111,
+    "label": "Multiple Sclerosis"
+  },
+  "ocrevus": {
+    "wl": 122,
+    "tm": 111,
+    "label": "Multiple Sclerosis"
+  },
+  "oxygen": {
+    "wl": 130,
+    "tm": 118,
+    "label": "Oxygen to assist"
+  },
+  "cpap with oxygen": {
+    "wl": 153,
+    "tm": null,
+    "label": "SLEEP APNEA (requiring oxygen use)"
+  },
+  "riluzole": {
+    "wl": 14,
+    "tm": 13,
+    "label": "ALS"
+  },
+  "lactulose": {
+    "wl": 48,
+    "tm": 45,
+    "label": "Cirrhosis"
+  },
+  "xifaxan": {
+    "wl": 48,
+    "tm": 45,
+    "label": "Cirrhosis"
+  },
+  "creon": {
+    "wl": 132,
+    "tm": 121,
+    "label": "Pancreatitis (Chronic)"
+  },
+  "hydroxyurea": {
+    "wl": 150,
+    "tm": 143,
+    "label": "Sickle Cell Anemia"
+  }
+}
