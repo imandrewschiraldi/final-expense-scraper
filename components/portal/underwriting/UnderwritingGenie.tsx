@@ -6,7 +6,7 @@ import wlConditions from "@/data/underwriting/conditions-whole-life.json";
 import tmConditions from "@/data/underwriting/conditions-term-ul-iul.json";
 import medications from "@/data/underwriting/medications.json";
 import { BandedResults, Condition, Medication, Product, Sheet } from "@/lib/underwriting/types";
-import { BANDS, bmi } from "@/lib/underwriting/engine";
+import { BANDS } from "@/lib/underwriting/engine";
 import { useSheetState } from "@/lib/underwriting/useSheetState";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -69,8 +69,6 @@ export function UnderwritingGenie() {
   const tm = useSheetState("tm", products.termUlIul, TM_CONDITIONS);
   const active = sheet === "wl" ? wl : tm;
   const activeConditions = sheet === "wl" ? WL_CONDITIONS : TM_CONDITIONS;
-
-  const bmiValue = bmi(active.ft, active.inch, parseFloat(active.wt) || 0);
 
   const displayedResults = useMemo<BandedResults | null>(() => {
     if (!active.results) return null;
@@ -164,13 +162,6 @@ export function UnderwritingGenie() {
           </div>
         </div>
 
-        {bmiValue != null && (
-          <p className="font-condensed mb-4 text-sm tracking-[0.03em] text-teal-light">
-            BMI {bmiValue} at {active.ft}&apos;{active.inch}&quot;, {active.wt} lbs — check each carrier&apos;s build chart link
-            before quoting.
-          </p>
-        )}
-
         <ConditionSearch
           sheet={sheet}
           conditions={activeConditions}
@@ -196,9 +187,8 @@ export function UnderwritingGenie() {
       <ResultsBands results={displayedResults} hasSelections={active.selected.length > 0} />
 
       <p className="mt-8 text-xs text-muted">
-        Internal use only — Tier 1 Financial. This tool summarizes carrier cheat-sheet guidance for field pre-qualification. It is
-        not an underwriting decision. Always verify against the carrier&apos;s current underwriting guide before submitting an
-        application.
+        Internal use only for Tier 1 Financial. This tool summarizes carrier cheat sheet guidance for field pre-qualification. It is
+        not a final underwriting decision.
       </p>
     </div>
   );
