@@ -16,7 +16,7 @@ const BAND_STYLE: Record<Band, { border: string; text: string; badge: string; ba
   STANDARD: { border: "border-l-teal", text: "text-teal-light", badge: "metal-teal-surface", badgeText: "text-black" },
   GRADED: { border: "border-l-gold", text: "text-gold", badge: "metal-gold-surface", badgeText: "text-black" },
   GI: { border: "border-l-blue", text: "text-blue-light", badge: "metal-blue-surface", badgeText: "text-white" },
-  REVIEW: { border: "border-l-gold", text: "text-gold", badge: "metal-gold-surface", badgeText: "text-black" },
+  REVIEW: { border: "border-l-amber", text: "text-amber", badge: "metal-amber-surface", badgeText: "text-white" },
   INELIG: { border: "border-l-border", text: "text-muted", badge: "metal-gray-surface", badgeText: "text-black" },
   DECLINE: { border: "border-l-red", text: "text-red-light", badge: "metal-red-surface", badgeText: "text-white" },
 };
@@ -37,8 +37,8 @@ const OUTCOME_DOT: Record<string, string> = {
   LEGACY: "var(--gold)",
   GI: "var(--blue-light)",
   DECLINE: "var(--red-light)",
-  TIME: "var(--gold)",
-  REVIEW: "var(--gold)",
+  TIME: "var(--amber)",
+  REVIEW: "var(--amber)",
 };
 
 function outcomeLabel(outcome: string) {

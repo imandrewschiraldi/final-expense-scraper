@@ -40,8 +40,8 @@ export const BANDS: { key: Band; label: string }[] = [
   { key: "GRADED", label: "Graded / Modified" },
   { key: "GI", label: "Guaranteed Issue" },
   { key: "REVIEW", label: "Needs Review" },
-  { key: "INELIG", label: "Outside Age Range" },
   { key: "DECLINE", label: "Declined" },
+  { key: "INELIG", label: "Outside Age Range" },
 ];
 
 /** Evaluate one rule (one condition x one product). See Rule's doc comment
