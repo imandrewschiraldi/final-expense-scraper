@@ -126,12 +126,39 @@ export function productVerdict(
   return { band, worstSeverity: worst, details };
 }
 
+// Carrier display priority, agency-specified — not alphabetical. Checked as
+// lowercase substrings against the product name, in order, so earlier
+// entries win when a name could plausibly match more than one (none
+// currently do). LGA/Banner Life products count as Ethos (the package
+// README groups "Ethos (TruStage, LGA/Banner)" as one carrier), and
+// "uhl"/"UHL ..." products count as United Home Life, their underwriting
+// brand. A carrier with no match (currently just F&G, the one carrier the
+// agency didn't rank) sorts after every named one.
+const CARRIER_ORDER: ((name: string) => boolean)[] = [
+  (n) => n.includes("americo"),
+  (n) => n.includes("transamerica"),
+  (n) => n.includes("ethos") || n.includes("trustage") || n.includes("lga") || n.includes("banner"),
+  (n) => n.includes("american amicable"),
+  (n) => n.includes("aig"),
+  (n) => n.includes("mutual of omaha"),
+  (n) => n.includes("royal neighbors"),
+  (n) => n.includes("united home life") || n.includes("uhl"),
+  (n) => n.includes("foresters"),
+];
+
+function carrierRank(product: Product): number {
+  const name = product.name.toLowerCase();
+  const idx = CARRIER_ORDER.findIndex((test) => test(name));
+  return idx === -1 ? CARRIER_ORDER.length : idx;
+}
+
 /**
  * Run the full underwriting pass and return products grouped by band.
  * Ordering within each band is client-first:
  *   1. strongest underwriting outcome (lowest severity)
  *   2. fewest open questions (missing "years since", review rules, extra criteria)
- *   3. alphabetical
+ *   3. agency-specified carrier priority (CARRIER_ORDER above)
+ *   4. alphabetical, as a final tiebreaker within the same carrier
  */
 export function runUnderwriting({
   products,
@@ -157,7 +184,11 @@ export function runUnderwriting({
     r.details.filter((d) => d.outcome === "TIME" || d.outcome === "REVIEW" || d.extraCriteria).length;
   for (const k of Object.keys(out) as Band[]) {
     out[k].sort(
-      (a, b) => a.worstSeverity - b.worstSeverity || openQs(a) - openQs(b) || a.product.name.localeCompare(b.product.name),
+      (a, b) =>
+        a.worstSeverity - b.worstSeverity ||
+        openQs(a) - openQs(b) ||
+        carrierRank(a.product) - carrierRank(b.product) ||
+        a.product.name.localeCompare(b.product.name),
     );
   }
   return out;
