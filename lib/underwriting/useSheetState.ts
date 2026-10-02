@@ -15,6 +15,11 @@ import { runUnderwriting } from "./engine";
  */
 export function useSheetState(sheet: Sheet, products: Product[], conditions: Condition[]) {
   const [age, setAge] = useState("");
+  // Not read by the engine yet — no rule or BMI calculation depends on it
+  // (BMI itself is gender-neutral math). Collected now so it's on hand for
+  // when build-chart checking is added, since real carrier build charts
+  // (unlike flat BMI) are gender-specific.
+  const [gender, setGender] = useState<"" | "M" | "F">("");
   const [ft, setFt] = useState(5);
   const [inch, setInch] = useState(6);
   const [wt, setWt] = useState("");
@@ -25,7 +30,7 @@ export function useSheetState(sheet: Sheet, products: Product[], conditions: Con
 
   const conditionsById = useMemo(() => new Map(conditions.map((c) => [c.id, c])), [conditions]);
 
-  const snapshot = JSON.stringify({ age, ft, inch, wt, tobacco, selected });
+  const snapshot = JSON.stringify({ age, gender, ft, inch, wt, tobacco, selected });
   const hasRun = ranSnapshot !== null;
   const dirty = hasRun && ranSnapshot !== snapshot;
 
@@ -54,6 +59,8 @@ export function useSheetState(sheet: Sheet, products: Product[], conditions: Con
   return {
     age,
     setAge,
+    gender,
+    setGender,
     ft,
     setFt,
     inch,
