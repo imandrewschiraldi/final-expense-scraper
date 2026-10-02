@@ -101,10 +101,30 @@ export function UnderwritingGenie() {
       <div className="rounded-lg border border-border bg-surface p-5">
         <h2 className="font-condensed mb-4 text-base font-extrabold tracking-wide text-white uppercase">Client Intake</h2>
 
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div>
             <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">Age</label>
             <Input type="number" inputMode="numeric" min={0} max={95} value={active.age} onChange={(e) => active.setAge(e.target.value)} />
+          </div>
+          <div>
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">Gender</label>
+            <div className="flex gap-1.5">
+              {(["M", "F"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => active.setGender(g)}
+                  className={cn(
+                    "font-condensed flex-1 rounded-lg border-[1.5px] py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+                    active.gender === g
+                      ? "toggle-pill-active"
+                      : "border-border text-muted hover:border-copper hover:text-foreground",
+                  )}
+                >
+                  {g === "M" ? "Male" : "Female"}
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">Height</label>
