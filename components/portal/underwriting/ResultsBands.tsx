@@ -5,20 +5,22 @@ import { BANDS, SEVERITY, TIER_LABEL } from "@/lib/underwriting/engine";
 import { cn } from "@/lib/cn";
 
 // Static (never dynamically constructed) so Tailwind's content scanner
-// picks every class up at build time. `border`/`text` are for the section
-// header and the card's thin left-border accent (both stay flat — a CSS
-// border can't cleanly carry a gradient without fighting border-radius).
-// `badge`/`badgeText` are for the per-card outcome pill, which gets the
-// same solid metal-surface treatment as the rest of the app's badges
-// (e.g. the LICENSED badge) instead of a flat outline.
-const BAND_STYLE: Record<Band, { border: string; text: string; badge: string; badgeText: string }> = {
-  BEST: { border: "border-l-green", text: "text-green-light", badge: "metal-green-surface", badgeText: "text-black" },
-  STANDARD: { border: "border-l-teal", text: "text-teal-light", badge: "metal-teal-surface", badgeText: "text-black" },
-  GRADED: { border: "border-l-gold", text: "text-gold", badge: "metal-gold-surface", badgeText: "text-black" },
-  GI: { border: "border-l-blue", text: "text-blue-light", badge: "metal-blue-surface", badgeText: "text-white" },
-  REVIEW: { border: "border-l-amber", text: "text-amber", badge: "metal-amber-surface", badgeText: "text-white" },
-  INELIG: { border: "border-l-border", text: "text-muted", badge: "metal-gray-surface", badgeText: "text-black" },
-  DECLINE: { border: "border-l-red", text: "text-red-light", badge: "metal-red-surface", badgeText: "text-white" },
+// picks every class up at build time. `text` (section header/"rate
+// class" label) and `badge` (per-card outcome pill + the card's left
+// accent bar) are both the same solid metal-surface/metal-text
+// treatment used everywhere else in the app (e.g. the LICENSED badge,
+// Sidebar's active label) — nothing here stays flat. The left accent
+// bar reuses `badge`'s surface class rather than a literal CSS border,
+// since a border can't carry a gradient cleanly without fighting
+// border-radius (see the inset <span> in ProductCard).
+const BAND_STYLE: Record<Band, { text: string; badge: string; badgeText: string }> = {
+  BEST: { text: "metal-green-text", badge: "metal-green-surface", badgeText: "text-black" },
+  STANDARD: { text: "metal-teal-text", badge: "metal-teal-surface", badgeText: "text-black" },
+  GRADED: { text: "metal-gold-text", badge: "metal-gold-surface", badgeText: "text-black" },
+  GI: { text: "metal-blue-text", badge: "metal-blue-surface", badgeText: "text-white" },
+  REVIEW: { text: "metal-amber-text", badge: "metal-amber-surface", badgeText: "text-white" },
+  INELIG: { text: "metal-gray-text", badge: "metal-gray-surface", badgeText: "text-black" },
+  DECLINE: { text: "metal-red-text", badge: "metal-red-surface", badgeText: "text-white" },
 };
 
 // Per-outcome dot color — a finer-grained palette than the band colors
@@ -78,7 +80,8 @@ function ProductCard({ band, verdict, hasSelections }: { band: Band; verdict: Pr
   const quoteTool = firstUrl(product.quote);
 
   return (
-    <div className={cn("rounded-lg border border-border bg-surface2 p-3", "border-l-4", style.border)}>
+    <div className="relative overflow-hidden rounded-lg border border-border bg-surface2 p-3 pl-4">
+      <span className={cn("absolute top-0 bottom-0 left-0 w-1", style.badge)} />
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <div className="font-condensed text-sm font-bold tracking-wide text-foreground uppercase">{product.name}</div>
         <span className={cn("shrink-0 rounded px-2 py-0.5 text-[11px] font-bold whitespace-nowrap", style.badge, style.badgeText)}>
@@ -163,13 +166,9 @@ function ProductCard({ band, verdict, hasSelections }: { band: Band; verdict: Pr
 }
 
 export function ResultsBands({ results, hasSelections }: { results: BandedResults | null; hasSelections: boolean }) {
-  if (!results) {
-    return (
-      <div className="rounded-lg border border-border bg-surface2 p-6 text-center text-sm text-muted">
-        Enter the client&apos;s info and health conditions, then tap <b className="text-foreground">Run Underwriting</b>.
-      </div>
-    );
-  }
+  // Before the first Run, the instruction already lives in the page's own
+  // subtitle under the heading — no need to repeat it down here too.
+  if (!results) return null;
 
   const nonEmpty = BANDS.filter((b) => results[b.key].length > 0);
   if (!nonEmpty.length) {

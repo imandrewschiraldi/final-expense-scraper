@@ -340,6 +340,43 @@ body {
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
+/* Underwriting Genie's band "rate class" headers — same single-streak
+   shape as green/red above, the other five hues used by its badges. */
+.metal-teal-text {
+  background-image: linear-gradient(100deg, var(--teal-light) 0%, var(--teal-light) 38%, var(--teal-light-metal-hi) 50%, var(--teal-light) 62%, var(--teal-light) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.metal-gold-text {
+  background-image: linear-gradient(100deg, var(--gold) 0%, var(--gold) 38%, var(--gold-metal-hi) 50%, var(--gold) 62%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.metal-blue-text {
+  background-image: linear-gradient(100deg, var(--blue-metal) 0%, var(--blue-metal) 38%, var(--blue-metal-hi) 50%, var(--blue-metal) 62%, var(--blue-metal) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.metal-gray-text {
+  background-image: linear-gradient(100deg, var(--gray-metal) 0%, var(--gray-metal) 38%, var(--gray-metal-hi) 50%, var(--gray-metal) 62%, var(--gray-metal) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.metal-amber-text {
+  background-image: linear-gradient(100deg, var(--amber-metal) 0%, var(--amber-metal) 38%, var(--amber-metal-hi) 50%, var(--amber-metal) 62%, var(--amber-metal) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
 
 /* The copper line under the header (HeaderDivider.tsx + Sidebar.tsx) — a
    horizontal sweep rather than diagonal, since it's a thin, wide bar. */
