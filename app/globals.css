@@ -60,6 +60,8 @@
   --amber-metal: #a7764a;
   --amber-metal-hi: #c8aa8f;
   --amber-metal-dk: #5c4129;
+  --gold-metal-hi: #e4cd83;
+  --gold-metal-dk: #75601e;
 
   /* Metallic stops for DistributionAnalytics' donut-chart categorical
      palette (Carrier/Product Analytics) — a rotating set of 6 distinct
@@ -164,6 +166,64 @@ body {
     var(--red-metal-dk) 55%,
     var(--red) 80%,
     var(--red-metal-hi) 100%
+  );
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+}
+/* Underwriting Genie's result badges (Eligible/Standard/Graded/GI/Review/
+   Outside Age Range/Declined) — same hi/base/dk/base/hi shape as
+   green/red above, just three more hues. Teal reuses the donut chart's
+   existing teal-light-metal pair (base --teal-light) and blue/gray reuse
+   the existing blue-metal/gray-metal trios (lib/metallic.ts) rather than
+   inventing new ones; gold is the one genuinely new pair. */
+.metal-teal-surface {
+  background-image: linear-gradient(
+    135deg,
+    var(--teal-light-metal-hi) 0%,
+    var(--teal-light) 32%,
+    var(--teal-light-metal-dk) 55%,
+    var(--teal-light) 80%,
+    var(--teal-light-metal-hi) 100%
+  );
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+}
+.metal-gold-surface {
+  background-image: linear-gradient(
+    135deg,
+    var(--gold-metal-hi) 0%,
+    var(--gold) 32%,
+    var(--gold-metal-dk) 55%,
+    var(--gold) 80%,
+    var(--gold-metal-hi) 100%
+  );
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+}
+.metal-blue-surface {
+  background-image: linear-gradient(
+    135deg,
+    var(--blue-metal-hi) 0%,
+    var(--blue-metal) 32%,
+    var(--blue-metal-dk) 55%,
+    var(--blue-metal) 80%,
+    var(--blue-metal-hi) 100%
+  );
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+}
+.metal-gray-surface {
+  background-image: linear-gradient(
+    135deg,
+    var(--gray-metal-hi) 0%,
+    var(--gray-metal) 32%,
+    var(--gray-metal-dk) 55%,
+    var(--gray-metal) 80%,
+    var(--gray-metal-hi) 100%
   );
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.5),
