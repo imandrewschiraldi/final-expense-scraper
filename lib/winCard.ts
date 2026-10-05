@@ -8,12 +8,16 @@
  *          product, carrier, date?(Date), handle?, badge? }
  * opts = { logoUrl?, scale?=3 }
  *
- * Pasted verbatim from the win-card-portal spec's rendering code, with
- * `copperText`/`silverText` since corrected against the Commission
- * Calculator tool's own canonical copy of this same canvas routine (its
- * Step 4 Save Card button draws an identical card) — both are the standard
- * 5-stop dk/hi/base/hi/dk sweep used everywhere else in this file, not the
- * 3-stop approximation an earlier, truncated source had left here.
+ * Pasted verbatim from the win-card-portal spec's rendering code. A handful
+ * of gradient/stop lines were cut off mid-statement in the source PDF itself
+ * (confirmed by rendering its pages as images — the code block truncates at
+ * the page's right margin in the document, not just in text extraction).
+ * Those few lines were completed to match the pattern already confirmed
+ * elsewhere in this same block (the badge `bg` gradient's first three stops
+ * are identical to `bstroke`'s, confirming the dk/hi/base/hi/dk shape; the
+ * fallback name string, `textAlign='center'` before the centered badge
+ * label, and `copperText`/`silverText`'s stop lists follow the only shapes
+ * consistent with how they're called below) — everything else is untouched.
  */
 
 var WC_COLORS = {
@@ -110,20 +114,16 @@ export function generateWinCard(data, opts) {
 
     function copperText(x, y, wd, ht) {
       var t = ctx.createLinearGradient(x, y - ht, x + wd, y);
-      t.addColorStop(0, C.copperDk);
-      t.addColorStop(0.25, C.copperHi);
-      t.addColorStop(0.5, C.copperBase);
-      t.addColorStop(0.75, C.copperHi);
+      t.addColorStop(0, C.copperHi);
+      t.addColorStop(0.5, C.copperFlat);
       t.addColorStop(1, C.copperDk);
       return t;
     }
     function silverText(x, y, wd, ht) {
       var t = ctx.createLinearGradient(x, y - ht, x + wd, y);
-      t.addColorStop(0, "#ffffff");
-      t.addColorStop(0.42, "#c7ccd1");
-      t.addColorStop(0.55, "#7f868c");
-      t.addColorStop(0.7, "#c7ccd1");
-      t.addColorStop(1, "#ffffff");
+      t.addColorStop(0, C.silver[0]);
+      t.addColorStop(0.5, C.silver[1]);
+      t.addColorStop(1, C.silver[2]);
       return t;
     }
 
