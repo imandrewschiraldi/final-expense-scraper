@@ -2,6 +2,8 @@ import { Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { canManageChannels, canSeeChannel } from "@/lib/chat";
 
+const ALL_ROLES: Role[] = ["AGENT", "MANAGER", "ADMIN"];
+
 /**
  * Resolve a channel for a request and confirm this user may actually see it.
  *
@@ -29,4 +31,24 @@ export async function openChannelFor(channelId: string | null, userId: string, r
   }
 
   return canSeeChannel(role, channel.minRole) ? channel : null;
+}
+
+/**
+ * Every userId who can see a channel — mirrors openChannelFor's own rules
+ * (restricted: the explicit member list plus admins; otherwise: every role
+ * at or above minRole) so a push notification only ever reaches someone who
+ * could actually open the channel.
+ */
+export async function channelRecipientIds(channel: { id: string; restricted: boolean; minRole: Role }) {
+  if (channel.restricted) {
+    const [members, admins] = await Promise.all([
+      db.chatChannelMember.findMany({ where: { channelId: channel.id }, select: { userId: true } }),
+      db.user.findMany({ where: { role: "ADMIN" }, select: { id: true } }),
+    ]);
+    return [...new Set([...members.map((m) => m.userId), ...admins.map((a) => a.id)])];
+  }
+
+  const qualifyingRoles = ALL_ROLES.filter((r) => canSeeChannel(r, channel.minRole));
+  const users = await db.user.findMany({ where: { role: { in: qualifyingRoles } }, select: { id: true } });
+  return users.map((u) => u.id);
 }

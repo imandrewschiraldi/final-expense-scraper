@@ -1,5 +1,6 @@
 import { differenceInCalendarDays, addDays, startOfDay } from "date-fns";
 import { db } from "@/lib/db";
+import { sendPushToUser } from "@/lib/push";
 import { DashboardRange, rangeSince, previousRangeWindow } from "@/lib/dashboardRange";
 import {
   PersonalKpiData,
@@ -282,6 +283,11 @@ export async function checkAndAwardGoals(userId: string, now: Date = new Date())
           },
         }),
       ]);
+      await sendPushToUser(userId, {
+        title: "Goal Reached!",
+        body: `${GOAL_CATEGORY_LABELS[g.category] ?? "Goal"} goal reached`,
+        url: "/portal/dashboard",
+      });
     }
   }
 }
