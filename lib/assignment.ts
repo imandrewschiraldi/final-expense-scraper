@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { sendPushToUser } from "@/lib/push";
 
 // A lead that's been sitting with an agent for 8 weeks without being sold
 // or marked not interested gets recycled back into the unassigned pool so
@@ -67,6 +68,14 @@ export async function batchAssignLeads(leadIds: string[], agentId: string) {
     return count;
   });
 
+  if (result > 0) {
+    await sendPushToUser(agentId, {
+      title: "New Leads",
+      body: `${result} new lead${result === 1 ? "" : "s"} assigned to you`,
+      url: "/agent/dashboard",
+    });
+  }
+
   return { assigned: result, requested: leadIds.length };
 }
 
@@ -103,6 +112,14 @@ export async function batchAssignByFilter(state: string, agentId: string, count:
 
     return leads.length;
   });
+
+  if (assigned > 0) {
+    await sendPushToUser(agentId, {
+      title: "New Leads",
+      body: `${assigned} new lead${assigned === 1 ? "" : "s"} assigned to you`,
+      url: "/agent/dashboard",
+    });
+  }
 
   return { assigned, requested: count };
 }

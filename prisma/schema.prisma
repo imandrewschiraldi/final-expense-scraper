@@ -121,6 +121,7 @@ model User {
   chatReactions          ChatReaction[]
   chatPins               ChatMessage[]                 @relation("ChatPinnedBy")
   chatChannelMemberships ChatChannelMember[]
+  pushSubscriptions      PushSubscription[]
 
   @@map("users")
 }
@@ -267,6 +268,23 @@ model Notification {
 
   @@index([userId, read])
   @@map("notifications")
+}
+
+/// One browser/device's Web Push subscription for a user — an agent can
+/// have several (phone + laptop), each gets pushed to independently. A
+/// subscription that the push service reports as gone (410/404) is deleted
+/// by the sender rather than left to error on every future push.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 model TrainingModule {

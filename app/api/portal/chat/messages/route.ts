@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { CHAT_PAGE_SIZE, normaliseMessage } from "@/lib/chat";
-import { openChannelFor } from "@/lib/chatAccess";
+import { openChannelFor, channelRecipientIds } from "@/lib/chatAccess";
+import { sendPushToUser } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
@@ -148,6 +149,18 @@ export async function POST(req: NextRequest) {
     update: { lastReadAt: message.createdAt },
     create: { channelId: channel.id, userId: session.user.id, lastReadAt: message.createdAt },
   });
+
+  const recipients = (await channelRecipientIds(channel)).filter((id) => id !== session.user.id);
+  const preview = text ? (text.length > 120 ? `${text.slice(0, 117)}...` : text) : "Sent a photo";
+  await Promise.all(
+    recipients.map((userId) =>
+      sendPushToUser(userId, {
+        title: `#${channel.name}`,
+        body: `${message.authorName}: ${preview}`,
+        url: "/portal/chat",
+      }),
+    ),
+  );
 
   return NextResponse.json({ message: shape([message as unknown as Row], session.user.id)[0] });
 }
