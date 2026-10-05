@@ -314,7 +314,7 @@ export function Sidebar({
                 priority
               />
             ) : (
-              <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-10 w-auto" priority />
+              <Image src="/tier1-logo-transparent.png" alt="Tier 1 Financial" width={1560} height={558} className="h-10 w-auto" priority />
             )}
           </Link>
           {!collapsed && (
