@@ -1,0 +1,468 @@
+/* Commission Calculator — ported verbatim from the standalone tool's CSS.
+   The shared metallic palette (:root tokens) and the generic
+   .metal-copper-surface/.metal-red-surface/.btn-metal-copper/
+   .btn-metal-red/.metal-copper-text/.metal-copper-line rules already exist
+   in app/globals.css with identical gradient stops — reused via those
+   class names on the relevant elements instead of being redefined here.
+   The Step 4 win card itself is the shared canvas-based WinCardImage
+   component (same one Submit Policy uses, see lib/winCard.ts), not a CSS
+   card, so none of the standalone tool's .wincard/.wc-* rules are needed.
+   Replaced var(--cream)/var(--text-mid)→var(--foreground),
+   var(--copper-hi)→var(--copper-metal), var(--copper-bass)→var(--copper-dim),
+   var(--copper-bright)→var(--copper), var(--text-dim)→var(--muted),
+   var(--line)→var(--border), var(--panel)→var(--surface),
+   var(--panel-2)→var(--surface2), var(--black)→var(--background). */
+
+.t1-cc {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.t1-cc .eyebrow {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  color: var(--copper);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.t1-cc h1 {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 800;
+  font-size: clamp(30px, 4.4vw, 48px);
+  margin: 0;
+  color: var(--foreground);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 0.95;
+}
+.t1-cc .sub {
+  color: var(--muted);
+  font-size: 14.5px;
+  margin-top: 8px;
+  max-width: 660px;
+  line-height: 1.55;
+}
+
+.t1-cc .t1cc-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 26px;
+  min-width: 0;
+}
+.t1-cc .t1cc-main > * {
+  min-width: 0;
+}
+
+.t1-cc .panel {
+  background: linear-gradient(180deg, var(--surface2), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  position: relative;
+}
+.t1-cc .panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--copper), transparent);
+  opacity: 0.8;
+}
+.t1-cc .panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 26px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.t1-cc .panel-title {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+.t1-cc .panel-num {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+.t1-cc .panel-body {
+  padding: 26px;
+}
+
+.t1-cc .controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+}
+@media (max-width: 820px) {
+  .t1-cc .controls-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.t1-cc .control label {
+  display: block;
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  margin-bottom: 6px;
+}
+.t1-cc .control .value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.t1-cc .control .value-row .big {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-weight: 700;
+  font-size: 30px;
+  color: var(--copper-metal);
+}
+.t1-cc .control .value-row .tag {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+.t1-cc .tier-note {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--foreground);
+  line-height: 1.5;
+  border-left: 2px solid var(--copper);
+  padding-left: 12px;
+}
+.t1-cc .premium-input {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.t1-cc .premium-input span {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  color: var(--muted);
+  font-size: 14px;
+}
+.t1-cc .premium-input input[type="number"] {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 14px;
+  padding: 7px 10px;
+  border-radius: 3px;
+  width: 130px;
+}
+
+.t1-cc .company-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.t1-cc .company-tab {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  padding: 9px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.t1-cc .company-tab:hover {
+  border-color: var(--copper);
+  color: var(--copper-metal);
+}
+.t1-cc .company-tab.active {
+  background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+  color: #1a0f07;
+  border-color: var(--copper-metal-dk);
+  font-weight: 700;
+}
+
+.t1-cc .product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.t1-cc .product-card {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  padding: 13px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.t1-cc .product-card:hover {
+  border-color: var(--copper);
+  background: rgba(200, 121, 65, 0.05);
+}
+.t1-cc .product-card.active {
+  border-color: var(--copper);
+  background: rgba(200, 121, 65, 0.12);
+  box-shadow: inset 0 0 0 1px var(--copper);
+}
+.t1-cc .product-card .pname {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+.t1-cc .product-card .prate {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 19px;
+  color: var(--copper-metal);
+  font-weight: 700;
+}
+.t1-cc .badge {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  display: inline-block;
+  margin-top: 6px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.t1-cc .badge.IUL {
+  background-image: linear-gradient(135deg, var(--green-metal-hi) 0%, var(--green) 32%, var(--green-metal-dk) 55%, var(--green) 80%, var(--green-metal-hi) 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+  color: #07210f;
+  border: 1px solid var(--green-metal-dk);
+}
+.t1-cc .badge.Term {
+  background-image: linear-gradient(135deg, #8fc4d6 0%, #2980b9 32%, #153f5c 55%, #2980b9 80%, #8fc4d6 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+  color: #06161f;
+  border: 1px solid #153f5c;
+}
+.t1-cc .badge.WL {
+  background-image: linear-gradient(135deg, #e8d79a 0%, #d4af37 32%, #6e5a1a 55%, #d4af37 80%, #e8d79a 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+  color: #1f1905;
+  border: 1px solid #6e5a1a;
+}
+.t1-cc .badge.Other {
+  background-image: linear-gradient(135deg, #b0b0ad 0%, #7f7f7a 32%, #464643 55%, #7f7f7a 80%, #b0b0ad 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+  color: #15150f;
+  border: 1px solid #464643;
+}
+
+.t1-cc .ledger {
+  border: 1.5px solid transparent;
+  background-image:
+    linear-gradient(180deg, #180d05, #0a0503),
+    linear-gradient(135deg, var(--copper-metal-dk), var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border-radius: 6px;
+  padding: 34px 30px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 30px;
+  align-items: center;
+}
+@media (max-width: 700px) {
+  .t1-cc .ledger {
+    grid-template-columns: 1fr;
+  }
+}
+.t1-cc .ledger-label {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  color: var(--copper);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.t1-cc .ledger-amount {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-weight: 700;
+  font-size: clamp(40px, 6vw, 64px);
+  color: var(--copper-metal);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-shadow: 0 0 34px rgba(224, 160, 111, 0.26);
+}
+.t1-cc .ledger-sub {
+  font-size: 13px;
+  color: var(--foreground);
+  margin-top: 10px;
+}
+.t1-cc .ledger-breakdown {
+  border-left: 1px solid var(--border);
+  padding-left: 26px;
+}
+@media (max-width: 700px) {
+  .t1-cc .ledger-breakdown {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-left: 0;
+    padding-top: 20px;
+  }
+}
+.t1-cc .bd-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 0;
+  font-size: 13px;
+  color: var(--foreground);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+.t1-cc .bd-row:last-child {
+  border-bottom: none;
+}
+.t1-cc .bd-row .k {
+  color: var(--muted);
+}
+.t1-cc .bd-row .v {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.t1-cc .compare-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.t1-cc .filter-btn {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  background: none;
+  letter-spacing: 0.05em;
+}
+.t1-cc .filter-btn.active {
+  background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+  color: #1a0f07;
+  border-color: var(--copper-metal-dk);
+  font-weight: 700;
+}
+.t1-cc table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.t1-cc thead th {
+  text-align: left;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.t1-cc thead th.num,
+.t1-cc tbody td.num {
+  text-align: right;
+}
+.t1-cc tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--foreground);
+}
+.t1-cc tbody tr:hover {
+  background: rgba(200, 121, 65, 0.05);
+  cursor: pointer;
+}
+.t1-cc tbody tr.selected {
+  background: rgba(200, 121, 65, 0.12);
+}
+.t1-cc tbody td.rank {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  color: var(--copper);
+  width: 30px;
+}
+.t1-cc tbody td.company {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.t1-cc tbody td.rate {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  color: var(--copper-metal);
+  font-weight: 700;
+}
+.t1-cc tbody td.amt {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .t1-cc .panel-body table {
+    font-size: 12px;
+    table-layout: fixed;
+    width: 100%;
+  }
+  .t1-cc thead th.rank-col,
+  .t1-cc tbody td.rank {
+    display: none;
+  }
+  .t1-cc .panel-body th,
+  .t1-cc .panel-body td {
+    padding-left: 5px;
+    padding-right: 5px;
+    font-size: 11.5px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .t1-cc .panel-body {
+    padding: 16px;
+  }
+  .t1-cc .panel-head {
+    padding: 14px 16px;
+  }
+  .t1-cc .control .value-row .big {
+    font-size: 24px;
+  }
+  .t1-cc .panel-title {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+  }
+}
