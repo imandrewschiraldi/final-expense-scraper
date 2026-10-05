@@ -185,7 +185,7 @@ function SortableChannel({
         )}
         <span className="truncate">{channel.name}</span>
         {channel.unread && !active && (
-          <span className="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-copper px-1 text-[10px] font-bold text-black">
+          <span className="metal-copper-surface ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-bold text-black">
             {channel.unreadCount > 99 ? "99+" : channel.unreadCount}
           </span>
         )}
