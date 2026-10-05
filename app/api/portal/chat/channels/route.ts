@@ -52,6 +52,21 @@ export async function GET() {
     }),
   ]);
 
+  // Only channels actually flagged unread need a real count — reading
+  // channels stay at 0 with no extra query.
+  const unreadChannels = channels
+    .map((c) => ({ id: c.id, lastRead: c.reads[0]?.lastReadAt ?? null, latest: c.messages[0]?.createdAt ?? null }))
+    .filter((c) => c.latest && (!c.lastRead || c.latest > c.lastRead));
+
+  const unreadCounts = await Promise.all(
+    unreadChannels.map((c) =>
+      db.chatMessage
+        .count({ where: { channelId: c.id, deletedAt: null, ...(c.lastRead ? { createdAt: { gt: c.lastRead } } : {}) } })
+        .then((count) => [c.id, count] as const),
+    ),
+  );
+  const unreadCountById = new Map(unreadCounts);
+
   return NextResponse.json({
     canManage: manage,
     categories: categories.map((c) => ({ id: c.id, name: c.name })),
@@ -68,6 +83,7 @@ export async function GET() {
         memberIds: manage ? (c.members ?? []).map((m) => m.userId) : undefined,
         categoryId: c.categoryId,
         unread: Boolean(latest && (!lastRead || latest > lastRead)),
+        unreadCount: unreadCountById.get(c.id) ?? 0,
       };
     }),
   });

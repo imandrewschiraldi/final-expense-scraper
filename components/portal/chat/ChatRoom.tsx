@@ -66,6 +66,7 @@ type Channel = {
   memberIds?: string[];
   categoryId: string | null;
   unread: boolean;
+  unreadCount: number;
 };
 
 type Member = { id: string; name: string; role: "ADMIN" | "MANAGER" | "AGENT" };
@@ -183,7 +184,11 @@ function SortableChannel({
           <Hash className="h-3.5 w-3.5 shrink-0" />
         )}
         <span className="truncate">{channel.name}</span>
-        {channel.unread && !active && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-copper" />}
+        {channel.unread && !active && (
+          <span className="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-copper px-1 text-[10px] font-bold text-black">
+            {channel.unreadCount > 99 ? "99+" : channel.unreadCount}
+          </span>
+        )}
       </button>
       {canManage && (
         <div className="absolute top-1/2 right-2 hidden -translate-y-1/2 gap-1 group-hover/chan:flex">
@@ -504,7 +509,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     atBottom.current = true;
     loadMessages(activeId, false);
     loadPins(activeId);
-    setChannels((prev) => prev.map((c) => (c.id === activeId ? { ...c, unread: false } : c)));
+    setChannels((prev) => prev.map((c) => (c.id === activeId ? { ...c, unread: false, unreadCount: 0 } : c)));
   }, [activeId, loadMessages, loadPins]);
 
   useEffect(() => {
