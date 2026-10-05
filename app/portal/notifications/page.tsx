@@ -1,9 +1,10 @@
 import { NotificationsPanel } from "@/components/portal/NotificationsPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 
 export default function NotificationsPage() {
   return (
     <div>
-      <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Notifications</h1>
+      <PageHeading slug="notifications" alt="Notifications" />
       <NotificationsPanel />
     </div>
   );
