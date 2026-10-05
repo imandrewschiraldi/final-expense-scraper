@@ -97,17 +97,20 @@ function NavLinks({
   pathname,
   collapsed,
   onNavigate,
+  chatUnread,
 }: {
   items: NavItem[];
   pathname: string;
   collapsed: boolean;
   onNavigate?: () => void;
+  chatUnread?: boolean;
 }) {
   return (
     <>
       {items.map((item) => {
         const active = isItemActive(pathname, item.href);
         const Icon = item.icon;
+        const showDot = item.href === "/portal/chat" && chatUnread && !active;
         return (
           <Link
             key={item.href}
@@ -123,10 +126,16 @@ function NavLinks({
             )}
           >
             {active && <span className="metal-copper-line absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r" />}
-            <Icon className="h-4.5 w-4.5 shrink-0" />
+            <span className="relative shrink-0">
+              <Icon className="h-4.5 w-4.5" />
+              {showDot && collapsed && (
+                <span className="metal-copper-surface absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-[#0a0a0a]" />
+              )}
+            </span>
             {!collapsed && (
               <span className={cn("truncate", active && "metal-copper-text")}>{item.label}</span>
             )}
+            {showDot && !collapsed && <span className="metal-copper-surface ml-auto h-2 w-2 shrink-0 rounded-full" />}
           </Link>
         );
       })}
@@ -201,6 +210,7 @@ export function Sidebar({
   // unavoidable here since the real value can only be read client-side.
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [chatUnread, setChatUnread] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -209,6 +219,20 @@ export function Sidebar({
     fetch("/api/profile")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data?.profile && setProfile(data.profile));
+  }, []);
+
+  useEffect(() => {
+    function load() {
+      fetch("/api/portal/chat/channels")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.channels) setChatUnread(data.channels.some((c: { unread: boolean }) => c.unread));
+        })
+        .catch(() => {});
+    }
+    load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -263,7 +287,7 @@ export function Sidebar({
           </button>
         </div>
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
-          <NavLinks items={items} pathname={pathname} collapsed={false} onNavigate={onCloseMobile} />
+          <NavLinks items={items} pathname={pathname} collapsed={false} onNavigate={onCloseMobile} chatUnread={chatUnread} />
         </nav>
         <SidebarFooter collapsed={false} profile={profile} name={name} role={role} onNavigate={onCloseMobile} />
       </aside>
@@ -323,7 +347,7 @@ export function Sidebar({
         )}
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
-          <NavLinks items={items} pathname={pathname} collapsed={collapsed} />
+          <NavLinks items={items} pathname={pathname} collapsed={collapsed} chatUnread={chatUnread} />
         </nav>
 
         <SidebarFooter collapsed={collapsed} profile={profile} name={name} role={role} />
