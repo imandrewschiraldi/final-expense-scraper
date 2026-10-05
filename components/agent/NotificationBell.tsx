@@ -57,7 +57,7 @@ export function NotificationBell() {
         </svg>
         <span className="hidden sm:inline">Notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-copper text-xs font-bold text-black">
+          <span className="metal-copper-surface absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-black">
             {unreadCount}
           </span>
         )}
@@ -77,7 +77,7 @@ export function NotificationBell() {
           <div className="mt-1 flex items-center gap-1">
             <Link
               href="/portal/notifications"
-              className="font-condensed block flex-1 rounded-lg p-2 text-center text-xs font-bold tracking-[0.05em] text-copper uppercase hover:bg-copper/10"
+              className="font-condensed metal-copper-text block flex-1 rounded-lg p-2 text-center text-xs font-bold tracking-[0.05em] uppercase hover:bg-copper/10"
             >
               View All
             </Link>
