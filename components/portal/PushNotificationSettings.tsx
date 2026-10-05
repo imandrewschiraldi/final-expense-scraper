@@ -20,6 +20,7 @@ export function PushNotificationSettings() {
   const [status, setStatus] = useState<Status>("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [testSent, setTestSent] = useState(false);
 
   useEffect(() => {
     async function check() {
@@ -100,6 +101,21 @@ export function PushNotificationSettings() {
     }
   }
 
+  async function sendTest() {
+    setBusy(true);
+    setError(null);
+    setTestSent(false);
+    try {
+      const res = await fetch("/api/portal/notifications/test", { method: "POST" });
+      if (!res.ok) throw new Error();
+      setTestSent(true);
+    } catch {
+      setError("Couldn't send the test notification.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (status === "unsupported") return null;
 
   return (
@@ -118,14 +134,24 @@ export function PushNotificationSettings() {
             open. On iPhone, add this app to your Home Screen first (Share → Add to Home Screen), then turn this on
             from there.
           </p>
-          <Button
-            variant={status === "on" ? "ghost" : "primary"}
-            onClick={status === "on" ? disable : enable}
-            disabled={busy || status === "checking"}
-          >
-            {status === "on" ? <BellOff className="size-4" /> : <Bell className="size-4" />}
-            {status === "on" ? "Disable on This Device" : "Enable on This Device"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant={status === "on" ? "ghost" : "primary"}
+              onClick={status === "on" ? disable : enable}
+              disabled={busy || status === "checking"}
+            >
+              {status === "on" ? <BellOff className="size-4" /> : <Bell className="size-4" />}
+              {status === "on" ? "Disable on This Device" : "Enable on This Device"}
+            </Button>
+            <Button variant="ghost" onClick={sendTest} disabled={busy || status === "checking"}>
+              Send Test Notification
+            </Button>
+          </div>
+          {testSent && (
+            <p className="mt-3 text-sm text-teal-light">
+              Sent — check for an in-app banner now, and a push alert on this device if it&apos;s enabled above.
+            </p>
+          )}
         </>
       )}
       {error && <p className="mt-3 text-sm text-red-light">{error}</p>}

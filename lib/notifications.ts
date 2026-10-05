@@ -1,7 +1,7 @@
 export type NotificationRecord = {
   id: string;
   type: string;
-  payload: { count?: number; category?: string; targetValue?: number };
+  payload: { count?: number; category?: string; targetValue?: number; test?: boolean };
   read: boolean;
   createdAt: string;
 };
@@ -16,6 +16,9 @@ const GOAL_CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function notificationMessage(n: NotificationRecord) {
+  if (n.payload?.test) {
+    return "Test notification — everything's wired up correctly.";
+  }
   if (n.type === "GOAL_ACHIEVED") {
     const label = GOAL_CATEGORY_LABELS[n.payload?.category ?? ""] ?? "Goal";
     return `${label} goal reached`;
