@@ -24,7 +24,7 @@ export function PageHeader({ onOpenMenu }: { onOpenMenu: () => void }) {
         <Menu className="h-6 w-6" />
       </button>
       <Link href="/portal/dashboard" className="block shrink-0">
-        <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-9 w-auto" priority />
+        <Image src="/tier1-logo-transparent.png" alt="Tier 1 Financial" width={1560} height={558} className="h-9 w-auto" priority />
       </Link>
     </div>
   );
