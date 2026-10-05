@@ -57,7 +57,7 @@ export function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 bottom-full z-10 mb-2 max-h-96 w-72 overflow-y-auto rounded-[10px] border border-border bg-surface p-2 shadow-lg">
+        <div className="absolute bottom-full left-0 z-10 mb-2 max-h-96 w-72 overflow-y-auto rounded-[10px] border border-border bg-surface p-2 shadow-lg">
           {notifications.length === 0 && <p className="p-2 text-sm text-muted">No notifications yet.</p>}
           {notifications.map((n) => (
             <div
