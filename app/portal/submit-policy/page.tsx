@@ -10,7 +10,7 @@ export default async function SubmitPolicyPage() {
   return (
     <div>
       <PageHeading slug="submit-policy" alt="Submit Policy" />
-      <SubmitPolicyPanel isAgent={session?.user.role === "AGENT"} />
+      <SubmitPolicyPanel isAgent={session?.user.role === "AGENT"} agentName={session?.user.name} />
     </div>
   );
 }
