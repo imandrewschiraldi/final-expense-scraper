@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -39,6 +40,7 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
   const [showForm, setShowForm] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [updatingRateId, setUpdatingRateId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [carriers, setCarriers] = useState<CarrierWithPlans[]>([]);
 
   useEffect(() => {
@@ -101,6 +103,16 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
     }
   }
 
+  async function deletePolicy(policy: Policy) {
+    if (!window.confirm(`Permanently delete the policy for ${policy.clientName}? This can't be undone.`)) return;
+    setDeletingId(policy.id);
+    const res = await fetch(`/api/portal/policies/${policy.id}`, { method: "DELETE" });
+    setDeletingId(null);
+    if (res.ok) {
+      setPolicies((prev) => prev.filter((p) => p.id !== policy.id));
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -137,12 +149,13 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                 <th className="py-2 pr-4">Status</th>
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4"></th>
+                <th className="py-2 pr-4"></th>
               </tr>
             </thead>
             <tbody>
               {!loading && !loadError && policies.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="py-6 text-center text-muted">
+                  <td colSpan={11} className="py-6 text-center text-muted">
                     No deals submitted yet.
                   </td>
                 </tr>
@@ -215,6 +228,19 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                         </option>
                       ))}
                     </Select>
+                  </td>
+                  <td className="py-2 pr-4">
+                    {!isDemo && (
+                      <button
+                        type="button"
+                        onClick={() => deletePolicy(p)}
+                        disabled={deletingId === p.id}
+                        className="text-muted hover:text-red-light disabled:opacity-40"
+                        aria-label={`Delete policy for ${p.clientName}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </td>
                 </tr>
                 );

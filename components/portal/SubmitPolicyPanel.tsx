@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { PolicySubmitForm, type SubmittedPolicy } from "@/components/portal/PolicySubmitForm";
+import { WinCard } from "@/components/portal/WinCard";
 
-export function SubmitPolicyPanel({ isAgent }: { isAgent: boolean }) {
+export function SubmitPolicyPanel({ isAgent, agentName }: { isAgent: boolean; agentName: string | null | undefined }) {
   const [lastSubmitted, setLastSubmitted] = useState<SubmittedPolicy | null>(null);
 
   return (
@@ -25,6 +26,14 @@ export function SubmitPolicyPanel({ isAgent }: { isAgent: boolean }) {
         )}
         <PolicySubmitForm isAgent={isAgent} onSubmitted={setLastSubmitted} />
       </Card>
+      {lastSubmitted && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Win Card</CardTitle>
+          </CardHeader>
+          <WinCard key={lastSubmitted.id} policy={lastSubmitted} agentName={agentName} />
+        </Card>
+      )}
     </div>
   );
 }
