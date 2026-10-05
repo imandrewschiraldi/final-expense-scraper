@@ -1,7 +1,10 @@
-import { EmbeddedTool } from "@/components/portal/EmbeddedTool";
+import { auth } from "@/lib/auth";
+import { CommissionCalculator } from "@/components/portal/CommissionCalculator";
 
-export default function CommissionCalculatorPage() {
-  return (
-    <EmbeddedTool title="Commission Calculator" src="https://tier1financial-commissioncalculator.netlify.app/" />
-  );
+export const dynamic = "force-dynamic";
+
+export default async function CommissionCalculatorPage() {
+  const session = await auth();
+
+  return <CommissionCalculator agentName={session?.user.name ?? null} />;
 }

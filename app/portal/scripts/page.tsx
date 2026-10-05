@@ -1,7 +1,5 @@
-import { EmbeddedTool } from "@/components/portal/EmbeddedTool";
+import { ScriptRunner } from "@/components/portal/scripts/ScriptRunner";
 
 export default function ScriptsPage() {
-  return (
-    <EmbeddedTool title="Scripts" src="https://tier1financialscripts.org/" />
-  );
+  return <ScriptRunner />;
 }

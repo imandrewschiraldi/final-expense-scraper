@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Barlow, Orbitron, Montserrat } from "next/font/google";
+import { Barlow_Condensed, Barlow, Orbitron, Montserrat, IBM_Plex_Mono, Inter } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -28,6 +28,20 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
   weight: ["600", "700", "800", "900"],
+});
+
+// Monospace figures for Commission Calculator/Scripts money/data readouts,
+// and Inter for their body copy — both native to those two ported tools.
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -72,7 +86,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} ${montserrat.variable} h-full antialiased`}
+      className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} ${montserrat.variable} ${ibmPlexMono.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

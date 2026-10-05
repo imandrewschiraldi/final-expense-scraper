@@ -62,6 +62,8 @@
   --amber-metal-dk: #5c4129;
   --gold-metal-hi: #e4cd83;
   --gold-metal-dk: #75601e;
+  --teal-metal-hi: #7fe3df;
+  --teal-metal-dk: #0c4a46;
 
   /* Metallic stops for DistributionAnalytics' donut-chart categorical
      palette (Carrier/Product Analytics) — a rotating set of 6 distinct
