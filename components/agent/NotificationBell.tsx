@@ -38,6 +38,12 @@ export function NotificationBell() {
     }
   }
 
+  async function clearAll() {
+    if (!window.confirm("Clear all notifications? This can't be undone.")) return;
+    await fetch("/api/notifications", { method: "DELETE" });
+    setNotifications([]);
+  }
+
   return (
     <div className="relative">
       <button
@@ -68,12 +74,23 @@ export function NotificationBell() {
               <p className="text-xs text-muted">{formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}</p>
             </div>
           ))}
-          <Link
-            href="/portal/notifications"
-            className="font-condensed mt-1 block rounded-lg p-2 text-center text-xs font-bold tracking-[0.05em] text-copper uppercase hover:bg-copper/10"
-          >
-            View All
-          </Link>
+          <div className="mt-1 flex items-center gap-1">
+            <Link
+              href="/portal/notifications"
+              className="font-condensed block flex-1 rounded-lg p-2 text-center text-xs font-bold tracking-[0.05em] text-copper uppercase hover:bg-copper/10"
+            >
+              View All
+            </Link>
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                onClick={clearAll}
+                className="font-condensed block flex-1 rounded-lg p-2 text-center text-xs font-bold tracking-[0.05em] text-muted uppercase hover:bg-red/10 hover:text-red-light"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
