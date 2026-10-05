@@ -268,15 +268,20 @@ export function Sidebar({
       )}
 
       {/* Mobile drawer — an overlay, not a layout column, so it never
-          competes with page content for width. No logo in the drawer
-          itself; it lives in PageHeader's mobile-only top bar instead. */}
+          competes with page content for width. It sits above PageHeader's
+          mobile-only top bar (higher z-index), fully covering it while
+          open, so the drawer carries its own logo rather than relying on
+          the (now-hidden) top bar's. */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col bg-gradient-to-b from-[#0a0a0a] to-black transition-transform duration-300 ease-out lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex shrink-0 items-center justify-end px-3" style={{ height: HEADER_HEIGHT }}>
+        <div className="flex shrink-0 items-center justify-between px-3" style={{ height: HEADER_HEIGHT }}>
+          <Link href="/portal/dashboard" className="block shrink-0" onClick={onCloseMobile}>
+            <Image src="/tier1-logo-transparent.png" alt="Tier 1 Financial" width={1560} height={558} className="h-9 w-auto" priority />
+          </Link>
           <button
             type="button"
             onClick={onCloseMobile}
