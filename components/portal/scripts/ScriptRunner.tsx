@@ -112,7 +112,16 @@ export function ScriptRunner() {
 
   return (
     <div className={`t1-scripts${objPanel.open ? " panel-open" : ""}`}>
-      <div className="t1s-title">Sales Scripts</div>
+      <div className="-mx-4 sm:-mx-6 lg:-mx-10 lg:-mt-2">
+        <header>
+          <div className="header-inner">
+            {/* eslint-disable-next-line @next/next/no-img-element -- ported logo asset, exact original markup */}
+            <img className="corner-logo" src="/tier1-tool-corner-logo.png" alt="Tier 1 Financial" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- ported logo asset, exact original markup */}
+            <img className="logo-img" src="/sales-scripts-wordmark.png" alt="Sales Scripts" />
+          </div>
+        </header>
+      </div>
       <div className="header-row">
         <div className="selector-wrap">
           <div className="selector-label">Choose Your Script</div>

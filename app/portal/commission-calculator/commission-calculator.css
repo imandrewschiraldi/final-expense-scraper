@@ -12,33 +12,92 @@
    var(--copper-bright)→var(--copper), var(--text-dim)→var(--muted),
    var(--line)→var(--border), var(--panel)→var(--surface),
    var(--panel-2)→var(--surface2), var(--black)→var(--background).
-   The original's own `.corner-logo`/`.logo-img` header graphics aren't
-   ported (the Tier 1 mark already lives in the portal's sidebar, same as
-   when the tool was embedded — its own ?embed=1 mode always hid the corner
-   logo; the sidebar nav takes over the title role the logo-img wordmark
-   used to play, since that graphic asset isn't available to reproduce
-   pixel-for-pixel here). */
+   The header, including both of its own logo images, is ported exactly
+   as-is — this tool keeps its own branded header even though the portal
+   sidebar also shows a logo, matching the standalone tool pixel-for-pixel
+   rather than deduplicating the two. */
 
 .t1-cc {
   font-family: var(--font-inter), sans-serif;
   font-size: 16px;
   line-height: 1.75;
 }
-.t1-cc .t1cc-title {
-  font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 800;
-  font-size: 20px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--foreground);
-  text-align: center;
-  padding-bottom: 14px;
-  margin-bottom: 22px;
-  border-bottom: 2px solid transparent;
-  border-image: linear-gradient(90deg, transparent, var(--copper), transparent) 1;
+.t1-cc header {
+  padding: 7px 28px 9px;
+  border-bottom: none;
+  position: relative;
+  overflow: hidden;
 }
-
+.t1-cc header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background-image: linear-gradient(90deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
+}
+.t1-cc .header-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  min-height: 60px;
+}
+.t1-cc .corner-logo {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 46px;
+  width: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.6));
+}
+.t1-cc .logo-img {
+  height: auto;
+  width: auto;
+  max-width: min(600px, 90%);
+  max-height: 27px;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.6));
+}
+@media (max-width: 820px) {
+  .t1-cc header {
+    padding: 12px 16px;
+  }
+  .t1-cc .header-inner {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 0;
+  }
+  .t1-cc .corner-logo {
+    position: static;
+    transform: none;
+    height: 42px;
+    align-self: flex-start;
+  }
+  .t1-cc .logo-img {
+    max-width: 94%;
+    max-height: 20px;
+    margin: 0 auto;
+  }
+}
+@media (max-width: 600px) {
+  .t1-cc header {
+    padding: 11px 14px;
+  }
+  .t1-cc .corner-logo {
+    height: 38px;
+  }
+  .t1-cc .logo-img {
+    max-height: 20px;
+  }
+}
 .t1-cc .t1cc-main {
+  margin-top: 24px;
   display: grid;
   grid-template-columns: 1fr;
   gap: 26px;
