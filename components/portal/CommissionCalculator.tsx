@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import "@/app/portal/commission-calculator/commission-calculator.css";
-import { TIER_INFO, TYPE_LABEL, TYPE_BADGE_CLASS, type ProductType, type FflLevel } from "@/lib/commissionCalculator/data";
+import { LEVELS, TIER_INFO, TYPE_LABEL, TYPE_BADGE_CLASS, type ProductType, type FflLevel } from "@/lib/commissionCalculator/data";
 import { buildCatalog, type PortalCarrier, type RatedPlan } from "@/lib/commissionCalculator/merge";
 import { fmtMoney, fmtPct, ADVANCE_RATE } from "@/lib/commissionCalculator/format";
-import { WinCardImage } from "@/components/portal/WinCardImage";
+import { generateWinCard } from "@/lib/winCard";
+import { WinCardFonts } from "@/components/portal/WinCardImage";
 
 const FILTERS: { key: "ALL" | ProductType; label: string }[] = [
   { key: "ALL", label: "All Products" },
@@ -14,27 +15,48 @@ const FILTERS: { key: "ALL" | ProductType; label: string }[] = [
   { key: "WL", label: "Whole Life Only" },
 ];
 
-type RatesResponse = { compLevel: number | null; compLevelRaw: string | null; carriers: PortalCarrier[] };
+type RatesResponse = { agentCompLevel: number | null; carriers: PortalCarrier[] };
+
+/** Slider position 0-13 -> FFL level, same mapping as the standalone tool's
+ *  currentFFL(): position 0 is the lowest level (80), position 13 the
+ *  highest (145) — the scale reads left-to-right as 80% -> 145%. */
+function levelForPos(pos: number): FflLevel {
+  return LEVELS[13 - pos];
+}
+function posForLevel(level: number): number {
+  const idx = LEVELS.indexOf(level as FflLevel);
+  return idx === -1 ? 6 : 13 - idx; // default to 115% (index 6) if not found
+}
 
 export function CommissionCalculator({ agentName }: { agentName: string | null }) {
   const [rates, setRates] = useState<RatesResponse | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [fflPos, setFflPos] = useState(7); // 115%, until the agent's real level loads in
   const [carrier, setCarrier] = useState("Americo");
   const [product, setProduct] = useState("HMS 125");
   const [premium, setPremium] = useState(25000);
   const [filter, setFilter] = useState<"ALL" | ProductType>("ALL");
+  const [wcName, setWcName] = useState(agentName ?? "");
+  const [savedCardUrl, setSavedCardUrl] = useState<string | null>(null);
+  const [savingCard, setSavingCard] = useState(false);
 
   useEffect(() => {
     fetch("/api/portal/carrier-plans/rates")
       .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data: RatesResponse) => setRates(data))
+      .then((data: RatesResponse) => {
+        setRates(data);
+        if (data.agentCompLevel !== null) setFflPos(posForLevel(data.agentCompLevel));
+      })
       .catch(() => setLoadError(true));
   }, []);
 
-  const catalog = useMemo(() => buildCatalog(rates?.carriers ?? [], rates?.compLevel ?? null), [rates]);
+  const currentFFL = levelForPos(fflPos);
+  const tierInfo = TIER_INFO[currentFFL];
 
-  // The company/product the agent had selected may not exist in the
-  // catalog (e.g. before it loads) — fall back to the first real option.
+  const catalog = useMemo(() => buildCatalog(rates?.carriers ?? [], currentFFL), [rates, currentFFL]);
+
+  // The company/product selected may not exist in the catalog (e.g. before
+  // it loads) — fall back to the first real option.
   const currentCompany = catalog.find((c) => c.carrier === carrier) ?? catalog[0];
   const currentProduct: RatedPlan | undefined =
     currentCompany?.products.find((p) => p.product === product) ?? currentCompany?.products[0];
@@ -45,9 +67,6 @@ export function CommissionCalculator({ agentName }: { agentName: string | null }
   const advanceNow = commission * ADVANCE_RATE;
   const heldBack = commission - advanceNow;
   const monthlyAmount = commission / 12;
-
-  const compLevel = rates?.compLevel ?? null;
-  const tierInfo = compLevel !== null ? TIER_INFO[compLevel as FflLevel] : undefined;
 
   const compareRows = useMemo(() => {
     const rows = catalog
@@ -70,16 +89,42 @@ export function CommissionCalculator({ agentName }: { agentName: string | null }
     setProduct(productName);
   }
 
+  const wcCells = [
+    { k: "Annual Premium", v: fmtMoney(premium), big: true, copper: false },
+    { k: "First-Year Earnings", v: available ? fmtMoney(commission) : "N/A", big: true, copper: true },
+    { k: "Advance (75%)", v: available ? fmtMoney(advanceNow) : "N/A", copper: true },
+    { k: "Back End (25%)", v: available ? fmtMoney(heldBack) : "N/A", copper: true },
+    { k: "Product", v: currentProduct?.product ?? "—", copper: false },
+    { k: "Carrier", v: currentCompany?.carrier ?? "—", copper: false },
+  ];
+
+  async function saveCard() {
+    setSavingCard(true);
+    try {
+      const url = await generateWinCard(
+        {
+          agentName: wcName,
+          annualPremium: premium,
+          commission: available ? commission : null,
+          product: currentProduct?.product ?? null,
+          carrier: currentCompany?.carrier ?? null,
+          date: new Date(),
+        },
+        { logoUrl: "/tier1-logo.jpg" },
+      );
+      setSavedCardUrl(url);
+    } catch {
+      // Canvas generation failing (e.g. fonts blocked) just means no saved
+      // image appears — the live preview above is still accurate.
+    } finally {
+      setSavingCard(false);
+    }
+  }
+
   return (
     <div className="t1-cc">
-      <div className="mb-7">
-        <div className="eyebrow">Tier 1 Financial</div>
-        <h1>Commission Calculator</h1>
-        <p className="sub">
-          See exactly what a sale pays at your real contract level — the advance/back-end split, how every carrier
-          compares, and a card to share the win.
-        </p>
-      </div>
+      <WinCardFonts />
+      <div className="t1cc-title">Commission Calculator</div>
 
       {loadError && <p className="mb-4 text-sm text-red-light">Couldn&apos;t load carrier rates. Try reloading the page.</p>}
 
@@ -91,21 +136,25 @@ export function CommissionCalculator({ agentName }: { agentName: string | null }
           <div className="panel-body">
             <div className="controls-grid">
               <div className="control">
-                <label>Your Contract Level</label>
-                {compLevel !== null ? (
-                  <>
-                    <div className="value-row">
-                      <span className="big">{compLevel}%</span>
-                      <span className="tag">{tierInfo?.name ?? "On file"}</span>
-                    </div>
-                    {tierInfo && <div className="tier-note">{tierInfo.note}</div>}
-                  </>
-                ) : (
-                  <div className="tier-note">
-                    Your contract level isn&apos;t set on your account yet — ask your manager to add it before this
-                    calculator can show real numbers.
-                  </div>
-                )}
+                <label>Your FFL Contract Level</label>
+                <div className="value-row">
+                  <span className="big">{currentFFL}%</span>
+                  <span className="tag">{tierInfo.name}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={13}
+                  step={1}
+                  value={fflPos}
+                  onChange={(e) => setFflPos(Number(e.target.value))}
+                  style={{ ["--fill" as string]: `${(fflPos / 13) * 100}%` }}
+                />
+                <div className="scale-labels">
+                  <span>80%</span>
+                  <span>145%</span>
+                </div>
+                <div className="tier-note">{tierInfo.note}</div>
               </div>
               <div className="control">
                 <label>Annual Premium</label>
@@ -136,6 +185,12 @@ export function CommissionCalculator({ agentName }: { agentName: string | null }
                     value={premium}
                     onChange={(e) => setPremium(Math.max(0, Math.min(100000, Number(e.target.value) || 0)))}
                   />
+                  <button type="button" onClick={() => setPremium(0)}>
+                    Min
+                  </button>
+                  <button type="button" onClick={() => setPremium(100000)}>
+                    Max
+                  </button>
                 </div>
               </div>
             </div>
@@ -186,7 +241,7 @@ export function CommissionCalculator({ agentName }: { agentName: string | null }
                 </div>
                 <div className="ledger-amount metal-copper-text">{fmtMoney(commission)}</div>
                 <div className="ledger-sub">
-                  {available ? "Commission you're paid on this policy" : "Not available at your contract level"}
+                  {available ? "Commission you're paid on this policy" : "Not available at this contract level"}
                 </div>
               </div>
               <div className="ledger-breakdown">
@@ -195,8 +250,8 @@ export function CommissionCalculator({ agentName }: { agentName: string | null }
                   <span className="v">{fmtMoney(premium)}</span>
                 </div>
                 <div className="bd-row">
-                  <span className="k">Your Contract Level</span>
-                  <span className="v">{compLevel !== null ? `${compLevel}%` : "—"}</span>
+                  <span className="k">Your FFL Contract</span>
+                  <span className="v">{currentFFL}%</span>
                 </div>
                 <div className="bd-row">
                   <span className="k">Carrier Payout Rate</span>
@@ -276,17 +331,60 @@ export function CommissionCalculator({ agentName }: { agentName: string | null }
             <div className="panel-title">Step 4 — Share Your Win</div>
           </div>
           <div className="panel-body">
-            <WinCardImage
-              data={{
-                agentName,
-                annualPremium: premium,
-                commission: available ? commission : null,
-                product: currentProduct?.product ?? null,
-                carrier: currentCompany?.carrier ?? null,
-                date: new Date(),
-              }}
-              downloadName="tier1-win-preview.png"
-            />
+            <div className="wincard-controls">
+              <label className="wincard-field">
+                Agent Name
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  autoComplete="off"
+                  value={wcName}
+                  onChange={(e) => setWcName(e.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="wincard-stage">
+              <div className="wincard">
+                <div className="wc-top">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- small static brand mark inside a canvas-matched card */}
+                  <img className="wc-logo" src="/tier1-logo.jpg" alt="Tier 1 Financial" />
+                  <div className="wc-badges">
+                    <span className="wc-badge">BIG WIN</span>
+                  </div>
+                </div>
+                <div className="wc-name">{wcName.trim() || "Your Name"}</div>
+                <div className="wc-handle">@Tier 1 Financial</div>
+                <div className="wc-divider" />
+                <div className="wc-stats">
+                  {wcCells.map((cell) => (
+                    <div className="wc-stat" key={cell.k}>
+                      <div className="wc-k">{cell.k.toUpperCase()}</div>
+                      <div className={`wc-v${cell.big ? " big" : ""}${cell.copper ? " copper" : ""}`}>{cell.v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="wc-foot">
+                  <span className="wc-foot-date">
+                    {new Date()
+                      .toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                      .toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="wincard-actions">
+              <button type="button" className="btn-metal-copper" onClick={saveCard} disabled={savingCard}>
+                {savingCard ? "Saving…" : "Save Card"}
+              </button>
+              <span className="wincard-hint">On mobile, tap Save then long-press the image to add it to your story.</span>
+            </div>
+
+            {savedCardUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- generated data URL, not an optimizable asset
+              <img src={savedCardUrl} className="wincard-saved-img" alt="Your Tier 1 Financial win card" />
+            )}
           </div>
         </section>
 
@@ -341,10 +439,11 @@ export function CommissionCalculator({ agentName }: { agentName: string | null }
       </div>
 
       <footer className="mt-10 border-t border-border pt-5 text-[11.5px] leading-relaxed text-muted">
-        Commission = Annual Premium × Carrier Payout Rate at your contract level. Rates come from your agency&apos;s own
-        carrier comp grid where it&apos;s been entered, and from current carrier compensation guides otherwise. A dash
-        (—) means the product isn&apos;t available at your contract level. Carrier grids and product availability are
-        subject to change — confirm current rates with your upline before quoting compensation to a new agent.
+        Commission = Annual Premium × Carrier Payout Rate at your selected FFL contract level. Rates come from your
+        agency&apos;s own carrier comp grid where it&apos;s been entered, and from current carrier compensation guides
+        otherwise. A dash (—) means the product isn&apos;t available at that contract level. Carrier grids and product
+        availability are subject to change — confirm current rates with your upline before quoting compensation to a
+        new agent.
       </footer>
     </div>
   );

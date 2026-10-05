@@ -9,7 +9,7 @@ import { generateWinCard, type WinCardData } from "@/lib/winCard";
  *  separately from the app's self-hosted next/font (which renames the
  *  family) — the win card's canvas code sets ctx.font to these exact
  *  strings, so the browser needs them registered under these names. */
-function WinCardFonts() {
+export function WinCardFonts() {
   return (
     // eslint-disable-next-line @next/next/no-page-custom-font -- only this page's canvas needs these literal font-family names
     <link

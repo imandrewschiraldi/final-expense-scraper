@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { parseCompLevelNumber, parseCompLevelPercent } from "@/lib/commission";
+import { parseCompLevelNumber } from "@/lib/commission";
 
-/** Per-plan commission rates at the signed-in agent's own comp level — the
- *  Commission Calculator's rate source. Prefers an exact CarrierPlanRate
- *  grid row for the agent's level (the real row-by-row carrier grid, same
- *  priority order as resolveCommissionAmount in lib/commissionServer.ts),
- *  falling back to the plan's flat payoutMultiplier × compLevel. The agent
- *  never gets to pick a different level here — there is no override, by
- *  design: they can't self-quote a contract level they aren't on. */
+/** Every plan's full rate grid (every CarrierPlanRate row it has, plus its
+ *  flat payoutMultiplier fallback) — the Commission Calculator's rate
+ *  source. The calculator has its own self-service FFL level slider (80 to
+ *  145, matching the standalone tool it was ported from), so unlike
+ *  resolveCommissionAmount in lib/commissionServer.ts this can't resolve to
+ *  a single number server-side — it hands back the whole grid and lets the
+ *  client compute whichever level the slider is on, same priority order
+ *  (an exact grid row beats the multiplier fallback) for every level. */
 export async function GET() {
   const guard = await requireAnyRole();
   if ("error" in guard) return guard.error;
@@ -18,17 +19,13 @@ export async function GET() {
     where: { id: guard.session.user.id },
     select: { compLevel: true },
   });
-  const compLevelNumber = parseCompLevelNumber(user?.compLevel ?? null);
-  const compLevelPercent = parseCompLevelPercent(user?.compLevel ?? null);
 
   const carriers = await db.carrier.findMany({
     orderBy: { name: "asc" },
     include: {
       plans: {
         orderBy: { name: "asc" },
-        include: {
-          rates: compLevelNumber !== null ? { where: { compLevel: compLevelNumber } } : false,
-        },
+        include: { rates: true },
       },
     },
   });
@@ -36,24 +33,16 @@ export async function GET() {
   const result = carriers.map((c) => ({
     id: c.id,
     name: c.name,
-    plans: c.plans.map((p) => {
-      const gridRow = p.rates?.[0];
-      let ratePercent: number | null = null;
-      let source: "grid" | "multiplier" | null = null;
-      if (gridRow) {
-        ratePercent = Number(gridRow.payoutPercent) * 100;
-        source = "grid";
-      } else if (compLevelPercent !== null) {
-        ratePercent = Number(p.payoutMultiplier) * compLevelPercent * 100;
-        source = "multiplier";
-      }
-      return { id: p.id, name: p.name, ratePercent, source };
-    }),
+    plans: c.plans.map((p) => ({
+      id: p.id,
+      name: p.name,
+      payoutMultiplier: Number(p.payoutMultiplier),
+      grid: p.rates.map((r) => ({ compLevel: r.compLevel, payoutPercent: Number(r.payoutPercent) })),
+    })),
   }));
 
   return NextResponse.json({
-    compLevel: compLevelNumber,
-    compLevelRaw: user?.compLevel ?? null,
+    agentCompLevel: parseCompLevelNumber(user?.compLevel ?? null),
     carriers: result,
   });
 }
