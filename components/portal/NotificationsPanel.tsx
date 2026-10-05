@@ -45,12 +45,26 @@ export function NotificationsPanel() {
     setLoadingMore(false);
   }
 
+  async function clearAll() {
+    if (!window.confirm("Clear all notifications? This can't be undone.")) return;
+    await fetch("/api/notifications", { method: "DELETE" });
+    setNotifications([]);
+    setNextCursor(null);
+  }
+
   if (loading) {
     return <p className="text-sm text-muted">Loading...</p>;
   }
 
   return (
     <Card>
+      {notifications.length > 0 && (
+        <div className="mb-4 flex justify-end">
+          <Button variant="ghost" onClick={clearAll}>
+            Clear All
+          </Button>
+        </div>
+      )}
       {notifications.length === 0 ? (
         <p className="text-sm text-muted">No notifications yet.</p>
       ) : (
