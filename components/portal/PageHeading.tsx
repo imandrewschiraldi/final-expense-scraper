@@ -25,6 +25,7 @@ const HEADINGS = {
   "recruiting-radar": { width: 695, height: 43 },
   "job-applications": { width: 528, height: 43 },
   "underwriting-genie": { width: 776, height: 47 },
+  notifications: { width: 553, height: 45 },
 } as const;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;
