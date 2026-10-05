@@ -26,7 +26,7 @@ export function WinCard({ policy, agentName }: { policy: SubmittedPolicy; agentN
 
   useEffect(() => {
     let cancelled = false;
-    generateWinCard(winCardDataFromPolicy(agentName, policy), { logoUrl: "/tier1-mark-collapsed.png" })
+    generateWinCard(winCardDataFromPolicy(agentName, policy), { logoUrl: "/tier1-logo.jpg" })
       .then((dataUrl: string) => {
         if (!cancelled) setUrl(dataUrl);
       })
