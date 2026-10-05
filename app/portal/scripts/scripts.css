@@ -1,28 +1,87 @@
-/* Sales Script System — ported verbatim from the standalone tool's CSS.
-   The shared metallic palette (:root tokens) lives in app/globals.css now;
-   everything below is this tool's own component styling, scoped to this
-   page by only being imported here. Header/logo/body-background rules from
-   the standalone tool are dropped — the portal's own Sidebar/shell already
-   supplies those. Replaced var(--off)→var(--foreground), var(--copper-dim)
-   [this tool's #a85a28 shade]→var(--copper-metal) [same hex, portal's
-   existing name for it], var(--copper-lite)→var(--copper) [same hex],
-   var(--r)→var(--radius), var(--teal-metal)→var(--teal) [same hex] to reuse
-   the portal's existing tokens instead of redefining them. */
+/* Sales Script System — ported verbatim from the standalone tool's CSS,
+   header/logos included. The shared metallic palette (:root tokens) lives
+   in app/globals.css now; everything below is this tool's own component
+   styling, scoped to this page by only being imported here. Replaced
+   var(--off)→var(--foreground), var(--copper-dim) [this tool's #a85a28
+   shade]→var(--copper-metal) [same hex, portal's existing name for it],
+   var(--copper-lite)→var(--copper) [same hex], var(--r)→var(--radius),
+   var(--teal-metal)→var(--teal) [same hex] to reuse the portal's existing
+   tokens instead of redefining them. */
 
-.t1-scripts .t1s-title {
-  font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 800;
-  font-size: 20px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--white);
-  text-align: center;
-  padding-bottom: 14px;
-  margin-bottom: 18px;
-  border-bottom: 2px solid transparent;
-  border-image: linear-gradient(90deg, transparent, var(--copper), transparent) 1;
+.t1-scripts header {
+  padding: 7px 28px 9px;
+  border-bottom: none;
+  position: relative;
+  overflow: hidden;
 }
-
+.t1-scripts header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background-image: linear-gradient(90deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
+}
+.t1-scripts .header-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  min-height: 60px;
+}
+.t1-scripts .corner-logo {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 46px;
+  width: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.6));
+}
+.t1-scripts .logo-img {
+  height: auto;
+  width: auto;
+  max-width: min(400px, 90%);
+  max-height: 53px;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.6));
+}
+@media (max-width: 820px) {
+  .t1-scripts header {
+    padding: 12px 16px;
+  }
+  .t1-scripts .header-inner {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 0;
+  }
+  .t1-scripts .corner-logo {
+    position: static;
+    transform: none;
+    height: 42px;
+    align-self: flex-start;
+  }
+  .t1-scripts .logo-img {
+    max-width: 94%;
+    max-height: 35px;
+    margin: 0 auto;
+  }
+}
+@media (max-width: 600px) {
+  .t1-scripts header {
+    padding: 11px 14px;
+  }
+  .t1-scripts .corner-logo {
+    height: 38px;
+  }
+  .t1-scripts .logo-img {
+    max-height: 33px;
+  }
+}
 .t1-scripts .card-mindset {
   color: var(--foreground);
   font-size: 14px;
@@ -135,6 +194,7 @@
 }
 
 .t1-scripts .selector-wrap {
+  margin-top: 24px;
   margin-bottom: 4px;
 }
 .t1-scripts .selector-label {

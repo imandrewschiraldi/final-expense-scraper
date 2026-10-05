@@ -124,7 +124,16 @@ export function CommissionCalculator({ agentName }: { agentName: string | null }
   return (
     <div className="t1-cc">
       <WinCardFonts />
-      <div className="t1cc-title">Commission Calculator</div>
+      <div className="-mx-4 sm:-mx-6 lg:-mx-10 lg:-mt-2">
+        <header>
+          <div className="header-inner">
+            {/* eslint-disable-next-line @next/next/no-img-element -- ported logo asset, exact original markup */}
+            <img className="corner-logo" src="/tier1-tool-corner-logo.png" alt="Tier 1 Financial" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- ported logo asset, exact original markup */}
+            <img className="logo-img" src="/commission-calculator-wordmark.png" alt="Commission Calculator" />
+          </div>
+        </header>
+      </div>
 
       {loadError && <p className="mb-4 text-sm text-red-light">Couldn&apos;t load carrier rates. Try reloading the page.</p>}
 
