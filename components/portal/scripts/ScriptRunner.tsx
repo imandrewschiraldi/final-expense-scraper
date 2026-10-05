@@ -112,6 +112,7 @@ export function ScriptRunner() {
 
   return (
     <div className={`t1-scripts${objPanel.open ? " panel-open" : ""}`}>
+      <div className="t1s-title">Sales Scripts</div>
       <div className="header-row">
         <div className="selector-wrap">
           <div className="selector-label">Choose Your Script</div>

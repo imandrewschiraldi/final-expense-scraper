@@ -9,6 +9,20 @@
    var(--r)→var(--radius), var(--teal-metal)→var(--teal) [same hex] to reuse
    the portal's existing tokens instead of redefining them. */
 
+.t1-scripts .t1s-title {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--white);
+  text-align: center;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, transparent, var(--copper), transparent) 1;
+}
+
 .t1-scripts .card-mindset {
   color: var(--foreground);
   font-size: 14px;

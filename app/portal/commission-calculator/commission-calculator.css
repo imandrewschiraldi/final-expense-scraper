@@ -1,47 +1,41 @@
-/* Commission Calculator — ported verbatim from the standalone tool's CSS.
+/* Commission Calculator — ported verbatim from the standalone tool's CSS,
+   matching its original look/operation exactly (self-service FFL slider,
+   live win-card preview + Save Card) — the only difference from the old
+   embedded version is that it's one system now instead of a separate site.
    The shared metallic palette (:root tokens) and the generic
    .metal-copper-surface/.metal-red-surface/.btn-metal-copper/
    .btn-metal-red/.metal-copper-text/.metal-copper-line rules already exist
    in app/globals.css with identical gradient stops — reused via those
    class names on the relevant elements instead of being redefined here.
-   The Step 4 win card itself is the shared canvas-based WinCardImage
-   component (same one Submit Policy uses, see lib/winCard.ts), not a CSS
-   card, so none of the standalone tool's .wincard/.wc-* rules are needed.
    Replaced var(--cream)/var(--text-mid)→var(--foreground),
    var(--copper-hi)→var(--copper-metal), var(--copper-bass)→var(--copper-dim),
    var(--copper-bright)→var(--copper), var(--text-dim)→var(--muted),
    var(--line)→var(--border), var(--panel)→var(--surface),
-   var(--panel-2)→var(--surface2), var(--black)→var(--background). */
+   var(--panel-2)→var(--surface2), var(--black)→var(--background).
+   The original's own `.corner-logo`/`.logo-img` header graphics aren't
+   ported (the Tier 1 mark already lives in the portal's sidebar, same as
+   when the tool was embedded — its own ?embed=1 mode always hid the corner
+   logo; the sidebar nav takes over the title role the logo-img wordmark
+   used to play, since that graphic asset isn't available to reproduce
+   pixel-for-pixel here). */
 
 .t1-cc {
   font-family: var(--font-inter), sans-serif;
   font-size: 16px;
   line-height: 1.75;
 }
-.t1-cc .eyebrow {
-  font-family: var(--font-ibm-plex-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.26em;
-  color: var(--copper);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-.t1-cc h1 {
+.t1-cc .t1cc-title {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 800;
-  font-size: clamp(30px, 4.4vw, 48px);
-  margin: 0;
-  color: var(--foreground);
-  letter-spacing: 0.02em;
+  font-size: 20px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  line-height: 0.95;
-}
-.t1-cc .sub {
-  color: var(--muted);
-  font-size: 14.5px;
-  margin-top: 8px;
-  max-width: 660px;
-  line-height: 1.55;
+  color: var(--foreground);
+  text-align: center;
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, transparent, var(--copper), transparent) 1;
 }
 
 .t1-cc .t1cc-main {
@@ -143,6 +137,43 @@
   border-left: 2px solid var(--copper);
   padding-left: 12px;
 }
+.t1-cc input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--copper) 0%, var(--copper) var(--fill, 50%), rgba(255, 255, 255, 0.1) var(--fill, 50%), rgba(255, 255, 255, 0.1) 100%);
+  outline: none;
+  margin: 8px 0 6px;
+}
+.t1-cc input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--foreground);
+  border: 3px solid var(--copper);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.t1-cc input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--foreground);
+  border: 3px solid var(--copper);
+  cursor: pointer;
+}
+.t1-cc .scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.7;
+}
 .t1-cc .premium-input {
   margin-top: 12px;
   display: flex;
@@ -164,6 +195,20 @@
   padding: 7px 10px;
   border-radius: 3px;
   width: 130px;
+}
+.t1-cc .premium-input button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--copper);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  padding: 7px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+.t1-cc .premium-input button:hover {
+  background: rgba(200, 121, 65, 0.12);
 }
 
 .t1-cc .company-tabs {
@@ -432,6 +477,212 @@
   font-family: var(--font-ibm-plex-mono), monospace;
   color: var(--foreground);
   font-weight: 700;
+}
+
+/* ===== Share Your Win card (live preview + Save Card) ===== */
+.t1-cc .wincard-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.t1-cc .wincard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--copper);
+  font-weight: 700;
+}
+.t1-cc .wincard-field input[type="text"] {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+  font-size: 15px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  min-width: 180px;
+}
+.t1-cc .wincard-field input[type="text"]:focus {
+  outline: none;
+  border-color: var(--copper);
+}
+.t1-cc .wincard-stage {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+.t1-cc .wincard {
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 1.75 / 1;
+  box-sizing: border-box;
+  border: 1.5px solid transparent;
+  background-image:
+    linear-gradient(155deg, #1a1005 0%, #0c0703 55%, #050302 100%),
+    linear-gradient(135deg, var(--copper-metal-dk), var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border-radius: 22px;
+  padding: 30px 32px;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(200, 121, 65, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+.t1-cc .wc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.t1-cc .wc-logo {
+  height: 26px;
+  width: auto;
+}
+.t1-cc .wc-badges {
+  display: flex;
+  gap: 8px;
+}
+.t1-cc .wc-badge {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #1a0f07;
+  padding: 5px 11px;
+  border-radius: 6px;
+  background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+}
+.t1-cc .wc-name {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 800;
+  font-size: clamp(26px, 5.5vw, 34px);
+  line-height: 1;
+  margin-top: 18px;
+  letter-spacing: 0.01em;
+  background-image: linear-gradient(135deg, #ffffff 0%, #c7ccd1 42%, #7f868c 55%, #c7ccd1 70%, #ffffff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #e8eaec;
+}
+.t1-cc .wc-handle {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 13px;
+  color: var(--copper);
+  margin-top: 7px;
+  letter-spacing: 0.02em;
+}
+.t1-cc .wc-divider {
+  height: 1px;
+  background: linear-gradient(90deg, var(--copper), transparent);
+  margin: 16px 0;
+  opacity: 0.5;
+}
+.t1-cc .wc-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
+  flex: 1;
+  align-content: start;
+}
+.t1-cc .wc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.t1-cc .wc-stat .wc-k {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.t1-cc .wc-stat .wc-v {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: #fff;
+  line-height: 1;
+}
+.t1-cc .wc-stat .wc-v.big {
+  font-size: 30px;
+}
+.t1-cc .wc-stat .wc-v.copper {
+  color: var(--copper);
+}
+.t1-cc .wc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.t1-cc .wc-foot-date {
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+.t1-cc .wincard-actions .btn-metal-copper {
+  padding: 10px 22px;
+  font-size: 13px;
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.t1-cc .wincard-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  justify-content: center;
+}
+.t1-cc .wincard-hint {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-inter), sans-serif;
+  max-width: 280px;
+  line-height: 1.4;
+}
+.t1-cc .wincard-saved-img {
+  max-width: 520px;
+  width: 100%;
+  border-radius: 22px;
+  display: block;
+  margin: 16px auto 0;
+}
+@media (max-width: 600px) {
+  .t1-cc .wincard {
+    padding: 24px 22px;
+    border-radius: 18px;
+  }
+  .t1-cc .wc-stats {
+    gap: 18px;
+  }
+  .t1-cc .wc-stat .wc-v {
+    font-size: 18px;
+  }
+  .t1-cc .wc-stat .wc-v.big {
+    font-size: 24px;
+  }
 }
 
 @media (max-width: 600px) {
