@@ -8,7 +8,9 @@ export async function GET() {
 
   const modules = await db.trainingModule.findMany({
     orderBy: { order: "asc" },
-    include: { lessons: { orderBy: { order: "asc" } } },
+    include: {
+      lessons: { orderBy: { order: "asc" }, include: { images: { orderBy: { order: "asc" } } } },
+    },
   });
 
   return NextResponse.json({ modules });

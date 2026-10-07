@@ -8,15 +8,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json();
-  const { title, description, videoUrl } = body as { title?: string; description?: string; videoUrl?: string };
+  const { title, description, videoUrl, images } = body as {
+    title?: string;
+    description?: string;
+    videoUrl?: string;
+    images?: string[];
+  };
 
   const lesson = await db.trainingLesson.update({
     where: { id },
     data: {
       ...(title !== undefined ? { title } : {}),
       ...(description !== undefined ? { description } : {}),
-      ...(videoUrl !== undefined ? { videoUrl } : {}),
+      ...(videoUrl !== undefined ? { videoUrl: videoUrl || null } : {}),
+      // Full replace rather than a diff — the admin panel always sends the
+      // complete current image list, same as it does for every other field.
+      ...(images !== undefined
+        ? { images: { deleteMany: {}, create: images.map((url, i) => ({ url, order: i })) } }
+        : {}),
     },
+    include: { images: { orderBy: { order: "asc" } } },
   });
 
   return NextResponse.json({ lesson });

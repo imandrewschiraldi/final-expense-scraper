@@ -1,17 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { TRAINING_IMAGE_MAX_BYTES, TRAINING_IMAGE_TYPES } from "@/lib/training";
+
+type LessonImage = { id: string; url: string };
 
 type Lesson = {
   id: string;
   title: string;
   description: string | null;
-  videoUrl: string;
+  videoUrl: string | null;
+  images: LessonImage[];
   order: number;
 };
+
+type LessonInput = { title: string; description: string; videoUrl: string; images: string[] };
 
 type Module = {
   id: string;
@@ -40,34 +47,127 @@ function TextArea({
   );
 }
 
+/** Upload + thumbnail grid for a lesson's photos, shared by the create form
+ *  and the edit form. Uploads happen immediately on file pick (to Blob
+ *  storage); the parent only holds the resulting URLs, same as a plain text
+ *  field — an uploaded-but-never-saved image just sits unused, same
+ *  tradeoff the chat image upload already makes. */
+function ImagePicker({ images, onChange }: { images: string[]; onChange: (urls: string[]) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    for (const file of files) {
+      if (!TRAINING_IMAGE_TYPES.includes(file.type as (typeof TRAINING_IMAGE_TYPES)[number])) {
+        setError(`${file.name} isn't a supported image type (PNG, JPEG, GIF, or WebP).`);
+        return;
+      }
+      if (file.size > TRAINING_IMAGE_MAX_BYTES) {
+        setError(`${file.name} is too large (8MB max).`);
+        return;
+      }
+    }
+
+    setError(null);
+    setUploading(true);
+    try {
+      const uploaded = await Promise.all(
+        files.map(async (file) => {
+          const form = new FormData();
+          form.append("file", file);
+          const res = await fetch("/api/admin/training/images", { method: "POST", body: form });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error ?? "That image didn't upload.");
+          }
+          const data = (await res.json()) as { url: string };
+          return data.url;
+        }),
+      );
+      onChange([...images, ...uploaded]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That image didn't upload.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap gap-2">
+        {images.map((url, i) => (
+          <div key={`${url}-${i}`} className="group relative h-16 w-16 overflow-hidden rounded-lg border border-border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="" className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => onChange(images.filter((_, idx) => idx !== i))}
+              aria-label="Remove photo"
+              className="absolute top-0.5 right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+        <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-border text-muted transition-colors hover:border-copper-dim hover:text-foreground">
+          <input
+            type="file"
+            accept={TRAINING_IMAGE_TYPES.join(",")}
+            multiple
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          {uploading ? <span className="text-xs">...</span> : <ImagePlus className="h-5 w-5" />}
+        </label>
+      </div>
+      {error && <p className="text-xs text-red-light">{error}</p>}
+    </div>
+  );
+}
+
 function LessonForm({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: { title: string; description: string; videoUrl: string }) => Promise<void>;
+  onSubmit: (data: LessonInput) => Promise<void>;
   onCancel: () => void;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const canSubmit = title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
 
   return (
     <div className="space-y-2 rounded-lg border border-copper-dim bg-surface2 p-3">
       <Input placeholder="Lesson title" value={title} onChange={(e) => setTitle(e.target.value)} />
       <Input
-        placeholder="Video URL (YouTube, Vimeo, or Loom)"
+        placeholder="Video URL (YouTube, Vimeo, or Loom) — optional if you add photos"
         value={videoUrl}
         onChange={(e) => setVideoUrl(e.target.value)}
       />
       <TextArea placeholder="Description (optional)" value={description} onChange={setDescription} />
+      <div>
+        <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+          Photos
+        </label>
+        <ImagePicker images={images} onChange={setImages} />
+      </div>
       <div className="flex gap-2">
         <Button
           variant="secondary"
-          disabled={loading || !title || !videoUrl}
+          disabled={loading || !canSubmit}
           onClick={async () => {
             setLoading(true);
-            await onSubmit({ title, description, videoUrl });
+            await onSubmit({ title, description, videoUrl, images });
             setLoading(false);
           }}
         >
@@ -88,29 +188,42 @@ function LessonRow({
   onMove,
 }: {
   lesson: Lesson;
-  onUpdate: (id: string, data: { title: string; description: string; videoUrl: string }) => Promise<void>;
+  onUpdate: (id: string, data: LessonInput) => Promise<void>;
   onDelete: (id: string) => void;
   onMove: (id: string, direction: "up" | "down") => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(lesson.title);
   const [description, setDescription] = useState(lesson.description ?? "");
-  const [videoUrl, setVideoUrl] = useState(lesson.videoUrl);
+  const [videoUrl, setVideoUrl] = useState(lesson.videoUrl ?? "");
+  const [images, setImages] = useState(lesson.images.map((img) => img.url));
   const [saving, setSaving] = useState(false);
+
+  const canSubmit = title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
 
   if (editing) {
     return (
       <div className="space-y-2 rounded-lg border border-copper-dim bg-surface2 p-3">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-        <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+        <Input
+          placeholder="Video URL (YouTube, Vimeo, or Loom) — optional if you add photos"
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+        />
         <TextArea value={description} onChange={setDescription} />
+        <div>
+          <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+            Photos
+          </label>
+          <ImagePicker images={images} onChange={setImages} />
+        </div>
         <div className="flex gap-2">
           <Button
             variant="secondary"
-            disabled={saving}
+            disabled={saving || !canSubmit}
             onClick={async () => {
               setSaving(true);
-              await onUpdate(lesson.id, { title, description, videoUrl });
+              await onUpdate(lesson.id, { title, description, videoUrl, images });
               setSaving(false);
               setEditing(false);
             }}
@@ -127,10 +240,18 @@ function LessonRow({
 
   return (
     <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface2 p-3">
-      <div>
+      <div className="min-w-0">
         <p className="text-sm font-semibold text-white">{lesson.title}</p>
         {lesson.description && <p className="mt-1 text-xs text-muted">{lesson.description}</p>}
-        <p className="mt-1 truncate text-xs text-teal-light">{lesson.videoUrl}</p>
+        {lesson.videoUrl && <p className="mt-1 truncate text-xs text-teal-light">{lesson.videoUrl}</p>}
+        {lesson.images.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {lesson.images.map((img) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={img.id} src={img.url} alt="" className="h-10 w-10 rounded border border-border object-cover" />
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex shrink-0 gap-1">
         <Button variant="ghost" onClick={() => onMove(lesson.id, "up")}>
@@ -204,7 +325,7 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
     await refresh();
   }
 
-  async function createLesson(moduleId: string, data: { title: string; description: string; videoUrl: string }) {
+  async function createLesson(moduleId: string, data: LessonInput) {
     await fetch(`/api/admin/training/modules/${moduleId}/lessons`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -214,7 +335,7 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
     await refresh();
   }
 
-  async function updateLesson(id: string, data: { title: string; description: string; videoUrl: string }) {
+  async function updateLesson(id: string, data: LessonInput) {
     await fetch(`/api/admin/training/lessons/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
