@@ -186,11 +186,15 @@ function LessonRow({
   onUpdate,
   onDelete,
   onMove,
+  onRemoveVideo,
+  onRemoveImage,
 }: {
   lesson: Lesson;
   onUpdate: (id: string, data: LessonInput) => Promise<void>;
   onDelete: (id: string) => void;
   onMove: (id: string, direction: "up" | "down") => void;
+  onRemoveVideo: () => Promise<void>;
+  onRemoveImage: (imageId: string) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(lesson.title);
@@ -198,6 +202,21 @@ function LessonRow({
   const [videoUrl, setVideoUrl] = useState(lesson.videoUrl ?? "");
   const [images, setImages] = useState(lesson.images.map((img) => img.url));
   const [saving, setSaving] = useState(false);
+  // Tracks which single item (the video, or one image id) is mid-removal,
+  // so only that control shows busy and the rest of the row stays clickable.
+  const [removingKey, setRemovingKey] = useState<string | null>(null);
+
+  async function handleRemoveVideo() {
+    setRemovingKey("video");
+    await onRemoveVideo();
+    setRemovingKey(null);
+  }
+
+  async function handleRemoveImage(imageId: string) {
+    setRemovingKey(imageId);
+    await onRemoveImage(imageId);
+    setRemovingKey(null);
+  }
 
   const canSubmit = title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
 
@@ -243,12 +262,38 @@ function LessonRow({
       <div className="min-w-0">
         <p className="text-sm font-semibold text-white">{lesson.title}</p>
         {lesson.description && <p className="mt-1 text-xs text-muted">{lesson.description}</p>}
-        {lesson.videoUrl && <p className="mt-1 truncate text-xs text-teal-light">{lesson.videoUrl}</p>}
+        {lesson.videoUrl && (
+          <div className="mt-1 flex items-center gap-1.5">
+            <p className="truncate text-xs text-teal-light">{lesson.videoUrl}</p>
+            <button
+              type="button"
+              onClick={handleRemoveVideo}
+              disabled={removingKey === "video"}
+              aria-label="Remove video URL"
+              title="Remove video URL"
+              className="shrink-0 text-muted transition-colors hover:text-red-light disabled:opacity-40"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
         {lesson.images.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {lesson.images.map((img) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={img.id} src={img.url} alt="" className="h-10 w-10 rounded border border-border object-cover" />
+              <div key={img.id} className="group relative h-10 w-10 overflow-hidden rounded border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(img.id)}
+                  disabled={removingKey === img.id}
+                  aria-label="Remove photo"
+                  title="Remove photo"
+                  className="absolute inset-0 flex items-center justify-center bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-100"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -340,6 +385,28 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
+    });
+    await refresh();
+  }
+
+  // Removes just the one video URL or image — sends only that field, so the
+  // rest of the lesson (title, description, other photos) is left untouched
+  // server-side, without going through the full edit form.
+  async function removeLessonVideo(id: string) {
+    await fetch(`/api/admin/training/lessons/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoUrl: "" }),
+    });
+    await refresh();
+  }
+
+  async function removeLessonImage(lesson: Lesson, imageId: string) {
+    const images = lesson.images.filter((img) => img.id !== imageId).map((img) => img.url);
+    await fetch(`/api/admin/training/lessons/${lesson.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images }),
     });
     await refresh();
   }
@@ -449,6 +516,8 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
                 onUpdate={updateLesson}
                 onDelete={deleteLesson}
                 onMove={moveLesson}
+                onRemoveVideo={() => removeLessonVideo(lesson.id)}
+                onRemoveImage={(imageId) => removeLessonImage(lesson, imageId)}
               />
             ))}
             {module_.lessons.length === 0 && <p className="text-sm text-muted">No lessons in this module yet.</p>}
