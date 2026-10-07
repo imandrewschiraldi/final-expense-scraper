@@ -8,7 +8,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json();
-  const { name, licensedStates, active, compLevel, vaultEnabled, assignmentEnabled, agencyDashboardEnabled } = body as {
+  const {
+    name,
+    licensedStates,
+    active,
+    compLevel,
+    vaultEnabled,
+    assignmentEnabled,
+    agencyDashboardEnabled,
+    recruitingRadarEnabled,
+  } = body as {
     name?: string;
     licensedStates?: string[];
     active?: boolean;
@@ -16,6 +25,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     vaultEnabled?: boolean;
     assignmentEnabled?: boolean;
     agencyDashboardEnabled?: boolean;
+    recruitingRadarEnabled?: boolean;
   };
 
   // Deactivating yourself would lock you out immediately (login rejects
@@ -35,6 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(vaultEnabled !== undefined ? { vaultEnabled } : {}),
       ...(assignmentEnabled !== undefined ? { assignmentEnabled } : {}),
       ...(agencyDashboardEnabled !== undefined ? { agencyDashboardEnabled } : {}),
+      ...(recruitingRadarEnabled !== undefined ? { recruitingRadarEnabled } : {}),
     },
     select: {
       id: true,
@@ -46,6 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       vaultEnabled: true,
       assignmentEnabled: true,
       agencyDashboardEnabled: true,
+      recruitingRadarEnabled: true,
     },
   });
 

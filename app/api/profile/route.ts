@@ -23,6 +23,7 @@ export async function GET() {
       createdAt: true,
       vaultEnabled: true,
       agencyDashboardEnabled: true,
+      recruitingRadarEnabled: true,
     },
   });
 
@@ -66,6 +67,7 @@ export async function PATCH(req: NextRequest) {
       residentState: true,
       demoModeEnabled: true,
       agencyDashboardEnabled: true,
+      recruitingRadarEnabled: true,
     },
   });
 

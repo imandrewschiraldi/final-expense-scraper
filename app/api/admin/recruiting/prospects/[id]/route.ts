@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/apiAuth";
+import { requireRecruitingRadarAccess } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { RECRUIT_STATUSES } from "@/lib/recruitingRadar";
 
@@ -12,7 +12,7 @@ const STATUS_IDS = RECRUIT_STATUSES.map((s) => s.id);
  * activity ("14 DM'd this week") instead of just a live snapshot.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdmin();
+  const guard = await requireRecruitingRadarAccess();
   if ("error" in guard) return guard.error;
 
   const { id } = await params;

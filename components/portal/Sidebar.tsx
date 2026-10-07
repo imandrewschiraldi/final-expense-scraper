@@ -41,7 +41,15 @@ const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
 // desktop sidebar's own logo row at the same height.
 export const HEADER_HEIGHT = 74;
 
-type NavItem = { href: string; label: string; icon: LucideIcon; roles: Role[]; requiresVault?: boolean; requiresAgencyDashboard?: boolean };
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  roles: Role[];
+  requiresVault?: boolean;
+  requiresAgencyDashboard?: boolean;
+  requiresRecruitingRadar?: boolean;
+};
 
 // One shared sidebar for the entire platform — Agent Accelerator (leads,
 // vault, training) and the Agent Portal (dashboards, book of business, etc.)
@@ -57,7 +65,13 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/portal/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"] },
   { href: "/portal/underwriting-genie", label: "Underwriting Genie", icon: Stethoscope, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["MANAGER", "AGENT"] },
-  { href: "/admin/recruiting-radar", label: "Recruiting Radar", icon: Radar, roles: ["ADMIN"] },
+  {
+    href: "/admin/recruiting-radar",
+    label: "Recruiting Radar",
+    icon: Radar,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    requiresRecruitingRadar: true,
+  },
   { href: "/portal/ask-integrity", label: "Ask Integrity", icon: Bot, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["MANAGER", "AGENT"] },
   { href: "/admin/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["ADMIN"] },
@@ -90,6 +104,7 @@ type Profile = {
   compLevel: string | null;
   hasVaultAccess?: boolean;
   agencyDashboardEnabled?: boolean;
+  recruitingRadarEnabled?: boolean;
 };
 
 function NavLinks({
@@ -254,7 +269,11 @@ export function Sidebar({
     (item) =>
       item.roles.includes(role) &&
       (!item.requiresVault || profile?.hasVaultAccess) &&
-      (!item.requiresAgencyDashboard || profile?.agencyDashboardEnabled),
+      (!item.requiresAgencyDashboard || profile?.agencyDashboardEnabled) &&
+      // Unlike requiresAgencyDashboard (default-on, admin can withdraw it),
+      // Recruiting Radar is an admin tool by default — ADMIN always sees it
+      // regardless of this flag; it only gates AGENT/MANAGER.
+      (!item.requiresRecruitingRadar || role === "ADMIN" || profile?.recruitingRadarEnabled),
   );
 
   return (

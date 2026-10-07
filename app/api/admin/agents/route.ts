@@ -9,7 +9,8 @@ export async function GET() {
 
   const agents = await db.user.findMany({
     where: { role: { in: ["AGENT", "ADMIN"] } },
-    orderBy: { name: "asc" },
+    // Active agents first, then alphabetical within each group.
+    orderBy: [{ active: "desc" }, { name: "asc" }],
     select: {
       id: true,
       name: true,
@@ -21,6 +22,7 @@ export async function GET() {
       vaultEnabled: true,
       assignmentEnabled: true,
       agencyDashboardEnabled: true,
+      recruitingRadarEnabled: true,
       passwordHash: true,
       createdAt: true,
       _count: { select: { assignedLeads: true } },
@@ -72,6 +74,7 @@ export async function POST(req: NextRequest) {
       vaultEnabled: true,
       assignmentEnabled: true,
       agencyDashboardEnabled: true,
+      recruitingRadarEnabled: true,
       createdAt: true,
     },
   });
