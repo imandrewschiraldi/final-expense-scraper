@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/portal/PageHeader";
 import { HeaderDivider } from "@/components/portal/HeaderDivider";
 import { ContentContainer } from "@/components/portal/ContentContainer";
 import { NotificationToaster } from "@/components/portal/NotificationToaster";
+import { SoundEffects } from "@/components/portal/SoundEffects";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -21,6 +22,7 @@ export function AppShell({ role, name, children }: { role: Role; name: string; c
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
       <NotificationToaster />
+      <SoundEffects />
       <Sidebar role={role} name={name} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
       <main className="relative min-w-0 flex-1 overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10">
         <PageHeader onOpenMenu={() => setMobileOpen(true)} />
