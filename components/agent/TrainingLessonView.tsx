@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getEmbedUrl } from "@/lib/videoEmbed";
+import { blobDownloadUrl } from "@/lib/training";
 
 type Lesson = {
   id: string;
@@ -65,6 +66,24 @@ export function TrainingLessonView({
     router.refresh();
   }
 
+  // Triggers a download per photo via throwaway <a download> elements
+  // (Blob's downloadUrl form sets Content-Disposition: attachment, so this
+  // downloads rather than opening a new tab). Staggered slightly since
+  // browsers can silently drop download clicks fired in the same tick.
+  function downloadImages() {
+    lesson.images.forEach((img, i) => {
+      setTimeout(() => {
+        const a = document.createElement("a");
+        a.href = blobDownloadUrl(img.url);
+        a.download = "";
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, i * 250);
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -96,13 +115,21 @@ export function TrainingLessonView({
             </p>
             <CardTitle>{lesson.title}</CardTitle>
           </div>
-          <Button
-            variant={completed ? "success" : "secondary"}
-            disabled={saving}
-            onClick={toggleComplete}
-          >
-            {completed ? "Completed ✓" : "Mark Complete"}
-          </Button>
+          <div className="flex items-center gap-2">
+            {lesson.images.length > 0 && (
+              <Button variant="ghost" onClick={downloadImages}>
+                <Download className="h-4 w-4" />
+                {lesson.images.length > 1 ? "Download Photos" : "Download Photo"}
+              </Button>
+            )}
+            <Button
+              variant={completed ? "success" : "secondary"}
+              disabled={saving}
+              onClick={toggleComplete}
+            >
+              {completed ? "Completed ✓" : "Mark Complete"}
+            </Button>
+          </div>
         </CardHeader>
 
         {lesson.description && <p className="mb-4 text-sm text-muted">{lesson.description}</p>}
