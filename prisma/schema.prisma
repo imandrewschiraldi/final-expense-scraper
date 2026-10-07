@@ -88,6 +88,13 @@ model User {
   /// page — off both hides the tab and redirects the page to the personal
   /// Dashboard, enforced server-side (not just a hidden nav link).
   agencyDashboardEnabled Boolean   @default(true)
+  /// Admin-controlled per-agent switch granting access to Recruiting Radar
+  /// (an admin tool otherwise) — off by default, unlike agencyDashboardEnabled,
+  /// since this grants a normally-admin-only tool to specific agents/managers
+  /// rather than withdrawing a default-on one. ADMIN role always has access
+  /// regardless of this flag, enforced server-side on both the page and its
+  /// API routes, not just a hidden nav link.
+  recruitingRadarEnabled Boolean   @default(false)
   npn                    String?
   residentState          String?
   /// When on, this user's own Dashboard/Book of Business/Leaderboard views

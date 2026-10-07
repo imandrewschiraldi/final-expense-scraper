@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/apiAuth";
+import { requireRecruitingRadarAccess } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 
 /**
@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
  * (the list stays small enough not to need pagination).
  */
 export async function GET() {
-  const guard = await requireAdmin();
+  const guard = await requireRecruitingRadarAccess();
   if ("error" in guard) return guard.error;
 
   const prospects = await db.recruitProspect.findMany({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -17,6 +17,7 @@ type Agent = {
   vaultEnabled: boolean;
   assignmentEnabled: boolean;
   agencyDashboardEnabled: boolean;
+  recruitingRadarEnabled: boolean;
   inviteAccepted: boolean;
   leadCount: number;
   createdAt: string;
@@ -43,6 +44,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
   const [compLevelDrafts, setCompLevelDrafts] = useState<Record<string, string>>({});
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [togglingAgencyId, setTogglingAgencyId] = useState<string | null>(null);
+  const [togglingRecruitingId, setTogglingRecruitingId] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", licensedStates: [] as string[] });
@@ -135,6 +137,21 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
     }
   }
 
+  async function toggleRecruitingRadarEnabled(agent: Agent) {
+    setTogglingRecruitingId(agent.id);
+    const res = await fetch(`/api/admin/agents/${agent.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recruitingRadarEnabled: !agent.recruitingRadarEnabled }),
+    });
+    setTogglingRecruitingId(null);
+    if (res.ok) {
+      setAgents((prev) =>
+        prev.map((a) => (a.id === agent.id ? { ...a, recruitingRadarEnabled: !a.recruitingRadarEnabled } : a)),
+      );
+    }
+  }
+
   async function saveCompLevel(agentId: string) {
     const compLevel = compLevelDrafts[agentId]?.trim() ?? "";
     const res = await fetch(`/api/admin/agents/${agentId}`, {
@@ -162,6 +179,19 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
       setDeleteError({ id: agent.id, text: data.error ?? "Failed to delete agent" });
     }
   }
+
+  // Active agents first, then alphabetical within each group — matches the
+  // server's own initial ordering, but recomputed from state so toggling
+  // Activate/Deactivate re-sorts the list immediately instead of waiting
+  // for a refresh.
+  const sortedAgents = useMemo(
+    () =>
+      [...agents].sort((a, b) => {
+        if (a.active !== b.active) return a.active ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      }),
+    [agents],
+  );
 
   return (
     <div className="space-y-6">
@@ -216,12 +246,13 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                 <th className="py-2 pr-4">Assigned Leads</th>
                 <th className="py-2 pr-4">Vault Access</th>
                 <th className="py-2 pr-4">Agency Dashboard</th>
+                <th className="py-2 pr-4">Recruiting Radar</th>
                 <th className="py-2 pr-4">Status</th>
                 <th className="py-2 pr-4"></th>
               </tr>
             </thead>
             <tbody>
-              {agents.map((agent) => (
+              {sortedAgents.map((agent) => (
                 <tr key={agent.id} className="border-b border-border/60 align-top hover:bg-surface2">
                   <td className="py-2 pr-4 text-white">{agent.name}</td>
                   <td className="py-2 pr-4 text-muted">{agent.email}</td>
@@ -263,6 +294,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                   <td className="py-2 pr-4 text-white">{agent.leadCount.toLocaleString()}</td>
                   <td className="py-2 pr-4 text-muted">{vaultAccessLabel(agent.createdAt, agent.vaultEnabled)}</td>
                   <td className="py-2 pr-4 text-muted">{agent.agencyDashboardEnabled ? "On" : "Off"}</td>
+                  <td className="py-2 pr-4 text-muted">{agent.recruitingRadarEnabled ? "On" : "Off"}</td>
                   <td className="py-2 pr-4">
                     {!agent.inviteAccepted ? (
                       <span className="text-copper">Invited (pending)</span>
@@ -302,6 +334,13 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                           disabled={togglingAgencyId === agent.id}
                         >
                           {agent.agencyDashboardEnabled ? "Turn Off Agency" : "Turn On Agency"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => toggleRecruitingRadarEnabled(agent)}
+                          disabled={togglingRecruitingId === agent.id}
+                        >
+                          {agent.recruitingRadarEnabled ? "Turn Off Recruiting Radar" : "Turn On Recruiting Radar"}
                         </Button>
                         {!agent.active && agent.id !== currentUserId && (
                           <Button

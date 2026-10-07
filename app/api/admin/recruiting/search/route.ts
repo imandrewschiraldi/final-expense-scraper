@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/apiAuth";
+import { requireRecruitingRadarAccess } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { searchApolloPeople, ApolloSearchError } from "@/lib/apollo";
 import { CATEGORIES, MARKETS, isCategoryKey, isMarketId } from "@/lib/recruitingRadar";
 
 /** Runs one Apollo People Search for a single background/market pair, dedupes against every prospect already sourced, and inserts the rest. */
 export async function POST(req: NextRequest) {
-  const guard = await requireAdmin();
+  const guard = await requireRecruitingRadarAccess();
   if ("error" in guard) return guard.error;
 
   const { category, market } = (await req.json().catch(() => ({}))) as { category?: string; market?: string };

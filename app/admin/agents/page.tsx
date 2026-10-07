@@ -8,7 +8,8 @@ export default async function AgentsPage() {
   const session = await auth();
   const agents = await db.user.findMany({
     where: { role: { in: ["AGENT", "ADMIN"] } },
-    orderBy: { name: "asc" },
+    // Active agents first, then alphabetical within each group.
+    orderBy: [{ active: "desc" }, { name: "asc" }],
     select: {
       id: true,
       name: true,
@@ -20,6 +21,7 @@ export default async function AgentsPage() {
       vaultEnabled: true,
       assignmentEnabled: true,
       agencyDashboardEnabled: true,
+      recruitingRadarEnabled: true,
       passwordHash: true,
       createdAt: true,
       _count: { select: { assignedLeads: true } },
@@ -42,6 +44,7 @@ export default async function AgentsPage() {
           vaultEnabled: a.vaultEnabled,
           assignmentEnabled: a.assignmentEnabled,
           agencyDashboardEnabled: a.agencyDashboardEnabled,
+          recruitingRadarEnabled: a.recruitingRadarEnabled,
           inviteAccepted: a.passwordHash !== null,
           leadCount: a._count.assignedLeads,
           createdAt: a.createdAt.toISOString(),

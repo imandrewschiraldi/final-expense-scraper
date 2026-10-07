@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export async function requireAdmin() {
   const session = await auth();
@@ -42,6 +43,25 @@ export async function requireAnyRole() {
   const session = await auth();
   if (!session) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) } as const;
+  }
+  return { session } as const;
+}
+
+// Recruiting Radar is an admin tool by default; ADMIN always has access.
+// Agents/managers only get in once an admin flips recruitingRadarEnabled
+// on for their account specifically (see AgentsPanel) — unlike the other
+// guards above, that flag isn't on the session, so it takes a DB lookup.
+export async function requireRecruitingRadarAccess() {
+  const session = await auth();
+  if (!session) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) } as const;
+  }
+  if (session.user.role === "ADMIN") {
+    return { session } as const;
+  }
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { recruitingRadarEnabled: true } });
+  if (!user?.recruitingRadarEnabled) {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) } as const;
   }
   return { session } as const;
 }
