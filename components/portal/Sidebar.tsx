@@ -27,12 +27,15 @@ import {
   Stethoscope,
   ChevronsLeft,
   ChevronsRight,
+  Maximize2,
+  Minimize2,
   X,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { SignOutButton } from "@/components/ui/SignOutButton";
 import { NotificationBell } from "@/components/agent/NotificationBell";
+import { useWideLayout } from "@/lib/useWideLayout";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -65,13 +68,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/portal/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"] },
   { href: "/portal/underwriting-genie", label: "Underwriting Genie", icon: Stethoscope, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["MANAGER", "AGENT"] },
-  {
-    href: "/admin/recruiting-radar",
-    label: "Recruiting Radar",
-    icon: Radar,
-    roles: ["ADMIN", "MANAGER", "AGENT"],
-    requiresRecruitingRadar: true,
-  },
   { href: "/portal/ask-integrity", label: "Ask Integrity", icon: Bot, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["MANAGER", "AGENT"] },
   { href: "/admin/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["ADMIN"] },
@@ -81,6 +77,13 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"] },
   { href: "/agent/training", label: "Training", icon: GraduationCap, roles: ["MANAGER", "AGENT"] },
   { href: "/admin/training", label: "Training", icon: GraduationCap, roles: ["ADMIN"] },
+  {
+    href: "/admin/recruiting-radar",
+    label: "Recruiting Radar",
+    icon: Radar,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    requiresRecruitingRadar: true,
+  },
   { href: "/portal/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"] },
@@ -226,6 +229,7 @@ export function Sidebar({
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [chatUnread, setChatUnread] = useState(false);
+  const [wide, setWide] = useWideLayout();
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -342,14 +346,28 @@ export function Sidebar({
             )}
           </Link>
           {!collapsed && (
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-label="Collapse sidebar"
-              className="text-muted transition-colors hover:text-foreground"
-            >
-              <ChevronsLeft className="h-4.5 w-4.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setWide(!wide)}
+                aria-label={wide ? "Use standard width" : "Use wide layout for large monitors"}
+                title={wide ? "Use standard width" : "Use wide layout for large monitors"}
+                className={cn(
+                  "transition-colors hover:text-foreground",
+                  wide ? "text-copper" : "text-muted",
+                )}
+              >
+                {wide ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={toggleCollapsed}
+                aria-label="Collapse sidebar"
+                className="text-muted transition-colors hover:text-foreground"
+              >
+                <ChevronsLeft className="h-4.5 w-4.5" />
+              </button>
+            </div>
           )}
         </div>
         {/* A separate bar right after the fixed-height header row, not a
