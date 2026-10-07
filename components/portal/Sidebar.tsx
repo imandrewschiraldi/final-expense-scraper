@@ -29,13 +29,17 @@ import {
   ChevronsRight,
   Maximize2,
   Minimize2,
+  Volume2,
+  VolumeX,
   X,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { Button } from "@/components/ui/Button";
 import { SignOutButton } from "@/components/ui/SignOutButton";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { useWideLayout } from "@/lib/useWideLayout";
+import { useSoundEnabled } from "@/lib/useSoundEnabled";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -174,12 +178,25 @@ function SidebarFooter({
   role: Role;
   onNavigate?: () => void;
 }) {
+  const [soundEnabled, setSoundEnabled] = useSoundEnabled();
+
   return (
     <div className="shrink-0 border-t border-border px-2.5 py-3">
       {!collapsed && (
         <div className="mb-3 flex items-center justify-between gap-2">
           <NotificationBell />
-          <SignOutButton iconOnly />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              aria-label={soundEnabled ? "Mute sounds" : "Unmute sounds"}
+              title={soundEnabled ? "Mute sounds" : "Unmute sounds"}
+              className="px-2"
+              onClick={() => setSoundEnabled(!soundEnabled)}
+            >
+              {soundEnabled ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}
+            </Button>
+            <SignOutButton iconOnly />
+          </div>
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { notificationMessage, type NotificationRecord } from "@/lib/notifications";
+import { playNotificationSound } from "@/lib/sounds";
 
 type Toast = { id: string; message: string; href: string };
 
@@ -28,6 +29,7 @@ export function NotificationToaster() {
   useEffect(() => {
     function pushToast(toast: Toast) {
       setToasts((prev) => [...prev, toast]);
+      playNotificationSound();
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== toast.id));
       }, DISMISS_MS);
