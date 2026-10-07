@@ -183,20 +183,22 @@ function SidebarFooter({
   return (
     <div className="shrink-0 border-t border-border px-2.5 py-3">
       {!collapsed && (
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <NotificationBell />
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              aria-label={soundEnabled ? "Mute sounds" : "Unmute sounds"}
-              title={soundEnabled ? "Mute sounds" : "Unmute sounds"}
-              className="px-2"
-              onClick={() => setSoundEnabled(!soundEnabled)}
-            >
-              {soundEnabled ? <Volume2 className="h-4.5 w-4.5" /> : <VolumeX className="h-4.5 w-4.5" />}
-            </Button>
+        <div className="mb-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <NotificationBell />
             <SignOutButton iconOnly />
           </div>
+          <Button
+            variant="ghost"
+            aria-label={soundEnabled ? "Mute sounds" : "Unmute sounds"}
+            className="w-full gap-2"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+          >
+            {soundEnabled ? <Volume2 className="h-4 w-4 shrink-0" /> : <VolumeX className="h-4 w-4 shrink-0" />}
+            <span className="font-condensed text-[13px] font-bold tracking-[0.05em] uppercase">
+              {soundEnabled ? "Sound On" : "Sound Off"}
+            </span>
+          </Button>
         </div>
       )}
 
