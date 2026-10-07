@@ -17,6 +17,7 @@ type Agent = {
   active: boolean;
   compLevel: string | null;
   vaultEnabled: boolean;
+  vaultAccessStartedAt: string | null;
   assignmentEnabled: boolean;
   agencyDashboardEnabled: boolean;
   recruitingRadarEnabled: boolean;
@@ -27,9 +28,15 @@ type Agent = {
 
 const VAULT_ACCESS_DAYS = 90;
 
-function vaultAccessStatus(createdAt: string, vaultEnabled: boolean): { label: string; on: boolean } {
-  if (!vaultEnabled) return { label: "Off (manual)", on: false };
-  const cutoff = new Date(createdAt).getTime() + VAULT_ACCESS_DAYS * 24 * 60 * 60 * 1000;
+// vaultAccessStartedAt overrides createdAt as the window's start once an
+// admin restarts it — mirrors hasVaultAccess()'s anchor logic in lib/vault.ts.
+function vaultAccessStatus(agent: Pick<Agent, "createdAt" | "vaultEnabled" | "vaultAccessStartedAt">): {
+  label: string;
+  on: boolean;
+} {
+  if (!agent.vaultEnabled) return { label: "Off (manual)", on: false };
+  const windowStart = agent.vaultAccessStartedAt ?? agent.createdAt;
+  const cutoff = new Date(windowStart).getTime() + VAULT_ACCESS_DAYS * 24 * 60 * 60 * 1000;
   const daysLeft = Math.ceil((cutoff - Date.now()) / (24 * 60 * 60 * 1000));
   return daysLeft > 0 ? { label: `${daysLeft} day(s) left`, on: true } : { label: "Expired", on: false };
 }
@@ -58,6 +65,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
   const [deleteError, setDeleteError] = useState<{ id: string; text: string } | null>(null);
   const [compLevelDrafts, setCompLevelDrafts] = useState<Record<string, string>>({});
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [restartingVaultId, setRestartingVaultId] = useState<string | null>(null);
   const [togglingAgencyId, setTogglingAgencyId] = useState<string | null>(null);
   const [togglingRecruitingId, setTogglingRecruitingId] = useState<string | null>(null);
 
@@ -134,6 +142,27 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
     setTogglingId(null);
     if (res.ok) {
       setAgents((prev) => prev.map((a) => (a.id === agent.id ? { ...a, vaultEnabled: !a.vaultEnabled } : a)));
+    }
+  }
+
+  async function restartVaultAccess(agent: Agent) {
+    if (!window.confirm(`Restart ${agent.name}'s 90-day Vault access window starting now?`)) return;
+    setRestartingVaultId(agent.id);
+    const res = await fetch(`/api/admin/agents/${agent.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ restartVaultAccess: true }),
+    });
+    setRestartingVaultId(null);
+    if (res.ok) {
+      const data = await res.json();
+      setAgents((prev) =>
+        prev.map((a) =>
+          a.id === agent.id
+            ? { ...a, vaultEnabled: data.agent.vaultEnabled, vaultAccessStartedAt: data.agent.vaultAccessStartedAt }
+            : a,
+        ),
+      );
     }
   }
 
@@ -310,7 +339,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                   </td>
                   <td className="py-2 pr-4 text-white">{agent.leadCount.toLocaleString()}</td>
                   {(() => {
-                    const vault = vaultAccessStatus(agent.createdAt, agent.vaultEnabled);
+                    const vault = vaultAccessStatus(agent);
                     return <td className={cn("py-2 pr-4", statusTextClass(vault.on))}>{vault.label}</td>;
                   })()}
                   <td className={cn("py-2 pr-4", statusTextClass(agent.agencyDashboardEnabled))}>
@@ -354,6 +383,13 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                           disabled={togglingId === agent.id}
                         >
                           {agent.vaultEnabled ? "Turn Off Vault" : "Turn On Vault"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => restartVaultAccess(agent)}
+                          disabled={restartingVaultId === agent.id}
+                        >
+                          {restartingVaultId === agent.id ? "Restarting..." : "Restart Vault Access"}
                         </Button>
                         <Button
                           variant="ghost"

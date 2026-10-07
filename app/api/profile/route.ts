@@ -22,6 +22,7 @@ export async function GET() {
       demoModeEnabled: true,
       createdAt: true,
       vaultEnabled: true,
+      vaultAccessStartedAt: true,
       agencyDashboardEnabled: true,
       recruitingRadarEnabled: true,
     },
@@ -29,8 +30,10 @@ export async function GET() {
 
   if (!user) return NextResponse.json({ profile: null });
 
-  const { createdAt, vaultEnabled, ...profile } = user;
-  return NextResponse.json({ profile: { ...profile, hasVaultAccess: hasVaultAccess({ createdAt, vaultEnabled }) } });
+  const { createdAt, vaultEnabled, vaultAccessStartedAt, ...profile } = user;
+  return NextResponse.json({
+    profile: { ...profile, hasVaultAccess: hasVaultAccess({ createdAt, vaultEnabled, vaultAccessStartedAt }) },
+  });
 }
 
 export async function PATCH(req: NextRequest) {

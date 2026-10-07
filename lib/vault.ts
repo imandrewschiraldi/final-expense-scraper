@@ -30,16 +30,23 @@ export const VAULT_REVERT_DAYS = 14;
 export const VAULT_ACCESS_DAYS = 90;
 
 export function hasVaultAccess(
-  agent: { createdAt: Date; vaultEnabled: boolean },
+  agent: { createdAt: Date; vaultEnabled: boolean; vaultAccessStartedAt?: Date | null },
   now: Date = new Date(),
 ) {
   if (!agent.vaultEnabled) return false;
-  const msSinceCreation = now.getTime() - agent.createdAt.getTime();
-  return msSinceCreation < VAULT_ACCESS_DAYS * 24 * 60 * 60 * 1000;
+  // vaultAccessStartedAt overrides createdAt as the window's start once an
+  // admin restarts it (see AgentsPanel's "Restart Vault Access") — falls
+  // back to createdAt for everyone who's never had it restarted.
+  const windowStart = agent.vaultAccessStartedAt ?? agent.createdAt;
+  const msSinceStart = now.getTime() - windowStart.getTime();
+  return msSinceStart < VAULT_ACCESS_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export async function agentHasVaultAccess(agentId: string, now: Date = new Date()) {
-  const agent = await db.user.findUnique({ where: { id: agentId }, select: { createdAt: true, vaultEnabled: true } });
+  const agent = await db.user.findUnique({
+    where: { id: agentId },
+    select: { createdAt: true, vaultEnabled: true, vaultAccessStartedAt: true },
+  });
   if (!agent) return false;
   return hasVaultAccess(agent, now);
 }
