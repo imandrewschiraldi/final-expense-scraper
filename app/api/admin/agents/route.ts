@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { createAndSendInvite } from "@/lib/invite";
+import { agentStatusRank } from "@/lib/agentStatus";
 
 export async function GET() {
   const guard = await requireAdmin();
@@ -9,8 +10,6 @@ export async function GET() {
 
   const agents = await db.user.findMany({
     where: { role: { in: ["AGENT", "ADMIN"] } },
-    // Active agents first, then alphabetical within each group.
-    orderBy: [{ active: "desc" }, { name: "asc" }],
     select: {
       id: true,
       name: true,
@@ -29,12 +28,16 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({
-    agents: agents.map(({ passwordHash, ...agent }) => ({
-      ...agent,
-      inviteAccepted: passwordHash !== null,
-    })),
+  const mapped = agents.map(({ passwordHash, ...agent }) => ({
+    ...agent,
+    inviteAccepted: passwordHash !== null,
+  }));
+  mapped.sort((a, b) => {
+    const diff = agentStatusRank(a) - agentStatusRank(b);
+    return diff !== 0 ? diff : a.name.localeCompare(b.name);
   });
+
+  return NextResponse.json({ agents: mapped });
 }
 
 export async function POST(req: NextRequest) {

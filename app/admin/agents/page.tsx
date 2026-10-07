@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { AgentsPanel } from "@/components/admin/AgentsPanel";
+import { agentStatusRank } from "@/lib/agentStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -8,8 +9,6 @@ export default async function AgentsPage() {
   const session = await auth();
   const agents = await db.user.findMany({
     where: { role: { in: ["AGENT", "ADMIN"] } },
-    // Active agents first, then alphabetical within each group.
-    orderBy: [{ active: "desc" }, { name: "asc" }],
     select: {
       id: true,
       name: true,
@@ -33,22 +32,28 @@ export default async function AgentsPage() {
       <h1 className="mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">Agents</h1>
       <AgentsPanel
         currentUserId={session?.user.id ?? null}
-        initialAgents={agents.map((a) => ({
-          id: a.id,
-          name: a.name,
-          email: a.email,
-          role: a.role,
-          licensedStates: a.licensedStates,
-          active: a.active,
-          compLevel: a.compLevel,
-          vaultEnabled: a.vaultEnabled,
-          assignmentEnabled: a.assignmentEnabled,
-          agencyDashboardEnabled: a.agencyDashboardEnabled,
-          recruitingRadarEnabled: a.recruitingRadarEnabled,
-          inviteAccepted: a.passwordHash !== null,
-          leadCount: a._count.assignedLeads,
-          createdAt: a.createdAt.toISOString(),
-        }))}
+        initialAgents={agents
+          .map((a) => ({
+            id: a.id,
+            name: a.name,
+            email: a.email,
+            role: a.role,
+            licensedStates: a.licensedStates,
+            active: a.active,
+            compLevel: a.compLevel,
+            vaultEnabled: a.vaultEnabled,
+            assignmentEnabled: a.assignmentEnabled,
+            agencyDashboardEnabled: a.agencyDashboardEnabled,
+            recruitingRadarEnabled: a.recruitingRadarEnabled,
+            inviteAccepted: a.passwordHash !== null,
+            leadCount: a._count.assignedLeads,
+            createdAt: a.createdAt.toISOString(),
+          }))
+          .sort((a, b) => {
+            const rank = agentStatusRank(a);
+            const diff = rank - agentStatusRank(b);
+            return diff !== 0 ? diff : a.name.localeCompare(b.name);
+          })}
       />
     </div>
   );

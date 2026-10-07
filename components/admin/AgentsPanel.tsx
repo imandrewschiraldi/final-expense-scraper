@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StateMultiSelect } from "@/components/shared/StateMultiSelect";
+import { agentStatusRank } from "@/lib/agentStatus";
 
 type Agent = {
   id: string;
@@ -180,15 +181,17 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
     }
   }
 
-  // Active agents first, then alphabetical within each group — matches the
-  // server's own initial ordering, but recomputed from state so toggling
-  // Activate/Deactivate re-sorts the list immediately instead of waiting
-  // for a refresh.
+  // Active agents first, then Invited (pending), then Inactive last —
+  // matches the Status column (agentStatusRank) rather than the raw
+  // `active` flag alone, which stays true for not-yet-accepted invites and
+  // would otherwise interleave them with genuinely active agents.
+  // Recomputed from state so toggling Activate/Deactivate re-sorts the
+  // list immediately instead of waiting for a refresh.
   const sortedAgents = useMemo(
     () =>
       [...agents].sort((a, b) => {
-        if (a.active !== b.active) return a.active ? -1 : 1;
-        return a.name.localeCompare(b.name);
+        const diff = agentStatusRank(a) - agentStatusRank(b);
+        return diff !== 0 ? diff : a.name.localeCompare(b.name);
       }),
     [agents],
   );
