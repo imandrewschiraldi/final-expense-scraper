@@ -29,6 +29,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/cn";
+import { linkifyText } from "@/lib/linkify";
 import {
   CHAT_IMAGE_MAX_BYTES,
   CHAT_IMAGE_TYPES,
@@ -860,7 +861,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
           {message.body && (
             <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">
-              {message.body}
+              {linkifyText(message.body)}
             </p>
           )}
 
