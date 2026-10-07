@@ -83,6 +83,12 @@ model User {
   profileImageUrl        String?
   compLevel              String?
   vaultEnabled           Boolean   @default(true)
+  /// Overrides createdAt as the start of this agent's 90-day Vault access
+  /// window (see VAULT_ACCESS_DAYS in lib/vault.ts) — null means "use
+  /// createdAt", preserving existing behavior for everyone until an admin
+  /// explicitly restarts someone's window (e.g. a veteran agent whose
+  /// window expired long ago, given renewed access on request).
+  vaultAccessStartedAt   DateTime?
   assignmentEnabled      Boolean   @default(true)
   /// Admin-controlled per-agent switch for the Agency Dashboard nav tab and
   /// page — off both hides the tab and redirects the page to the personal

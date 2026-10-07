@@ -13,7 +13,7 @@ export default async function VaultPage() {
   const agent = session?.user.id
     ? await db.user.findUnique({
         where: { id: session.user.id },
-        select: { createdAt: true, vaultEnabled: true },
+        select: { createdAt: true, vaultEnabled: true, vaultAccessStartedAt: true },
       })
     : null;
 

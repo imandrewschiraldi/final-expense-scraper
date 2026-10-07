@@ -14,6 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     active,
     compLevel,
     vaultEnabled,
+    restartVaultAccess,
     assignmentEnabled,
     agencyDashboardEnabled,
     recruitingRadarEnabled,
@@ -23,6 +24,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     active?: boolean;
     compLevel?: string | null;
     vaultEnabled?: boolean;
+    // Resets the 90-day Vault access window to start now, in the same
+    // request as turning it back on — the server sets the timestamp itself
+    // rather than trusting a client-supplied date.
+    restartVaultAccess?: boolean;
     assignmentEnabled?: boolean;
     agencyDashboardEnabled?: boolean;
     recruitingRadarEnabled?: boolean;
@@ -43,6 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(active !== undefined ? { active } : {}),
       ...(compLevel !== undefined ? { compLevel } : {}),
       ...(vaultEnabled !== undefined ? { vaultEnabled } : {}),
+      ...(restartVaultAccess ? { vaultEnabled: true, vaultAccessStartedAt: new Date() } : {}),
       ...(assignmentEnabled !== undefined ? { assignmentEnabled } : {}),
       ...(agencyDashboardEnabled !== undefined ? { agencyDashboardEnabled } : {}),
       ...(recruitingRadarEnabled !== undefined ? { recruitingRadarEnabled } : {}),
@@ -55,6 +61,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       active: true,
       compLevel: true,
       vaultEnabled: true,
+      vaultAccessStartedAt: true,
       assignmentEnabled: true,
       agencyDashboardEnabled: true,
       recruitingRadarEnabled: true,
