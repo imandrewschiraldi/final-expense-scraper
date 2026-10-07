@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StateMultiSelect } from "@/components/shared/StateMultiSelect";
 import { agentStatusRank } from "@/lib/agentStatus";
+import { cn } from "@/lib/cn";
 
 type Agent = {
   id: string;
@@ -26,11 +27,24 @@ type Agent = {
 
 const VAULT_ACCESS_DAYS = 90;
 
-function vaultAccessLabel(createdAt: string, vaultEnabled: boolean): string {
-  if (!vaultEnabled) return "Off (manual)";
+function vaultAccessStatus(createdAt: string, vaultEnabled: boolean): { label: string; on: boolean } {
+  if (!vaultEnabled) return { label: "Off (manual)", on: false };
   const cutoff = new Date(createdAt).getTime() + VAULT_ACCESS_DAYS * 24 * 60 * 60 * 1000;
   const daysLeft = Math.ceil((cutoff - Date.now()) / (24 * 60 * 60 * 1000));
-  return daysLeft > 0 ? `${daysLeft} day(s) left` : "Expired";
+  return daysLeft > 0 ? { label: `${daysLeft} day(s) left`, on: true } : { label: "Expired", on: false };
+}
+
+// Shared green/red treatment for every On-Off status cell and toggle
+// button in this table — green for whatever state is currently "on"
+// (On, Active, Deactivate), red for "off" (Off, Inactive, Activate).
+function statusTextClass(on: boolean): string {
+  return on ? "text-green-light" : "text-red-light";
+}
+// "!" forces these to win over the ghost Button variant's own text-muted /
+// hover:text-foreground classes, since cn() here is a plain clsx with no
+// Tailwind class-conflict resolution to fall back on.
+function statusButtonClass(on: boolean): string {
+  return on ? "!text-green-light hover:!text-green-light" : "!text-red-light hover:!text-red-light";
 }
 
 
@@ -295,16 +309,21 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                     />
                   </td>
                   <td className="py-2 pr-4 text-white">{agent.leadCount.toLocaleString()}</td>
-                  <td className="py-2 pr-4 text-muted">{vaultAccessLabel(agent.createdAt, agent.vaultEnabled)}</td>
-                  <td className="py-2 pr-4 text-muted">{agent.agencyDashboardEnabled ? "On" : "Off"}</td>
-                  <td className="py-2 pr-4 text-muted">{agent.recruitingRadarEnabled ? "On" : "Off"}</td>
+                  {(() => {
+                    const vault = vaultAccessStatus(agent.createdAt, agent.vaultEnabled);
+                    return <td className={cn("py-2 pr-4", statusTextClass(vault.on))}>{vault.label}</td>;
+                  })()}
+                  <td className={cn("py-2 pr-4", statusTextClass(agent.agencyDashboardEnabled))}>
+                    {agent.agencyDashboardEnabled ? "On" : "Off"}
+                  </td>
+                  <td className={cn("py-2 pr-4", statusTextClass(agent.recruitingRadarEnabled))}>
+                    {agent.recruitingRadarEnabled ? "On" : "Off"}
+                  </td>
                   <td className="py-2 pr-4">
                     {!agent.inviteAccepted ? (
                       <span className="text-copper">Invited (pending)</span>
                     ) : (
-                      <span className={agent.active ? "text-green-light" : "text-muted"}>
-                        {agent.active ? "Active" : "Inactive"}
-                      </span>
+                      <span className={statusTextClass(agent.active)}>{agent.active ? "Active" : "Inactive"}</span>
                     )}
                   </td>
                   <td className="py-2 pr-4">
@@ -320,12 +339,17 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                           </Button>
                         )}
                         {agent.id !== currentUserId && (
-                          <Button variant="ghost" onClick={() => toggleActive(agent)}>
+                          <Button
+                            variant="ghost"
+                            className={statusButtonClass(agent.active)}
+                            onClick={() => toggleActive(agent)}
+                          >
                             {agent.active ? "Deactivate" : "Activate"}
                           </Button>
                         )}
                         <Button
                           variant="ghost"
+                          className={statusButtonClass(agent.vaultEnabled)}
                           onClick={() => toggleVaultEnabled(agent)}
                           disabled={togglingId === agent.id}
                         >
@@ -333,6 +357,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                         </Button>
                         <Button
                           variant="ghost"
+                          className={statusButtonClass(agent.agencyDashboardEnabled)}
                           onClick={() => toggleAgencyDashboardEnabled(agent)}
                           disabled={togglingAgencyId === agent.id}
                         >
@@ -340,6 +365,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                         </Button>
                         <Button
                           variant="ghost"
+                          className={statusButtonClass(agent.recruitingRadarEnabled)}
                           onClick={() => toggleRecruitingRadarEnabled(agent)}
                           disabled={togglingRecruitingId === agent.id}
                         >
