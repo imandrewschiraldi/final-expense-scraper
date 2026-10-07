@@ -12,7 +12,7 @@ export default async function AgentTrainingLessonPage({ params }: { params: Prom
 
   const lesson = await db.trainingLesson.findUnique({
     where: { id },
-    include: { module: true },
+    include: { module: true, images: { orderBy: { order: "asc" } } },
   });
 
   if (!lesson) {
@@ -41,6 +41,7 @@ export default async function AgentTrainingLessonPage({ params }: { params: Prom
         title: lesson.title,
         description: lesson.description,
         videoUrl: lesson.videoUrl,
+        images: lesson.images.map((img) => ({ id: img.id, url: img.url })),
         moduleTitle: lesson.module.title,
       }}
       isCompleted={!!progress}

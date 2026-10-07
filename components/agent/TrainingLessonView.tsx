@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getEmbedUrl } from "@/lib/videoEmbed";
@@ -11,7 +12,8 @@ type Lesson = {
   id: string;
   title: string;
   description: string | null;
-  videoUrl: string;
+  videoUrl: string | null;
+  images: { id: string; url: string }[];
   moduleTitle: string;
 };
 
@@ -34,10 +36,11 @@ export function TrainingLessonView({
   const router = useRouter();
   const [completed, setCompleted] = useState(initialCompleted);
   const [saving, setSaving] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   const prevHref = navigation.prevId ? `/agent/training/lessons/${navigation.prevId}` : null;
   const nextHref = navigation.nextId ? `/agent/training/lessons/${navigation.nextId}` : null;
-  const embedUrl = getEmbedUrl(lesson.videoUrl);
+  const embedUrl = lesson.videoUrl ? getEmbedUrl(lesson.videoUrl) : null;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -104,7 +107,7 @@ export function TrainingLessonView({
 
         {lesson.description && <p className="mb-4 text-sm text-muted">{lesson.description}</p>}
 
-        {embedUrl ? (
+        {embedUrl && (
           <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
             <iframe
               src={embedUrl}
@@ -114,7 +117,9 @@ export function TrainingLessonView({
               allowFullScreen
             />
           </div>
-        ) : (
+        )}
+
+        {!embedUrl && lesson.videoUrl && (
           <div className="rounded-lg border border-border bg-surface2 p-6 text-center">
             <p className="mb-3 text-sm text-muted">This video can&apos;t be embedded automatically.</p>
             <a href={lesson.videoUrl} target="_blank" rel="noopener noreferrer">
@@ -122,9 +127,46 @@ export function TrainingLessonView({
             </a>
           </div>
         )}
+
+        {lesson.images.length > 0 && (
+          <div className={(embedUrl || lesson.videoUrl ? "mt-4 " : "") + "grid grid-cols-2 gap-2 sm:grid-cols-3"}>
+            {lesson.images.map((img) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={img.id}
+                src={img.url}
+                alt=""
+                onClick={() => setLightbox(img.url)}
+                className="aspect-square w-full cursor-zoom-in rounded-lg border border-border object-cover"
+              />
+            ))}
+          </div>
+        )}
+
+        {!embedUrl && !lesson.videoUrl && lesson.images.length === 0 && (
+          <p className="text-sm text-muted">No content has been added to this lesson yet.</p>
+        )}
       </Card>
 
       <p className="text-center text-xs text-muted">Tip: use the &larr; and &rarr; arrow keys to move between lessons.</p>
+
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightbox} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            aria-label="Close"
+            className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

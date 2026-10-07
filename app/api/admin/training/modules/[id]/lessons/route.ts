@@ -8,10 +8,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id: moduleId } = await params;
   const body = await req.json();
-  const { title, description, videoUrl } = body as { title?: string; description?: string; videoUrl?: string };
+  const { title, description, videoUrl, images } = body as {
+    title?: string;
+    description?: string;
+    videoUrl?: string;
+    images?: string[];
+  };
 
-  if (!title || !videoUrl) {
-    return NextResponse.json({ error: "title and videoUrl are required" }, { status: 400 });
+  if (!title || (!videoUrl && !images?.length)) {
+    return NextResponse.json({ error: "title and either videoUrl or at least one photo are required" }, { status: 400 });
   }
 
   const maxOrder = await db.trainingLesson.aggregate({
@@ -24,9 +29,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       moduleId,
       title,
       description: description ?? null,
-      videoUrl,
+      videoUrl: videoUrl || null,
       order: (maxOrder._max.order ?? 0) + 1,
+      images: { create: (images ?? []).map((url, i) => ({ url, order: i })) },
     },
+    include: { images: { orderBy: { order: "asc" } } },
   });
 
   return NextResponse.json({ lesson }, { status: 201 });

@@ -314,15 +314,32 @@ model TrainingLesson {
   module      TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   title       String
   description String?
-  videoUrl    String
+  /// Optional now that a lesson can instead (or also) carry photos — see
+  /// `images`. Still the primary content for video-based lessons.
+  videoUrl    String?
   order       Int            @default(0)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
   progress TrainingProgress[]
+  images   TrainingLessonImage[]
 
   @@index([moduleId, order])
   @@map("training_lessons")
+}
+
+/// One photo attached to a training lesson — a lesson can carry several,
+/// shown as a gallery alongside (or instead of) its video.
+model TrainingLessonImage {
+  id        String         @id @default(cuid())
+  lessonId  String
+  lesson    TrainingLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  url       String
+  order     Int            @default(0)
+  createdAt DateTime       @default(now())
+
+  @@index([lessonId, order])
+  @@map("training_lesson_images")
 }
 
 model TrainingProgress {
