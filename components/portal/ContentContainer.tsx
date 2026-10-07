@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useWideLayout } from "@/lib/useWideLayout";
 
 // Scripts and Commission Calculator render a full-bleed iframe that's meant
 // to reach the actual edges of the browser window (so the embedded tool's
@@ -15,9 +16,15 @@ const FULL_BLEED_PREFIXES = ["/portal/scripts", "/portal/commission-calculator"]
 
 export function ContentContainer({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [wide] = useWideLayout();
+
   if (FULL_BLEED_PREFIXES.some((p) => pathname.startsWith(p))) {
     return <div className="h-full w-full">{children}</div>;
   }
 
-  return <div className="mx-auto w-full max-w-6xl">{children}</div>;
+  // Wide mode (opt-in, see Sidebar's toggle) trades the usual centered
+  // reading width for something that actually uses a large/widescreen
+  // monitor — wide tables (Agents, Book of Business) stop needing a
+  // horizontal scrollbar to show their last couple of columns.
+  return <div className={wide ? "mx-auto w-full max-w-[1800px]" : "mx-auto w-full max-w-6xl"}>{children}</div>;
 }
