@@ -9,7 +9,7 @@ import { AgentLeadImportForm } from "@/components/agent/AgentLeadImportForm";
 import { cn } from "@/lib/cn";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
-import { formatPhone } from "@/lib/formatPhone";
+import { formatPhone, telHref } from "@/lib/formatPhone";
 import { formatDob } from "@/lib/formatDob";
 
 type Lead = {
@@ -182,7 +182,11 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
                     {lead.firstName} {lead.lastName}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-muted">{formatPhone(lead.phone)}</td>
+                <td className="px-4 py-3 text-muted">
+                  <a href={telHref(lead.phone)} className="hover:text-copper hover:underline">
+                    {formatPhone(lead.phone)}
+                  </a>
+                </td>
                 <td className="px-4 py-3 text-muted">{lead.state}</td>
                 <td className="px-4 py-3 text-muted">{formatDob(lead.dateOfBirth)}</td>
                 <td className="px-4 py-3 text-muted" title={LEAD_TYPE_LABELS[lead.leadType]}>
