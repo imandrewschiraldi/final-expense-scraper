@@ -446,7 +446,14 @@ export function LeadDetailPanel({
                   variant="secondary"
                   disabled={saving}
                   onClick={() => updateStatus(status)}
-                  className={cn(status === lead.status && "!border-copper !bg-copper !text-black")}
+                  // btn-metal-copper paints its own background-image (a
+                  // near-black fill layered under the metallic border) over
+                  // whatever background-color a utility sets, so !bg-copper
+                  // alone was invisible underneath it — !bg-none drops that
+                  // image layer so the flat copper fill actually shows.
+                  className={cn(
+                    status === lead.status && "!border-copper !bg-copper !bg-none !text-black",
+                  )}
                 >
                   {LEAD_STATUS_LABELS[status]}
                 </Button>
