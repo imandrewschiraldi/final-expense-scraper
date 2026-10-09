@@ -145,6 +145,24 @@ body {
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
     inset 0 -2px 3px rgba(0, 0, 0, 0.45);
 }
+/* Same gradient/bevel as .metal-copper-surface, scaled up for a standalone
+   card (Carrier Resources) rather than a small icon tile — adds an outer
+   drop shadow for lift, since a card sits on the page background instead
+   of flush inside a panel. */
+.metal-copper-card {
+  background-image: linear-gradient(
+    135deg,
+    var(--copper-metal-dk) 0%,
+    var(--copper-metal-hi) 25%,
+    var(--copper-metal) 50%,
+    var(--copper-metal-hi) 75%,
+    var(--copper-metal-dk) 100%
+  );
+  box-shadow:
+    0 16px 32px -8px rgba(0, 0, 0, 0.7),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+}
 .metal-green-surface {
   background-image: linear-gradient(
     135deg,
