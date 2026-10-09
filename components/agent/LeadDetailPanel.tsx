@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
+import { Flag, Home, Phone as PhoneIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -12,8 +13,39 @@ import { Callout } from "@/components/ui/Callout";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 import { cn } from "@/lib/cn";
-import { formatPhone } from "@/lib/formatPhone";
+import { formatPhone, telHref } from "@/lib/formatPhone";
 import { formatDob } from "@/lib/formatDob";
+
+/** A teaser banner at the top of the lead card for the two lead types worth
+ *  flagging at a glance — gives the header card a mailer-postcard feel
+ *  (like a mailer's bold callout line) instead of a plain data card. Sits
+ *  in normal flow, not absolutely positioned, so it can never overlap the
+ *  name/phone below it regardless of how long the name is or how narrow
+ *  the card gets on mobile. Silent (returns null) for Final Expense and
+ *  IUL, which don't carry the same at-a-glance qualifier. */
+function LeadTypeBanner({ leadType }: { leadType: LeadType }) {
+  if (leadType === "VETERANS_FINAL_EXPENSE") {
+    return (
+      <div className="mb-3 -mx-5 -mt-5 flex items-center gap-1.5 rounded-t-[9px] bg-gradient-to-r from-[#7a1c28] via-[#b9324a] to-[#7a1c28] px-4 py-1.5">
+        <Flag className="h-3.5 w-3.5 text-white" />
+        <span className="font-condensed text-[11px] font-extrabold tracking-[0.12em] text-white uppercase">
+          Veteran Lead
+        </span>
+      </div>
+    );
+  }
+  if (leadType === "MORTGAGE_PROTECTION") {
+    return (
+      <div className="mb-3 -mx-5 -mt-5 flex items-center gap-1.5 rounded-t-[9px] bg-gradient-to-r from-copper-dim via-copper to-copper-dim px-4 py-1.5">
+        <Home className="h-3.5 w-3.5 text-black" />
+        <span className="font-condensed text-[11px] font-extrabold tracking-[0.12em] text-black uppercase">
+          Mortgage Protection Lead
+        </span>
+      </div>
+    );
+  }
+  return null;
+}
 
 const STATUS_OPTIONS: LeadStatus[] = [
   "NEW",
@@ -246,7 +278,7 @@ export function LeadDetailPanel({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="mt-3 flex items-center justify-between">
         <Link href={backHref} className="text-sm text-muted hover:text-foreground">
           &larr; {backLabel}
         </Link>
@@ -267,7 +299,8 @@ export function LeadDetailPanel({
         </div>
       </div>
 
-      <Card>
+      <Card className="relative overflow-hidden before:pointer-events-none before:absolute before:inset-[6px] before:rounded-[6px] before:border before:border-dashed before:border-copper-dim/25">
+        {!editing && <LeadTypeBanner leadType={lead.leadType} />}
         <CardHeader>
           {editing ? (
             <CardTitle>Edit Lead</CardTitle>
@@ -276,9 +309,18 @@ export function LeadDetailPanel({
               <CardTitle>
                 {lead.firstName} {lead.lastName}
               </CardTitle>
-              <p className="mt-1 text-sm text-muted">
-                {formatPhone(lead.phone)} &middot; {lead.state} &middot; DOB {formatDob(lead.dateOfBirth)} &middot;{" "}
-                {LEAD_TYPE_LABELS[lead.leadType]}
+              <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-muted">
+                <a
+                  href={telHref(lead.phone)}
+                  className="inline-flex items-center gap-1 font-semibold text-copper transition-colors hover:text-copper-dim hover:underline"
+                >
+                  <PhoneIcon className="h-3.5 w-3.5" />
+                  {formatPhone(lead.phone)}
+                </a>
+                <span>
+                  &middot; {lead.state} &middot; DOB {formatDob(lead.dateOfBirth)} &middot;{" "}
+                  {LEAD_TYPE_LABELS[lead.leadType]}
+                </span>
               </p>
             </div>
           )}
