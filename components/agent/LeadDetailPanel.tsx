@@ -284,22 +284,35 @@ export function LeadDetailPanel({
         </Link>
         <div className="flex items-center gap-3">
           {navigation.position && (
-            <span className="font-condensed text-xs font-bold tracking-[0.1em] text-muted uppercase">
+            <span className="font-condensed metal-copper-text text-xs font-bold tracking-[0.1em] uppercase">
               Lead {navigation.position} of {navigation.total}
             </span>
           )}
           <div className="flex gap-2">
-            <Button variant="ghost" disabled={!prevHref} onClick={() => prevHref && router.push(prevHref)}>
+            <Button
+              variant="ghost"
+              className="metal-copper-text"
+              disabled={!prevHref}
+              onClick={() => prevHref && router.push(prevHref)}
+            >
               &larr; Prev
             </Button>
-            <Button variant="ghost" disabled={!nextHref} onClick={() => nextHref && router.push(nextHref)}>
+            <Button
+              variant="ghost"
+              className="metal-copper-text"
+              disabled={!nextHref}
+              onClick={() => nextHref && router.push(nextHref)}
+            >
               Next &rarr;
             </Button>
           </div>
         </div>
       </div>
 
-      <Card className="relative overflow-hidden before:pointer-events-none before:absolute before:inset-[6px] before:rounded-[6px] before:border before:border-dashed before:border-copper-dim/25">
+      <Card
+        key={lead.id}
+        className="animate-lead-card-turn relative overflow-hidden before:pointer-events-none before:absolute before:inset-[6px] before:rounded-[6px] before:border before:border-dashed before:border-copper-dim/25"
+      >
         {!editing && <LeadTypeBanner leadType={lead.leadType} />}
         <CardHeader>
           {editing ? (
@@ -386,15 +399,6 @@ export function LeadDetailPanel({
           </div>
         )}
         {deleteError && <p className="mb-4 text-sm text-red-light">{deleteError}</p>}
-
-        {!editing && lead.isVaulted && (
-          <Callout variant="gold" className="mb-4">
-            This is a shared Vault lead — any agent can call it. Marking it Appointment Booked or Sold
-            claims it for you and removes it from the shared pool. Marking it Contacted, No Answer, or Not
-            Interested keeps it shared, but logs your attempt below so other agents can see it before
-            calling again.
-          </Callout>
-        )}
 
         {!editing && (lead.isArchived ? (
           <p className="rounded-[10px] border border-border bg-surface2 p-3 text-sm text-muted">
