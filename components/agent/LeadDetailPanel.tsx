@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Flag, Home, Phone as PhoneIcon } from "lucide-react";
@@ -145,6 +145,12 @@ export function LeadDetailPanel({
   canDelete?: boolean;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Set on the Prev/Next hrefs below and read back after navigating, so the
+  // newly-mounted card knows which way it should slide in from. Absent on
+  // a fresh/direct visit (from the lead list, a bookmark, etc.), where no
+  // slide direction makes sense.
+  const navDirection = searchParams.get("dir");
   const [lead, setLead] = useState(initialLead);
   const [noteBody, setNoteBody] = useState("");
   const [saving, setSaving] = useState(false);
@@ -163,8 +169,13 @@ export function LeadDetailPanel({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const prevHref = navigation.prevId ? `${basePath}/${navigation.prevId}?${navigation.filterQuery}` : null;
-  const nextHref = navigation.nextId ? `${basePath}/${navigation.nextId}?${navigation.filterQuery}` : null;
+  function navHref(id: string, dir: "prev" | "next") {
+    const params = new URLSearchParams(navigation.filterQuery);
+    params.set("dir", dir);
+    return `${basePath}/${id}?${params.toString()}`;
+  }
+  const prevHref = navigation.prevId ? navHref(navigation.prevId, "prev") : null;
+  const nextHref = navigation.nextId ? navHref(navigation.nextId, "next") : null;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -311,7 +322,11 @@ export function LeadDetailPanel({
 
       <Card
         key={lead.id}
-        className="animate-lead-card-turn relative overflow-hidden before:pointer-events-none before:absolute before:inset-[6px] before:rounded-[6px] before:border before:border-dashed before:border-copper-dim/25"
+        className={cn(
+          "relative overflow-hidden before:pointer-events-none before:absolute before:inset-[6px] before:rounded-[6px] before:border before:border-dashed before:border-copper-dim/25",
+          navDirection === "next" && "animate-lead-card-next",
+          navDirection === "prev" && "animate-lead-card-prev",
+        )}
       >
         {!editing && <LeadTypeBanner leadType={lead.leadType} />}
         <CardHeader>
