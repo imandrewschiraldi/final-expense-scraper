@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Flag, Home, Phone as PhoneIcon } from "lucide-react";
+import { Flag, Home, Phone as PhoneIcon, Shield, CheckSquare, LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -16,35 +16,145 @@ import { cn } from "@/lib/cn";
 import { formatPhone, telHref } from "@/lib/formatPhone";
 import { formatDob } from "@/lib/formatDob";
 
-/** A teaser banner at the top of the lead card for the two lead types worth
- *  flagging at a glance — gives the header card a mailer-postcard feel
- *  (like a mailer's bold callout line) instead of a plain data card. Sits
- *  in normal flow, not absolutely positioned, so it can never overlap the
- *  name/phone below it regardless of how long the name is or how narrow
- *  the card gets on mobile. Silent (returns null) for Final Expense and
- *  IUL, which don't carry the same at-a-glance qualifier. */
-function LeadTypeBanner({ leadType }: { leadType: LeadType }) {
-  if (leadType === "VETERANS_FINAL_EXPENSE") {
-    return (
-      <div className="mb-3 -mx-5 -mt-5 flex items-center gap-1.5 rounded-t-[9px] bg-gradient-to-r from-[#7a1c28] via-[#b9324a] to-[#7a1c28] px-4 py-1.5">
-        <Flag className="h-3.5 w-3.5 text-white" />
-        <span className="font-condensed text-[11px] font-extrabold tracking-[0.12em] text-white uppercase">
-          Veteran Lead
-        </span>
-      </div>
-    );
+function PhoneLink({ phone }: { phone: string }) {
+  return (
+    <a
+      href={telHref(phone)}
+      className="inline-flex items-center gap-1 font-semibold text-copper transition-colors hover:text-copper-dim hover:underline"
+    >
+      <PhoneIcon className="h-3.5 w-3.5 shrink-0" />
+      {formatPhone(phone)}
+    </a>
+  );
+}
+
+type MailerLead = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  state: string;
+  dateOfBirth: string | null;
+  leadType: LeadType;
+  address?: string | null;
+  email?: string | null;
+  coverageAmountRequested?: string | null;
+};
+
+const MAILER_THEME: Record<
+  "VETERANS_FINAL_EXPENSE" | "MORTGAGE_PROTECTION",
+  {
+    titleLines: [string, string];
+    ribbon: string;
+    checkboxLabel: string;
+    band: string;
+    ribbonGradient: string;
+    icon: LucideIcon;
   }
-  if (leadType === "MORTGAGE_PROTECTION") {
-    return (
-      <div className="mb-3 -mx-5 -mt-5 flex items-center gap-1.5 rounded-t-[9px] bg-gradient-to-r from-copper-dim via-copper to-copper-dim px-4 py-1.5">
-        <Home className="h-3.5 w-3.5 text-black" />
-        <span className="font-condensed text-[11px] font-extrabold tracking-[0.12em] text-black uppercase">
-          Mortgage Protection Lead
-        </span>
+> = {
+  VETERANS_FINAL_EXPENSE: {
+    titleLines: ["Veteran's Final Expense", "& Planning Guide"],
+    ribbon: "Information Request Form",
+    checkboxLabel: "Final Expense benefits information requested",
+    band: "linear-gradient(135deg, #1b2a4a, #2c4270)",
+    ribbonGradient: "linear-gradient(90deg, #7a1c28, #b9324a, #7a1c28)",
+    icon: Flag,
+  },
+  MORTGAGE_PROTECTION: {
+    titleLines: ["Mortgage Protection &", "Home Equity Assurance Guide"],
+    ribbon: "Property Secure Form",
+    checkboxLabel: "Mortgage Protection benefits & quote requested",
+    band: "linear-gradient(135deg, #1b2a4a, #2c4270)",
+    ribbonGradient: "linear-gradient(90deg, var(--copper-dim), var(--copper), var(--copper-dim))",
+    icon: Home,
+  },
+};
+
+function isMailerLeadType(leadType: LeadType): leadType is keyof typeof MAILER_THEME {
+  return leadType === "VETERANS_FINAL_EXPENSE" || leadType === "MORTGAGE_PROTECTION";
+}
+
+/** A header styled after the agency's own printed mailers (bold banner,
+ *  ribbon subhead, labeled form rows, gold frame) for the two lead types
+ *  that actually have a matching mailer — auto-filled with this lead's
+ *  real data rather than reproducing the template's own fields verbatim
+ *  (e.g. there's no "loan provider" in our data, so that row becomes
+ *  Coverage Requested instead — every field shown here is real). Bleeds to
+ *  the card's edges the same way the old type banner did; `actions` is the
+ *  Edit/Delete/status cluster, rendered inline in the top band so the
+ *  functional controls aren't lost under the mailer artwork. */
+function MailerLeadHeader({ lead, actions }: { lead: MailerLead; actions: React.ReactNode }) {
+  const theme = MAILER_THEME[lead.leadType as keyof typeof MAILER_THEME];
+  const Icon = theme.icon;
+  const fullName = `${lead.firstName} ${lead.lastName}`;
+
+  const fields: { label: string; value: React.ReactNode }[] =
+    lead.leadType === "VETERANS_FINAL_EXPENSE"
+      ? [
+          { label: "Full Name", value: fullName },
+          { label: "Phone Number", value: <PhoneLink phone={lead.phone} /> },
+          { label: "Date of Birth", value: formatDob(lead.dateOfBirth) },
+          { label: "State of Residence", value: lead.state },
+        ]
+      : [
+          { label: "Full Name", value: fullName },
+          { label: "Phone Number", value: <PhoneLink phone={lead.phone} /> },
+          { label: "Property Address", value: lead.address || "—" },
+          { label: "Email Address", value: lead.email || "—" },
+          { label: "Coverage Requested", value: lead.coverageAmountRequested || "—" },
+        ];
+
+  return (
+    <div className="-mx-5 -mt-5 mb-4 overflow-hidden rounded-t-[9px] bg-gradient-to-br from-[#9a7b3f] via-[#d9c08a] to-[#9a7b3f] p-[4px]">
+      <div className="overflow-hidden rounded-t-[7px] bg-surface">
+        <div className="flex items-start justify-between gap-3 px-4 py-3 sm:px-5" style={{ background: theme.band }}>
+          <div>
+            {theme.titleLines.map((line) => (
+              <p
+                key={line}
+                className="font-condensed text-base leading-tight font-extrabold tracking-wide text-white uppercase sm:text-lg"
+              >
+                {line}
+              </p>
+            ))}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        </div>
+
+        <div className="flex items-center justify-center py-1.5" style={{ background: theme.ribbonGradient }}>
+          <span className="font-condensed text-[11px] font-extrabold tracking-[0.16em] text-white uppercase">
+            {theme.ribbon}
+          </span>
+        </div>
+
+        <div className="flex items-start justify-between gap-4 px-4 py-4 sm:px-5">
+          <dl className="grid flex-1 grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+            {fields.map((f) => (
+              <div key={f.label}>
+                <dt className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase">
+                  {f.label}
+                </dt>
+                <dd className="truncate border-b border-dashed border-copper-dim/40 pb-1 text-sm font-semibold text-white">
+                  {f.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <Icon className="mt-1 hidden h-14 w-14 shrink-0 text-copper-dim/40 sm:block" />
+        </div>
+
+        <div className="flex items-center gap-1.5 px-4 pb-3 text-xs text-muted sm:px-5">
+          <CheckSquare className="h-3.5 w-3.5 shrink-0 text-copper" />
+          {theme.checkboxLabel}
+        </div>
+
+        <div className="flex justify-center border-t border-dashed border-copper-dim/25 py-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-copper-dim/50 bg-surface2">
+            <Shield className="h-3.5 w-3.5 text-copper-dim" />
+          </div>
+        </div>
       </div>
-    );
-  }
-  return null;
+    </div>
+  );
 }
 
 const STATUS_OPTIONS: LeadStatus[] = [
@@ -287,6 +397,29 @@ export function LeadDetailPanel({
     }
   }
 
+  // Shared between the mailer-style header (rendered inline in its navy
+  // band) and the plain CardHeader for other lead types, so Edit/Delete/
+  // status stay in exactly one place instead of two near-duplicate blocks.
+  const headerActions = (
+    <>
+      {(canEdit || canDelete) && !lead.isArchived && (
+        <div className="flex gap-2">
+          {canEdit && (
+            <Button variant="ghost" onClick={startEditing}>
+              Edit
+            </Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" onClick={deleteLead} disabled={deleting} className="!text-red-light">
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          )}
+        </div>
+      )}
+      <StatusBadge status={lead.status} />
+    </>
+  );
+
   return (
     <div className="space-y-6">
       <div className="mt-3 flex items-center justify-between">
@@ -328,48 +461,31 @@ export function LeadDetailPanel({
           navDirection === "prev" && "animate-lead-card-prev",
         )}
       >
-        {!editing && <LeadTypeBanner leadType={lead.leadType} />}
-        <CardHeader>
-          {editing ? (
+        {editing ? (
+          <CardHeader>
             <CardTitle>Edit Lead</CardTitle>
-          ) : (
+          </CardHeader>
+        ) : isMailerLeadType(lead.leadType) ? (
+          <MailerLeadHeader lead={lead} actions={headerActions} />
+        ) : (
+          <CardHeader>
             <div>
               <CardTitle>
                 {lead.firstName} {lead.lastName}
               </CardTitle>
               <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-muted">
-                <a
-                  href={telHref(lead.phone)}
-                  className="inline-flex items-center gap-1 font-semibold text-copper transition-colors hover:text-copper-dim hover:underline"
-                >
-                  <PhoneIcon className="h-3.5 w-3.5" />
-                  {formatPhone(lead.phone)}
-                </a>
+                <PhoneLink phone={lead.phone} />
                 <span>
                   &middot; {lead.state} &middot; DOB {formatDob(lead.dateOfBirth)} &middot;{" "}
                   {LEAD_TYPE_LABELS[lead.leadType]}
                 </span>
               </p>
             </div>
-          )}
-          <div className="flex items-center gap-3">
-            {!editing && (canEdit || canDelete) && !lead.isArchived && (
-              <div className="flex gap-2">
-                {canEdit && (
-                  <Button variant="ghost" onClick={startEditing}>
-                    Edit
-                  </Button>
-                )}
-                {canDelete && (
-                  <Button variant="ghost" onClick={deleteLead} disabled={deleting} className="!text-red-light">
-                    {deleting ? "Deleting..." : "Delete"}
-                  </Button>
-                )}
-              </div>
-            )}
-            {!editing && <StatusBadge status={lead.status} />}
-          </div>
-        </CardHeader>
+            <div className="flex items-center gap-3">
+              {headerActions}
+            </div>
+          </CardHeader>
+        )}
 
         {editing && (
           <div className="mb-4 space-y-3">
@@ -445,7 +561,11 @@ export function LeadDetailPanel({
 
       {!editing &&
         (() => {
-          const populated = SUPPLEMENTAL_FIELDS.filter((f) => lead[f.key]);
+          // Mortgage Protection's mailer header already shows address/email/
+          // coverage requested up top — no need to repeat them down here.
+          const mailerFieldKeys: (keyof Lead)[] =
+            lead.leadType === "MORTGAGE_PROTECTION" ? ["address", "email", "coverageAmountRequested"] : [];
+          const populated = SUPPLEMENTAL_FIELDS.filter((f) => lead[f.key] && !mailerFieldKeys.includes(f.key));
           if (populated.length === 0 && !lead.tobaccoUse) return null;
           return (
             <Card>
