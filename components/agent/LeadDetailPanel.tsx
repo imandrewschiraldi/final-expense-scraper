@@ -40,46 +40,39 @@ type MailerLead = {
   email?: string | null;
 };
 
-// Every value is anchored by its top-left corner (percent of the image's
-// own width/height, measured directly off the two source images) and
-// rendered as a small opaque chip rather than bare text — the templates'
-// hand-drawn blank lines are sized for handwriting, and on the Mortgage
-// image the Phone Number line runs straight under the house illustration,
-// so plain text there would be unreadable. The chip reads like the field
-// was typed in, legible over paper texture or artwork either way, and
-// isn't boxed in by how wide the original blank line happens to be.
+// Every value sits directly on the template's own printed blank line (percent
+// of the image's own width/height) as plain text — no background chip. These
+// two images are generated in-house (same vintage government-form look as
+// the agency's real mailers) specifically so every line has enough open
+// width for its value next to the label, including the Veteran form's Date
+// of Birth and State, which a real scanned mailer couldn't fit side by side.
 type MailerFieldKey = "fullName" | "phone" | "dateOfBirth" | "state" | "address" | "email";
-// "above" sits the chip's bottom edge on the template's printed line (for
-// fields with a real blank line next to their label). "below" drops straight
-// down instead, for fields like the veteran form's Date of Birth / State of
-// Residence, whose blank line is too narrow next to the label to hold a
-// typed value — the open paper strip beneath the line has room instead.
-type MailerField = { label: MailerFieldKey; leftPct: number; topPct: number; anchor?: "above" | "below" };
+type MailerField = { label: MailerFieldKey; leftPct: number; topPct: number };
 
 const MAILER_CONFIG: Record<
   "VETERANS_FINAL_EXPENSE" | "MORTGAGE_PROTECTION",
   { src: string; width: number; height: number; fields: MailerField[] }
 > = {
   VETERANS_FINAL_EXPENSE: {
-    src: "/mailers/veteran-mailer.jpg",
-    width: 730,
-    height: 527,
+    src: "/mailers/veteran-mailer.png",
+    width: 900,
+    height: 460,
     fields: [
-      { label: "fullName", leftPct: (205 / 730) * 100, topPct: (300 / 527) * 100 },
-      { label: "phone", leftPct: (565 / 730) * 100, topPct: (300 / 527) * 100 },
-      { label: "dateOfBirth", leftPct: (55 / 730) * 100, topPct: (366 / 527) * 100, anchor: "below" },
-      { label: "state", leftPct: (390 / 730) * 100, topPct: (366 / 527) * 100, anchor: "below" },
+      { label: "fullName", leftPct: (189 / 900) * 100, topPct: (250 / 460) * 100 },
+      { label: "phone", leftPct: (671 / 900) * 100, topPct: (250 / 460) * 100 },
+      { label: "dateOfBirth", leftPct: (391 / 900) * 100, topPct: (316 / 460) * 100 },
+      { label: "state", leftPct: (692 / 900) * 100, topPct: (316 / 460) * 100 },
     ],
   },
   MORTGAGE_PROTECTION: {
-    src: "/mailers/mortgage-mailer.jpg",
-    width: 723,
-    height: 527,
+    src: "/mailers/mortgage-mailer.png",
+    width: 900,
+    height: 500,
     fields: [
-      { label: "fullName", leftPct: (170 / 723) * 100, topPct: (253 / 527) * 100 },
-      { label: "phone", leftPct: (465 / 723) * 100, topPct: (253 / 527) * 100 },
-      { label: "address", leftPct: (230 / 723) * 100, topPct: (293 / 527) * 100 },
-      { label: "email", leftPct: (198 / 723) * 100, topPct: (333 / 527) * 100 },
+      { label: "fullName", leftPct: (189 / 900) * 100, topPct: (248 / 500) * 100 },
+      { label: "phone", leftPct: (661 / 900) * 100, topPct: (248 / 500) * 100 },
+      { label: "address", leftPct: (287 / 900) * 100, topPct: (308 / 500) * 100 },
+      { label: "email", leftPct: (240 / 900) * 100, topPct: (368 / 500) * 100 },
     ],
   },
 };
@@ -88,11 +81,11 @@ function isMailerLeadType(leadType: LeadType): leadType is keyof typeof MAILER_C
   return leadType === "VETERANS_FINAL_EXPENSE" || leadType === "MORTGAGE_PROTECTION";
 }
 
-/** The agency's own printed mailer, used as the actual card background,
- *  with this lead's real data overlaid directly onto the template's own
- *  blank lines — not a recreation of the design, the actual image. Phone
- *  stays a tel: link. `actions` (Edit/Delete/status) renders in a slim bar
- *  below the image rather than over the artwork. */
+/** A generated mailer-style card background with this lead's real data
+ *  filled directly onto its printed blank lines, no background chip — reads
+ *  like it was typed straight onto the form. Phone stays a tel: link.
+ *  `actions` (Edit/Delete/status) renders in a slim bar below the image
+ *  rather than over the artwork. */
 function MailerLeadHeader({ lead, actions }: { lead: MailerLead; actions: React.ReactNode }) {
   const config = MAILER_CONFIG[lead.leadType as keyof typeof MAILER_CONFIG];
 
@@ -106,37 +99,35 @@ function MailerLeadHeader({ lead, actions }: { lead: MailerLead; actions: React.
   };
 
   return (
-    <div className="-mx-5 -mt-5 mb-4">
+    <div className="mb-4">
       <div
-        className="relative w-full overflow-hidden rounded-t-[9px]"
+        className="relative mx-auto w-full max-w-[360px] overflow-hidden rounded-md border border-copper-dim/30"
         style={{ containerType: "inline-size", aspectRatio: `${config.width} / ${config.height}` }}
       >
         <Image
           src={config.src}
           alt=""
           fill
-          sizes="(min-width: 640px) 600px, 100vw"
+          sizes="360px"
           className="object-cover"
           priority
         />
         {config.fields.map((f) => (
           <div
             key={f.label}
-            className="absolute inline-block bg-[#f4ead2]/90 px-[0.6cqw] py-[0.15cqw] leading-tight font-bold whitespace-nowrap text-[#201a0d]"
+            className="absolute inline-block leading-tight font-semibold whitespace-nowrap text-[#1a2238]"
             style={{
               left: `${f.leftPct}%`,
               top: `${f.topPct}%`,
-              transform: f.anchor === "below" ? undefined : "translateY(-100%)",
-              fontSize: "2.6cqw",
+              transform: "translateY(-100%)",
+              fontSize: "1.9cqw",
             }}
           >
             {values[f.label]}
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-end gap-2 border-b border-copper-dim/30 bg-surface2 px-4 py-2 sm:px-5">
-        {actions}
-      </div>
+      <div className="mt-3 flex items-center justify-end gap-2">{actions}</div>
     </div>
   );
 }
