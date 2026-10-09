@@ -197,6 +197,11 @@ model Lead {
   @@index([assignedAgentId, status])
   @@index([leadType])
   @@index([isVaulted])
+  // Vault list pagination and lead-detail Prev/Next both filter by
+  // isVaulted then order/cursor on createdAt — at 100K+ vault leads, the
+  // plain isVaulted index alone still means sorting the whole matching set
+  // in memory; this compound index lets Postgres satisfy both directly.
+  @@index([isVaulted, createdAt])
   @@index([vaultOrigin, status])
   @@index([wasRecycled])
   @@map("leads")

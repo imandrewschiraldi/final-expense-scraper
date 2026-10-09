@@ -43,16 +43,27 @@ export default async function VaultLeadDetailPage({
   }
 
   const where = { isVaulted: true, ...(filters.state ? { state: filters.state } : {}) };
-  const siblingIds = await db.lead.findMany({
-    where,
-    orderBy: { createdAt: "asc" as const },
-    select: { id: true },
-  });
-
-  const ids = siblingIds.map((l) => l.id);
-  const currentIndex = ids.indexOf(id);
-  const prevId = currentIndex > 0 ? ids[currentIndex - 1] : null;
-  const nextId = currentIndex >= 0 && currentIndex < ids.length - 1 ? ids[currentIndex + 1] : null;
+  // The vault can run to 100K+ leads, so Prev/Next and the "N of total"
+  // counter are computed with targeted indexed queries (see the
+  // isVaulted+createdAt index) rather than fetching every sibling id and
+  // scanning for this one's position — that used to mean a full-table
+  // fetch on every single Prev/Next click.
+  const earlierWhere = {
+    ...where,
+    OR: [{ createdAt: { lt: lead.createdAt } }, { createdAt: lead.createdAt, id: { lt: lead.id } }],
+  };
+  const laterWhere = {
+    ...where,
+    OR: [{ createdAt: { gt: lead.createdAt } }, { createdAt: lead.createdAt, id: { gt: lead.id } }],
+  };
+  const [total, rank, prevLead, nextLead] = await Promise.all([
+    db.lead.count({ where }),
+    db.lead.count({ where: earlierWhere }),
+    db.lead.findFirst({ where: earlierWhere, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true } }),
+    db.lead.findFirst({ where: laterWhere, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true } }),
+  ]);
+  const prevId = prevLead?.id ?? null;
+  const nextId = nextLead?.id ?? null;
 
   const filterQuery = new URLSearchParams(filters.state ? { state: filters.state } : {}).toString();
 
@@ -67,8 +78,8 @@ export default async function VaultLeadDetailPage({
       navigation={{
         prevId,
         nextId,
-        position: currentIndex >= 0 ? currentIndex + 1 : null,
-        total: ids.length,
+        position: rank + 1,
+        total,
         filterQuery,
       }}
       basePath="/agent/vault"

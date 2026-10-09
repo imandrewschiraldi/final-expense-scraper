@@ -415,19 +415,32 @@ h4,
 
 /* Lead detail card, keyed by lead id (see LeadDetailPanel) — replays on
    every Prev/Next/arrow-key navigation since React remounts the element
-   whenever its key changes. A slight rotateY + slide reads as a page
-   turning to the next (or previous) card rather than a plain fade/slide. */
-@keyframes lead-card-turn {
+   whenever its key changes. A quick, direction-aware slide: the incoming
+   card for "Next" enters from the right, "Prev" enters from the left —
+   short duration so it reads as snappy, not as something to wait out. */
+@keyframes lead-card-slide-from-right {
   0% {
     opacity: 0;
-    transform: perspective(1200px) rotateY(-6deg) translateX(18px);
+    transform: translateX(28px);
   }
   100% {
     opacity: 1;
-    transform: perspective(1200px) rotateY(0deg) translateX(0);
+    transform: translateX(0);
   }
 }
-.animate-lead-card-turn {
-  transform-origin: left center;
-  animation: lead-card-turn 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+@keyframes lead-card-slide-from-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-lead-card-next {
+  animation: lead-card-slide-from-right 0.16s ease-out;
+}
+.animate-lead-card-prev {
+  animation: lead-card-slide-from-left 0.16s ease-out;
 }
