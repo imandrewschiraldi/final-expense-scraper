@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import Image from "next/image";
-import { Phone as PhoneIcon } from "lucide-react";
+import { Flag, Home, Phone as PhoneIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -29,107 +28,35 @@ function PhoneLink({ phone }: { phone: string }) {
   );
 }
 
-type MailerLead = {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  state: string;
-  dateOfBirth: string | null;
-  leadType: LeadType;
-  address?: string | null;
-  email?: string | null;
-};
-
-// Every value sits directly on the template's own printed blank line (percent
-// of the image's own width/height) as plain text — no background chip. These
-// two images are generated in-house (same vintage government-form look as
-// the agency's real mailers) specifically so every line has enough open
-// width for its value next to the label, including the Veteran form's Date
-// of Birth and State, which a real scanned mailer couldn't fit side by side.
-type MailerFieldKey = "fullName" | "phone" | "dateOfBirth" | "state" | "address" | "email";
-type MailerField = { label: MailerFieldKey; leftPct: number; topPct: number };
-
-const MAILER_CONFIG: Record<
-  "VETERANS_FINAL_EXPENSE" | "MORTGAGE_PROTECTION",
-  { src: string; width: number; height: number; fields: MailerField[] }
-> = {
-  VETERANS_FINAL_EXPENSE: {
-    src: "/mailers/veteran-mailer.png",
-    width: 900,
-    height: 460,
-    fields: [
-      { label: "fullName", leftPct: (189 / 900) * 100, topPct: (250 / 460) * 100 },
-      { label: "phone", leftPct: (671 / 900) * 100, topPct: (250 / 460) * 100 },
-      { label: "dateOfBirth", leftPct: (391 / 900) * 100, topPct: (316 / 460) * 100 },
-      { label: "state", leftPct: (692 / 900) * 100, topPct: (316 / 460) * 100 },
-    ],
-  },
-  MORTGAGE_PROTECTION: {
-    src: "/mailers/mortgage-mailer.png",
-    width: 900,
-    height: 500,
-    fields: [
-      { label: "fullName", leftPct: (189 / 900) * 100, topPct: (248 / 500) * 100 },
-      { label: "phone", leftPct: (661 / 900) * 100, topPct: (248 / 500) * 100 },
-      { label: "address", leftPct: (287 / 900) * 100, topPct: (308 / 500) * 100 },
-      { label: "email", leftPct: (240 / 900) * 100, topPct: (368 / 500) * 100 },
-    ],
-  },
-};
-
-function isMailerLeadType(leadType: LeadType): leadType is keyof typeof MAILER_CONFIG {
-  return leadType === "VETERANS_FINAL_EXPENSE" || leadType === "MORTGAGE_PROTECTION";
-}
-
-/** A generated mailer-style card background with this lead's real data
- *  filled directly onto its printed blank lines, no background chip — reads
- *  like it was typed straight onto the form. Phone stays a tel: link.
- *  `actions` (Edit/Delete/status) renders in a slim bar below the image
- *  rather than over the artwork. */
-function MailerLeadHeader({ lead, actions }: { lead: MailerLead; actions: React.ReactNode }) {
-  const config = MAILER_CONFIG[lead.leadType as keyof typeof MAILER_CONFIG];
-
-  const values: Record<MailerFieldKey, React.ReactNode> = {
-    fullName: `${lead.firstName} ${lead.lastName}`,
-    phone: <PhoneLink phone={lead.phone} />,
-    dateOfBirth: formatDob(lead.dateOfBirth),
-    state: lead.state,
-    address: lead.address || "—",
-    email: lead.email || "—",
-  };
-
-  return (
-    <div className="mb-4">
-      <div
-        className="relative mx-auto w-full max-w-[360px] overflow-hidden rounded-md border border-copper-dim/30"
-        style={{ containerType: "inline-size", aspectRatio: `${config.width} / ${config.height}` }}
-      >
-        <Image
-          src={config.src}
-          alt=""
-          fill
-          sizes="360px"
-          className="object-cover"
-          priority
-        />
-        {config.fields.map((f) => (
-          <div
-            key={f.label}
-            className="absolute inline-block leading-tight font-semibold whitespace-nowrap text-[#1a2238]"
-            style={{
-              left: `${f.leftPct}%`,
-              top: `${f.topPct}%`,
-              transform: "translateY(-100%)",
-              fontSize: "1.9cqw",
-            }}
-          >
-            {values[f.label]}
-          </div>
-        ))}
+/** A teaser banner at the top of the lead card for the two lead types worth
+ *  flagging at a glance — gives the header card a mailer-postcard feel
+ *  (like a mailer's bold callout line) instead of a plain data card. Sits
+ *  in normal flow, not absolutely positioned, so it can never overlap the
+ *  name/phone below it regardless of how long the name is or how narrow
+ *  the card gets on mobile. Silent (returns null) for Final Expense and
+ *  IUL, which don't carry the same at-a-glance qualifier. */
+function LeadTypeBanner({ leadType }: { leadType: LeadType }) {
+  if (leadType === "VETERANS_FINAL_EXPENSE") {
+    return (
+      <div className="mb-3 -mx-5 -mt-5 flex items-center gap-1.5 rounded-t-[9px] bg-gradient-to-r from-[#7a1c28] via-[#b9324a] to-[#7a1c28] px-4 py-1.5">
+        <Flag className="h-3.5 w-3.5 text-white" />
+        <span className="font-condensed text-[11px] font-extrabold tracking-[0.12em] text-white uppercase">
+          Veteran Lead
+        </span>
       </div>
-      <div className="mt-3 flex items-center justify-end gap-2">{actions}</div>
-    </div>
-  );
+    );
+  }
+  if (leadType === "MORTGAGE_PROTECTION") {
+    return (
+      <div className="mb-3 -mx-5 -mt-5 flex items-center gap-1.5 rounded-t-[9px] bg-gradient-to-r from-copper-dim via-copper to-copper-dim px-4 py-1.5">
+        <Home className="h-3.5 w-3.5 text-black" />
+        <span className="font-condensed text-[11px] font-extrabold tracking-[0.12em] text-black uppercase">
+          Mortgage Protection Lead
+        </span>
+      </div>
+    );
+  }
+  return null;
 }
 
 const STATUS_OPTIONS: LeadStatus[] = [
@@ -372,9 +299,6 @@ export function LeadDetailPanel({
     }
   }
 
-  // Shared between the mailer-style header (rendered inline in its navy
-  // band) and the plain CardHeader for other lead types, so Edit/Delete/
-  // status stay in exactly one place instead of two near-duplicate blocks.
   const headerActions = (
     <>
       {(canEdit || canDelete) && !lead.isArchived && (
@@ -440,26 +364,25 @@ export function LeadDetailPanel({
           <CardHeader>
             <CardTitle>Edit Lead</CardTitle>
           </CardHeader>
-        ) : isMailerLeadType(lead.leadType) ? (
-          <MailerLeadHeader lead={lead} actions={headerActions} />
         ) : (
-          <CardHeader>
-            <div>
-              <CardTitle>
-                {lead.firstName} {lead.lastName}
-              </CardTitle>
-              <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-muted">
-                <PhoneLink phone={lead.phone} />
-                <span>
-                  &middot; {lead.state} &middot; DOB {formatDob(lead.dateOfBirth)} &middot;{" "}
-                  {LEAD_TYPE_LABELS[lead.leadType]}
-                </span>
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              {headerActions}
-            </div>
-          </CardHeader>
+          <>
+            <LeadTypeBanner leadType={lead.leadType} />
+            <CardHeader>
+              <div>
+                <CardTitle>
+                  {lead.firstName} {lead.lastName}
+                </CardTitle>
+                <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-muted">
+                  <PhoneLink phone={lead.phone} />
+                  <span>
+                    &middot; {lead.state} &middot; DOB {formatDob(lead.dateOfBirth)} &middot;{" "}
+                    {LEAD_TYPE_LABELS[lead.leadType]}
+                  </span>
+                </p>
+              </div>
+              <div className="flex items-center gap-3">{headerActions}</div>
+            </CardHeader>
+          </>
         )}
 
         {editing && (
@@ -536,11 +459,7 @@ export function LeadDetailPanel({
 
       {!editing &&
         (() => {
-          // Mortgage Protection's mailer header already shows address/email
-          // up top — no need to repeat them down here.
-          const mailerFieldKeys: (keyof Lead)[] =
-            lead.leadType === "MORTGAGE_PROTECTION" ? ["address", "email"] : [];
-          const populated = SUPPLEMENTAL_FIELDS.filter((f) => lead[f.key] && !mailerFieldKeys.includes(f.key));
+          const populated = SUPPLEMENTAL_FIELDS.filter((f) => lead[f.key]);
           if (populated.length === 0 && !lead.tobaccoUse) return null;
           return (
             <Card>
