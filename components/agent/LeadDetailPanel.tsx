@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Flag, Home, Phone as PhoneIcon, Shield, CheckSquare, LucideIcon } from "lucide-react";
+import Image from "next/image";
+import { Phone as PhoneIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -37,121 +38,104 @@ type MailerLead = {
   leadType: LeadType;
   address?: string | null;
   email?: string | null;
-  coverageAmountRequested?: string | null;
 };
 
-const MAILER_THEME: Record<
+// Every value is anchored by its top-left corner (percent of the image's
+// own width/height, measured directly off the two source images) and
+// rendered as a small opaque chip rather than bare text — the templates'
+// hand-drawn blank lines are sized for handwriting, and on the Mortgage
+// image the Phone Number line runs straight under the house illustration,
+// so plain text there would be unreadable. The chip reads like the field
+// was typed in, legible over paper texture or artwork either way, and
+// isn't boxed in by how wide the original blank line happens to be.
+type MailerFieldKey = "fullName" | "phone" | "dateOfBirth" | "state" | "address" | "email";
+// "above" sits the chip's bottom edge on the template's printed line (for
+// fields with a real blank line next to their label). "below" drops straight
+// down instead, for fields like the veteran form's Date of Birth / State of
+// Residence, whose blank line is too narrow next to the label to hold a
+// typed value — the open paper strip beneath the line has room instead.
+type MailerField = { label: MailerFieldKey; leftPct: number; topPct: number; anchor?: "above" | "below" };
+
+const MAILER_CONFIG: Record<
   "VETERANS_FINAL_EXPENSE" | "MORTGAGE_PROTECTION",
-  {
-    titleLines: [string, string];
-    ribbon: string;
-    checkboxLabel: string;
-    band: string;
-    ribbonGradient: string;
-    icon: LucideIcon;
-  }
+  { src: string; width: number; height: number; fields: MailerField[] }
 > = {
   VETERANS_FINAL_EXPENSE: {
-    titleLines: ["Veteran's Final Expense", "& Planning Guide"],
-    ribbon: "Information Request Form",
-    checkboxLabel: "Final Expense benefits information requested",
-    band: "linear-gradient(135deg, #1b2a4a, #2c4270)",
-    ribbonGradient: "linear-gradient(90deg, #7a1c28, #b9324a, #7a1c28)",
-    icon: Flag,
+    src: "/mailers/veteran-mailer.jpg",
+    width: 730,
+    height: 527,
+    fields: [
+      { label: "fullName", leftPct: (205 / 730) * 100, topPct: (300 / 527) * 100 },
+      { label: "phone", leftPct: (565 / 730) * 100, topPct: (300 / 527) * 100 },
+      { label: "dateOfBirth", leftPct: (55 / 730) * 100, topPct: (366 / 527) * 100, anchor: "below" },
+      { label: "state", leftPct: (390 / 730) * 100, topPct: (366 / 527) * 100, anchor: "below" },
+    ],
   },
   MORTGAGE_PROTECTION: {
-    titleLines: ["Mortgage Protection &", "Home Equity Assurance Guide"],
-    ribbon: "Property Secure Form",
-    checkboxLabel: "Mortgage Protection benefits & quote requested",
-    band: "linear-gradient(135deg, #1b2a4a, #2c4270)",
-    ribbonGradient: "linear-gradient(90deg, var(--copper-dim), var(--copper), var(--copper-dim))",
-    icon: Home,
+    src: "/mailers/mortgage-mailer.jpg",
+    width: 723,
+    height: 527,
+    fields: [
+      { label: "fullName", leftPct: (170 / 723) * 100, topPct: (253 / 527) * 100 },
+      { label: "phone", leftPct: (465 / 723) * 100, topPct: (253 / 527) * 100 },
+      { label: "address", leftPct: (230 / 723) * 100, topPct: (293 / 527) * 100 },
+      { label: "email", leftPct: (198 / 723) * 100, topPct: (333 / 527) * 100 },
+    ],
   },
 };
 
-function isMailerLeadType(leadType: LeadType): leadType is keyof typeof MAILER_THEME {
+function isMailerLeadType(leadType: LeadType): leadType is keyof typeof MAILER_CONFIG {
   return leadType === "VETERANS_FINAL_EXPENSE" || leadType === "MORTGAGE_PROTECTION";
 }
 
-/** A header styled after the agency's own printed mailers (bold banner,
- *  ribbon subhead, labeled form rows, gold frame) for the two lead types
- *  that actually have a matching mailer — auto-filled with this lead's
- *  real data rather than reproducing the template's own fields verbatim
- *  (e.g. there's no "loan provider" in our data, so that row becomes
- *  Coverage Requested instead — every field shown here is real). Bleeds to
- *  the card's edges the same way the old type banner did; `actions` is the
- *  Edit/Delete/status cluster, rendered inline in the top band so the
- *  functional controls aren't lost under the mailer artwork. */
+/** The agency's own printed mailer, used as the actual card background,
+ *  with this lead's real data overlaid directly onto the template's own
+ *  blank lines — not a recreation of the design, the actual image. Phone
+ *  stays a tel: link. `actions` (Edit/Delete/status) renders in a slim bar
+ *  below the image rather than over the artwork. */
 function MailerLeadHeader({ lead, actions }: { lead: MailerLead; actions: React.ReactNode }) {
-  const theme = MAILER_THEME[lead.leadType as keyof typeof MAILER_THEME];
-  const Icon = theme.icon;
-  const fullName = `${lead.firstName} ${lead.lastName}`;
+  const config = MAILER_CONFIG[lead.leadType as keyof typeof MAILER_CONFIG];
 
-  const fields: { label: string; value: React.ReactNode }[] =
-    lead.leadType === "VETERANS_FINAL_EXPENSE"
-      ? [
-          { label: "Full Name", value: fullName },
-          { label: "Phone Number", value: <PhoneLink phone={lead.phone} /> },
-          { label: "Date of Birth", value: formatDob(lead.dateOfBirth) },
-          { label: "State of Residence", value: lead.state },
-        ]
-      : [
-          { label: "Full Name", value: fullName },
-          { label: "Phone Number", value: <PhoneLink phone={lead.phone} /> },
-          { label: "Property Address", value: lead.address || "—" },
-          { label: "Email Address", value: lead.email || "—" },
-          { label: "Coverage Requested", value: lead.coverageAmountRequested || "—" },
-        ];
+  const values: Record<MailerFieldKey, React.ReactNode> = {
+    fullName: `${lead.firstName} ${lead.lastName}`,
+    phone: <PhoneLink phone={lead.phone} />,
+    dateOfBirth: formatDob(lead.dateOfBirth),
+    state: lead.state,
+    address: lead.address || "—",
+    email: lead.email || "—",
+  };
 
   return (
-    <div className="-mx-5 -mt-5 mb-4 overflow-hidden rounded-t-[9px] bg-gradient-to-br from-[#9a7b3f] via-[#d9c08a] to-[#9a7b3f] p-[4px]">
-      <div className="overflow-hidden rounded-t-[7px] bg-surface">
-        <div className="flex items-start justify-between gap-3 px-4 py-3 sm:px-5" style={{ background: theme.band }}>
-          <div>
-            {theme.titleLines.map((line) => (
-              <p
-                key={line}
-                className="font-condensed text-base leading-tight font-extrabold tracking-wide text-white uppercase sm:text-lg"
-              >
-                {line}
-              </p>
-            ))}
+    <div className="-mx-5 -mt-5 mb-4">
+      <div
+        className="relative w-full overflow-hidden rounded-t-[9px]"
+        style={{ containerType: "inline-size", aspectRatio: `${config.width} / ${config.height}` }}
+      >
+        <Image
+          src={config.src}
+          alt=""
+          fill
+          sizes="(min-width: 640px) 600px, 100vw"
+          className="object-cover"
+          priority
+        />
+        {config.fields.map((f) => (
+          <div
+            key={f.label}
+            className="absolute inline-block bg-[#f4ead2]/90 px-[0.6cqw] py-[0.15cqw] leading-tight font-bold whitespace-nowrap text-[#201a0d]"
+            style={{
+              left: `${f.leftPct}%`,
+              top: `${f.topPct}%`,
+              transform: f.anchor === "below" ? undefined : "translateY(-100%)",
+              fontSize: "2.6cqw",
+            }}
+          >
+            {values[f.label]}
           </div>
-          <div className="flex shrink-0 items-center gap-2">{actions}</div>
-        </div>
-
-        <div className="flex items-center justify-center py-1.5" style={{ background: theme.ribbonGradient }}>
-          <span className="font-condensed text-[11px] font-extrabold tracking-[0.16em] text-white uppercase">
-            {theme.ribbon}
-          </span>
-        </div>
-
-        <div className="flex items-start justify-between gap-4 px-4 py-4 sm:px-5">
-          <dl className="grid flex-1 grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-            {fields.map((f) => (
-              <div key={f.label}>
-                <dt className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase">
-                  {f.label}
-                </dt>
-                <dd className="truncate border-b border-dashed border-copper-dim/40 pb-1 text-sm font-semibold text-white">
-                  {f.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <Icon className="mt-1 hidden h-14 w-14 shrink-0 text-copper-dim/40 sm:block" />
-        </div>
-
-        <div className="flex items-center gap-1.5 px-4 pb-3 text-xs text-muted sm:px-5">
-          <CheckSquare className="h-3.5 w-3.5 shrink-0 text-copper" />
-          {theme.checkboxLabel}
-        </div>
-
-        <div className="flex justify-center border-t border-dashed border-copper-dim/25 py-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-copper-dim/50 bg-surface2">
-            <Shield className="h-3.5 w-3.5 text-copper-dim" />
-          </div>
-        </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-end gap-2 border-b border-copper-dim/30 bg-surface2 px-4 py-2 sm:px-5">
+        {actions}
       </div>
     </div>
   );
@@ -561,10 +545,10 @@ export function LeadDetailPanel({
 
       {!editing &&
         (() => {
-          // Mortgage Protection's mailer header already shows address/email/
-          // coverage requested up top — no need to repeat them down here.
+          // Mortgage Protection's mailer header already shows address/email
+          // up top — no need to repeat them down here.
           const mailerFieldKeys: (keyof Lead)[] =
-            lead.leadType === "MORTGAGE_PROTECTION" ? ["address", "email", "coverageAmountRequested"] : [];
+            lead.leadType === "MORTGAGE_PROTECTION" ? ["address", "email"] : [];
           const populated = SUPPLEMENTAL_FIELDS.filter((f) => lead[f.key] && !mailerFieldKeys.includes(f.key));
           if (populated.length === 0 && !lead.tobaccoUse) return null;
           return (
