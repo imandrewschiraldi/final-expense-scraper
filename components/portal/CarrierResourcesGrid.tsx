@@ -50,15 +50,18 @@ export function CarrierResourcesGrid() {
             {carrier.name}
           </h2>
 
-          <div className="rounded-lg bg-gradient-to-b from-[#8f5a30] to-[#5e3a1e] p-5 shadow-[0_16px_32px_-8px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-3px_6px_rgba(0,0,0,0.35)]">
+          <div className="metal-copper-card rounded-lg p-5">
             {carrier.contacts.length > 0 && (
               <div className="mb-4 space-y-2 text-center">
                 {carrier.contacts.map((contact) => (
                   <div key={contact.id}>
-                    <p className="font-condensed text-xs font-bold tracking-[0.1em] text-white/90 uppercase">
+                    <p className="font-condensed text-xs font-bold tracking-[0.1em] text-white/90 uppercase drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)]">
                       {contact.label}:
                     </p>
-                    <a href={telHref(contact.phone)} className="text-lg font-extrabold text-white hover:underline">
+                    <a
+                      href={telHref(contact.phone)}
+                      className="text-lg font-extrabold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)] hover:underline"
+                    >
                       {contact.phone}
                     </a>
                   </div>
@@ -78,7 +81,7 @@ export function CarrierResourcesGrid() {
                       "font-condensed block rounded-md px-4 py-3 text-center text-sm font-bold tracking-[0.05em] uppercase transition-all active:translate-y-px",
                       link.isAgentPortal
                         ? "bg-white text-copper-dim shadow-[0_3px_6px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white/90"
-                        : "bg-gradient-to-b from-copper to-[#a8642f] text-white shadow-[0_3px_6px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110",
+                        : "metal-copper-surface text-white hover:brightness-110",
                     )}
                   >
                     {link.label}
