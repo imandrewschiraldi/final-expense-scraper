@@ -37,14 +37,20 @@ function AddContactForm({ carrierId, onAdded }: { carrierId: string; onAdded: ()
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-end gap-2">
+    <form
+      className="mt-2 flex flex-wrap items-end gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
       <Input placeholder="Label (e.g. Customer Service Number)" value={label} onChange={(e) => setLabel(e.target.value)} className="w-64" />
       <Input placeholder="Phone (e.g. 800-231-0801)" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-44" />
-      <Button variant="secondary" onClick={submit} disabled={saving || !label.trim() || !phone.trim()}>
+      <Button type="submit" variant="secondary" disabled={saving || !label.trim() || !phone.trim()}>
         {saving ? "Adding..." : "Add Contact"}
       </Button>
       {error && <p className="w-full text-xs text-red-light">{error}</p>}
-    </div>
+    </form>
   );
 }
 
@@ -77,18 +83,24 @@ function AddLinkForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-end gap-2">
+    <form
+      className="mt-2 flex flex-wrap items-end gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
       <Input placeholder="Button label (e.g. Agent Portal)" value={label} onChange={(e) => setLabel(e.target.value)} className="w-56" />
       <Input placeholder="URL" value={url} onChange={(e) => setUrl(e.target.value)} className="w-64" />
       <label className="flex items-center gap-1.5 pb-2 text-xs text-muted">
         <input type="checkbox" checked={isAgentPortal} onChange={(e) => setIsAgentPortal(e.target.checked)} />
         This is the Agent Portal
       </label>
-      <Button variant="secondary" onClick={submit} disabled={saving || !label.trim() || !url.trim()}>
+      <Button type="submit" variant="secondary" disabled={saving || !label.trim() || !url.trim()}>
         {saving ? "Adding..." : "Add Link"}
       </Button>
       {error && <p className="w-full text-xs text-red-light">{error}</p>}
-    </div>
+    </form>
   );
 }
 
@@ -187,17 +199,23 @@ export function CarrierResourcesPanel() {
           phone contacts and link buttons below for the agent-facing Carrier Resources page. New carriers are
           appended to the end of the grid — use the arrows on each carrier below to reorder them.
         </p>
-        <div className="flex flex-wrap items-end gap-2">
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addCarrier();
+          }}
+        >
           <Input
             placeholder="Carrier name (e.g. Americo)"
             value={newCarrierName}
             onChange={(e) => setNewCarrierName(e.target.value)}
             className="w-64"
           />
-          <Button onClick={addCarrier} disabled={creating || !newCarrierName.trim()}>
+          <Button type="submit" disabled={creating || !newCarrierName.trim()}>
             {creating ? "Adding..." : "Add Carrier"}
           </Button>
-        </div>
+        </form>
         {error && <p className="mt-2 text-sm text-red-light">{error}</p>}
       </Card>
 

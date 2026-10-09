@@ -60,7 +60,13 @@ function AddPlanForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
   }
 
   return (
-    <div className="mt-3 flex flex-wrap items-end gap-2">
+    <form
+      className="mt-3 flex flex-wrap items-end gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
       <Input placeholder="Plan name (e.g. HMS 125)" value={name} onChange={(e) => setName(e.target.value)} className="w-48" />
       <Input
         placeholder="Payout %"
@@ -72,11 +78,11 @@ function AddPlanForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
         onChange={(e) => setPayoutPercent(e.target.value)}
         className="w-28"
       />
-      <Button variant="secondary" onClick={submit} disabled={saving || !name.trim() || !payoutPercent}>
+      <Button type="submit" variant="secondary" disabled={saving || !name.trim() || !payoutPercent}>
         {saving ? "Adding..." : "Add Plan"}
       </Button>
       {error && <p className="w-full text-xs text-red-light">{error}</p>}
-    </div>
+    </form>
   );
 }
 
@@ -277,7 +283,12 @@ export function CarrierRatesPanel() {
   }
 
   async function deleteCarrier(id: string, name: string) {
-    if (!window.confirm(`Delete "${name}" and every rate plan under it? Policies already sold under it keep their commission amount, they just lose the link.`)) return;
+    if (
+      !window.confirm(
+        `Delete "${name}"? This also deletes every rate plan AND every Carrier Resources phone number and link button for it — they're the same carrier record. Policies already sold under it keep their commission amount, they just lose the link.`,
+      )
+    )
+      return;
     const res = await fetch(`/api/admin/carriers/${id}`, { method: "DELETE" });
     if (res.ok) load();
   }
@@ -299,17 +310,23 @@ export function CarrierRatesPanel() {
           click a plan to paste in its real row-by-row grid (e.g. a comp-level table from 80 to 145) so each level pays
           exactly what the carrier contracts for. This is what drives the Commissions Paid figure on the Dashboard.
         </p>
-        <div className="flex flex-wrap items-end gap-2">
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addCarrier();
+          }}
+        >
           <Input
             placeholder="Carrier name (e.g. Americo)"
             value={newCarrierName}
             onChange={(e) => setNewCarrierName(e.target.value)}
             className="w-64"
           />
-          <Button onClick={addCarrier} disabled={creating || !newCarrierName.trim()}>
+          <Button type="submit" disabled={creating || !newCarrierName.trim()}>
             {creating ? "Adding..." : "Add Carrier"}
           </Button>
-        </div>
+        </form>
         {error && <p className="mt-2 text-sm text-red-light">{error}</p>}
       </Card>
 
