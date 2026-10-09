@@ -283,6 +283,19 @@ body {
   background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
   color: #000;
 }
+/* The "currently selected" state of a btn-metal-copper toggle (e.g. a
+   lead's active status pill) — same solid brushed-copper fill as the
+   hover state, just standing on its own instead of needing a pointer
+   over it, so the selected option reads as filled-in/chosen at a glance
+   instead of looking identical to every unselected option. */
+.btn-metal-copper-active {
+  border: 1.5px solid var(--copper-metal);
+  background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
+  color: #000;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+}
 .btn-metal-red {
   border: 1.5px solid transparent;
   background-image:
