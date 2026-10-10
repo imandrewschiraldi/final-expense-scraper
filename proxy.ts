@@ -6,10 +6,14 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const role = req.auth?.user?.role;
 
-  // Recruiting Radar is the one /admin page non-admins can reach — gated
-  // by its own page-level check (ADMIN always in, AGENT/MANAGER only with
-  // recruitingRadarEnabled) rather than the blanket admin-only rule below.
-  const isAdminRoute = nextUrl.pathname.startsWith("/admin") && !nextUrl.pathname.startsWith("/admin/recruiting-radar");
+  // Recruiting Radar and Job Applications are /admin pages non-admins can
+  // reach — each gated by its own page-level check (Recruiting Radar: ADMIN
+  // always in, AGENT/MANAGER only with recruitingRadarEnabled; Job
+  // Applications: ADMIN or MANAGER) rather than the blanket admin-only rule
+  // below.
+  const ADMIN_ROUTE_EXCEPTIONS = ["/admin/recruiting-radar", "/admin/job-applications"];
+  const isAdminRoute =
+    nextUrl.pathname.startsWith("/admin") && !ADMIN_ROUTE_EXCEPTIONS.some((p) => nextUrl.pathname.startsWith(p));
   const isAgentRoute = nextUrl.pathname.startsWith("/agent");
 
   if (!isLoggedIn) {

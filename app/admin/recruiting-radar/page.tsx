@@ -19,10 +19,16 @@ export default async function RecruitingRadarPage() {
     }
   }
 
+  // Job Applications (behind the "Applications" tile below) is gated
+  // separately from Recruiting Radar itself — Managers are admin-equivalent
+  // everywhere else in the app (lib/apiAuth's requireAdminOrManager), so
+  // they can view it too, same as the /api/admin/job-applications routes.
+  const canViewApplications = isAdmin || session?.user.role === "MANAGER";
+
   return (
     <div>
       <PageHeading slug="recruiting-radar" alt="Recruiting Radar" />
-      <RecruitingRadarPanel isAdmin={isAdmin} />
+      <RecruitingRadarPanel canViewApplications={canViewApplications} />
     </div>
   );
 }

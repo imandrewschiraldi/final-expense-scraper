@@ -49,7 +49,7 @@ function csvEscape(value: string) {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
-export function RecruitingRadarPanel({ isAdmin = true }: { isAdmin?: boolean }) {
+export function RecruitingRadarPanel({ canViewApplications = true }: { canViewApplications?: boolean }) {
   const router = useRouter();
   const [applicationsCount, setApplicationsCount] = useState<{ total: number; new: number } | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<Set<CategoryKey>>(new Set(["d2d"]));
@@ -313,24 +313,24 @@ export function RecruitingRadarPanel({ isAdmin = true }: { isAdmin?: boolean }) 
       label: "Applications",
       value: applicationsCount?.total ?? 0,
       icon: ClipboardList,
-      // Job Applications is a separate, still admin-only page (its own API
-      // routes stay requireAdmin) — a flagged non-admin can see this count
-      // here, but clicking through would just 403, so the tile's a no-op
-      // for them instead.
+      // Job Applications is a separate page, open to Admins and Managers
+      // (its API routes use requireAdminOrManager) — a flagged agent can
+      // see this count here, but clicking through would just 403, so the
+      // tile's a no-op for them instead.
       onClick: () => {
-        if (isAdmin) router.push("/admin/job-applications");
+        if (canViewApplications) router.push("/admin/job-applications");
       },
       active: false,
       caption:
         applicationsCount && applicationsCount.new > 0
           ? `${applicationsCount.new} new`
-          : isAdmin
+          : canViewApplications
             ? "Job Applications"
-            : "Job Applications (admin only)",
+            : "Job Applications (admin/manager only)",
     });
 
     return entries;
-  }, [prospects, range, viewFilter, liveCounts, applicationsCount, router, isAdmin]);
+  }, [prospects, range, viewFilter, liveCounts, applicationsCount, router, canViewApplications]);
 
   const visibleProspects = viewFilter === "ALL" ? prospects : prospects.filter((p) => p.status === viewFilter);
   const comboCount = selectedCategories.size * selectedMarkets.size;

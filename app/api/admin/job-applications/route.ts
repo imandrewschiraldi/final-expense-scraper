@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/apiAuth";
+import { requireAdminOrManager } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 
 /**
@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
  * time-windowed activity tiles all render off this in full.
  */
 export async function GET() {
-  const guard = await requireAdmin();
+  const guard = await requireAdminOrManager();
   if ("error" in guard) return guard.error;
 
   const applications = await db.jobApplication.findMany({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/apiAuth";
+import { requireAdminOrManager } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { APPLICATION_STATUSES } from "@/lib/jobApplications";
 
@@ -12,7 +12,7 @@ const STATUS_IDS = APPLICATION_STATUSES.map((s) => s.id);
  * activity ("6 interviewed this week") instead of just a live snapshot.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdmin();
+  const guard = await requireAdminOrManager();
   if ("error" in guard) return guard.error;
 
   const { id } = await params;
