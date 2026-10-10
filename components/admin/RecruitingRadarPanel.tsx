@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Users, ListTodo, Send, MessageCircle, UserCheck, UserX, Search, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
@@ -437,7 +438,21 @@ export function RecruitingRadarPanel({ canViewApplications = true }: { canViewAp
         </div>
       )}
 
-      <Modal open={searchOpen} onClose={() => setSearchOpen(false)} title="Search for New Prospects">
+      <Modal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        title="Search for New Prospects"
+        titleContent={
+          <Image
+            src="/headings/recruiting-radar.png"
+            alt="Recruiting Radar"
+            width={695}
+            height={43}
+            className="h-[22px] w-auto"
+            priority
+          />
+        }
+      >
         <div className="space-y-5">
           <div>
             <div className="mb-2 flex items-center justify-between">
