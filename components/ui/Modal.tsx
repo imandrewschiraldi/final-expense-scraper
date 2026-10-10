@@ -10,12 +10,16 @@ export function Modal({
   open,
   onClose,
   title,
+  titleContent,
   children,
   maxWidthClassName = "max-w-2xl",
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
+  // Replaces the plain text <h2> with custom markup (e.g. a wordmark image)
+  // while `title` still provides the modal's accessible name.
+  titleContent?: React.ReactNode;
   children: React.ReactNode;
   maxWidthClassName?: string;
 }) {
@@ -45,9 +49,13 @@ export function Modal({
             exit={{ scale: 0.97, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label={title}
           >
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-6 py-4">
-              <h2 className="font-condensed text-lg font-extrabold tracking-wide text-white uppercase">{title}</h2>
+              {titleContent ?? (
+                <h2 className="font-condensed text-lg font-extrabold tracking-wide text-white uppercase">{title}</h2>
+              )}
               <button
                 type="button"
                 onClick={onClose}
