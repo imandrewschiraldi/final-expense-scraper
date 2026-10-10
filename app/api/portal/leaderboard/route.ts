@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { generateDemoPolicies, demoLeaderboardTotals } from "@/lib/demoData";
+import { generateDemoPolicies, demoLeaderboardTotals, generateDemoAgencyPolicies, demoAgencyLeaderboardTotals } from "@/lib/demoData";
 
 // Always a live, all-time ranking — no period selector. Sales leaderboards
 // that reset weekly/monthly hide who's actually ahead right now; this stays
@@ -39,9 +39,13 @@ export async function GET() {
       entry.issuedCount += 1;
     }
 
-    // Demo Mode: only ever overwrites the requesting user's own row with
-    // fake totals, computed fresh per-request — every other agent's row
-    // stays completely real, so this never fakes the board for anyone else.
+    // Demo Mode: overwrites the requesting user's own row with fake totals,
+    // computed fresh per-request, AND every other active agent's row too —
+    // so the board reads as one whole thriving agency for this viewer
+    // instead of just their own number standing alone next to everyone
+    // else's real (near-empty) production. Still entirely per-viewer and
+    // read-time-only: no other row is touched in the database, and no one
+    // else's own view of the board changes.
     const viewer = await db.user.findUnique({
       where: { id: guard.session.user.id },
       select: { demoModeEnabled: true },
@@ -52,6 +56,16 @@ export async function GET() {
         const { issuedAP, issuedCount } = demoLeaderboardTotals(generateDemoPolicies());
         own.issuedAP = issuedAP;
         own.issuedCount = issuedCount;
+      }
+
+      const otherAgents = agents.filter((a) => a.id !== guard.session.user.id);
+      const agencyTotals = demoAgencyLeaderboardTotals(generateDemoAgencyPolicies(otherAgents));
+      for (const [agentId, totals] of agencyTotals) {
+        const entry = byAgent.get(agentId);
+        if (entry) {
+          entry.issuedAP = totals.issuedAP;
+          entry.issuedCount = totals.issuedCount;
+        }
       }
     }
 

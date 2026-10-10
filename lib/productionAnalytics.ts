@@ -55,12 +55,13 @@ export type AnalyticsRow = {
 };
 
 /**
- * Org-wide demo overlay: when set, `excludeAgentId`'s real rows are left out
- * of the DB query (that agent's real production is replaced, not stacked)
- * and `rows` (their fake policies) are folded in instead — mirroring how
- * the Leaderboard replaces just one agent's own row.
+ * Org-wide demo overlay: when set, every id in `excludeAgentIds`' real rows
+ * are left out of the DB query (that agent's real production is replaced,
+ * not stacked) and `rows` (their fake policies) are folded in instead —
+ * covers the viewer's own row plus, in Demo Mode, every other agent's row
+ * too, so the whole agency reads as fake production rather than just one.
  */
-export type DemoOverlay = { excludeAgentId: string; rows: AnalyticsRow[] };
+export type DemoOverlay = { excludeAgentIds: string[]; rows: AnalyticsRow[] };
 
 function inRangeRows<T extends { submittedAt: Date }>(rows: T[], since: Date | null): T[] {
   return since ? rows.filter((r) => r.submittedAt >= since) : rows;
@@ -92,7 +93,7 @@ export async function computeProductionTimeline(
   const policies = await db.policy.findMany({
     where: {
       ...(agentId ? { agentId } : {}),
-      ...(demoOverlay ? { agentId: { not: demoOverlay.excludeAgentId } } : {}),
+      ...(demoOverlay ? { agentId: { notIn: demoOverlay.excludeAgentIds } } : {}),
       ...(since ? { submittedAt: { gte: since } } : {}),
     },
     select: { annualPremium: true, submittedAt: true },
@@ -126,7 +127,7 @@ export async function computeCarrierAnalytics(
   const policies = await db.policy.findMany({
     where: {
       ...(agentId ? { agentId } : {}),
-      ...(demoOverlay ? { agentId: { not: demoOverlay.excludeAgentId } } : {}),
+      ...(demoOverlay ? { agentId: { notIn: demoOverlay.excludeAgentIds } } : {}),
       ...(since ? { submittedAt: { gte: since } } : {}),
     },
     select: { annualPremium: true, carrier: true, submittedAt: true },
@@ -162,7 +163,7 @@ export async function computeProductAnalytics(
   const policies = await db.policy.findMany({
     where: {
       ...(agentId ? { agentId } : {}),
-      ...(demoOverlay ? { agentId: { not: demoOverlay.excludeAgentId } } : {}),
+      ...(demoOverlay ? { agentId: { notIn: demoOverlay.excludeAgentIds } } : {}),
       ...(since ? { submittedAt: { gte: since } } : {}),
     },
     select: { annualPremium: true, product: true, submittedAt: true },
@@ -200,7 +201,7 @@ export async function computePolicyStatusAnalytics(
   const policies = await db.policy.findMany({
     where: {
       ...(agentId ? { agentId } : {}),
-      ...(demoOverlay ? { agentId: { not: demoOverlay.excludeAgentId } } : {}),
+      ...(demoOverlay ? { agentId: { notIn: demoOverlay.excludeAgentIds } } : {}),
       ...(since ? { submittedAt: { gte: since } } : {}),
     },
     select: { status: true, submittedAt: true },

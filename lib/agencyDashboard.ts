@@ -7,12 +7,13 @@ import { AgencyKpiData, TopProducer, RecentActivityItem } from "@/lib/agencyDash
 export * from "@/lib/agencyDashboardShared";
 
 /**
- * Org-wide demo overlay for the KPI tiles: `excludeAgentId`'s real rows are
- * left out of the query (that agent's real production is replaced, not
- * stacked) and `rows` (their fake policies) are merged in before
- * aggregating — mirrors how the Leaderboard replaces just one agent's row.
+ * Org-wide demo overlay for the KPI tiles: every id in `excludeAgentIds`'
+ * real rows are left out of the query (that agent's real production is
+ * replaced, not stacked) and `rows` (their fake policies) are merged in
+ * before aggregating — covers the viewer's own row plus, in Demo Mode,
+ * every other agent's row too.
  */
-type AgencyKpiDemoOverlay = { excludeAgentId: string; rows: AnalyticsRow[] };
+type AgencyKpiDemoOverlay = { excludeAgentIds: string[]; rows: AnalyticsRow[] };
 
 function withTrend(value: number, previousValue: number | undefined) {
   return previousValue !== undefined ? { value, previousValue } : { value };
@@ -46,7 +47,7 @@ export async function computeAgencyKpis(
 
   const [realRows, activeAgents] = await Promise.all([
     db.policy.findMany({
-      where: { agentId: { not: demoOverlay.excludeAgentId } },
+      where: { agentId: { notIn: demoOverlay.excludeAgentIds } },
       select: { annualPremium: true, submittedAt: true, status: true },
     }),
     activeAgentsPromise,
@@ -68,14 +69,17 @@ export async function computeAgencyKpis(
   };
 }
 
+type TopProducerDemoRow = AnalyticsRow & { agentId: string; agentName: string; agentProfileImageUrl: string | null };
+
 /** Ranked by issued premium within the selected window — a range-scoped companion to the Leaderboard's always-live all-time ranking. */
 export async function computeTopProducers(
   range: DashboardRange,
   now: Date = new Date(),
   limit = 5,
-  demoOverlay?: { agentId: string; agentName: string; agentProfileImageUrl: string | null; rows: AnalyticsRow[] },
+  demoOverlay?: { agentIds: string[]; rows: TopProducerDemoRow[] },
 ): Promise<TopProducer[]> {
   const since = rangeSince(range, now);
+  const excluded = demoOverlay ? new Set(demoOverlay.agentIds) : null;
   const policies = await db.policy.findMany({
     where: { status: "ISSUED", agentId: { not: null }, ...(since ? { submittedAt: { gte: since } } : {}) },
     select: { annualPremium: true, agent: { select: { id: true, name: true, profileImageUrl: true } } },
@@ -84,9 +88,9 @@ export async function computeTopProducers(
   const byAgent = new Map<string, TopProducer>();
   for (const p of policies) {
     if (!p.agent) continue;
-    // This viewer's real issued policies are skipped here — their row is
-    // replaced wholesale by the demo totals below, not added to them.
-    if (demoOverlay && p.agent.id === demoOverlay.agentId) continue;
+    // Every agent with a fake row below is skipped here — their row is
+    // replaced wholesale by the demo totals, not added to them.
+    if (excluded?.has(p.agent.id)) continue;
     const entry = byAgent.get(p.agent.id) ?? {
       id: p.agent.id,
       name: p.agent.name,
@@ -100,14 +104,19 @@ export async function computeTopProducers(
   }
 
   if (demoOverlay) {
-    const demoIssued = demoOverlay.rows.filter((r) => r.status === "ISSUED" && (!since || r.submittedAt >= since));
-    byAgent.set(demoOverlay.agentId, {
-      id: demoOverlay.agentId,
-      name: demoOverlay.agentName,
-      profileImageUrl: demoOverlay.agentProfileImageUrl,
-      issuedAP: demoIssued.reduce((sum, r) => sum + r.annualPremium, 0),
-      issuedCount: demoIssued.length,
-    });
+    for (const r of demoOverlay.rows) {
+      if (r.status !== "ISSUED" || (since && r.submittedAt < since)) continue;
+      const entry = byAgent.get(r.agentId) ?? {
+        id: r.agentId,
+        name: r.agentName,
+        profileImageUrl: r.agentProfileImageUrl,
+        issuedAP: 0,
+        issuedCount: 0,
+      };
+      entry.issuedAP += r.annualPremium;
+      entry.issuedCount += 1;
+      byAgent.set(r.agentId, entry);
+    }
   }
 
   return Array.from(byAgent.values())
@@ -118,10 +127,10 @@ export async function computeTopProducers(
 /** Always the latest N org-wide, independent of the selected range — a "recent" feed that resets to empty on a narrow range would feel broken. */
 export async function computeRecentActivity(
   limit = 8,
-  demoOverlay?: { agentId: string; items: RecentActivityItem[] },
+  demoOverlay?: { agentIds: string[]; items: RecentActivityItem[] },
 ): Promise<RecentActivityItem[]> {
   const policies = await db.policy.findMany({
-    where: demoOverlay ? { agentId: { not: demoOverlay.agentId } } : undefined,
+    where: demoOverlay ? { agentId: { notIn: demoOverlay.agentIds } } : undefined,
     orderBy: { submittedAt: "desc" },
     take: limit,
     select: {
