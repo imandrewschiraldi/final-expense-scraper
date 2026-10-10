@@ -119,6 +119,102 @@ export function generateDemoPolicies(now: Date = new Date()): DemoPolicy[] {
   return policies.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
 }
 
+/** djb2 — turns an agent's cuid into a stable PRNG seed, so each agent gets
+ *  its own fixed-but-different fake production every time, not a new random
+ *  roll per request. */
+function hashToSeed(id: string): number {
+  let hash = 5381;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 33) ^ id.charCodeAt(i);
+  }
+  return hash >>> 0;
+}
+
+export type DemoAgent = { id: string; name: string; profileImageUrl: string | null };
+export type DemoAgencyPolicy = DemoPolicy & { agentId: string; agentName: string; agentProfileImageUrl: string | null };
+
+/**
+ * Fake production for every OTHER active agent, so Demo Mode shows a whole
+ * thriving agency on the Leaderboard and Agency Dashboard — not just the
+ * viewer's own numbers next to everyone else's real (near-empty) rows.
+ * Deterministic per agent id (hashToSeed), so it's stable across requests
+ * and page refreshes rather than reshuffling every poll.
+ *
+ * Most agents (~80%) land with $100k-$345k in issued premium, reading as an
+ * established, successful book; the rest (~20%) land at $2k-$15k, reading
+ * as a newer rep still ramping up — same spread the Leaderboard's "a few
+ * agents look newer" needs, just picked per agent instead of hand-placed.
+ */
+export function generateDemoAgencyPolicies(agents: DemoAgent[], now: Date = new Date()): DemoAgencyPolicy[] {
+  const policies: DemoAgencyPolicy[] = [];
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const spreadDays = 365;
+
+  for (const agent of agents) {
+    const random = mulberry32(hashToSeed(agent.id));
+    const isNewer = random() < 0.2;
+    const targetIssuedAP = isNewer ? 2000 + random() * 13000 : 100000 + random() * 245000;
+
+    let issuedAP = 0;
+    let guard = 0;
+    while (issuedAP < targetIssuedAP && guard < 500) {
+      guard++;
+      const offsetDays = random() * spreadDays;
+      const submittedAt = new Date(now.getTime() - offsetDays * msPerDay);
+
+      const roll = random();
+      const status: PolicyStatus = roll < 0.08 ? "CHARGEBACK" : roll < 0.7 ? "ISSUED" : "SUBMITTED";
+      const issuedAt =
+        status !== "SUBMITTED" && offsetDays > 10
+          ? new Date(Math.min(now.getTime(), submittedAt.getTime() + (5 + random() * 15) * msPerDay))
+          : status !== "SUBMITTED"
+            ? submittedAt
+            : null;
+
+      const annualPremium = Math.round(900 + random() * 1700);
+      const commissionAmount = computeCommissionAmount({
+        annualPremium,
+        compLevelPercent: DEMO_COMP_LEVEL_PERCENT,
+        payoutMultiplier: DEMO_PAYOUT_MULTIPLIER,
+      });
+
+      if (status === "ISSUED") issuedAP += annualPremium;
+
+      policies.push({
+        id: `demo-agency-${agent.id}-${policies.length}`,
+        clientName: `${pick(DEMO_FIRST_NAMES, random)} ${pick(DEMO_LAST_NAMES, random)}`,
+        clientPhone: null,
+        state: pick(DEMO_STATES, random),
+        carrier: pick(DEMO_CARRIERS, random),
+        product: pick(PRODUCTS, random),
+        annualPremium,
+        status,
+        submittedAt,
+        issuedAt,
+        commissionAmount,
+        agentId: agent.id,
+        agentName: agent.name,
+        agentProfileImageUrl: agent.profileImageUrl,
+      });
+    }
+  }
+
+  return policies.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
+}
+
+/** Issued-only totals for one agent's slice of `generateDemoAgencyPolicies` — what the Leaderboard needs per row. */
+export function demoAgencyLeaderboardTotals(policies: DemoAgencyPolicy[]): Map<string, { issuedAP: number; issuedCount: number }> {
+  const byAgent = new Map<string, { issuedAP: number; issuedCount: number }>();
+  for (const p of policies) {
+    if (p.status !== "ISSUED") continue;
+    const entry = byAgent.get(p.agentId) ?? { issuedAP: 0, issuedCount: 0 };
+    entry.issuedAP += p.annualPremium;
+    entry.issuedCount += 1;
+    byAgent.set(p.agentId, entry);
+  }
+  return byAgent;
+}
+
 function inWindow(date: Date, window: { gte?: Date; lt?: Date }): boolean {
   if (window.gte && date < window.gte) return false;
   if (window.lt && date >= window.lt) return false;
@@ -296,6 +392,19 @@ export function demoRecentActivity(policies: DemoPolicy[], agentName: string, li
   return policies.slice(0, limit).map((p) => ({
     id: p.id,
     agentName,
+    carrier: p.carrier,
+    product: p.product,
+    annualPremium: p.annualPremium,
+    status: p.status,
+    submittedAt: p.submittedAt.toISOString(),
+  }));
+}
+
+/** Same shape as demoRecentActivity, for the whole-agency overlay — each row already carries its own fake agent's name. */
+export function demoAgencyRecentActivity(policies: DemoAgencyPolicy[], limit = 8): RecentActivityItem[] {
+  return policies.slice(0, limit).map((p) => ({
+    id: p.id,
+    agentName: p.agentName,
     carrier: p.carrier,
     product: p.product,
     annualPremium: p.annualPremium,
