@@ -18,20 +18,26 @@ const MESSAGE_SELECT = {
   editedAt: true,
   pinnedAt: true,
   reactions: { select: { emoji: true, userId: true } },
+  // Live-joined rather than denormalised like authorName — an avatar should
+  // follow an agent's current photo everywhere, including their old
+  // messages, not freeze at send time the way the name intentionally does.
+  author: { select: { profileImageUrl: true } },
 } as const;
 
 type Row = {
   reactions: { emoji: string; userId: string }[];
+  author: { profileImageUrl: string | null } | null;
 } & Record<string, unknown>;
 
 /**
- * Collapse per-person reaction rows into one entry per emoji.
+ * Collapse per-person reaction rows into one entry per emoji, and flatten
+ * the joined author's avatar onto the message itself.
  *
  * The client needs the count and whether *you* are in it — a bare tally can
  * give the first but never the second.
  */
 function shape(rows: Row[], me: string) {
-  return rows.map(({ reactions, ...rest }) => {
+  return rows.map(({ reactions, author, ...rest }) => {
     const byEmoji = new Map<string, { emoji: string; count: number; mine: boolean }>();
     for (const r of reactions) {
       const entry = byEmoji.get(r.emoji) ?? { emoji: r.emoji, count: 0, mine: false };
@@ -39,7 +45,7 @@ function shape(rows: Row[], me: string) {
       entry.mine ||= r.userId === me;
       byEmoji.set(r.emoji, entry);
     }
-    return { ...rest, reactions: [...byEmoji.values()] };
+    return { ...rest, authorProfileImageUrl: author?.profileImageUrl ?? null, reactions: [...byEmoji.values()] };
   });
 }
 
