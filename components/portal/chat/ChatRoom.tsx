@@ -91,6 +91,7 @@ type Message = {
   id: string;
   authorId: string | null;
   authorName: string;
+  authorProfileImageUrl: string | null;
   body: string;
   imageUrl: string | null;
   createdAt: string;
@@ -98,6 +99,17 @@ type Message = {
   pinnedAt: string | null;
   reactions: Reaction[];
 };
+
+function MessageAvatar({ url, name }: { url: string | null; name: string }) {
+  return url ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-copper-dim object-cover" />
+  ) : (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-copper-dim bg-surface2 text-sm font-bold text-muted">
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
 
 function dayLabel(iso: string) {
   const d = new Date(iso);
@@ -848,53 +860,58 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             <div className="h-px flex-1 bg-border" />
           </div>
         )}
-        <div className={cn("group relative", isGrouped ? "mt-0.5" : "mt-3")}>
-          {!isGrouped && (
-            <div className="flex items-baseline gap-2">
-              <span className="font-condensed text-sm font-extrabold tracking-wide text-copper uppercase">
-                {message.authorName}
-              </span>
-              <span className="text-xs text-muted">{timeLabel(message.createdAt)}</span>
-              {message.pinnedAt && !inPinList && <Pin className="h-3 w-3 text-copper" />}
-            </div>
-          )}
+        <div className={cn("group relative flex items-start gap-2.5", isGrouped ? "mt-0.5" : "mt-3")}>
+          <div className="w-8 shrink-0">
+            {!isGrouped && <MessageAvatar url={message.authorProfileImageUrl} name={message.authorName} />}
+          </div>
+          <div className="min-w-0 flex-1">
+            {!isGrouped && (
+              <div className="flex items-baseline gap-2">
+                <span className="font-condensed text-sm font-extrabold tracking-wide text-copper uppercase">
+                  {message.authorName}
+                </span>
+                <span className="text-xs text-muted">{timeLabel(message.createdAt)}</span>
+                {message.pinnedAt && !inPinList && <Pin className="h-3 w-3 text-copper" />}
+              </div>
+            )}
 
-          {message.body && (
-            <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">
-              {linkifyText(message.body)}
-            </p>
-          )}
+            {message.body && (
+              <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">
+                {linkifyText(message.body)}
+              </p>
+            )}
 
-          {message.imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={message.imageUrl}
-              alt=""
-              onClick={() => setLightbox(message.imageUrl)}
-              className="mt-1.5 max-h-72 max-w-full cursor-zoom-in rounded-lg border border-border object-contain"
-            />
-          )}
+            {message.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={message.imageUrl}
+                alt=""
+                onClick={() => setLightbox(message.imageUrl)}
+                className="mt-1.5 max-h-72 max-w-full cursor-zoom-in rounded-lg border border-border object-contain"
+              />
+            )}
 
-          {message.reactions.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {message.reactions.map((r) => (
-                <button
-                  key={r.emoji}
-                  type="button"
-                  onClick={() => react(message.id, r.emoji)}
-                  className={cn(
-                    "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors",
-                    r.mine
-                      ? "border-copper bg-copper/15 text-foreground"
-                      : "border-border bg-surface2 text-muted hover:border-copper",
-                  )}
-                >
-                  <span className="text-[13px] leading-none">{r.emoji}</span>
-                  <span className="tabular-nums">{r.count}</span>
-                </button>
-              ))}
-            </div>
-          )}
+            {message.reactions.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {message.reactions.map((r) => (
+                  <button
+                    key={r.emoji}
+                    type="button"
+                    onClick={() => react(message.id, r.emoji)}
+                    className={cn(
+                      "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors",
+                      r.mine
+                        ? "border-copper bg-copper/15 text-foreground"
+                        : "border-border bg-surface2 text-muted hover:border-copper",
+                    )}
+                  >
+                    <span className="text-[13px] leading-none">{r.emoji}</span>
+                    <span className="tabular-nums">{r.count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Hover actions, pinned to the right of the row. */}
           <div className="absolute -top-2 right-0 hidden items-center gap-1 rounded-md border border-border bg-surface2 px-1.5 py-1 group-hover:flex">
