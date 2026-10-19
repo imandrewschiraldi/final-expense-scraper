@@ -7,6 +7,10 @@ import { sendPushToUser } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
+// Admin and system (bot) posts speak for the agency, not a person — shown
+// under a role name with the company mark instead of a personal name/photo.
+const COMPANY_MARK_URL = "/tier1-mark-collapsed.png";
+
 /** Everything the client renders for one message. */
 const MESSAGE_SELECT = {
   id: true,
@@ -21,12 +25,14 @@ const MESSAGE_SELECT = {
   // Live-joined rather than denormalised like authorName — an avatar should
   // follow an agent's current photo everywhere, including their old
   // messages, not freeze at send time the way the name intentionally does.
-  author: { select: { profileImageUrl: true } },
+  author: { select: { profileImageUrl: true, role: true } },
 } as const;
 
 type Row = {
+  authorId: string | null;
+  authorName: string;
   reactions: { emoji: string; userId: string }[];
-  author: { profileImageUrl: string | null } | null;
+  author: { profileImageUrl: string | null; role: string } | null;
 } & Record<string, unknown>;
 
 /**
@@ -35,9 +41,13 @@ type Row = {
  *
  * The client needs the count and whether *you* are in it — a bare tally can
  * give the first but never the second.
+ *
+ * Admin-authored messages and system posts (Sales Bot, authorId null) are
+ * re-labelled/re-pictured here rather than at send time, so the override
+ * also applies to messages sent before this existed.
  */
 function shape(rows: Row[], me: string) {
-  return rows.map(({ reactions, author, ...rest }) => {
+  return rows.map(({ reactions, author, authorId, authorName, ...rest }) => {
     const byEmoji = new Map<string, { emoji: string; count: number; mine: boolean }>();
     for (const r of reactions) {
       const entry = byEmoji.get(r.emoji) ?? { emoji: r.emoji, count: 0, mine: false };
@@ -45,7 +55,15 @@ function shape(rows: Row[], me: string) {
       entry.mine ||= r.userId === me;
       byEmoji.set(r.emoji, entry);
     }
-    return { ...rest, authorProfileImageUrl: author?.profileImageUrl ?? null, reactions: [...byEmoji.values()] };
+    const isAdmin = author?.role === "ADMIN";
+    const isSystem = authorId === null;
+    return {
+      ...rest,
+      authorId,
+      authorName: isAdmin ? "Admin" : authorName,
+      authorProfileImageUrl: isAdmin || isSystem ? COMPANY_MARK_URL : author?.profileImageUrl ?? null,
+      reactions: [...byEmoji.values()],
+    };
   });
 }
 
