@@ -100,7 +100,21 @@ type Message = {
   reactions: Reaction[];
 };
 
+// Matches the mark path the API hands back for admin/system posts (see
+// COMPANY_MARK_URL in app/api/portal/chat/messages/route.ts) — unlike a
+// personal photo, the full mark needs to stay visible rather than be
+// cropped to fill the circle, so it gets its own inset/contain treatment.
+const COMPANY_MARK_URL = "/tier1-mark-collapsed.png";
+
 function MessageAvatar({ url, name }: { url: string | null; name: string }) {
+  if (url === COMPANY_MARK_URL) {
+    return (
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-copper-dim bg-surface2 p-1.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt="" className="h-full w-full object-contain" />
+      </div>
+    );
+  }
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-copper-dim object-cover" />
