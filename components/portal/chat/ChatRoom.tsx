@@ -842,10 +842,13 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   function messageRow(message: Message, prev: Message | undefined, inPinList: boolean) {
     const newDay = !inPinList && (!prev || dayLabel(prev.createdAt) !== dayLabel(message.createdAt));
     // Consecutive messages from one person in a short window read as one turn,
-    // so only the first carries a name and a timestamp.
+    // so only the first carries a name and a timestamp. Compares authorId
+    // too, not just the displayed name — every admin shows as "Admin", so
+    // two different admins posting back to back must not merge into one.
     const isGrouped =
       !inPinList &&
       !newDay &&
+      prev?.authorId === message.authorId &&
       prev?.authorName === message.authorName &&
       new Date(message.createdAt).getTime() - new Date(prev.createdAt).getTime() < 300_000;
 
