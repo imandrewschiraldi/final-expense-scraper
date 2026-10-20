@@ -515,6 +515,25 @@ model CarrierLink {
   @@map("carrier_links")
 }
 
+/// A lead vendor partner shown on the agent-facing Buy Leads page —
+/// admin-managed, flat and orderable like Carrier. Each is an affiliate
+/// relationship: clicking through earns the agency a referral commission
+/// that isn't surfaced to the agent, so this is presented to them as a
+/// plain trusted-source directory, not a marketplace with pricing.
+model LeadVendor {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  url         String
+  /// Manual display order on the Buy Leads page — new vendors append to
+  /// the end, admins can reorder via move up/down (same pattern as Carrier).
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("lead_vendors")
+}
+
 // Written on every Policy.status change going forward (no backfill for
 // pre-existing rows) — powers the Book of Business status timeline and the
 // Policy Status Analytics trend/conversion chart on the personal dashboard.
