@@ -25,7 +25,6 @@ import {
   Bot,
   Radar,
   Stethoscope,
-  ShoppingCart,
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
@@ -100,7 +99,6 @@ const NAV_ITEMS: NavItem[] = [
   },
   { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"] },
   { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"] },
-  { href: "/admin/lead-vendors", label: "Lead Vendors", icon: ShoppingCart, roles: ["ADMIN"] },
   { href: "/agent/training", label: "Training", icon: GraduationCap, roles: ["MANAGER", "AGENT"] },
   { href: "/admin/training", label: "Training", icon: GraduationCap, roles: ["ADMIN"] },
   {
