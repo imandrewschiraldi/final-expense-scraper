@@ -1,13 +1,22 @@
 import { cn } from "@/lib/cn";
 
-type Vendor = { name: string; description?: string; url: string };
+type Vendor = { name: string; description?: string; url?: string };
 
 // A plain static resource list, not a database-backed admin panel — add,
 // edit, or reorder a vendor here directly. `url` is each vendor's own
 // referral/affiliate link; the commission it earns isn't shown to agents,
 // so this reads to them as a trusted-source directory, not a marketplace.
+// `url`/`description` are optional so a vendor can be listed before its
+// link is ready — it renders with a "Coming Soon" badge instead of a dead
+// link until one is added.
 const VENDORS: Vendor[] = [
-  // { name: "Example Leads Co", description: "Aged final expense leads.", url: "https://example.com/ref/your-code" },
+  { name: "Proven Lead Solutions" },
+  { name: "Closr Leads" },
+  { name: "Goat Leads" },
+  { name: "Aria Leads" },
+  { name: "Titan Lead Solutions" },
+  { name: "Life Jacket Leads" },
+  { name: "DialerX Unlimited Leads" },
 ];
 
 export function BuyLeadsGrid() {
@@ -34,14 +43,20 @@ export function BuyLeadsGrid() {
               </p>
             )}
 
-            <a
-              href={vendor.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-condensed metal-copper-surface block rounded-md px-4 py-3 text-center text-sm font-bold tracking-[0.05em] text-white uppercase transition-all hover:brightness-110 active:translate-y-px"
-            >
-              Visit Site
-            </a>
+            {vendor.url ? (
+              <a
+                href={vendor.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-condensed metal-copper-surface block rounded-md px-4 py-3 text-center text-sm font-bold tracking-[0.05em] text-white uppercase transition-all hover:brightness-110 active:translate-y-px"
+              >
+                Visit Site
+              </a>
+            ) : (
+              <div className="font-condensed block rounded-md border border-border px-4 py-3 text-center text-sm font-bold tracking-[0.05em] text-muted uppercase">
+                Coming Soon
+              </div>
+            )}
           </div>
         </div>
       ))}
