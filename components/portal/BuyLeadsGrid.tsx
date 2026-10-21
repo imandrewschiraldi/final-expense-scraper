@@ -10,7 +10,7 @@ type Vendor = { name: string; description?: string; url?: string };
 // link is ready — it renders with a "Coming Soon" badge instead of a dead
 // link until one is added.
 const VENDORS: Vendor[] = [
-  { name: "Proven Lead Solutions" },
+  { name: "Proven Lead Solutions", url: "https://provenleadsolutions.com/" },
   { name: "Closr Leads" },
   { name: "Goat Leads" },
   { name: "Aria Leads" },
