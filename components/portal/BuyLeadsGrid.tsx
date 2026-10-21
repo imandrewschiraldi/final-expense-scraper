@@ -11,7 +11,12 @@ type Vendor = { name: string; description?: string; url?: string };
 // link until one is added.
 const VENDORS: Vendor[] = [
   { name: "Proven Lead Solutions", url: "https://provenleadsolutions.com/" },
-  { name: "Closr Leads" },
+  {
+    name: "Closr Leads",
+    description:
+      "Unlimited lead dialers & Real-time and aged insurance leads — Final Expense, Veteran, Trucker, Mortgage Protection & IUL — plus a built-in dialer to work them. Delivered to your CRM the moment they come in.",
+    url: "https://closrleads.com/go.php?c=TIER1FINANCIAL",
+  },
   { name: "Goat Leads" },
   { name: "Aria Leads" },
   { name: "Titan Lead Solutions" },
