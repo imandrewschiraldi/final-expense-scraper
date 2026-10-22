@@ -510,6 +510,7 @@ export function Sidebar({
 
       {/* Desktop sidebar — a real layout column, collapsible via the chevron. */}
       <aside
+        data-tour-ui="sidebar"
         className={cn(
           "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out lg:flex",
           collapsed ? "w-[68px]" : "w-60",

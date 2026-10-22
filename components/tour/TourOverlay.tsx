@@ -87,6 +87,31 @@ function useTourTarget(step: TourStep | null) {
   return { rect, notFound };
 }
 
+/** The real sidebar's right edge (0 on mobile, where it's an overlay
+ *  drawer rather than taking up layout width) — tracked continuously so
+ *  the docked panel slides along with its collapse/expand animation
+ *  instead of sitting on top of the nav links it's meant to explain. */
+function useSidebarRight(): number {
+  const [right, setRight] = useState(0);
+
+  useEffect(() => {
+    let raf = 0;
+    function measure() {
+      const el = document.querySelector('[data-tour-ui="sidebar"]');
+      if (el && window.getComputedStyle(el).display !== "none") {
+        setRight(el.getBoundingClientRect().right);
+      } else {
+        setRight(0);
+      }
+      raf = requestAnimationFrame(measure);
+    }
+    raf = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return right;
+}
+
 /** A copper ring around the real element — no backdrop, nothing dimmed or
  *  covered. The page underneath stays exactly as usable as it always is. */
 function HighlightRing({ rect }: { rect: DOMRect | null }) {
@@ -209,17 +234,21 @@ function StepPanel({ onShowMenu, notFound }: { onShowMenu: () => void; notFound:
   );
 }
 
-/** Docked to the right edge instead of floating over the content — stays in
- *  one place regardless of which element is spotlighted, so it never feels
- *  like it's covering whatever page you're actually looking at. */
+/** Docked beside the sidebar instead of floating over the content — stays
+ *  in one place regardless of which element is spotlighted, so it never
+ *  feels like it's covering whatever page you're actually looking at.
+ *  Sits right where the sidebar's own tabs are, sliding along with its
+ *  collapse/expand animation rather than overlapping the nav links the
+ *  steps are pointing at. On mobile (sidebarRight 0) it docks to the edge. */
 function DockedPanel({ role, notFound }: { role: Role; notFound: boolean }) {
   const [showMenu, setShowMenu] = useState(false);
+  const sidebarRight = useSidebarRight();
 
   return (
     <div
       data-tour-ui="tooltip"
-      className="fixed top-1/2 right-0 z-[9999] w-[340px] max-w-[88vw] -translate-y-1/2 overflow-hidden rounded-l-xl border border-r-0 border-copper-dim bg-surface shadow-[-12px_0_40px_rgba(0,0,0,0.55)]"
-      style={{ width: PANEL_WIDTH }}
+      className="fixed top-1/2 z-[9999] w-[340px] max-w-[88vw] -translate-y-1/2 overflow-hidden rounded-r-xl border border-l-0 border-copper-dim bg-surface shadow-[12px_0_40px_rgba(0,0,0,0.55)]"
+      style={{ width: PANEL_WIDTH, left: sidebarRight }}
     >
       {showMenu ? (
         <JumpMenu role={role} onBack={() => setShowMenu(false)} />
@@ -230,28 +259,40 @@ function DockedPanel({ role, notFound }: { role: Role; notFound: boolean }) {
   );
 }
 
-/** A small tab sticking out from the right edge — side-docked and out of the
- *  way, unlike a floating button sitting on top of the page. */
-function LauncherTab({ onClick }: { onClick: () => void }) {
+/** A small tab sticking out from the right edge, up near the page header —
+ *  side-docked and out of the way, unlike a floating button sitting in the
+ *  middle of the page. Hovering reveals a small X above it to hide it. */
+function LauncherTab({ onStart, onHide }: { onStart: () => void; onHide: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Take the platform tour"
-      title="Take the platform tour"
-      className="btn-metal-copper fixed top-1/2 right-0 z-[9990] -translate-y-1/2 rounded-l-lg px-2 py-4 text-[11px] font-bold tracking-[0.18em] uppercase [writing-mode:vertical-rl]"
-    >
-      Tour
-    </button>
+    <div className="group fixed top-20 right-0 z-[9990] flex flex-col items-end gap-1">
+      <button
+        type="button"
+        onClick={onHide}
+        aria-label="Hide the tour button"
+        title="Hide"
+        className="flex h-5 w-5 items-center justify-center rounded-md border border-copper-dim bg-surface text-muted opacity-0 transition-opacity hover:text-white group-hover:opacity-100"
+      >
+        <X className="h-3 w-3" />
+      </button>
+      <button
+        type="button"
+        onClick={onStart}
+        aria-label="Take the platform tour"
+        title="Take the platform tour"
+        className="btn-metal-copper rounded-l-lg px-2 py-4 text-[11px] font-bold tracking-[0.18em] uppercase [writing-mode:vertical-rl]"
+      >
+        Tour
+      </button>
+    </div>
   );
 }
 
 export function TourOverlay({ role }: { role: Role }) {
-  const { active, currentStep, start } = useTour();
+  const { active, currentStep, start, launcherHidden, hideLauncher } = useTour();
   const { rect, notFound } = useTourTarget(currentStep);
 
   if (!active || !currentStep) {
-    return <LauncherTab onClick={start} />;
+    return launcherHidden ? null : <LauncherTab onStart={start} onHide={hideLauncher} />;
   }
 
   const showHighlight = Boolean(currentStep.selector) && !notFound;
