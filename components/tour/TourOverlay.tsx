@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, List, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, HelpCircle, List, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { visibleSections, type Role, type TourStep } from "@/lib/tour/steps";
 import { useTour } from "@/components/tour/TourProvider";
@@ -312,41 +312,29 @@ function FloatingPanel({ role, rect, notFound }: { role: Role; rect: DOMRect | n
   );
 }
 
-/** A small tab sticking out from the right edge, up near the page header —
- *  side-docked and out of the way, unlike a floating button sitting in the
- *  middle of the page. Hovering reveals a small X above it to hide it. */
-function LauncherTab({ onStart, onHide }: { onStart: () => void; onHide: () => void }) {
+/** Compact icon button for the top-right action bar (see TopBarActions) —
+ *  only ever rendered there, and only when that bar is told showTour=true,
+ *  so useTour() always has a TourProvider ancestor when this mounts. */
+export function TourHeaderButton() {
+  const { start } = useTour();
   return (
-    <div className="group fixed top-20 right-0 z-[9990] flex flex-col items-end gap-1">
-      <button
-        type="button"
-        onClick={onHide}
-        aria-label="Hide the tour button"
-        title="Hide"
-        className="flex h-5 w-5 items-center justify-center rounded-md border border-copper-dim bg-surface text-muted opacity-0 transition-opacity hover:text-white group-hover:opacity-100"
-      >
-        <X className="h-3 w-3" />
-      </button>
-      <button
-        type="button"
-        onClick={onStart}
-        aria-label="Take the platform tour"
-        title="Take the platform tour"
-        className="btn-metal-copper rounded-l-lg px-2 py-4 text-[11px] font-bold tracking-[0.18em] uppercase [writing-mode:vertical-rl]"
-      >
-        Tour
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={start}
+      aria-label="Take the platform tour"
+      title="Take the platform tour"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-[1.5px] border-copper-dim text-muted transition-colors hover:border-copper hover:text-foreground"
+    >
+      <HelpCircle className="h-4.5 w-4.5" />
+    </button>
   );
 }
 
 export function TourOverlay({ role }: { role: Role }) {
-  const { active, currentStep, start, launcherHidden, hideLauncher } = useTour();
+  const { active, currentStep } = useTour();
   const { rect, notFound } = useTourTarget(currentStep);
 
-  if (!active || !currentStep) {
-    return launcherHidden ? null : <LauncherTab onStart={start} onHide={hideLauncher} />;
-  }
+  if (!active || !currentStep) return null;
 
   // A target filling most of the viewport (Scripts' edge-to-edge iframe)
   // gets treated the same as no target at all — see isHugeTarget.
