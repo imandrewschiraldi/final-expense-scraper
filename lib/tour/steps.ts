@@ -12,7 +12,7 @@ export type TourStep = {
   opensSidebarGroup?: string;
   title: string;
   body: string;
-  /** Omit to show for every role. */
+  /** Omit to show for both Manager and Agent — the only roles this tour is ever shown to. */
   roles?: Role[];
 };
 
@@ -21,11 +21,12 @@ export type TourSection = {
   steps: TourStep[];
 };
 
-// The whole platform tour, grouped the way the sidebar itself is organized.
-// Every step navigates to the real page and spotlights a real element —
-// nothing here is a mock-up, so a step whose target doesn't exist for a
-// given viewer (a flag-gated page, a role-specific variant) is skipped
-// automatically by the tour engine rather than left dangling.
+// The platform tour — Manager/Agent only, by design: it's shown to no one
+// else, and nothing admin-only is in here at all (not just filtered out per
+// viewer). Every step navigates to the real page and spotlights a real
+// element — nothing here is a mock-up, so a step whose target doesn't exist
+// for a given viewer (a flag-gated page like Vault or Recruiting Radar) is
+// skipped automatically by the tour engine rather than left dangling.
 export const TOUR_SECTIONS: TourSection[] = [
   {
     label: "Getting Started",
@@ -117,7 +118,7 @@ export const TOUR_SECTIONS: TourSection[] = [
         selector: 'a[href="/portal/hierarchy"]',
         title: "Hierarchy",
         body: "See the agency's downline/reporting structure.",
-        roles: ["ADMIN", "MANAGER"],
+        roles: ["MANAGER"],
       },
     ],
   },
@@ -167,11 +168,43 @@ export const TOUR_SECTIONS: TourSection[] = [
         roles: ["MANAGER", "AGENT"],
       },
       {
-        id: "scripts",
+        id: "scripts-overview",
         path: "/portal/scripts",
-        selector: 'a[href="/portal/scripts"]',
+        selector: '[data-tour="embedded-tool"]',
         title: "Scripts",
-        body: "Call scripts and talking points for working leads.",
+        body: "An interactive call script, not just something to read off — it's broken into every section of the sales framework, each with its own built-in objections and rebuttals so you always have an answer ready, wherever the call goes.",
+        roles: ["MANAGER", "AGENT"],
+      },
+      {
+        id: "scripts-opener",
+        path: "/portal/scripts",
+        selector: '[data-tour="embedded-tool"]',
+        title: "Opener & Rapport",
+        body: "Starts with how to open the call and build rapport — with rebuttals built in for the brush-offs you get in the first few seconds.",
+        roles: ["MANAGER", "AGENT"],
+      },
+      {
+        id: "scripts-discovery",
+        path: "/portal/scripts",
+        selector: '[data-tour="embedded-tool"]',
+        title: "Needs Discovery",
+        body: "Walks you through the right questions to uncover what the prospect actually needs, with rebuttals ready if they're hesitant to share.",
+        roles: ["MANAGER", "AGENT"],
+      },
+      {
+        id: "scripts-presentation",
+        path: "/portal/scripts",
+        selector: '[data-tour="embedded-tool"]',
+        title: "Presentation",
+        body: "Positions the plan and the price — with the price and coverage objections that come up at this stage already built in.",
+        roles: ["MANAGER", "AGENT"],
+      },
+      {
+        id: "scripts-objections-close",
+        path: "/portal/scripts",
+        selector: '[data-tour="embedded-tool"]',
+        title: "Objections & Close",
+        body: "The close, plus every common objection at this stage — spouse, \"let me think about it,\" already-have-coverage — each with a rebuttal ready to go.",
         roles: ["MANAGER", "AGENT"],
       },
       {
@@ -202,7 +235,7 @@ export const TOUR_SECTIONS: TourSection[] = [
         path: "/portal/ask-integrity",
         selector: 'a[href="/portal/ask-integrity"]',
         title: "Ask Integrity",
-        body: "A dedicated assistant for Integrity-specific questions.",
+        body: "An AI sales coach — it runs a demo call with you, rebuttals included, then grades the call and tells you exactly how to improve.",
       },
       {
         id: "carrier-resources-agent",
@@ -211,14 +244,6 @@ export const TOUR_SECTIONS: TourSection[] = [
         title: "Carrier Resources",
         body: "Phone numbers and portal links for every carrier you write with, in one place.",
         roles: ["MANAGER", "AGENT"],
-      },
-      {
-        id: "carrier-resources-admin",
-        path: "/admin/carrier-resources",
-        selector: 'a[href="/admin/carrier-resources"]',
-        title: "Carrier Resources",
-        body: "Manage the carrier contacts and links agents see on their own Carrier Resources page.",
-        roles: ["ADMIN"],
       },
     ],
   },
@@ -252,22 +277,6 @@ export const TOUR_SECTIONS: TourSection[] = [
         body: "Trusted third-party lead vendors to supplement what comes through the Vault.",
         roles: ["MANAGER", "AGENT"],
       },
-      {
-        id: "leads-admin",
-        path: "/admin/leads",
-        selector: 'a[href="/admin/leads"]',
-        title: "Leads",
-        body: "Import, assign, and manage every lead in the system.",
-        roles: ["ADMIN"],
-      },
-      {
-        id: "vault-admin",
-        path: "/admin/leads/vault",
-        selector: 'a[href="/admin/leads/vault"]',
-        title: "Vault",
-        body: "See and manage the shared Vault pool that agents draw from.",
-        roles: ["ADMIN"],
-      },
     ],
   },
   {
@@ -282,40 +291,11 @@ export const TOUR_SECTIONS: TourSection[] = [
         roles: ["MANAGER", "AGENT"],
       },
       {
-        id: "training-admin",
-        path: "/admin/training",
-        selector: 'a[href="/admin/training"]',
-        title: "Training",
-        body: "Build and manage the training modules and lessons agents see.",
-        roles: ["ADMIN"],
-      },
-      {
         id: "recruiting-radar",
         path: "/admin/recruiting-radar",
         selector: 'a[href="/admin/recruiting-radar"]',
         title: "Recruiting Radar",
         body: "Search for new agent prospects and review job applications that have already come in.",
-      },
-    ],
-  },
-  {
-    label: "Admin Tools",
-    steps: [
-      {
-        id: "agents",
-        path: "/admin/agents",
-        selector: 'a[href="/admin/agents"]',
-        title: "Agents",
-        body: "Manage every agent account — roles, access flags, and settings.",
-        roles: ["ADMIN"],
-      },
-      {
-        id: "carrier-rates",
-        path: "/admin/carriers",
-        selector: 'a[href="/admin/carriers"]',
-        title: "Carrier Rates",
-        body: "The commission rate tables used to calculate what each policy pays out.",
-        roles: ["ADMIN"],
       },
     ],
   },
@@ -326,7 +306,7 @@ export const TOUR_SECTIONS: TourSection[] = [
         id: "outro",
         path: "/portal/dashboard",
         title: "That's the Platform",
-        body: "That covers every section. Come back to this tour any time from the \"?\" button, and jump straight to any topic from its menu.",
+        body: "That covers every section. Come back to this tour any time from the tab on the edge of the screen, and jump straight to any topic from its menu.",
       },
     ],
   },

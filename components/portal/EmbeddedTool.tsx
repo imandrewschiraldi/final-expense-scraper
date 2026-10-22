@@ -17,7 +17,7 @@ export function EmbeddedTool({ title, src }: { title: string; src: string }) {
   const embedSrc = `${src}${src.includes("?") ? "&" : "?"}embed=1`;
 
   return (
-    <div className="relative -mx-4 -mb-8 h-[calc(100dvh-74px)] sm:-mx-6 lg:-mx-10 lg:-mt-2 lg:h-screen">
+    <div data-tour="embedded-tool" className="relative -mx-4 -mb-8 h-[calc(100dvh-74px)] sm:-mx-6 lg:-mx-10 lg:-mt-2 lg:h-screen">
       <iframe src={embedSrc} title={title} className="h-full w-full border-0" />
       <a
         href={src}

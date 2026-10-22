@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, HelpCircle, List, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, List, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { visibleSections, type Role, type TourStep } from "@/lib/tour/steps";
 import { useTour } from "@/components/tour/TourProvider";
 
 const PAD = 8;
-const TOOLTIP_WIDTH = 340;
+const PANEL_WIDTH = 340;
 const SEARCH_TIMEOUT_MS = 6000;
 const SEARCH_INTERVAL_MS = 250;
 
@@ -35,7 +35,7 @@ function findVisible(selector: string): Element | null {
 }
 
 /** Finds the step's target once (retrying until it appears or the search times out), then tracks
- *  its bounding box every frame so the spotlight follows scrolling, resizing, or layout shifts. */
+ *  its bounding box every frame so the highlight follows scrolling, resizing, or layout shifts. */
 function useTourTarget(step: TourStep | null) {
   const [el, setEl] = useState<Element | null>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -87,183 +87,179 @@ function useTourTarget(step: TourStep | null) {
   return { rect, notFound };
 }
 
-function tooltipStyle(rect: DOMRect | null): React.CSSProperties {
-  if (!rect || typeof window === "undefined") {
-    return { top: "50%", left: "50%", transform: "translate(-50%, -50%)", maxWidth: TOOLTIP_WIDTH };
-  }
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const spaceBelow = vh - rect.bottom;
-  const spaceAbove = rect.top;
-  const placeBelow = spaceBelow > 220 || spaceBelow >= spaceAbove;
-  const left = Math.min(Math.max(rect.left, 16), Math.max(16, vw - TOOLTIP_WIDTH - 16));
-
-  if (placeBelow) {
-    return { top: rect.bottom + PAD + 14, left, maxWidth: TOOLTIP_WIDTH };
-  }
-  return { top: rect.top - PAD - 14, left, maxWidth: TOOLTIP_WIDTH, transform: "translateY(-100%)" };
-}
-
-function Spotlight({ rect }: { rect: DOMRect | null }) {
-  const box = rect
-    ? { x: rect.left - PAD, y: rect.top - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 }
-    : null;
-
+/** A copper ring around the real element — no backdrop, nothing dimmed or
+ *  covered. The page underneath stays exactly as usable as it always is. */
+function HighlightRing({ rect }: { rect: DOMRect | null }) {
+  if (!rect) return null;
   return (
-    <svg className="pointer-events-none fixed inset-0 z-[9998] h-full w-full">
-      <defs>
-        <mask id="tour-spotlight-mask">
-          <rect x="0" y="0" width="100%" height="100%" fill="white" />
-          {box && <rect x={box.x} y={box.y} width={box.width} height={box.height} rx={10} fill="black" />}
-        </mask>
-      </defs>
-      <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.72)" mask="url(#tour-spotlight-mask)" />
-      {box && (
-        <rect
-          x={box.x}
-          y={box.y}
-          width={box.width}
-          height={box.height}
-          rx={10}
-          fill="none"
-          stroke="var(--copper)"
-          strokeWidth={2.5}
-        />
-      )}
-    </svg>
+    <div
+      className="pointer-events-none fixed z-[9998] rounded-[10px] shadow-[0_0_0_3px_var(--copper),0_0_0_7px_rgba(200,121,65,0.2),0_0_22px_4px_rgba(200,121,65,0.35)]"
+      style={{
+        top: rect.top - PAD,
+        left: rect.left - PAD,
+        width: rect.width + PAD * 2,
+        height: rect.height + PAD * 2,
+      }}
+    />
   );
 }
 
-function TourMenu({ role, onClose }: { role: Role; onClose: () => void }) {
+function JumpMenu({ role, onBack }: { role: Role; onBack: () => void }) {
   const { jumpTo, currentStep } = useTour();
   const sections = visibleSections(role);
 
   return (
-    <div className="fixed inset-0 z-[10000] flex justify-end bg-black/50" onClick={onClose}>
-      <div
-        className="flex h-full w-full max-w-xs flex-col overflow-y-auto border-l border-copper-dim bg-surface p-4 shadow-[0_0_60px_rgba(0,0,0,0.6)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-condensed text-sm font-extrabold tracking-[0.1em] text-white uppercase">Jump To</h2>
-          <button type="button" onClick={onClose} aria-label="Close jump menu" className="text-muted hover:text-white">
-            <X className="h-4.5 w-4.5" />
-          </button>
-        </div>
-        <div className="space-y-5">
-          {sections.map((section) => (
-            <div key={section.label}>
-              <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.14em] text-copper uppercase">
-                {section.label}
-              </p>
-              <div className="space-y-0.5">
-                {section.steps.map((step) => (
-                  <button
-                    key={step.id}
-                    type="button"
-                    onClick={() => jumpTo(step.id)}
-                    className={cn(
-                      "block w-full rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
-                      currentStep?.id === step.id
-                        ? "bg-copper/[0.15] text-copper"
-                        : "text-muted hover:bg-white/[0.04] hover:text-white",
-                    )}
-                  >
-                    {step.title}
-                  </button>
-                ))}
-              </div>
+    <div className="flex max-h-[75vh] flex-col">
+      <div className="flex shrink-0 items-center gap-2.5 border-b border-border p-4">
+        <button type="button" onClick={onBack} aria-label="Back to step" className="text-muted hover:text-white">
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <h2 className="font-condensed text-sm font-extrabold tracking-[0.1em] text-white uppercase">Jump To</h2>
+      </div>
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+        {sections.map((section) => (
+          <div key={section.label}>
+            <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.14em] text-copper uppercase">
+              {section.label}
+            </p>
+            <div className="space-y-0.5">
+              {section.steps.map((step) => (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => {
+                    jumpTo(step.id);
+                    onBack();
+                  }}
+                  className={cn(
+                    "block w-full rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
+                    currentStep?.id === step.id
+                      ? "bg-copper/[0.15] text-copper"
+                      : "text-muted hover:bg-white/[0.04] hover:text-white",
+                  )}
+                >
+                  {step.title}
+                </button>
+              ))}
             </div>
-          ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepPanel({ onShowMenu, notFound }: { onShowMenu: () => void; notFound: boolean }) {
+  const { currentStep, next, back, end, isFirst, isLast, position, total } = useTour();
+  if (!currentStep) return null;
+
+  return (
+    <div className="flex max-h-[75vh] flex-col">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border p-4">
+        <h3 data-tour-ui="title" className="font-condensed text-sm font-extrabold tracking-[0.06em] text-white uppercase">
+          {currentStep.title}
+        </h3>
+        <button type="button" onClick={end} aria-label="End tour" className="shrink-0 text-muted hover:text-white">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <p className="text-sm text-muted">{currentStep.body}</p>
+        {currentStep.selector && notFound && (
+          <p className="mt-3 text-xs text-red-light">
+            Couldn&apos;t find this on your account right now — it may need access you don&apos;t have.
+          </p>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border p-3">
+        <span className="font-condensed text-[11px] font-bold tracking-[0.08em] text-muted uppercase">
+          {position} / {total}
+        </span>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onShowMenu}
+            aria-label="Jump to a topic"
+            title="Jump to a topic"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted hover:border-copper-dim hover:text-white"
+          >
+            <List className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={back}
+            disabled={isFirst}
+            aria-label="Back"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted hover:border-copper-dim hover:text-white disabled:opacity-30"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            aria-label={isLast ? "Finish tour" : "Next step"}
+            className="btn-metal-copper flex h-8 items-center gap-1 rounded-md px-3 text-xs font-bold uppercase"
+          >
+            {isLast ? "Finish" : "Next"}
+            {!isLast && <ChevronRight className="h-3.5 w-3.5" />}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function LauncherButton({ onClick }: { onClick: () => void }) {
+/** Docked to the right edge instead of floating over the content — stays in
+ *  one place regardless of which element is spotlighted, so it never feels
+ *  like it's covering whatever page you're actually looking at. */
+function DockedPanel({ role, notFound }: { role: Role; notFound: boolean }) {
+  const [showMenu, setShowMenu] = useState(false);
+
+  return (
+    <div
+      data-tour-ui="tooltip"
+      className="fixed top-1/2 right-0 z-[9999] w-[340px] max-w-[88vw] -translate-y-1/2 overflow-hidden rounded-l-xl border border-r-0 border-copper-dim bg-surface shadow-[-12px_0_40px_rgba(0,0,0,0.55)]"
+      style={{ width: PANEL_WIDTH }}
+    >
+      {showMenu ? (
+        <JumpMenu role={role} onBack={() => setShowMenu(false)} />
+      ) : (
+        <StepPanel onShowMenu={() => setShowMenu(true)} notFound={notFound} />
+      )}
+    </div>
+  );
+}
+
+/** A small tab sticking out from the right edge — side-docked and out of the
+ *  way, unlike a floating button sitting on top of the page. */
+function LauncherTab({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label="Take the platform tour"
       title="Take the platform tour"
-      className="btn-metal-copper fixed right-5 bottom-5 z-[9990] flex h-12 w-12 items-center justify-center rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+      className="btn-metal-copper fixed top-1/2 right-0 z-[9990] -translate-y-1/2 rounded-l-lg px-2 py-4 text-[11px] font-bold tracking-[0.18em] uppercase [writing-mode:vertical-rl]"
     >
-      <HelpCircle className="h-5.5 w-5.5" />
+      Tour
     </button>
   );
 }
 
 export function TourOverlay({ role }: { role: Role }) {
-  const { active, currentStep, menuOpen, setMenuOpen, start, next, back, end, isFirst, isLast, position, total } =
-    useTour();
+  const { active, currentStep, start } = useTour();
   const { rect, notFound } = useTourTarget(currentStep);
 
   if (!active || !currentStep) {
-    return <LauncherButton onClick={start} />;
+    return <LauncherTab onClick={start} />;
   }
 
-  const showSpotlight = Boolean(currentStep.selector) && !notFound;
+  const showHighlight = Boolean(currentStep.selector) && !notFound;
 
   return (
     <>
-      <Spotlight rect={showSpotlight ? rect : null} />
-      <div
-        data-tour-ui="tooltip"
-        className="fixed z-[9999] rounded-xl border border-copper-dim bg-surface p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
-        style={tooltipStyle(showSpotlight ? rect : null)}
-      >
-        <div className="mb-2 flex items-start justify-between gap-3">
-          <h3 data-tour-ui="title" className="font-condensed text-sm font-extrabold tracking-[0.06em] text-white uppercase">
-            {currentStep.title}
-          </h3>
-          <button type="button" onClick={end} aria-label="End tour" className="shrink-0 text-muted hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="mb-3 text-sm text-muted">{currentStep.body}</p>
-        {currentStep.selector && notFound && (
-          <p className="mb-3 text-xs text-red-light">
-            Couldn&apos;t find this on your account right now — it may need access you don&apos;t have.
-          </p>
-        )}
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-condensed text-[11px] font-bold tracking-[0.08em] text-muted uppercase">
-            {position} / {total}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Jump to a topic"
-              title="Jump to a topic"
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted hover:border-copper-dim hover:text-white"
-            >
-              <List className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={back}
-              disabled={isFirst}
-              aria-label="Back"
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted hover:border-copper-dim hover:text-white disabled:opacity-30"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={next}
-              aria-label={isLast ? "Finish tour" : "Next step"}
-              className="btn-metal-copper flex h-8 items-center gap-1 rounded-md px-3 text-xs font-bold uppercase"
-            >
-              {isLast ? "Finish" : "Next"}
-              {!isLast && <ChevronRight className="h-3.5 w-3.5" />}
-            </button>
-          </div>
-        </div>
-      </div>
-      {menuOpen && <TourMenu role={role} onClose={() => setMenuOpen(false)} />}
+      <HighlightRing rect={showHighlight ? rect : null} />
+      <DockedPanel role={role} notFound={notFound} />
     </>
   );
 }

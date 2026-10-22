@@ -108,6 +108,12 @@ model User {
   /// system. Purely a per-viewer read-time overlay: never writes fake rows
   /// to the real tables, and never affects what any other user sees.
   demoModeEnabled        Boolean   @default(false)
+  /// Null until the platform guided tour has been completed or dismissed
+  /// once. No column default on purpose — a brand-new account (the only
+  /// case the tour should auto-start for) gets null here; the migration
+  /// that adds this column backfills every existing user to "now" so
+  /// no one already using the platform suddenly gets forced through it.
+  tourCompletedAt        DateTime?
   managerId              String?
   manager                User?     @relation("ManagerHierarchy", fields: [managerId], references: [id], onDelete: SetNull)
   inviteTokenHash        String?   @unique

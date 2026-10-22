@@ -25,6 +25,7 @@ export async function GET() {
       vaultAccessStartedAt: true,
       agencyDashboardEnabled: true,
       recruitingRadarEnabled: true,
+      tourCompletedAt: true,
     },
   });
 
