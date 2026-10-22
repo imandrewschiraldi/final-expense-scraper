@@ -31,8 +31,6 @@ function writePersisted(state: Persisted) {
 type TourContextValue = {
   active: boolean;
   currentStep: TourStep | null;
-  menuOpen: boolean;
-  setMenuOpen: (open: boolean) => void;
   start: () => void;
   next: () => void;
   back: () => void;
@@ -53,13 +51,16 @@ export function useTour() {
 }
 
 /**
- * Drives the platform tour's state and cross-page navigation.
+ * Drives the platform tour's state, auto-start, and cross-page navigation.
  *
- * State is persisted to sessionStorage (not just React state) because
- * /portal, /agent, and /admin each have their own root layout — crossing
- * between them (e.g. a step on /agent/dashboard followed by one on
- * /admin/leads) fully remounts this provider. Reading the saved step back
- * on mount is what lets the tour survive that remount instead of resetting.
+ * Only ever mounted for Manager/Agent roles (see AppShell) — Admin never
+ * sees the tour at all.
+ *
+ * Active/step state is persisted to sessionStorage (not just React state)
+ * because /portal, /agent, and /admin each have their own root layout —
+ * crossing between them (most steps do) fully remounts this provider.
+ * Reading the saved step back on mount is what lets the tour survive that
+ * remount instead of resetting.
  */
 export function TourProvider({ role, children }: { role: Role; children: React.ReactNode }) {
   const router = useRouter();
@@ -68,17 +69,42 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
 
   const [active, setActive] = useState(false);
   const [stepId, setStepId] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  // Set the moment the viewer ends/finishes the tour this session, so the
+  // auto-start check below never re-fires and re-opens it — the server
+  // write that records that is fire-and-forget and may not have landed yet
+  // the instant React re-renders with active:false.
+  const [dismissed, setDismissed] = useState(false);
 
   // Runs once per mount — including a remount caused by crossing a layout
-  // boundary, which is exactly when saved state needs recovering.
+  // boundary, which is exactly when an in-progress tour needs recovering.
   useEffect(() => {
     const persisted = readPersisted();
     setActive(persisted.active);
     setStepId(persisted.stepId);
     setHydrated(true);
   }, []);
+
+  // Nothing was already in progress this session — check whether this
+  // account has ever finished/dismissed the tour before. A brand-new
+  // account (tourCompletedAt still null) gets it started automatically.
+  useEffect(() => {
+    if (!hydrated || active || dismissed || steps.length === 0) return;
+    let cancelled = false;
+    fetch("/api/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.profile) return;
+        if (!data.profile.tourCompletedAt) {
+          setActive(true);
+          setStepId(steps[0].id);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, active, dismissed, steps]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -100,7 +126,6 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
 
   const goTo = useCallback((id: string) => {
     setStepId(id);
-    setMenuOpen(false);
   }, []);
 
   const start = useCallback(() => {
@@ -109,10 +134,13 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
     goTo(steps[0].id);
   }, [steps, goTo]);
 
+  // Marks the tour seen server-side — idempotent (only ever sets the
+  // timestamp once) — whether the viewer finished it or skipped out.
   const end = useCallback(() => {
+    fetch("/api/portal/tour/complete", { method: "POST" }).catch(() => {});
+    setDismissed(true);
     setActive(false);
     setStepId(null);
-    setMenuOpen(false);
   }, []);
 
   const next = useCallback(() => {
@@ -132,8 +160,6 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
   const value: TourContextValue = {
     active,
     currentStep: active ? currentStep : null,
-    menuOpen,
-    setMenuOpen,
     start,
     next,
     back,
