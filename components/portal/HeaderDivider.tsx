@@ -10,7 +10,11 @@ import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 // here). Showing both would double up the line on those two pages. Quoter
 // doesn't have that — its embedded tools are third-party, not Tier 1's own
 // — so it keeps this outer line and starts its own content below it.
-const NO_OUTER_LINE_PREFIXES = ["/portal/scripts", "/portal/commission-calculator"];
+// Also used by TopBarActions, which has the same problem one level up: these
+// two pages' embedded tool renders its own Notifications/Sound/Tour/Sign Out
+// equivalents in its own header, so our outer copy would sit on top of —
+// and visually block — the iframe's own controls rather than add anything.
+export const NO_OUTER_LINE_PREFIXES = ["/portal/scripts", "/portal/commission-calculator"];
 
 // main's own `pt-2` (8px). PageHeader (the mobile top bar) is meant to
 // cancel this out with a matching `-mt-2` so it sits flush at the true
