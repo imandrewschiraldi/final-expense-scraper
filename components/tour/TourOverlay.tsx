@@ -248,6 +248,12 @@ function StepPanel({ onShowMenu, notFound }: { onShowMenu: () => void; notFound:
 // highlighted element itself (when it's placed next to one).
 const SIDEBAR_GAP = 16;
 const TARGET_GAP = 14;
+// Rough floor for the step view's own height (title + a few lines of body +
+// footer) — reserved so the panel never gets placed so close to the
+// viewport's top/bottom edge that it renders mostly or fully off-screen,
+// which a tall target (e.g. the chat channel list, which runs most of the
+// viewport's height) could otherwise do.
+const MIN_PANEL_HEIGHT = 300;
 
 /** Positions the panel next to the current target — above/below it, never
  *  under the sidebar — so it moves around the page with the tour instead
@@ -268,18 +274,19 @@ function computePanelStyle(rect: DOMRect | null, sidebarRight: number): React.CS
   const vh = window.innerHeight;
   const spaceBelow = vh - rect.bottom;
   const spaceAbove = rect.top;
-  const placeBelow = spaceBelow > 220 || spaceBelow >= spaceAbove;
+  const placeBelow = spaceBelow >= spaceAbove;
   const left = Math.min(Math.max(rect.left, minLeft), Math.max(minLeft, vw - PANEL_WIDTH - 16));
 
   if (placeBelow) {
-    return { width: PANEL_WIDTH, top: Math.min(rect.bottom + PAD + TARGET_GAP, vh - 100), left };
+    // Clamped so the panel's top edge never sits so low there's no room
+    // left for its own content before the viewport ends.
+    const top = Math.min(rect.bottom + PAD + TARGET_GAP, Math.max(16, vh - MIN_PANEL_HEIGHT));
+    return { width: PANEL_WIDTH, top, left };
   }
-  return {
-    width: PANEL_WIDTH,
-    top: Math.max(rect.top - PAD - TARGET_GAP, 16),
-    left,
-    transform: "translateY(-100%)",
-  };
+  // Anchored by its bottom edge (translateY(-100%), grows upward from
+  // here) — clamped the same way, just on the other side.
+  const bottom = Math.max(Math.min(rect.top - PAD - TARGET_GAP, vh - 16), Math.min(MIN_PANEL_HEIGHT, vh - 16));
+  return { width: PANEL_WIDTH, top: bottom, left, transform: "translateY(-100%)" };
 }
 
 /** Floats near whichever element the current step highlights — moving
