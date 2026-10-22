@@ -12,7 +12,6 @@ export const TOUR_STORAGE_KEY = "tier1-tour-state";
 type Persisted = {
   active: boolean;
   stepId: string | null;
-  launcherHidden: boolean;
   // Set when the viewer closes the tour before finishing it. Persisted (not
   // just React state) so it survives the remounts that crossing /portal,
   // /agent, and /admin's separate root layouts causes — otherwise the
@@ -23,7 +22,7 @@ type Persisted = {
 };
 
 function readPersisted(): Persisted {
-  const fallback: Persisted = { active: false, stepId: null, launcherHidden: false, skippedThisSession: false };
+  const fallback: Persisted = { active: false, stepId: null, skippedThisSession: false };
   if (typeof window === "undefined") return fallback;
   try {
     const raw = sessionStorage.getItem(TOUR_STORAGE_KEY);
@@ -32,7 +31,6 @@ function readPersisted(): Persisted {
     return {
       active: Boolean(parsed.active),
       stepId: typeof parsed.stepId === "string" ? parsed.stepId : null,
-      launcherHidden: Boolean(parsed.launcherHidden),
       skippedThisSession: Boolean(parsed.skippedThisSession),
     };
   } catch {
@@ -51,8 +49,6 @@ function writePersisted(state: Persisted) {
 type TourContextValue = {
   active: boolean;
   currentStep: TourStep | null;
-  launcherHidden: boolean;
-  hideLauncher: () => void;
   start: () => void;
   next: () => void;
   back: () => void;
@@ -92,7 +88,6 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
 
   const [active, setActive] = useState(false);
   const [stepId, setStepId] = useState<string | null>(null);
-  const [launcherHidden, setLauncherHidden] = useState(false);
   const [skippedThisSession, setSkippedThisSession] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -102,7 +97,6 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
     const persisted = readPersisted();
     setActive(persisted.active);
     setStepId(persisted.stepId);
-    setLauncherHidden(persisted.launcherHidden);
     setSkippedThisSession(persisted.skippedThisSession);
     setHydrated(true);
   }, []);
@@ -132,8 +126,8 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
 
   useEffect(() => {
     if (!hydrated) return;
-    writePersisted({ active, stepId, launcherHidden, skippedThisSession });
-  }, [hydrated, active, stepId, launcherHidden, skippedThisSession]);
+    writePersisted({ active, stepId, skippedThisSession });
+  }, [hydrated, active, stepId, skippedThisSession]);
 
   const currentStep = useMemo(() => (stepId ? (steps.find((s) => s.id === stepId) ?? null) : null), [stepId, steps]);
   const index = currentStep ? steps.indexOf(currentStep) : -1;
@@ -194,13 +188,9 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
     goTo(steps[index - 1].id);
   }, [index, steps, goTo]);
 
-  const hideLauncher = useCallback(() => setLauncherHidden(true), []);
-
   const value: TourContextValue = {
     active,
     currentStep: active ? currentStep : null,
-    launcherHidden,
-    hideLauncher,
     start,
     next,
     back,
