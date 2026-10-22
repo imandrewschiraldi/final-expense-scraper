@@ -217,7 +217,7 @@ export const TOUR_SECTIONS: TourSection[] = [
     ],
   },
   {
-    label: "Training & Recruiting",
+    label: "Training",
     steps: [
       {
         id: "training-agent",
@@ -226,13 +226,6 @@ export const TOUR_SECTIONS: TourSection[] = [
         title: "Training",
         body: "Onboarding lessons and ongoing training modules.",
         roles: ["MANAGER", "AGENT"],
-      },
-      {
-        id: "recruiting-radar",
-        path: "/admin/recruiting-radar",
-        selector: 'a[href="/admin/recruiting-radar"]',
-        title: "Recruiting Radar",
-        body: "Search for new agent prospects and review job applications that have already come in.",
       },
     ],
   },
