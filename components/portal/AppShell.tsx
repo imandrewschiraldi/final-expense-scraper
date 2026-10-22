@@ -7,6 +7,8 @@ import { HeaderDivider } from "@/components/portal/HeaderDivider";
 import { ContentContainer } from "@/components/portal/ContentContainer";
 import { NotificationToaster } from "@/components/portal/NotificationToaster";
 import { SoundEffects } from "@/components/portal/SoundEffects";
+import { TourProvider } from "@/components/tour/TourProvider";
+import { TourOverlay } from "@/components/tour/TourOverlay";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -20,21 +22,24 @@ export function AppShell({ role, name, children }: { role: Role; name: string; c
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
-      <NotificationToaster />
-      <SoundEffects />
-      <Sidebar role={role} name={name} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
-      <main className="relative min-w-0 flex-1 overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10">
-        <PageHeader onOpenMenu={() => setMobileOpen(true)} />
-        {/* Continues the logo header's bottom edge across the content area
-            with a copper accent. Lives inside the scrollable region (not
-            viewport-fixed) so it scrolls away with the rest of the page
-            instead of staying pinned over content that's scrolled
-            underneath it. Omitted on Scripts/Commission Calculator — see
-            HeaderDivider. */}
-        <HeaderDivider />
-        <ContentContainer>{children}</ContentContainer>
-      </main>
-    </div>
+    <TourProvider role={role}>
+      <div className="flex min-h-screen flex-col bg-background lg:flex-row">
+        <NotificationToaster />
+        <SoundEffects />
+        <Sidebar role={role} name={name} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
+        <main className="relative min-w-0 flex-1 overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10">
+          <PageHeader onOpenMenu={() => setMobileOpen(true)} />
+          {/* Continues the logo header's bottom edge across the content area
+              with a copper accent. Lives inside the scrollable region (not
+              viewport-fixed) so it scrolls away with the rest of the page
+              instead of staying pinned over content that's scrolled
+              underneath it. Omitted on Scripts/Commission Calculator — see
+              HeaderDivider. */}
+          <HeaderDivider />
+          <ContentContainer>{children}</ContentContainer>
+        </main>
+        <TourOverlay role={role} />
+      </div>
+    </TourProvider>
   );
 }

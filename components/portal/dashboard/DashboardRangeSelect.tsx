@@ -5,6 +5,7 @@ import { DASHBOARD_RANGES, DASHBOARD_RANGE_LABELS, DashboardRange } from "@/lib/
 export function DashboardRangeSelect({ value, onChange }: { value: DashboardRange; onChange: (range: DashboardRange) => void }) {
   return (
     <select
+      data-tour="dashboard-range-select"
       value={value}
       onChange={(e) => onChange(e.target.value as DashboardRange)}
       className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-white focus:border-copper-dim focus:outline-none"
