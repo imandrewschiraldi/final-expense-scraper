@@ -22,11 +22,12 @@ export function AppShell({ role, name, children }: { role: Role; name: string; c
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // The guided tour is a Manager/Agent onboarding feature — Admin never
-  // sees it (no launcher, no auto-start), not just a filtered-down version
-  // of it, so TourProvider/TourOverlay aren't even mounted for that role.
+  // sees it (no launcher, no auto-start, no "Take the Platform Tour" button
+  // on their Profile page), not just a filtered-down version of it, so
+  // TourProvider/TourOverlay aren't even mounted for that role.
   const showTour = role !== "ADMIN";
 
-  return (
+  const shell = (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
       <NotificationToaster />
       <SoundEffects />
@@ -42,11 +43,11 @@ export function AppShell({ role, name, children }: { role: Role; name: string; c
         <HeaderDivider />
         <ContentContainer>{children}</ContentContainer>
       </main>
-      {showTour && (
-        <TourProvider role={role}>
-          <TourOverlay role={role} />
-        </TourProvider>
-      )}
+      {showTour && <TourOverlay role={role} />}
     </div>
   );
+
+  // Wraps the whole shell (not just TourOverlay) so page content — like the
+  // "Take the Platform Tour" button on Profile — can also reach useTour().
+  return showTour ? <TourProvider role={role}>{shell}</TourProvider> : shell;
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { TOUR_STORAGE_KEY } from "@/components/tour/TourProvider";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,6 +31,15 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Invalid email or password.");
       return;
+    }
+
+    // A platform tour skipped last session is due again on a fresh login —
+    // clearing this here (rather than leaving it to the tour itself) is
+    // what ties that specifically to logging in, not just any page load.
+    try {
+      sessionStorage.removeItem(TOUR_STORAGE_KEY);
+    } catch {
+      // Private browsing / storage disabled — harmless to skip.
     }
 
     router.push("/");

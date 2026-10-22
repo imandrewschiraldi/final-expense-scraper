@@ -8,6 +8,7 @@ import { Input, Select } from "@/components/ui/Input";
 import { StateMultiSelect } from "@/components/shared/StateMultiSelect";
 import { US_STATES } from "@/lib/usStates";
 import { ROLE_SWITCH_EMAIL, SwitchableRole } from "@/lib/roleSwitch";
+import { ProfileTourButton } from "@/components/portal/ProfileTourButton";
 
 type Profile = {
   id: string;
@@ -254,6 +255,8 @@ export function ProfilePanel() {
           )}
         </div>
       </Card>
+
+      {(profile.role === "AGENT" || profile.role === "MANAGER") && <ProfileTourButton />}
 
       <Card>
         <CardHeader>
