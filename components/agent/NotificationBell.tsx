@@ -47,6 +47,7 @@ export function NotificationBell() {
   return (
     <div className="relative">
       <button
+        data-tour="sidebar-notification-bell"
         onClick={handleOpen}
         aria-label="Notifications"
         className="font-condensed relative flex items-center gap-2 rounded-lg border-[1.5px] border-copper-dim px-3 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper hover:text-foreground sm:px-4"

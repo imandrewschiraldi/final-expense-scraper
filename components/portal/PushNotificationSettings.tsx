@@ -119,7 +119,7 @@ export function PushNotificationSettings() {
   if (status === "unsupported") return null;
 
   return (
-    <Card>
+    <Card data-tour="push-notifications-card">
       <CardHeader>
         <CardTitle>Push Notifications</CardTitle>
       </CardHeader>

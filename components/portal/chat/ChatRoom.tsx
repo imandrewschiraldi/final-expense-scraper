@@ -991,7 +991,10 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <aside className="rounded-[10px] border-2 border-copper/50 bg-surface p-3 shadow-[0_0_60px_8px_color-mix(in_srgb,var(--copper)_20%,transparent)]">
+        <aside
+          data-tour="chat-channel-list"
+          className="rounded-[10px] border-2 border-copper/50 bg-surface p-3 shadow-[0_0_60px_8px_color-mix(in_srgb,var(--copper)_20%,transparent)]"
+        >
           <div className="mb-2 flex items-center justify-between px-1">
             <p className="font-condensed text-[11px] font-extrabold tracking-[0.18em] text-muted uppercase">
               Channels
@@ -1187,6 +1190,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               <ImagePlus className="h-4 w-4" />
             </button>
             <textarea
+              data-tour="chat-composer"
               value={draft}
               onChange={(e) => setDraft(e.target.value.slice(0, CHAT_MESSAGE_MAX))}
               onKeyDown={(e) => {

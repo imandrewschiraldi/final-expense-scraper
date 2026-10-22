@@ -225,6 +225,17 @@ function NavLinks({
   // consulted for groups the current page isn't already forcing open.
   const [opened, setOpened] = useState<Set<string>>(() => new Set());
 
+  // Lets the platform tour reveal a child link (e.g. "My Leads") without
+  // the viewer having clicked the group open themselves first.
+  useEffect(() => {
+    function onForceOpen(e: Event) {
+      const label = (e as CustomEvent<string>).detail;
+      setOpened((prev) => (prev.has(label) ? prev : new Set(prev).add(label)));
+    }
+    window.addEventListener("tour:open-sidebar-group", onForceOpen);
+    return () => window.removeEventListener("tour:open-sidebar-group", onForceOpen);
+  }, []);
+
   function toggle(label: string) {
     setOpened((prev) => {
       const next = new Set(prev);
@@ -342,6 +353,7 @@ function SidebarFooter({
           </div>
           <Button
             variant="ghost"
+            data-tour="sidebar-sound-toggle"
             aria-label={soundEnabled ? "Mute sounds" : "Unmute sounds"}
             className="w-full gap-2"
             onClick={() => setSoundEnabled(!soundEnabled)}
@@ -356,6 +368,7 @@ function SidebarFooter({
 
       <Link
         href="/portal/profile"
+        data-tour="sidebar-profile-link"
         onClick={onNavigate}
         className={cn(
           "flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-white/[0.04]",

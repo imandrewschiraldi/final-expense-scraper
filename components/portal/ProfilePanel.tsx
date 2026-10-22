@@ -186,6 +186,7 @@ export function ProfilePanel() {
         <div className="flex items-center gap-4">
           <button
             type="button"
+            data-tour="profile-picture-button"
             onClick={() => fileInputRef.current?.click()}
             className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-[1.5px] border-copper-dim bg-surface"
             title="Change profile picture"
