@@ -129,6 +129,15 @@ function HighlightRing({ rect }: { rect: DOMRect | null }) {
   );
 }
 
+/** A target filling most of the viewport (e.g. Scripts' edge-to-edge iframe
+ *  embed) isn't something a ring can meaningfully outline — it would just
+ *  trace the screen's own edges — and isn't a useful anchor for the panel
+ *  either, so both treat it the same as "no target". */
+function isHugeTarget(rect: DOMRect): boolean {
+  if (typeof window === "undefined") return false;
+  return rect.width > window.innerWidth * 0.55 && rect.height > window.innerHeight * 0.55;
+}
+
 function JumpMenu({ role, onBack }: { role: Role; onBack: () => void }) {
   const { jumpTo, currentStep } = useTour();
   const sections = visibleSections(role);
@@ -234,25 +243,58 @@ function StepPanel({ onShowMenu, notFound }: { onShowMenu: () => void; notFound:
   );
 }
 
-// Breathing room between the sidebar's own edge and the panel, so it reads
-// as its own floating card next to the sidebar rather than fused to it.
+// Breathing room kept between the panel and whatever it's near — the
+// sidebar's edge (it must never sit over the nav links) and the
+// highlighted element itself (when it's placed next to one).
 const SIDEBAR_GAP = 16;
+const TARGET_GAP = 14;
 
-/** Floats beside the sidebar (never flush against it) instead of over the
- *  content — stays in one place regardless of which element is
- *  spotlighted, so it never feels like it's covering whatever page you're
- *  actually looking at. Tracks the sidebar's collapse/expand animation
- *  rather than overlapping the nav links the steps are pointing at. On
- *  mobile (sidebarRight 0) it floats near the left edge instead. */
-function DockedPanel({ role, notFound }: { role: Role; notFound: boolean }) {
+/** Positions the panel next to the current target — above/below it, never
+ *  under the sidebar — so it moves around the page with the tour instead
+ *  of staying parked in one spot. Falls back to a steady spot beside the
+ *  sidebar when there's nothing sensible to anchor to (the intro/outro,
+ *  a huge target, or one that couldn't be found). */
+function computePanelStyle(rect: DOMRect | null, sidebarRight: number): React.CSSProperties {
+  const minLeft = sidebarRight + SIDEBAR_GAP;
+  const fallback: React.CSSProperties = {
+    width: PANEL_WIDTH,
+    top: "50%",
+    left: minLeft,
+    transform: "translateY(-50%)",
+  };
+  if (!rect || typeof window === "undefined") return fallback;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const spaceBelow = vh - rect.bottom;
+  const spaceAbove = rect.top;
+  const placeBelow = spaceBelow > 220 || spaceBelow >= spaceAbove;
+  const left = Math.min(Math.max(rect.left, minLeft), Math.max(minLeft, vw - PANEL_WIDTH - 16));
+
+  if (placeBelow) {
+    return { width: PANEL_WIDTH, top: Math.min(rect.bottom + PAD + TARGET_GAP, vh - 100), left };
+  }
+  return {
+    width: PANEL_WIDTH,
+    top: Math.max(rect.top - PAD - TARGET_GAP, 16),
+    left,
+    transform: "translateY(-100%)",
+  };
+}
+
+/** Floats near whichever element the current step highlights — moving
+ *  around the page along with the tour — but never over the content
+ *  the tour is explaining, and never under the sidebar's own nav links.
+ *  Tracks the sidebar's collapse/expand animation for that exclusion. */
+function FloatingPanel({ role, rect, notFound }: { role: Role; rect: DOMRect | null; notFound: boolean }) {
   const [showMenu, setShowMenu] = useState(false);
   const sidebarRight = useSidebarRight();
 
   return (
     <div
       data-tour-ui="tooltip"
-      className="fixed top-1/2 z-[9999] w-[340px] max-w-[88vw] -translate-y-1/2 overflow-hidden rounded-xl border border-copper-dim bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
-      style={{ width: PANEL_WIDTH, left: sidebarRight + SIDEBAR_GAP }}
+      className="fixed z-[9999] max-w-[88vw] overflow-hidden rounded-xl border border-copper-dim bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+      style={computePanelStyle(rect, sidebarRight)}
     >
       {showMenu ? (
         <JumpMenu role={role} onBack={() => setShowMenu(false)} />
@@ -299,12 +341,15 @@ export function TourOverlay({ role }: { role: Role }) {
     return launcherHidden ? null : <LauncherTab onStart={start} onHide={hideLauncher} />;
   }
 
-  const showHighlight = Boolean(currentStep.selector) && !notFound;
+  // A target filling most of the viewport (Scripts' edge-to-edge iframe)
+  // gets treated the same as no target at all — see isHugeTarget.
+  const effectiveRect = rect && !isHugeTarget(rect) ? rect : null;
+  const showHighlight = Boolean(currentStep.selector) && !notFound && effectiveRect !== null;
 
   return (
     <>
-      <HighlightRing rect={showHighlight ? rect : null} />
-      <DockedPanel role={role} notFound={notFound} />
+      <HighlightRing rect={showHighlight ? effectiveRect : null} />
+      <FloatingPanel role={role} rect={effectiveRect} notFound={notFound} />
     </>
   );
 }
