@@ -4,21 +4,36 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { usePathname, useRouter } from "next/navigation";
 import { visibleSteps, type Role, type TourStep } from "@/lib/tour/steps";
 
-const STORAGE_KEY = "tier1-tour-state";
+// Also cleared by the login page on every sign-in, which is what makes a
+// skipped tour come back on the next login rather than only within the
+// session it was skipped in.
+export const TOUR_STORAGE_KEY = "tier1-tour-state";
 
-type Persisted = { active: boolean; stepId: string | null; launcherHidden: boolean };
+type Persisted = {
+  active: boolean;
+  stepId: string | null;
+  launcherHidden: boolean;
+  // Set when the viewer closes the tour before finishing it. Persisted (not
+  // just React state) so it survives the remounts that crossing /portal,
+  // /agent, and /admin's separate root layouts causes — otherwise the
+  // auto-start check below would re-open it on the very next nav. Cleared
+  // only by a fresh login, so skipping doesn't mean "never again," just
+  // "not right now."
+  skippedThisSession: boolean;
+};
 
 function readPersisted(): Persisted {
-  const fallback: Persisted = { active: false, stepId: null, launcherHidden: false };
+  const fallback: Persisted = { active: false, stepId: null, launcherHidden: false, skippedThisSession: false };
   if (typeof window === "undefined") return fallback;
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(TOUR_STORAGE_KEY);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Partial<Persisted>;
     return {
       active: Boolean(parsed.active),
       stepId: typeof parsed.stepId === "string" ? parsed.stepId : null,
       launcherHidden: Boolean(parsed.launcherHidden),
+      skippedThisSession: Boolean(parsed.skippedThisSession),
     };
   } catch {
     return fallback;
@@ -27,7 +42,7 @@ function readPersisted(): Persisted {
 
 function writePersisted(state: Persisted) {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    sessionStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify(state));
   } catch {
     // Private browsing / storage disabled — the tour just won't survive a reload.
   }
@@ -42,7 +57,8 @@ type TourContextValue = {
   next: () => void;
   back: () => void;
   jumpTo: (id: string) => void;
-  end: () => void;
+  /** Closes the tour without finishing it — comes back on the next login. */
+  skip: () => void;
   isFirst: boolean;
   isLast: boolean;
   position: number;
@@ -77,12 +93,8 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
   const [active, setActive] = useState(false);
   const [stepId, setStepId] = useState<string | null>(null);
   const [launcherHidden, setLauncherHidden] = useState(false);
+  const [skippedThisSession, setSkippedThisSession] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  // Set the moment the viewer ends/finishes the tour this session, so the
-  // auto-start check below never re-fires and re-opens it — the server
-  // write that records that is fire-and-forget and may not have landed yet
-  // the instant React re-renders with active:false.
-  const [dismissed, setDismissed] = useState(false);
 
   // Runs once per mount — including a remount caused by crossing a layout
   // boundary, which is exactly when an in-progress tour needs recovering.
@@ -91,14 +103,17 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
     setActive(persisted.active);
     setStepId(persisted.stepId);
     setLauncherHidden(persisted.launcherHidden);
+    setSkippedThisSession(persisted.skippedThisSession);
     setHydrated(true);
   }, []);
 
-  // Nothing was already in progress this session — check whether this
-  // account has ever finished/dismissed the tour before. A brand-new
-  // account (tourCompletedAt still null) gets it started automatically.
+  // Nothing already in progress and not skipped this session — check
+  // whether this account has ever actually finished the tour. An account
+  // that hasn't (tourCompletedAt still null) gets it started automatically,
+  // including an account that skipped out last login — skippedThisSession
+  // only suppresses this for the rest of the *current* session.
   useEffect(() => {
-    if (!hydrated || active || dismissed || steps.length === 0) return;
+    if (!hydrated || active || skippedThisSession || steps.length === 0) return;
     let cancelled = false;
     fetch("/api/profile")
       .then((res) => (res.ok ? res.json() : null))
@@ -113,12 +128,12 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
     return () => {
       cancelled = true;
     };
-  }, [hydrated, active, dismissed, steps]);
+  }, [hydrated, active, skippedThisSession, steps]);
 
   useEffect(() => {
     if (!hydrated) return;
-    writePersisted({ active, stepId, launcherHidden });
-  }, [hydrated, active, stepId, launcherHidden]);
+    writePersisted({ active, stepId, launcherHidden, skippedThisSession });
+  }, [hydrated, active, stepId, launcherHidden, skippedThisSession]);
 
   const currentStep = useMemo(() => (stepId ? (steps.find((s) => s.id === stepId) ?? null) : null), [stepId, steps]);
   const index = currentStep ? steps.indexOf(currentStep) : -1;
@@ -143,11 +158,24 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
     goTo(steps[0].id);
   }, [steps, goTo]);
 
-  // Marks the tour seen server-side — idempotent (only ever sets the
-  // timestamp once) — whether the viewer finished it or skipped out.
-  const end = useCallback(() => {
+  // Reaching the last step and clicking Finish — marks the tour seen
+  // server-side for good, so it never auto-starts again on any login.
+  const finish = useCallback(() => {
     fetch("/api/portal/tour/complete", { method: "POST" }).catch(() => {});
-    setDismissed(true);
+    // The write above is fire-and-forget — without this, the auto-start
+    // check could re-fire (active just became false) and re-open the tour
+    // before that request lands, reading tourCompletedAt as still null.
+    // Harmless to leave set afterward too: once truly completed server-side
+    // no future login ever reaches this check again anyway.
+    setSkippedThisSession(true);
+    setActive(false);
+    setStepId(null);
+  }, []);
+
+  // Closing out early — nothing is marked server-side, so it's still due;
+  // only suppressed for the rest of this session, not permanently.
+  const skip = useCallback(() => {
+    setSkippedThisSession(true);
     setActive(false);
     setStepId(null);
   }, []);
@@ -155,11 +183,11 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
   const next = useCallback(() => {
     if (index === -1) return;
     if (index >= steps.length - 1) {
-      end();
+      finish();
       return;
     }
     goTo(steps[index + 1].id);
-  }, [index, steps, goTo, end]);
+  }, [index, steps, goTo, finish]);
 
   const back = useCallback(() => {
     if (index <= 0) return;
@@ -177,7 +205,7 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
     next,
     back,
     jumpTo: goTo,
-    end,
+    skip,
     isFirst: index <= 0,
     isLast: index === steps.length - 1,
     position: index + 1,

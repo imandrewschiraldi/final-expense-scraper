@@ -175,7 +175,7 @@ function JumpMenu({ role, onBack }: { role: Role; onBack: () => void }) {
 }
 
 function StepPanel({ onShowMenu, notFound }: { onShowMenu: () => void; notFound: boolean }) {
-  const { currentStep, next, back, end, isFirst, isLast, position, total } = useTour();
+  const { currentStep, next, back, skip, isFirst, isLast, position, total } = useTour();
   if (!currentStep) return null;
 
   return (
@@ -184,7 +184,7 @@ function StepPanel({ onShowMenu, notFound }: { onShowMenu: () => void; notFound:
         <h3 data-tour-ui="title" className="font-condensed text-sm font-extrabold tracking-[0.06em] text-white uppercase">
           {currentStep.title}
         </h3>
-        <button type="button" onClick={end} aria-label="End tour" className="shrink-0 text-muted hover:text-white">
+        <button type="button" onClick={skip} aria-label="End tour" className="shrink-0 text-muted hover:text-white">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -234,12 +234,16 @@ function StepPanel({ onShowMenu, notFound }: { onShowMenu: () => void; notFound:
   );
 }
 
-/** Docked beside the sidebar instead of floating over the content — stays
- *  in one place regardless of which element is spotlighted, so it never
- *  feels like it's covering whatever page you're actually looking at.
- *  Sits right where the sidebar's own tabs are, sliding along with its
- *  collapse/expand animation rather than overlapping the nav links the
- *  steps are pointing at. On mobile (sidebarRight 0) it docks to the edge. */
+// Breathing room between the sidebar's own edge and the panel, so it reads
+// as its own floating card next to the sidebar rather than fused to it.
+const SIDEBAR_GAP = 16;
+
+/** Floats beside the sidebar (never flush against it) instead of over the
+ *  content — stays in one place regardless of which element is
+ *  spotlighted, so it never feels like it's covering whatever page you're
+ *  actually looking at. Tracks the sidebar's collapse/expand animation
+ *  rather than overlapping the nav links the steps are pointing at. On
+ *  mobile (sidebarRight 0) it floats near the left edge instead. */
 function DockedPanel({ role, notFound }: { role: Role; notFound: boolean }) {
   const [showMenu, setShowMenu] = useState(false);
   const sidebarRight = useSidebarRight();
@@ -247,8 +251,8 @@ function DockedPanel({ role, notFound }: { role: Role; notFound: boolean }) {
   return (
     <div
       data-tour-ui="tooltip"
-      className="fixed top-1/2 z-[9999] w-[340px] max-w-[88vw] -translate-y-1/2 overflow-hidden rounded-r-xl border border-l-0 border-copper-dim bg-surface shadow-[12px_0_40px_rgba(0,0,0,0.55)]"
-      style={{ width: PANEL_WIDTH, left: sidebarRight }}
+      className="fixed top-1/2 z-[9999] w-[340px] max-w-[88vw] -translate-y-1/2 overflow-hidden rounded-xl border border-copper-dim bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+      style={{ width: PANEL_WIDTH, left: sidebarRight + SIDEBAR_GAP }}
     >
       {showMenu ? (
         <JumpMenu role={role} onBack={() => setShowMenu(false)} />
