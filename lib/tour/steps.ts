@@ -206,15 +206,6 @@ export const TOUR_SECTIONS: TourSection[] = [
         roles: ["MANAGER", "AGENT"],
       },
       {
-        id: "vault",
-        path: "/agent/vault",
-        selector: 'a[href="/agent/vault"]',
-        opensSidebarGroup: "Leads",
-        title: "Vault",
-        body: "A shared pool of leads open to every agent in their first 90 days — dial them, disposition every call, and claimed leads move into your own book.",
-        roles: ["MANAGER", "AGENT"],
-      },
-      {
         id: "buy-leads",
         path: "/agent/buy-leads",
         selector: 'a[href="/agent/buy-leads"]',
