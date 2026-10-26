@@ -1,4 +1,4 @@
-import { cn } from "@/lib/cn";
+import { Card } from "@/components/ui/Card";
 
 type Vendor = { name: string; description?: string; url?: string };
 
@@ -29,41 +29,30 @@ export function BuyLeadsGrid() {
     return <p className="text-sm text-muted">No lead vendors have been added yet.</p>;
   }
 
-  // Same lone-leftover handling as Carrier Resources — an odd count's last
-  // card spans both columns instead of sitting stuck on the left.
-  const isTrailingOdd = (i: number) => VENDORS.length % 2 === 1 && i === VENDORS.length - 1;
-
   return (
-    <div className="grid grid-cols-1 justify-center gap-x-14 gap-y-8 lg:grid-cols-[repeat(2,24rem)]">
-      {VENDORS.map((vendor, i) => (
-        <div key={vendor.name} className={cn("mx-auto w-full max-w-sm", isTrailingOdd(i) && "lg:col-span-2")}>
-          <h2 className="font-montserrat mb-3 text-center text-2xl font-black tracking-wide text-white uppercase">
-            {vendor.name}
-          </h2>
-
-          <div className="metal-copper-card rounded-lg p-5">
-            {vendor.description && (
-              <p className="mb-4 text-center text-sm text-white/90 drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)]">
-                {vendor.description}
-              </p>
-            )}
-
-            {vendor.url ? (
-              <a
-                href={vendor.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-condensed metal-copper-surface block rounded-md px-4 py-3 text-center text-sm font-bold tracking-[0.05em] text-white uppercase transition-all hover:brightness-110 active:translate-y-px"
-              >
-                Visit Site
-              </a>
-            ) : (
-              <div className="font-condensed block rounded-md border border-border px-4 py-3 text-center text-sm font-bold tracking-[0.05em] text-muted uppercase">
-                Coming Soon
-              </div>
-            )}
+    <div className="space-y-3">
+      {VENDORS.map((vendor) => (
+        <Card key={vendor.name} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-white">{vendor.name}</h2>
+            {vendor.description && <p className="mt-1 max-w-xl text-sm text-muted">{vendor.description}</p>}
           </div>
-        </div>
+
+          {vendor.url ? (
+            <a
+              href={vendor.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-condensed inline-flex shrink-0 items-center justify-center gap-2 rounded-md border-[1.5px] border-copper-dim px-4 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper hover:text-foreground"
+            >
+              Visit Site
+            </a>
+          ) : (
+            <span className="font-condensed shrink-0 text-xs font-bold tracking-[0.1em] text-muted uppercase">
+              Coming Soon
+            </span>
+          )}
+        </Card>
       ))}
     </div>
   );
