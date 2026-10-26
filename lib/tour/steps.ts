@@ -7,9 +7,6 @@ export type TourStep = {
   path: string;
   /** CSS selector for the element to spotlight. Omit for a centered, elementless step (intro/outro). */
   selector?: string;
-  /** Dispatches `tour:open-sidebar-group` with this label before searching for the target, so a
-   *  collapsed sidebar group (e.g. "Leads") opens on its own instead of hiding the step's target. */
-  opensSidebarGroup?: string;
   title: string;
   body: string;
   /** Omit to show for both Manager and Agent — the only roles this tour is ever shown to. */
@@ -193,16 +190,14 @@ export const TOUR_SECTIONS: TourSection[] = [
         id: "my-leads",
         path: "/agent/dashboard",
         selector: 'a[href="/agent/dashboard"]',
-        opensSidebarGroup: "Leads",
         title: "My Leads",
-        body: "Found under the Leads tab in the sidebar — every lead currently assigned to you, with its status and contact info.",
+        body: "Every lead currently assigned to you, with its status and contact info.",
         roles: ["MANAGER", "AGENT"],
       },
       {
         id: "buy-leads",
         path: "/agent/buy-leads",
         selector: 'a[href="/agent/buy-leads"]',
-        opensSidebarGroup: "Leads",
         title: "Buy Leads",
         body: "Trusted third-party lead vendors to supplement what comes through the Vault.",
         roles: ["MANAGER", "AGENT"],

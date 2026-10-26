@@ -134,9 +134,6 @@ export function TourProvider({ role, children }: { role: Role; children: React.R
 
   useEffect(() => {
     if (!hydrated || !active || !currentStep) return;
-    if (currentStep.opensSidebarGroup) {
-      window.dispatchEvent(new CustomEvent("tour:open-sidebar-group", { detail: currentStep.opensSidebarGroup }));
-    }
     if (pathname !== currentStep.path) {
       router.push(currentStep.path);
     }

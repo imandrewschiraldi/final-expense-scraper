@@ -25,7 +25,7 @@ import {
   Bot,
   Radar,
   Stethoscope,
-  ChevronDown,
+  ShoppingCart,
   ChevronsLeft,
   ChevronsRight,
   Maximize2,
@@ -44,25 +44,14 @@ const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
 // desktop sidebar's own logo row at the same height.
 export const HEADER_HEIGHT = 74;
 
-// A leaf nav item links straight to a page. A group (no `href`, has
-// `children`) is a header that expands to reveal its own links — used for
-// Leads, where My Leads/Vault/Buy Leads live under one sidebar tab instead
-// of three separate top-level entries.
-type NavChild = {
-  href: string;
-  label: string;
-  requiresVault?: boolean;
-};
-
 type NavItem = {
-  href?: string;
+  href: string;
   label: string;
   icon: LucideIcon;
   roles: Role[];
   requiresVault?: boolean;
   requiresAgencyDashboard?: boolean;
   requiresRecruitingRadar?: boolean;
-  children?: NavChild[];
 };
 
 // One shared sidebar for the entire platform — Agent Accelerator (leads,
@@ -82,16 +71,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/portal/ask-integrity", label: "Ask Integrity", icon: Bot, roles: ["ADMIN", "MANAGER", "AGENT"] },
   { href: "/portal/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["MANAGER", "AGENT"] },
   { href: "/admin/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["ADMIN"] },
-  {
-    label: "Leads",
-    icon: Users,
-    roles: ["MANAGER", "AGENT"],
-    children: [
-      { href: "/agent/dashboard", label: "My Leads" },
-      { href: "/agent/vault", label: "Vault", requiresVault: true },
-      { href: "/agent/buy-leads", label: "Buy Leads" },
-    ],
-  },
+  { href: "/agent/dashboard", label: "My Leads", icon: Users, roles: ["MANAGER", "AGENT"] },
+  { href: "/agent/vault", label: "Vault", icon: Archive, roles: ["MANAGER", "AGENT"], requiresVault: true },
+  { href: "/agent/buy-leads", label: "Buy Leads", icon: ShoppingCart, roles: ["MANAGER", "AGENT"] },
   { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"] },
   { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"] },
   { href: "/agent/training", label: "Training", icon: GraduationCap, roles: ["MANAGER", "AGENT"] },
@@ -172,36 +154,6 @@ function NavLeaf({
   );
 }
 
-// Indented inside an expanded group — same active treatment as a top-level
-// leaf, scaled down a step and without its own icon.
-function NavChildLink({
-  href,
-  label,
-  active,
-  onNavigate,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-  onNavigate?: () => void;
-}) {
-  return (
-    <Link
-      href={href}
-      onClick={onNavigate}
-      className={cn(
-        "font-condensed relative flex items-center rounded-lg py-2 pr-3 pl-10 text-[12px] font-bold tracking-[0.05em] uppercase transition-all duration-200",
-        active
-          ? "bg-copper/[0.12] text-copper shadow-[inset_0_0_0_1px_rgba(200,121,65,0.25)]"
-          : "text-muted hover:bg-copper/[0.08] hover:text-copper hover:shadow-[0_0_16px_1px_rgba(200,121,65,0.3)]",
-      )}
-    >
-      {active && <span className="metal-copper-line absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r" />}
-      <span className={cn("truncate", active && "metal-copper-text")}>{label}</span>
-    </Link>
-  );
-}
-
 function NavLinks({
   items,
   pathname,
@@ -215,101 +167,15 @@ function NavLinks({
   onNavigate?: () => void;
   chatUnread?: boolean;
 }) {
-  // Groups a viewer opened by hand, keyed by label. A group whose child is
-  // the active page is always shown open regardless of this set — it's only
-  // consulted for groups the current page isn't already forcing open.
-  const [opened, setOpened] = useState<Set<string>>(() => new Set());
-
-  // Lets the platform tour reveal a child link (e.g. "My Leads") without
-  // the viewer having clicked the group open themselves first.
-  useEffect(() => {
-    function onForceOpen(e: Event) {
-      const label = (e as CustomEvent<string>).detail;
-      setOpened((prev) => (prev.has(label) ? prev : new Set(prev).add(label)));
-    }
-    window.addEventListener("tour:open-sidebar-group", onForceOpen);
-    return () => window.removeEventListener("tour:open-sidebar-group", onForceOpen);
-  }, []);
-
-  function toggle(label: string) {
-    setOpened((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
-    });
-  }
-
   return (
     <>
       {items.map((item) => {
-        if (item.children) {
-          if (item.children.length === 0) return null;
-          const isGroupActive = item.children.some((child) => isItemActive(pathname, child.href));
-          const isOpen = isGroupActive || opened.has(item.label);
-          const Icon = item.icon;
-
-          // Collapsed (icon-only) sidebar has no room for a submenu — the
-          // group header just goes straight to its first child instead.
-          if (collapsed) {
-            return (
-              <NavLeaf
-                key={item.label}
-                href={item.children[0].href}
-                label={item.label}
-                icon={Icon}
-                collapsed
-                active={isGroupActive}
-                showDot={false}
-                onNavigate={onNavigate}
-              />
-            );
-          }
-
-          return (
-            <div key={item.label}>
-              <button
-                type="button"
-                onClick={() => toggle(item.label)}
-                className={cn(
-                  "font-condensed relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-all duration-200",
-                  isGroupActive
-                    ? "bg-copper/[0.12] text-copper shadow-[inset_0_0_0_1px_rgba(200,121,65,0.25)]"
-                    : "text-muted hover:bg-copper/[0.08] hover:text-copper hover:shadow-[0_0_16px_1px_rgba(200,121,65,0.3)]",
-                )}
-              >
-                {isGroupActive && (
-                  <span className="metal-copper-line absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r" />
-                )}
-                <Icon className="h-4.5 w-4.5 shrink-0" />
-                <span className={cn("flex-1 truncate text-left", isGroupActive && "metal-copper-text")}>
-                  {item.label}
-                </span>
-                <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isOpen && "rotate-180")} />
-              </button>
-              {isOpen && (
-                <div className="mt-0.5 space-y-0.5">
-                  {item.children.map((child) => (
-                    <NavChildLink
-                      key={child.href}
-                      href={child.href}
-                      label={child.label}
-                      active={isItemActive(pathname, child.href)}
-                      onNavigate={onNavigate}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        }
-
-        const active = isItemActive(pathname, item.href!);
+        const active = isItemActive(pathname, item.href);
         const showDot = Boolean(item.href === "/portal/chat" && chatUnread && !active);
         return (
           <NavLeaf
             key={item.href}
-            href={item.href!}
+            href={item.href}
             label={item.label}
             icon={item.icon}
             collapsed={collapsed}
@@ -417,10 +283,6 @@ export function Sidebar({
       // Recruiting Radar is an admin tool by default — ADMIN always sees it
       // regardless of this flag; it only gates AGENT/MANAGER.
       (!item.requiresRecruitingRadar || role === "ADMIN" || profile?.recruitingRadarEnabled),
-  ).map((item) =>
-    item.children
-      ? { ...item, children: item.children.filter((child) => !child.requiresVault || profile?.hasVaultAccess) }
-      : item,
   );
 
   return (
