@@ -2,17 +2,15 @@
 
 import { usePathname } from "next/navigation";
 import { NotificationBell } from "@/components/agent/NotificationBell";
-import { SoundToggleButton } from "@/components/portal/SoundToggleButton";
-import { SignOutButton } from "@/components/ui/SignOutButton";
-import { TourHeaderButton } from "@/components/tour/TourOverlay";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { NO_OUTER_LINE_PREFIXES } from "@/components/portal/HeaderDivider";
 
 /**
- * Notifications, Sound, Tour, and Sign Out — pulled out of the sidebar
- * footer and into the top-right corner of every page instead, above the
- * copper accent line (HeaderDivider sits at HEADER_HEIGHT). Frees up the
- * sidebar and keeps these out of the way of the actual page content.
+ * Notifications — pulled out of the sidebar footer and into the top-right
+ * corner of every page instead, above the copper accent line (HeaderDivider
+ * sits at HEADER_HEIGHT). Sound, Tour, and Sign Out live in the sidebar's
+ * profile menu instead (see ProfileMenu) rather than as separate controls
+ * here.
  *
  * `right-4 sm:right-6 lg:right-10` deliberately mirrors main's own padding
  * — an absolutely positioned child's `right` offset is relative to main's
@@ -22,10 +20,10 @@ import { NO_OUTER_LINE_PREFIXES } from "@/components/portal/HeaderDivider";
  *
  * Omitted on Scripts/Commission Calculator — same reasoning as
  * HeaderDivider's own copper line there: the embedded tool on those pages
- * draws its own Notifications/Sound/Tour/Sign Out-equivalent controls in
- * its own header, and our outer copy would render right on top of it.
+ * draws its own Notifications-equivalent control in its own header, and our
+ * outer copy would render right on top of it.
  */
-export function TopBarActions({ showTour }: { showTour: boolean }) {
+export function TopBarActions() {
   const pathname = usePathname();
   if (NO_OUTER_LINE_PREFIXES.some((p) => pathname.startsWith(p))) return null;
 
@@ -35,9 +33,6 @@ export function TopBarActions({ showTour }: { showTour: boolean }) {
       style={{ height: HEADER_HEIGHT }}
     >
       <NotificationBell />
-      <SoundToggleButton />
-      {showTour && <TourHeaderButton />}
-      <SignOutButton iconOnly />
     </div>
   );
 }

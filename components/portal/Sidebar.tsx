@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useWideLayout } from "@/lib/useWideLayout";
+import { ProfileMenu } from "@/components/portal/ProfileMenu";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -337,31 +338,14 @@ function SidebarFooter({
 }) {
   return (
     <div className="shrink-0 border-t border-border px-2.5 py-3">
-      <Link
-        href="/portal/profile"
-        data-tour="sidebar-profile-link"
-        onClick={onNavigate}
-        className={cn(
-          "flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-white/[0.04]",
-          collapsed && "justify-center px-0",
-        )}
-      >
-        {profile?.profileImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.profileImageUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
-        ) : (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface2 text-sm font-bold text-muted">
-            {(profile?.name ?? name).charAt(0).toUpperCase()}
-          </div>
-        )}
-        {!collapsed && (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">
-              {role === "ADMIN" ? "Admin" : (profile?.name ?? name)}
-            </p>
-          </div>
-        )}
-      </Link>
+      <ProfileMenu
+        profile={profile}
+        name={name}
+        role={role}
+        collapsed={collapsed}
+        showTour={role !== "ADMIN"}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }
