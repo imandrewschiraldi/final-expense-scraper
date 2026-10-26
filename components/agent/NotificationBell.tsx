@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/cn";
@@ -11,6 +11,20 @@ type Notification = NotificationRecord;
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Closes on an outside click, same as the sidebar's profile menu —
+  // otherwise the only way out was clicking the bell again.
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
 
   useEffect(() => {
     async function load() {
@@ -45,7 +59,7 @@ export function NotificationBell() {
   }
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <button
         data-tour="notification-bell"
         onClick={handleOpen}
