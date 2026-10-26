@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, HelpCircle, List, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, List, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { visibleSections, type Role, type TourStep } from "@/lib/tour/steps";
 import { useTour } from "@/components/tour/TourProvider";
@@ -315,21 +315,6 @@ function FloatingPanel({ role, rect, notFound }: { role: Role; rect: DOMRect | n
 /** Compact icon button for the top-right action bar (see TopBarActions) —
  *  only ever rendered there, and only when that bar is told showTour=true,
  *  so useTour() always has a TourProvider ancestor when this mounts. */
-export function TourHeaderButton() {
-  const { start } = useTour();
-  return (
-    <button
-      type="button"
-      onClick={start}
-      aria-label="Take the platform tour"
-      title="Take the platform tour"
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-[1.5px] border-copper-dim text-muted transition-colors hover:border-copper hover:text-foreground"
-    >
-      <HelpCircle className="h-4.5 w-4.5" />
-    </button>
-  );
-}
-
 export function TourOverlay({ role }: { role: Role }) {
   const { active, currentStep } = useTour();
   const { rect, notFound } = useTourTarget(currentStep);
