@@ -110,7 +110,7 @@ export function TrainingLessonView({
       <Card>
         <CardHeader>
           <div>
-            <p className="font-condensed text-[11px] font-bold tracking-[0.14em] text-copper uppercase">
+            <p className="font-condensed metal-copper-text text-[11px] font-bold tracking-[0.14em] uppercase">
               {lesson.moduleTitle}
             </p>
             <CardTitle>{lesson.title}</CardTitle>
