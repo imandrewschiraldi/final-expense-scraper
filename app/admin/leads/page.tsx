@@ -33,7 +33,7 @@ export default function LeadsPage() {
           const Icon = section.icon;
           return (
             <Link key={section.href} href={section.href} className="block">
-              <Card className="h-full transition-colors hover:border-copper">
+              <Card className="h-full transition-colors hover:border-copper-gradient">
                 <div className="metal-copper-surface mb-3 flex h-10 w-10 items-center justify-center rounded-lg">
                   <Icon className="h-5 w-5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)]" />
                 </div>
