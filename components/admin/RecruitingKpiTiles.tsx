@@ -51,7 +51,7 @@ function KpiTile({ index, entry }: { index: number; entry: RecruitingKpiEntry })
         <PremiumPanel
           className={cn(
             "h-full p-4 transition-colors duration-200",
-            entry.active ? "border-copper" : "hover:border-copper-dim",
+            entry.active ? "border-copper-gradient" : "hover:border-copper-dim-gradient",
           )}
         >
           <div className="flex items-center justify-between">
