@@ -67,7 +67,7 @@ export function FileDropZone({
       className={cn(
         "flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors",
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
-        dragging ? "border-copper bg-copper/10" : "border-border bg-surface hover:border-copper-dim",
+        dragging ? "border-copper bg-copper-gradient-10" : "border-border bg-surface hover:border-copper-dim",
       )}
     >
       <input
