@@ -121,23 +121,28 @@ body {
 }
 
 /* ---- Metallic treatment ----
-   A diagonal sweep (dark -> highlight -> base -> highlight -> dark) reused
-   everywhere a "metal" surface is called for: KPI icon tiles and solid
-   badges/buttons. Tiles/badges keep their icon or text a flat white/black
-   on top (see each component) rather than a second gradient, since
-   gradient-on-gradient stops being legible fast.
+   A diagonal sweep with TWO highlight bands flanking a shadow dip (hi ->
+   base -> dk -> base -> hi) reused everywhere a "metal" surface is called
+   for: KPI icon tiles and solid badges/buttons. Tiles/badges keep their
+   icon or text a flat white/black on top (see each component) rather than
+   a second gradient, since gradient-on-gradient stops being legible fast.
 
-   Copper's stop ORDER (dark at the edges, highlight at 25/75%, base dead
-   center) matches .metal-copper-text/.metal-copper-line exactly — one
-   consistent "Gradient B" shape for every copper metal surface, just
-   reused at each element's own angle. Green/red keep the lighter
-   highlight-at-the-edges shape (unchanged, not part of this pass). */
+   This 5-stop shape (not a flat hi->dk sweep) is what actually reads as
+   metal rather than a flat two-tone gradient — a single light-to-dark
+   blend has no second reflection point, so it looks like a sunset, not a
+   brushed surface. Copper uses the exact same three colors
+   (--copper-metal-hi/--copper-metal/--copper-metal-dk) as everywhere else
+   in the app, just arranged in this bevel shape instead of a flat sweep —
+   same shape every other metal color (green/red/teal/gold/blue/amber/
+   gray) already uses below. */
 .metal-copper-surface {
   background-image: linear-gradient(
     135deg,
     var(--copper-metal-hi) 0%,
-    var(--copper-metal) 45%,
-    var(--copper-metal-dk) 100%
+    var(--copper-metal) 32%,
+    var(--copper-metal-dk) 55%,
+    var(--copper-metal) 80%,
+    var(--copper-metal-hi) 100%
   );
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
@@ -151,8 +156,10 @@ body {
   background-image: linear-gradient(
     135deg,
     var(--copper-metal-hi) 0%,
-    var(--copper-metal) 45%,
-    var(--copper-metal-dk) 100%
+    var(--copper-metal) 32%,
+    var(--copper-metal-dk) 55%,
+    var(--copper-metal) 80%,
+    var(--copper-metal-hi) 100%
   );
   box-shadow:
     0 16px 32px -8px rgba(0, 0, 0, 0.7),
@@ -270,13 +277,27 @@ body {
   border: 1.5px solid transparent;
   background-image:
     linear-gradient(var(--surface), var(--surface)),
-    linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
+    linear-gradient(
+      135deg,
+      var(--copper-metal-hi) 0%,
+      var(--copper-metal) 32%,
+      var(--copper-metal-dk) 55%,
+      var(--copper-metal) 80%,
+      var(--copper-metal-hi) 100%
+    );
   background-origin: border-box;
   background-clip: padding-box, border-box;
   color: var(--copper-metal-hi);
 }
 .btn-metal-copper:hover {
-  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
+  background-image: linear-gradient(
+    135deg,
+    var(--copper-metal-hi) 0%,
+    var(--copper-metal) 32%,
+    var(--copper-metal-dk) 55%,
+    var(--copper-metal) 80%,
+    var(--copper-metal-hi) 100%
+  );
   color: #000;
 }
 /* The "currently selected" state of a btn-metal-copper toggle (e.g. a
@@ -286,7 +307,14 @@ body {
    instead of looking identical to every unselected option. */
 .btn-metal-copper-active {
   border: 1.5px solid var(--copper-metal);
-  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
+  background-image: linear-gradient(
+    135deg,
+    var(--copper-metal-hi) 0%,
+    var(--copper-metal) 32%,
+    var(--copper-metal-dk) 55%,
+    var(--copper-metal) 80%,
+    var(--copper-metal-hi) 100%
+  );
   color: #000;
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
@@ -326,7 +354,14 @@ body {
 .toggle-pill-active {
   border-color: transparent;
   color: #000;
-  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
+  background-image: linear-gradient(
+    135deg,
+    var(--copper-metal-hi) 0%,
+    var(--copper-metal) 32%,
+    var(--copper-metal-dk) 55%,
+    var(--copper-metal) 80%,
+    var(--copper-metal-hi) 100%
+  );
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
     inset 0 -2px 3px rgba(0, 0, 0, 0.45);
@@ -472,7 +507,14 @@ body {
     -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask-composite: exclude;
-    background: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--copper-metal-hi) 0%,
+      var(--copper-metal) 32%,
+      var(--copper-metal-dk) 55%,
+      var(--copper-metal) 80%,
+      var(--copper-metal-hi) 100%
+    );
   }
 }
 @utility border-copper-dim-gradient {
@@ -515,7 +557,14 @@ body {
     transition: background-image 150ms ease;
   }
   &:hover::after {
-    background: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--copper-metal-hi) 0%,
+      var(--copper-metal) 32%,
+      var(--copper-metal-dk) 55%,
+      var(--copper-metal) 80%,
+      var(--copper-metal-hi) 100%
+    );
   }
 }
 /* No ring at rest, dim gradient ring on focus — swaps
