@@ -11,11 +11,11 @@ type Stop = { offset: string; color: string };
 // The donut's rotating categorical palette — purely for telling slices
 // apart, no brand/status meaning of its own, so each color gets its own
 // metallic hi/dk pair (see app/globals.css) rather than reusing a status
-// color. Copper carries the exact brand gradient shape (3-stop, matching
-// every other copper surface in the app) since it's sampled from the
-// actual logo; the rest keep the previous bevel shape, which has no such
-// single-source spec to match. The wedges themselves use the SVG
-// <linearGradient> defs below — `stops` drives both that and the legend dot.
+// color. Every color, copper included, uses the same 5-stop bevel shape
+// (two highlight bands flanking a shadow dip) so they all read as actual
+// metal rather than a flat two-tone blend. The wedges themselves use the
+// SVG <linearGradient> defs below — `stops` drives both that and the
+// legend dot.
 function bevelStops(base: string, hi: string, dk: string): Stop[] {
   return [
     { offset: "0%", color: hi },
@@ -27,13 +27,7 @@ function bevelStops(base: string, hi: string, dk: string): Stop[] {
 }
 
 const DONUT_SWATCHES: { stops: Stop[] }[] = [
-  {
-    stops: [
-      { offset: "0%", color: "var(--copper-metal-hi)" },
-      { offset: "45%", color: "var(--copper-metal)" },
-      { offset: "100%", color: "var(--copper-metal-dk)" },
-    ],
-  },
+  { stops: bevelStops("var(--copper-metal)", "var(--copper-metal-hi)", "var(--copper-metal-dk)") },
   { stops: bevelStops("var(--color-teal-light)", "var(--teal-light-metal-hi)", "var(--teal-light-metal-dk)") },
   { stops: bevelStops("var(--color-blue-light)", "var(--blue-light-metal-hi)", "var(--blue-light-metal-dk)") },
   { stops: bevelStops("var(--color-green-light)", "var(--green-light-metal-hi)", "var(--green-light-metal-dk)") },
