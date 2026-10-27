@@ -80,7 +80,7 @@ export function CarrierResourcesGrid() {
                     className={cn(
                       "font-condensed block rounded-md px-4 py-3 text-center text-sm font-bold tracking-[0.05em] uppercase transition-all active:translate-y-px",
                       link.isAgentPortal
-                        ? "bg-white metal-copper-dim-text shadow-[0_3px_6px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white/90"
+                        ? "bg-white text-copper-dim shadow-[0_3px_6px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.9)] hover:bg-white/90"
                         : "metal-copper-surface text-white hover:brightness-110",
                     )}
                   >
