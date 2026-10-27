@@ -408,15 +408,18 @@ body {
 /* The copper line under the header (HeaderDivider.tsx + Sidebar.tsx) — a
    horizontal sweep rather than diagonal, since it's a thin, wide bar.
    Deliberately NOT part of the gradient-everywhere pass below — kept
-   exactly as-is per explicit instruction. */
+   exactly as-is per explicit instruction. Hardcoded to the ORIGINAL
+   --copper-metal-*/hi/dk values (not the shared tokens, which moved to
+   the new 3-stop spec's colors for everything else) so this one stays on
+   its old colorway regardless of any future change to those tokens. */
 .metal-copper-line {
   background-image: linear-gradient(
     90deg,
-    var(--copper-metal-dk) 0%,
-    var(--copper-metal-hi) 25%,
-    var(--copper-metal) 50%,
-    var(--copper-metal-hi) 75%,
-    var(--copper-metal-dk) 100%
+    #3d1600 0%,
+    #d9a478 25%,
+    #a85a28 50%,
+    #d9a478 75%,
+    #3d1600 100%
   );
 }
 
