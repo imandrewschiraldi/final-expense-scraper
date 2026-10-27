@@ -56,7 +56,7 @@ const VENDORS: Vendor[] = [
 function StatusPill({ live }: { live: boolean }) {
   return (
     <span className="font-condensed flex items-center gap-1.5 text-[11px] font-bold tracking-[0.08em] text-muted uppercase">
-      <span className={cn("h-1.5 w-1.5 rounded-full", live ? "bg-green-light" : "bg-muted")} />
+      <span className={cn("h-1.5 w-1.5 rounded-full", live ? "metal-green-surface animate-pulse" : "bg-muted")} />
       {live ? "Live Now" : "Coming Soon"}
     </span>
   );
@@ -68,7 +68,7 @@ function VisitSiteButton({ url }: { url: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="font-condensed inline-flex w-fit items-center gap-2 rounded-full bg-white py-2 pr-2 pl-4 text-[13px] font-bold text-background transition-opacity hover:opacity-90"
+      className="font-condensed inline-flex w-fit items-center gap-2 rounded-full bg-white py-2 pr-2 pl-4 text-sm font-bold text-background transition-opacity hover:opacity-90"
     >
       Visit Site
       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-white">
