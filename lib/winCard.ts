@@ -146,8 +146,8 @@ export function generateWinCard(data, opts) {
     ctx.fillText(data.handle || "@Tier 1 Financial", pad, 110);
 
     var dg = ctx.createLinearGradient(pad, 0, pad + 220, 0);
-    dg.addColorStop(0, "rgba(200,121,65,0.6)");
-    dg.addColorStop(1, "rgba(200,121,65,0)");
+    dg.addColorStop(0, "rgba(202,126,64,0.6)");
+    dg.addColorStop(1, "rgba(202,126,64,0)");
     ctx.fillStyle = dg;
     ctx.fillRect(pad, 126, w - pad * 2, 1);
 
