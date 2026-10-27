@@ -43,7 +43,7 @@ export function TrainingModuleList({
           <div key={module_.id} className="rounded-[10px] border border-border bg-surface p-5">
             <div className="mb-3 flex items-center justify-between gap-4">
               <div>
-                <p className="font-condensed text-[11px] font-bold tracking-[0.14em] text-copper uppercase">
+                <p className="font-condensed metal-copper-text text-[11px] font-bold tracking-[0.14em] uppercase">
                   Module {moduleIndex + 1}
                 </p>
                 <h3 className="font-condensed text-lg font-extrabold text-white uppercase">{module_.title}</h3>
@@ -51,7 +51,7 @@ export function TrainingModuleList({
               </div>
               <div className="w-32 shrink-0 text-right">
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface2">
-                  <div className="h-full rounded-full bg-copper" style={{ width: `${pct}%` }} />
+                  <div className="metal-copper-surface h-full rounded-full" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="mt-1 text-xs text-muted">
                   {completed}/{total} complete
@@ -64,7 +64,7 @@ export function TrainingModuleList({
                 <Link
                   key={lesson.id}
                   href={`/agent/training/lessons/${lesson.id}`}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-surface2 px-4 py-3 transition-colors hover:border-copper-dim"
+                  className="flex items-center gap-3 rounded-lg border border-border bg-surface2 px-4 py-3 transition-colors hover:border-copper-dim-gradient"
                 >
                   <CheckCircle done={completedSet.has(lesson.id)} />
                   <div className="min-w-0">
