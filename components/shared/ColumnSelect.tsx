@@ -16,7 +16,7 @@ export function ColumnSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-sm text-foreground focus:border-copper-dim focus:outline-none"
+        className="h-9 w-full rounded-lg border-copper-focus-gradient bg-surface px-2 text-sm text-foreground focus:outline-none"
       >
         <option value="">Select column...</option>
         {headers.map((h) => (
