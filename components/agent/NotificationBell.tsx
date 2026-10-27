@@ -91,7 +91,7 @@ export function NotificationBell() {
           ))}
           <div className="mt-1 flex items-center gap-1">
             <Link
-              href="/portal/notifications"
+              href="/notifications"
               className="font-condensed metal-copper-text block flex-1 rounded-lg p-2 text-center text-xs font-bold tracking-[0.05em] uppercase hover:bg-copper-gradient-10"
             >
               View All

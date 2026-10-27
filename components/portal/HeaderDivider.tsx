@@ -14,7 +14,7 @@ import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 // two pages' embedded tool renders its own Notifications/Sound/Tour/Sign Out
 // equivalents in its own header, so our outer copy would sit on top of —
 // and visually block — the iframe's own controls rather than add anything.
-export const NO_OUTER_LINE_PREFIXES = ["/portal/scripts", "/portal/commission-calculator"];
+export const NO_OUTER_LINE_PREFIXES = ["/scripts", "/commission-calculator"];
 
 // main's own `pt-2` (8px). PageHeader (the mobile top bar) is meant to
 // cancel this out with a matching `-mt-2` so it sits flush at the true

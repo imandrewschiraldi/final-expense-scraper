@@ -31,7 +31,7 @@ export async function POST() {
   await sendPushToUser(session.user.id, {
     title: "Test Notification",
     body: "If you can see this, push notifications are working on this device.",
-    url: "/portal/dashboard",
+    url: "/dashboard",
   });
 
   return NextResponse.json({ ok: true });

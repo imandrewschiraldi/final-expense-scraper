@@ -15,7 +15,7 @@ export default async function RecruitingRadarPage() {
       ? await db.user.findUnique({ where: { id: session.user.id }, select: { recruitingRadarEnabled: true } })
       : null;
     if (!user?.recruitingRadarEnabled) {
-      redirect("/portal/dashboard");
+      redirect("/dashboard");
     }
   }
 

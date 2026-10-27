@@ -12,7 +12,7 @@ import { useWideLayout } from "@/lib/useWideLayout";
 // — that heading has to sit in the same centered column every other page's
 // heading does, so the embed below it stays in that column too rather than
 // suddenly bleeding to the viewport edges right under a centered title.
-const FULL_BLEED_PREFIXES = ["/portal/scripts", "/portal/commission-calculator"];
+const FULL_BLEED_PREFIXES = ["/scripts", "/commission-calculator"];
 
 export function ContentContainer({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
