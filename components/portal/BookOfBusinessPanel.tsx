@@ -122,7 +122,7 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
         </CardHeader>
 
         {showForm && (
-          <div className="mb-6 rounded-[10px] border border-copper-dim bg-surface2 p-4">
+          <div className="mb-6 rounded-[10px] border-copper-dim-gradient bg-surface2 p-4">
             <PolicySubmitForm
               isAgent={isAgent}
               onSubmitted={(policy) => {
