@@ -31,7 +31,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           </>
         ) : (
           <div className="rounded-[10px] border border-border bg-surface p-6 text-center">
-            <p className="text-sm text-copper">
+            <p className="text-sm metal-copper-text">
               This invite link is invalid or has expired. Ask your admin to resend your invite.
             </p>
           </div>
