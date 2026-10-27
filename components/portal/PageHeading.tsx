@@ -10,7 +10,7 @@ const HEADINGS = {
   training: { width: 687, height: 88 },
   "lead-vault": { width: 820, height: 87 },
   "my-leads": { width: 721, height: 88 },
-  "trusted-lead-vendors": { width: 875, height: 88 },
+  "trusted-lead-vendors": { width: 878, height: 88 },
   "submit-policy": { width: 1055, height: 88 },
   "book-of-business": { width: 1302, height: 88 },
   "agency-dashboard": { width: 1472, height: 88 },
