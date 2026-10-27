@@ -42,7 +42,7 @@ function TextArea({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="min-h-16 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper-dim focus:outline-none"
+      className="min-h-16 w-full rounded-lg border-copper-focus-gradient bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none"
     />
   );
 }
@@ -111,7 +111,7 @@ function ImagePicker({ images, onChange }: { images: string[]; onChange: (urls: 
             </button>
           </div>
         ))}
-        <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-border text-muted transition-colors hover:border-copper-dim hover:text-foreground">
+        <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-border text-muted transition-colors hover:border-copper-dim-gradient hover:text-foreground">
           <input
             type="file"
             accept={TRAINING_IMAGE_TYPES.join(",")}
@@ -147,7 +147,7 @@ function LessonForm({
   const canSubmit = title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
 
   return (
-    <div className="space-y-2 rounded-lg border border-copper-dim bg-surface2 p-3">
+    <div className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
       <Input placeholder="Lesson title" value={title} onChange={(e) => setTitle(e.target.value)} />
       <Input
         placeholder="Video URL (YouTube, Vimeo, or Loom) — optional if you add photos"
@@ -222,7 +222,7 @@ function LessonRow({
 
   if (editing) {
     return (
-      <div className="space-y-2 rounded-lg border border-copper-dim bg-surface2 p-3">
+      <div className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         <Input
           placeholder="Video URL (YouTube, Vimeo, or Loom) — optional if you add photos"
@@ -435,7 +435,7 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
         </CardHeader>
 
         {showModuleForm && (
-          <div className="mb-4 space-y-2 rounded-lg border border-copper-dim bg-surface2 p-3">
+          <div className="mb-4 space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
             <Input placeholder="Module title" value={moduleTitle} onChange={(e) => setModuleTitle(e.target.value)} />
             <TextArea
               placeholder="Description (optional)"
