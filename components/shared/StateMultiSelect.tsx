@@ -46,7 +46,7 @@ export function StateMultiSelect({
                 "font-condensed rounded-md border-[1.5px] px-1 py-1.5 text-[12px] font-bold tracking-[0.03em] uppercase transition-colors",
                 active
                   ? "toggle-pill-active"
-                  : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
+                  : "border-copper-hover-gradient text-muted hover:text-foreground",
               )}
             >
               {s.code}

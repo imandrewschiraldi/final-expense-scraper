@@ -118,7 +118,7 @@ function HighlightRing({ rect }: { rect: DOMRect | null }) {
   if (!rect) return null;
   return (
     <div
-      className="pointer-events-none fixed z-[9998] rounded-[10px] shadow-[0_0_0_3px_var(--copper),0_0_0_7px_rgba(200,121,65,0.2),0_0_22px_4px_rgba(200,121,65,0.35)]"
+      className="pointer-events-none fixed z-[9998] rounded-[10px] shadow-[0_0_0_3px_var(--copper),0_0_0_7px_rgba(131,61,26,0.25),0_0_22px_4px_rgba(202,126,64,0.35)]"
       style={{
         top: rect.top - PAD,
         left: rect.left - PAD,
@@ -153,7 +153,7 @@ function JumpMenu({ role, onBack }: { role: Role; onBack: () => void }) {
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
         {sections.map((section) => (
           <div key={section.label}>
-            <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.14em] text-copper uppercase">
+            <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.14em] metal-copper-text uppercase">
               {section.label}
             </p>
             <div className="space-y-0.5">
@@ -168,7 +168,7 @@ function JumpMenu({ role, onBack }: { role: Role; onBack: () => void }) {
                   className={cn(
                     "block w-full rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
                     currentStep?.id === step.id
-                      ? "bg-copper/[0.15] text-copper"
+                      ? "bg-copper-gradient-15 metal-copper-text"
                       : "text-muted hover:bg-white/[0.04] hover:text-white",
                   )}
                 >
@@ -215,7 +215,7 @@ function StepPanel({ onShowMenu, notFound }: { onShowMenu: () => void; notFound:
             onClick={onShowMenu}
             aria-label="Jump to a topic"
             title="Jump to a topic"
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted hover:border-copper-dim hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted hover:border-copper-dim-gradient hover:text-white"
           >
             <List className="h-4 w-4" />
           </button>
@@ -224,7 +224,7 @@ function StepPanel({ onShowMenu, notFound }: { onShowMenu: () => void; notFound:
             onClick={back}
             disabled={isFirst}
             aria-label="Back"
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted hover:border-copper-dim hover:text-white disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted hover:border-copper-dim-gradient hover:text-white disabled:opacity-30"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -300,7 +300,7 @@ function FloatingPanel({ role, rect, notFound }: { role: Role; rect: DOMRect | n
   return (
     <div
       data-tour-ui="tooltip"
-      className="fixed z-[9999] max-w-[88vw] overflow-hidden rounded-xl border border-copper-dim bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+      className="fixed z-[9999] max-w-[88vw] overflow-hidden rounded-xl border-copper-dim-gradient bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
       style={computePanelStyle(rect, sidebarRight)}
     >
       {showMenu ? (

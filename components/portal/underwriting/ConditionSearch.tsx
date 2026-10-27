@@ -76,7 +76,7 @@ export function ConditionSearch({
                     e.preventDefault();
                     pick(h);
                   }}
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-copper/[0.08]"
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-copper-gradient-08"
                 >
                   <span>
                     {h.type === "medication" && <span className="text-teal-light">℞ </span>}
@@ -118,7 +118,7 @@ export function ConditionSearch({
                       step={0.5}
                       value={sel.yearsSince}
                       onChange={(e) => onYearsChange(idx, e.target.value)}
-                      className="w-16 rounded border border-border bg-surface px-1.5 py-0.5 text-foreground focus:border-copper-dim focus:outline-none"
+                      className="w-16 rounded border-copper-focus-gradient bg-surface px-1.5 py-0.5 text-foreground focus:outline-none"
                     />
                   </label>
                 )}

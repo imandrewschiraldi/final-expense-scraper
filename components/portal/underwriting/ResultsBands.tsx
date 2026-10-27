@@ -144,17 +144,17 @@ function ProductCard({ band, verdict, hasSelections }: { band: Band; verdict: Pr
           )}
           <div className="flex flex-wrap gap-2 pt-1">
             {uwGuide && (
-              <a href={uwGuide} target="_blank" rel="noopener noreferrer" className="font-condensed rounded border border-border px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-teal-light uppercase hover:border-copper-dim">
+              <a href={uwGuide} target="_blank" rel="noopener noreferrer" className="font-condensed rounded border border-border px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-teal-light uppercase hover:border-copper-dim-gradient">
                 UW Guide
               </a>
             )}
             {salesTool && (
-              <a href={salesTool} target="_blank" rel="noopener noreferrer" className="font-condensed rounded border border-border px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-teal-light uppercase hover:border-copper-dim">
+              <a href={salesTool} target="_blank" rel="noopener noreferrer" className="font-condensed rounded border border-border px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-teal-light uppercase hover:border-copper-dim-gradient">
                 Sales Tool
               </a>
             )}
             {quoteTool && (
-              <a href={quoteTool} target="_blank" rel="noopener noreferrer" className="font-condensed rounded border border-border px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-teal-light uppercase hover:border-copper-dim">
+              <a href={quoteTool} target="_blank" rel="noopener noreferrer" className="font-condensed rounded border border-border px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-teal-light uppercase hover:border-copper-dim-gradient">
                 Quote Tool
               </a>
             )}

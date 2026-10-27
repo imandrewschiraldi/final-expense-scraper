@@ -555,7 +555,7 @@ export function RecruitingRadarPanel({ canViewApplications = true }: { canViewAp
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-surface2">
                 <div
-                  className="h-full bg-copper transition-all duration-300"
+                  className="metal-copper-surface h-full transition-all duration-300"
                   style={{ width: `${(progress.done / progress.total) * 100}%` }}
                 />
               </div>
