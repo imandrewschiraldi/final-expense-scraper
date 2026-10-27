@@ -24,7 +24,7 @@ export function CelebrationOverlay({ label, onDismiss }: { label: string | null;
           onClick={onDismiss}
         >
           <motion.div
-            className="relative rounded-2xl border border-copper-dim bg-surface px-10 py-8 text-center shadow-[0_24px_64px_-16px_rgba(200,121,65,0.35)]"
+            className="relative rounded-2xl border-copper-dim-gradient glow-copper-gradient bg-surface px-10 py-8 text-center"
             initial={{ scale: 0.85, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0 }}
@@ -43,8 +43,8 @@ export function CelebrationOverlay({ label, onDismiss }: { label: string | null;
                 transition={{ duration: 1, delay: 0.1 + i * 0.02, ease: "easeOut" }}
               />
             ))}
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-copper/10">
-              <PartyPopper className="h-7 w-7 text-copper" />
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-copper-gradient-10">
+              <PartyPopper className="h-7 w-7 text-[var(--copper-metal)]" />
             </div>
             <p className="font-condensed text-lg font-extrabold tracking-wide text-white uppercase">Goal Reached</p>
             <p className="mt-1 text-sm text-muted">{label}</p>
