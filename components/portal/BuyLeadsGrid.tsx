@@ -9,9 +9,6 @@ type Vendor = {
   bullets?: string[];
   url: string;
   logo: { src: string; width: number; height: number };
-  // Some vendor logos are only legible on a light background — those get a
-  // white chip behind them instead of sitting directly on the dark card.
-  logoOnLight?: boolean;
   // Most logos are wide wordmark lockups that read fine at a compact h-8.
   // A near-square/stacked logo (e.g. a mark sitting above its wordmark)
   // needs more height for its own text to stay legible at the same width.
@@ -26,7 +23,6 @@ const VENDORS: Vendor[] = [
     name: "Proven Lead Solutions",
     url: "https://provenleadsolutions.com/",
     logo: { src: "/vendor-logos/proven-leads.png", width: 1001, height: 383 },
-    logoOnLight: true,
   },
   {
     name: "Closr Leads",
@@ -83,7 +79,7 @@ export function BuyLeadsGrid() {
       {VENDORS.map((vendor) => (
         <Card key={vendor.name} className="flex h-full flex-col gap-4">
           <div className="flex items-center justify-between">
-            <span className={cn("inline-flex items-center rounded-md", vendor.logoOnLight && "bg-white px-2.5 py-1.5")}>
+            <span className="inline-flex items-center">
               <Image
                 src={vendor.logo.src}
                 alt={vendor.name}
