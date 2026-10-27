@@ -409,7 +409,7 @@ body {
    horizontal sweep rather than diagonal, since it's a thin, wide bar.
    Deliberately NOT part of the gradient-everywhere pass below — kept
    exactly as-is per explicit instruction. Hardcoded to the ORIGINAL
-   --copper-metal-*/hi/dk values (not the shared tokens, which moved to
+   --copper-metal-dk/hi/base values (not the shared tokens, which moved to
    the new 3-stop spec's colors for everything else) so this one stays on
    its old colorway regardless of any future change to those tokens. */
 .metal-copper-line {
