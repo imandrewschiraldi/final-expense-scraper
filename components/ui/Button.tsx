@@ -9,7 +9,7 @@ const variants: Record<Variant, string> = {
   // Metallic copper — secondary actions, matches the script tool's default button treatment
   secondary: "btn-metal-copper",
   // Subtle outline for low-emphasis actions — stays flat, not a "status" color
-  ghost: "bg-transparent text-muted border-[1.5px] border-border hover:border-copper-dim hover:text-foreground",
+  ghost: "bg-transparent text-muted border-[1.5px] border-border hover:border-copper-dim-gradient hover:text-foreground",
   // Metallic red — destructive / negative actions
   danger: "btn-metal-red",
   // Metallic solid green — confirmation / positive terminal actions

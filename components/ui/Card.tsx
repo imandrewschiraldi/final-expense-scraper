@@ -18,7 +18,7 @@ export function AccentCard({ className, ...props }: HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        "rounded-[10px] border border-copper-dim border-l-4 border-l-copper bg-surface p-5",
+        "rounded-[10px] border-copper-dim-gradient border-l-4 border-l-[var(--copper-metal)] bg-surface p-5",
         className,
       )}
       {...props}
