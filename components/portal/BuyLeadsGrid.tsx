@@ -12,6 +12,10 @@ type Vendor = {
   // Some vendor logos are only legible on a light background — those get a
   // white chip behind them instead of sitting directly on the dark card.
   logoOnLight?: boolean;
+  // Most logos are wide wordmark lockups that read fine at a compact h-8.
+  // A near-square/stacked logo (e.g. a mark sitting above its wordmark)
+  // needs more height for its own text to stay legible at the same width.
+  logoHeightClass?: string;
 };
 
 // Live, working vendors only — one not ready yet doesn't get a placeholder
@@ -34,6 +38,17 @@ const VENDORS: Vendor[] = [
     ],
     url: "https://closrleads.com/go.php?c=TIER1FINANCIAL",
     logo: { src: "/vendor-logos/closr-leads.png", width: 264, height: 85 },
+  },
+  {
+    name: "G.O.A.T Leads",
+    url: "https://goatleads.com/",
+    logo: { src: "/vendor-logos/goat-leads.png", width: 219, height: 225 },
+    logoHeightClass: "h-14",
+  },
+  {
+    name: "Titan Leads",
+    url: "https://www.titanleadsolutions.com/",
+    logo: { src: "/vendor-logos/titan-leads.png", width: 238, height: 70 },
   },
 ];
 
@@ -74,7 +89,7 @@ export function BuyLeadsGrid() {
                 alt={vendor.name}
                 width={vendor.logo.width}
                 height={vendor.logo.height}
-                className="h-8 w-auto"
+                className={cn("w-auto", vendor.logoHeightClass ?? "h-8")}
               />
             </span>
             <StatusPill live />
