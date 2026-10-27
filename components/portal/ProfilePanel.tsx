@@ -189,7 +189,7 @@ export function ProfilePanel() {
             type="button"
             data-tour="profile-picture-button"
             onClick={() => fileInputRef.current?.click()}
-            className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-[1.5px] border-copper-dim bg-surface"
+            className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-[1.5px] border-copper-dim-gradient bg-surface"
             title="Change profile picture"
           >
             {profile.profileImageUrl ? (
