@@ -109,7 +109,7 @@ const COMPANY_MARK_URL = "/tier1-mark-collapsed.png";
 function MessageAvatar({ url, name }: { url: string | null; name: string }) {
   if (url === COMPANY_MARK_URL) {
     return (
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-copper-dim bg-surface2 p-1.5">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-copper-dim-gradient bg-surface2 p-1.5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={url} alt="" className="h-full w-full object-contain" />
       </div>
@@ -117,9 +117,9 @@ function MessageAvatar({ url, name }: { url: string | null; name: string }) {
   }
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-copper-dim object-cover" />
+    <img src={url} alt="" className="h-8 w-8 shrink-0 rounded-full border-copper-dim-gradient object-cover" />
   ) : (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-copper-dim bg-surface2 text-sm font-bold text-muted">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-copper-dim-gradient bg-surface2 text-sm font-bold text-muted">
       {name.charAt(0).toUpperCase()}
     </div>
   );
@@ -290,7 +290,7 @@ function SortableCategoryGroup({
             type="button"
             onClick={onAddChannel}
             aria-label={`New channel in ${category.name}`}
-            className="text-muted hover:text-copper"
+            className="text-muted hover:text-[var(--copper-metal)]"
           >
             <Plus className="h-3 w-3" />
           </button>
@@ -884,11 +884,11 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
           <div className="min-w-0 flex-1">
             {!isGrouped && (
               <div className="flex items-baseline gap-2">
-                <span className="font-condensed text-sm font-extrabold tracking-wide text-copper uppercase">
+                <span className="font-condensed metal-copper-text text-sm font-extrabold tracking-wide uppercase">
                   {message.authorName}
                 </span>
                 <span className="text-xs text-muted">{timeLabel(message.createdAt)}</span>
-                {message.pinnedAt && !inPinList && <Pin className="h-3 w-3 text-copper" />}
+                {message.pinnedAt && !inPinList && <Pin className="h-3 w-3 text-[var(--copper-metal)]" />}
               </div>
             )}
 
@@ -918,8 +918,8 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                     className={cn(
                       "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors",
                       r.mine
-                        ? "border-copper bg-copper/15 text-foreground"
-                        : "border-border bg-surface2 text-muted hover:border-copper",
+                        ? "border-copper-gradient bg-copper-gradient-15 text-foreground"
+                        : "border-border bg-surface2 text-muted hover:border-copper-gradient",
                     )}
                   >
                     <span className="text-[13px] leading-none">{r.emoji}</span>
@@ -936,7 +936,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               type="button"
               onClick={() => setPicker(picker === message.id ? null : message.id)}
               aria-label="Add reaction"
-              className="text-muted hover:text-copper"
+              className="text-muted hover:text-[var(--copper-metal)]"
             >
               <SmilePlus className="h-3.5 w-3.5" />
             </button>
@@ -945,7 +945,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                 type="button"
                 onClick={() => togglePin(message)}
                 aria-label={message.pinnedAt ? "Unpin" : "Pin"}
-                className={cn("hover:text-copper", message.pinnedAt ? "text-copper" : "text-muted")}
+                className={cn("hover:text-[var(--copper-metal)]", message.pinnedAt ? "text-[var(--copper-metal)]" : "text-muted")}
               >
                 {message.pinnedAt ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
               </button>
@@ -993,7 +993,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
       >
         <aside
           data-tour="chat-channel-list"
-          className="rounded-[10px] border-2 border-copper/50 bg-surface p-3 shadow-[0_0_60px_8px_color-mix(in_srgb,var(--copper)_20%,transparent)]"
+          className="rounded-[10px] border-copper-gradient glow-copper-gradient bg-surface p-3"
         >
           <div className="mb-2 flex items-center justify-between px-1">
             <p className="font-condensed text-[11px] font-extrabold tracking-[0.18em] text-muted uppercase">
@@ -1004,7 +1004,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                 <button
                   type="button"
                   onClick={openCategoryModal}
-                  className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase hover:text-copper"
+                  className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase hover:metal-copper-text"
                 >
                   + Category
                 </button>
@@ -1012,7 +1012,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                   type="button"
                   onClick={() => openChannelModal(null)}
                   aria-label="New channel"
-                  className="text-muted hover:text-copper"
+                  className="text-muted hover:text-[var(--copper-metal)]"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -1083,7 +1083,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
       </DndContext>
 
       {/* Room ---------------------------------------------------------- */}
-      <section className="flex h-[calc(100vh-260px)] min-h-[420px] flex-col rounded-[10px] border-2 border-copper/50 bg-surface shadow-[0_0_60px_8px_color-mix(in_srgb,var(--copper)_20%,transparent)]">
+      <section className="flex h-[calc(100vh-260px)] min-h-[420px] flex-col rounded-[10px] border-copper-gradient glow-copper-gradient bg-surface">
         {active && (
           <header className="shrink-0 border-b-2 border-copper/25 px-5 py-3">
             <div className="flex items-start justify-between gap-4">
@@ -1185,7 +1185,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               onClick={() => imageInput.current?.click()}
               disabled={!active}
               aria-label="Attach image"
-              className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-copper hover:text-copper disabled:opacity-40"
+              className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-copper-gradient hover:text-[var(--copper-metal)] disabled:opacity-40"
             >
               <ImagePlus className="h-4 w-4" />
             </button>
@@ -1204,7 +1204,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               rows={1}
               placeholder={active ? `Message ${active.name}` : "Pick a channel"}
               disabled={!active}
-              className="max-h-40 min-h-[42px] flex-1 resize-y rounded-lg border border-border bg-surface2 px-3 py-2.5 text-[15px] text-foreground placeholder:text-muted focus:border-copper focus:outline-none"
+              className="max-h-40 min-h-[42px] flex-1 resize-y rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2.5 text-[15px] text-foreground placeholder:text-muted focus:outline-none"
             />
             <button
               type="button"
@@ -1257,7 +1257,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                   onChange={(e) => setModalInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submitModal()}
                   placeholder="Category name"
-                  className="w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper focus:outline-none"
+                  className="w-full rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none"
                 />
               </>
             )}
@@ -1272,7 +1272,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                   value={modalInput}
                   onChange={(e) => setModalInput(e.target.value)}
                   placeholder="Channel name"
-                  className="mb-3 w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper focus:outline-none"
+                  className="mb-3 w-full rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none"
                 />
 
                 <p className="font-condensed mb-1.5 text-[10px] font-bold tracking-[0.14em] text-muted uppercase">
@@ -1337,7 +1337,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
             {modal.kind === "archiveChannel" && (
               <p className="text-sm text-foreground">
-                Remove <span className="font-bold text-copper">#{modal.channel.name}</span> from the rail? Its
+                Remove <span className="font-bold metal-copper-text">#{modal.channel.name}</span> from the rail? Its
                 messages are kept.
               </p>
             )}
