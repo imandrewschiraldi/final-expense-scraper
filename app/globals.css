@@ -406,7 +406,9 @@ body {
 }
 
 /* The copper line under the header (HeaderDivider.tsx + Sidebar.tsx) — a
-   horizontal sweep rather than diagonal, since it's a thin, wide bar. */
+   horizontal sweep rather than diagonal, since it's a thin, wide bar.
+   Deliberately NOT part of the gradient-everywhere pass below — kept
+   exactly as-is per explicit instruction. */
 .metal-copper-line {
   background-image: linear-gradient(
     90deg,
@@ -416,6 +418,158 @@ body {
     var(--copper-metal-hi) 75%,
     var(--copper-metal-dk) 100%
   );
+}
+
+/* ============================================================
+   Flat-copper → gradient-copper primitives.
+
+   The flat `--copper`/`--copper-dim` tokens (and Tailwind's
+   text-copper/border-copper/bg-copper utilities built on them) are being
+   swept out of borders, hover states, small text, tinted backgrounds, and
+   glows in favor of the same brand gradient used on buttons/badges/cards
+   (see --copper-metal-hi/-metal/-metal-dk above). Three different CSS
+   techniques are needed depending on the property — `color` and
+   `border-color` can never hold a gradient directly, no matter what a
+   custom property resolves to, and `box-shadow` can never hold one at
+   all. Written as @utility (not plain classes) so hover:/focus:/
+   focus-within: keep working on them exactly like any other Tailwind
+   utility — call sites can do a straight 1:1 swap of the old class name
+   for the new one, prefix included, with no structural changes. */
+
+/* Gradient TEXT for copper-dim (small labels, muted hover text) — same
+   background-clip technique as .metal-copper-text above, sized at 100deg
+   since it's exactly the same "wide element" legibility case. */
+@utility metal-copper-dim-text {
+  background-image: linear-gradient(100deg, var(--copper-dim-metal-dk) 0%, var(--copper-dim-metal-hi) 25%, var(--copper-dim) 50%, var(--copper-dim-metal-hi) 75%, var(--copper-dim-metal-dk) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Gradient BORDERS. `border-color` can't hold a gradient, so these use a
+   masked pseudo-element overlay instead of the double-background trick
+   .btn-metal-copper uses — that trick hard-codes the fill color behind the
+   border (var(--surface)) and only looks right when the element's own
+   background actually IS --surface. A masked overlay works on ANY
+   background (transparent icon buttons, cards, inputs) since it never
+   touches the element's own fill, just paints a gradient ring on top via
+   mask-composite: exclude (ring = padding box subtracted from full box). */
+@utility border-copper-gradient {
+  position: relative;
+  border-color: transparent;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    background: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
+  }
+}
+@utility border-copper-dim-gradient {
+  position: relative;
+  border-color: transparent;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    background: linear-gradient(135deg, var(--copper-dim-metal-hi) 0%, var(--copper-dim) 50%, var(--copper-dim-metal-dk) 100%);
+  }
+}
+/* Dim ring at rest, bright ring on hover — swaps the very common
+   `border-copper-dim ... hover:border-copper` icon-button pattern. Use as
+   `border-copper-hover-gradient` normally and
+   `hover:border-copper-gradient` for the hover half (the latter's ::after
+   already exists from the utility above; this just lets :hover win). */
+@utility border-copper-hover-gradient {
+  position: relative;
+  border-color: transparent;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    background: linear-gradient(135deg, var(--copper-dim-metal-hi) 0%, var(--copper-dim) 50%, var(--copper-dim-metal-dk) 100%);
+    transition: background-image 150ms ease;
+  }
+  &:hover::after {
+    background: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
+  }
+}
+/* No ring at rest, dim gradient ring on focus — swaps
+   `focus:border-copper-dim` (Input/Select). */
+@utility border-copper-focus-gradient {
+  position: relative;
+  border-color: var(--border);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    background: transparent;
+  }
+  &:focus::after,
+  &:focus-within::after {
+    background: linear-gradient(135deg, var(--copper-dim-metal-hi) 0%, var(--copper-dim) 50%, var(--copper-dim-metal-dk) 100%);
+  }
+}
+
+/* Gradient TINTS for backgrounds that were a flat translucent copper wash
+   (active nav row, hover row, Callout's "gold" variant) — background-image
+   can hold a real gradient without any of the border/text workarounds
+   above, so these are just the same 3-stop ramp at reduced opacity via
+   rgb()/alpha. Pick whichever is closest to the original bg-copper/[x]
+   opacity; exact match isn't essential, visual consistency is. */
+@utility bg-copper-gradient-05 {
+  background-image: linear-gradient(135deg, rgb(202 126 64 / 0.05) 0%, rgb(172 90 42 / 0.05) 45%, rgb(131 61 26 / 0.05) 100%);
+}
+@utility bg-copper-gradient-08 {
+  background-image: linear-gradient(135deg, rgb(202 126 64 / 0.08) 0%, rgb(172 90 42 / 0.08) 45%, rgb(131 61 26 / 0.08) 100%);
+}
+@utility bg-copper-gradient-10 {
+  background-image: linear-gradient(135deg, rgb(202 126 64 / 0.1) 0%, rgb(172 90 42 / 0.1) 45%, rgb(131 61 26 / 0.1) 100%);
+}
+@utility bg-copper-gradient-12 {
+  background-image: linear-gradient(135deg, rgb(202 126 64 / 0.12) 0%, rgb(172 90 42 / 0.12) 45%, rgb(131 61 26 / 0.12) 100%);
+}
+@utility bg-copper-gradient-15 {
+  background-image: linear-gradient(135deg, rgb(202 126 64 / 0.15) 0%, rgb(172 90 42 / 0.15) 45%, rgb(131 61 26 / 0.15) 100%);
+}
+
+/* Gradient-APPROXIMATE glows. box-shadow can never hold a real gradient —
+   there's no CSS mechanism for one — so this layers two blurred shadows,
+   one tinted toward the hi stop (tighter) and one toward the dk stop
+   (wider), which reads as a warm-to-dark glow instead of one flat tint.
+   Swaps inline shadow-[0_0_...rgba(200,121,65,x)] glows. */
+@utility glow-copper-gradient {
+  box-shadow:
+    0 0 10px 0px rgb(202 126 64 / 0.35),
+    0 0 20px 2px rgb(131 61 26 / 0.22);
 }
 
 h1,

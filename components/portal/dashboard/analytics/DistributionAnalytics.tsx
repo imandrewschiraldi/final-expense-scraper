@@ -6,22 +6,43 @@ import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
 
 type Item = { name: string; ap: number; count: number; avg: number };
 
+type Stop = { offset: string; color: string };
+
 // The donut's rotating categorical palette — purely for telling slices
 // apart, no brand/status meaning of its own, so each color gets its own
 // metallic hi/dk pair (see app/globals.css) rather than reusing a status
-// color. `flat` is kept only for the legend dot's CSS gradient fallback
-// order; the wedges themselves use the SVG <linearGradient> defs below.
-const DONUT_SWATCHES = [
-  { base: "var(--color-copper)", hi: "var(--copper-metal-hi)", dk: "var(--copper-metal-dk)" },
-  { base: "var(--color-teal-light)", hi: "var(--teal-light-metal-hi)", dk: "var(--teal-light-metal-dk)" },
-  { base: "var(--color-blue-light)", hi: "var(--blue-light-metal-hi)", dk: "var(--blue-light-metal-dk)" },
-  { base: "var(--color-green-light)", hi: "var(--green-light-metal-hi)", dk: "var(--green-light-metal-dk)" },
-  { base: "var(--color-red-light)", hi: "var(--red-light-metal-hi)", dk: "var(--red-light-metal-dk)" },
-  { base: "var(--color-copper-dim)", hi: "var(--copper-dim-metal-hi)", dk: "var(--copper-dim-metal-dk)" },
+// color. Copper carries the exact brand gradient shape (3-stop, matching
+// every other copper surface in the app) since it's sampled from the
+// actual logo; the rest keep the previous bevel shape, which has no such
+// single-source spec to match. The wedges themselves use the SVG
+// <linearGradient> defs below — `stops` drives both that and the legend dot.
+function bevelStops(base: string, hi: string, dk: string): Stop[] {
+  return [
+    { offset: "0%", color: hi },
+    { offset: "30%", color: base },
+    { offset: "55%", color: dk },
+    { offset: "80%", color: base },
+    { offset: "100%", color: hi },
+  ];
+}
+
+const DONUT_SWATCHES: { stops: Stop[] }[] = [
+  {
+    stops: [
+      { offset: "0%", color: "var(--copper-metal-hi)" },
+      { offset: "45%", color: "var(--copper-metal)" },
+      { offset: "100%", color: "var(--copper-metal-dk)" },
+    ],
+  },
+  { stops: bevelStops("var(--color-teal-light)", "var(--teal-light-metal-hi)", "var(--teal-light-metal-dk)") },
+  { stops: bevelStops("var(--color-blue-light)", "var(--blue-light-metal-hi)", "var(--blue-light-metal-dk)") },
+  { stops: bevelStops("var(--color-green-light)", "var(--green-light-metal-hi)", "var(--green-light-metal-dk)") },
+  { stops: bevelStops("var(--color-red-light)", "var(--red-light-metal-hi)", "var(--red-light-metal-dk)") },
+  { stops: bevelStops("var(--color-copper-dim)", "var(--copper-dim-metal-hi)", "var(--copper-dim-metal-dk)") },
 ];
 
 function legendGradient(swatch: (typeof DONUT_SWATCHES)[number]) {
-  return `linear-gradient(135deg, ${swatch.hi} 0%, ${swatch.base} 30%, ${swatch.dk} 55%, ${swatch.base} 80%, ${swatch.hi} 100%)`;
+  return `linear-gradient(135deg, ${swatch.stops.map((s) => `${s.color} ${s.offset}`).join(", ")})`;
 }
 
 function currency(v: number) {
@@ -61,11 +82,9 @@ export function DistributionAnalytics({ title, avgLabel, items }: { title: strin
                 <defs>
                   {DONUT_SWATCHES.map((swatch, i) => (
                     <linearGradient key={i} id={gradientId(i)} x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor={swatch.hi} />
-                      <stop offset="30%" stopColor={swatch.base} />
-                      <stop offset="55%" stopColor={swatch.dk} />
-                      <stop offset="80%" stopColor={swatch.base} />
-                      <stop offset="100%" stopColor={swatch.hi} />
+                      {swatch.stops.map((s) => (
+                        <stop key={s.offset} offset={s.offset} stopColor={s.color} />
+                      ))}
                     </linearGradient>
                   ))}
                 </defs>

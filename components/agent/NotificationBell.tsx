@@ -65,7 +65,7 @@ export function NotificationBell() {
         onClick={handleOpen}
         aria-label="Notifications"
         title="Notifications"
-        className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-[1.5px] border-copper-dim text-muted transition-colors hover:border-copper hover:text-foreground"
+        className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border-[1.5px] border-copper-hover-gradient text-muted transition-colors hover:text-foreground"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4.5 w-4.5 shrink-0">
           <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" strokeLinecap="round" strokeLinejoin="round" />
