@@ -94,7 +94,7 @@ export function AgentLeadImportForm({ onImported }: { onImported: () => void }) 
   }
 
   return (
-    <div className="mb-6 space-y-3 rounded-[10px] border border-copper-dim bg-surface2 p-4">
+    <div className="mb-6 space-y-3 rounded-[10px] border-copper-dim-gradient bg-surface2 p-4">
       <p className="text-sm text-muted">
         Required columns: <span className="text-teal-light">Name</span> (or First Name / Last Name),{" "}
         <span className="text-teal-light">Phone</span>, <span className="text-teal-light">State</span>. Date of
@@ -109,7 +109,7 @@ export function AgentLeadImportForm({ onImported }: { onImported: () => void }) 
           value={leadType}
           onChange={(e) => setLeadType(e.target.value as LeadType)}
           disabled={loading}
-          className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-copper-dim focus:outline-none disabled:opacity-50"
+          className="h-10 w-full rounded-lg border-copper-focus-gradient bg-surface px-3 text-sm text-foreground focus:outline-none disabled:opacity-50"
         >
           <option value="">Select lead type...</option>
           {LEAD_TYPES.map((t) => (
@@ -130,9 +130,9 @@ export function AgentLeadImportForm({ onImported }: { onImported: () => void }) 
       />
 
       {headers && mapping && (
-        <div className="space-y-3 rounded-lg border border-copper-dim bg-surface p-4">
+        <div className="space-y-3 rounded-lg border-copper-dim-gradient bg-surface p-4">
           <p className="text-xs text-muted">
-            Columns detected from <span className="text-copper">{previewFilename}</span>.
+            Columns detected from <span className="metal-copper-text">{previewFilename}</span>.
           </p>
 
           <div className="flex gap-4 text-sm">
@@ -211,7 +211,7 @@ export function AgentLeadImportForm({ onImported }: { onImported: () => void }) 
           <p className="text-muted">
             <span className="text-green-light">{result.imported.toLocaleString()}</span> imported,{" "}
             {result.skippedDuplicates.toLocaleString()} duplicates skipped
-            {result.errors.length > 0 && <span className="text-copper">, {result.errors.length} row error(s)</span>}
+            {result.errors.length > 0 && <span className="metal-copper-text">, {result.errors.length} row error(s)</span>}
           </p>
           {result.errors.length > 0 && (
             <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto text-xs text-muted">

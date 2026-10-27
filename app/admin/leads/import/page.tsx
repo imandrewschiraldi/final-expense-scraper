@@ -165,7 +165,7 @@ export default function ImportLeadsPage() {
               onChange={(e) => setLeadType(e.target.value as LeadType)}
               disabled={loading}
               required
-              className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-copper-dim focus:outline-none disabled:opacity-50"
+              className="h-10 w-full rounded-lg border-copper-focus-gradient bg-surface px-3 text-sm text-foreground focus:outline-none disabled:opacity-50"
             >
               <option value="">Select lead type...</option>
               {LEAD_TYPES.map((t) => (
@@ -217,9 +217,9 @@ export default function ImportLeadsPage() {
           />
 
           {headers && mapping && (
-            <div className="space-y-3 rounded-lg border border-copper-dim bg-surface2 p-4">
+            <div className="space-y-3 rounded-lg border-copper-dim-gradient bg-surface2 p-4">
               <p className="text-xs text-muted">
-                Columns detected from <span className="text-copper">{previewFilename}</span> — this mapping is
+                Columns detected from <span className="metal-copper-text">{previewFilename}</span> — this mapping is
                 applied to every file you upload in this batch.
               </p>
 
@@ -297,7 +297,7 @@ export default function ImportLeadsPage() {
 
         {progress && (
           <p className="mt-4 text-sm text-muted">
-            Importing file {progress.index} of {progress.total}: <span className="text-copper">{progress.filename}</span>
+            Importing file {progress.index} of {progress.total}: <span className="metal-copper-text">{progress.filename}</span>
           </p>
         )}
 
@@ -326,7 +326,7 @@ export default function ImportLeadsPage() {
                         <span className="text-green-light">{f.result.imported.toLocaleString()}</span> imported,{" "}
                         {f.result.skippedDuplicates.toLocaleString()} duplicates skipped
                         {f.result.errors.length > 0 && (
-                          <span className="text-copper">, {f.result.errors.length} row error(s)</span>
+                          <span className="metal-copper-text">, {f.result.errors.length} row error(s)</span>
                         )}
                       </p>
                       {f.result.errors.length > 0 && (

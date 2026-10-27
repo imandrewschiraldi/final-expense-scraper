@@ -248,7 +248,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
         </CardHeader>
 
         {showForm && (
-          <div className="mb-6 space-y-3 rounded-[10px] border border-copper-dim bg-surface2 p-4">
+          <div className="mb-6 space-y-3 rounded-[10px] border-copper-dim-gradient bg-surface2 p-4">
             <div className="grid grid-cols-2 gap-3">
               <Input
                 placeholder="Name"
@@ -331,7 +331,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                     <input
                       type="text"
                       placeholder="e.g. 115"
-                      className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-sm text-white placeholder:text-muted focus:border-copper focus:outline-none"
+                      className="w-20 rounded-md border border-border bg-surface px-2 py-1 text-sm text-white placeholder:text-muted focus:border-copper-gradient focus:outline-none"
                       value={compLevelDrafts[agent.id] ?? agent.compLevel ?? ""}
                       onChange={(e) => setCompLevelDrafts((prev) => ({ ...prev, [agent.id]: e.target.value }))}
                       onBlur={() => saveCompLevel(agent.id)}
@@ -350,7 +350,7 @@ export function AgentsPanel({ initialAgents, currentUserId }: { initialAgents: A
                   </td>
                   <td className="py-2 pr-4">
                     {!agent.inviteAccepted ? (
-                      <span className="text-copper">Invited (pending)</span>
+                      <span className="metal-copper-text">Invited (pending)</span>
                     ) : (
                       <span className={statusTextClass(agent.active)}>{agent.active ? "Active" : "Inactive"}</span>
                     )}

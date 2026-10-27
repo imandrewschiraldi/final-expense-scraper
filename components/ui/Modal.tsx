@@ -43,7 +43,7 @@ export function Modal({
           onClick={onClose}
         >
           <motion.div
-            className={`relative max-h-[85vh] w-full ${maxWidthClassName} overflow-y-auto rounded-2xl border border-copper-dim bg-surface shadow-[0_32px_80px_-24px_rgba(0,0,0,0.85)]`}
+            className={`relative max-h-[85vh] w-full ${maxWidthClassName} overflow-y-auto rounded-2xl border-copper-dim-gradient bg-surface shadow-[0_32px_80px_-24px_rgba(0,0,0,0.85)]`}
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0 }}

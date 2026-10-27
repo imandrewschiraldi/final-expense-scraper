@@ -128,7 +128,7 @@ function ApplicationDetailModal({
                     "font-condensed rounded-lg border-[1.5px] px-3 py-1.5 text-[12px] font-bold tracking-[0.05em] uppercase transition-colors",
                     application.status === s.id
                       ? "toggle-pill-active"
-                      : "border-border text-muted hover:border-copper hover:text-foreground",
+                      : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
                   )}
                 >
                   {s.label}
@@ -333,7 +333,7 @@ export function JobApplicationsPanel() {
                       <button
                         type="button"
                         onClick={() => setSelectedId(a.id)}
-                        className="font-semibold text-white hover:text-copper hover:underline"
+                        className="font-semibold text-white hover:metal-copper-text hover:underline"
                       >
                         {a.name}
                       </button>
