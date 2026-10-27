@@ -58,18 +58,18 @@ type NavItem = {
 // vault, training) and the Agent Portal (dashboards, book of business, etc.)
 // are a single app now, not two navs stitched together.
 const NAV_ITEMS: NavItem[] = [
-  { href: "/portal/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/portal/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"], requiresAgencyDashboard: true },
-  { href: "/portal/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/portal/chat", label: "Team Chat", icon: MessagesSquare, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/portal/book-of-business", label: "Book of Business", icon: BookOpen, roles: ["MANAGER", "AGENT"] },
-  { href: "/portal/submit-policy", label: "Submit Policy", icon: FilePlus2, roles: ["MANAGER", "AGENT"] },
-  { href: "/portal/scripts", label: "Scripts", icon: FileText, roles: ["MANAGER", "AGENT"] },
-  { href: "/portal/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"] },
-  { href: "/portal/underwriting-genie", label: "Underwriting Genie", icon: Stethoscope, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/portal/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["MANAGER", "AGENT"] },
-  { href: "/portal/ask-integrity", label: "Ask Integrity", icon: Bot, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/portal/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["MANAGER", "AGENT"] },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"], requiresAgencyDashboard: true },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/chat", label: "Team Chat", icon: MessagesSquare, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/book-of-business", label: "Book of Business", icon: BookOpen, roles: ["MANAGER", "AGENT"] },
+  { href: "/submit-policy", label: "Submit Policy", icon: FilePlus2, roles: ["MANAGER", "AGENT"] },
+  { href: "/scripts", label: "Scripts", icon: FileText, roles: ["MANAGER", "AGENT"] },
+  { href: "/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"] },
+  { href: "/underwriting-genie", label: "Underwriting Genie", icon: Stethoscope, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["MANAGER", "AGENT"] },
+  { href: "/ask-integrity", label: "Ask Integrity", icon: Bot, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["MANAGER", "AGENT"] },
   { href: "/admin/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["ADMIN"] },
   { href: "/agent/dashboard", label: "My Leads", icon: Users, roles: ["MANAGER", "AGENT"] },
   { href: "/agent/vault", label: "Vault", icon: Archive, roles: ["MANAGER", "AGENT"], requiresVault: true },
@@ -85,8 +85,8 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER", "AGENT"],
     requiresRecruitingRadar: true,
   },
-  { href: "/portal/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/portal/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"] },
+  { href: "/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"] },
+  { href: "/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"] },
   { href: "/admin/carriers", label: "Carrier Rates", icon: Percent, roles: ["ADMIN"] },
 ];
@@ -171,7 +171,7 @@ function NavLinks({
     <>
       {items.map((item) => {
         const active = isItemActive(pathname, item.href);
-        const showDot = Boolean(item.href === "/portal/chat" && chatUnread && !active);
+        const showDot = Boolean(item.href === "/chat" && chatUnread && !active);
         return (
           <NavLeaf
             key={item.href}
@@ -307,7 +307,7 @@ export function Sidebar({
         )}
       >
         <div className="flex shrink-0 items-center justify-between px-3" style={{ height: HEADER_HEIGHT }}>
-          <Link href="/portal/dashboard" className="block shrink-0" onClick={onCloseMobile}>
+          <Link href="/dashboard" className="block shrink-0" onClick={onCloseMobile}>
             <Image src="/tier1-logo-transparent.png" alt="Tier 1 Financial" width={1560} height={558} className="h-9 w-auto" priority />
           </Link>
           <button
@@ -337,7 +337,7 @@ export function Sidebar({
           className={cn("flex shrink-0 items-center px-3", collapsed ? "justify-center" : "justify-between")}
           style={{ height: HEADER_HEIGHT }}
         >
-          <Link href="/portal/dashboard" className="block shrink-0">
+          <Link href="/dashboard" className="block shrink-0">
             {collapsed ? (
               <Image
                 src="/tier1-mark-collapsed.png"

@@ -47,7 +47,7 @@ export function NotificationToaster() {
       for (const n of list) {
         if (!seenNotifIds.current.has(n.id)) {
           seenNotifIds.current.add(n.id);
-          pushToast({ id: `notif-${n.id}`, message: notificationMessage(n), href: "/portal/notifications" });
+          pushToast({ id: `notif-${n.id}`, message: notificationMessage(n), href: "/notifications" });
         }
       }
     }
@@ -67,7 +67,7 @@ export function NotificationToaster() {
         pushToast({
           id: `chat-${Date.now()}`,
           message: `${delta} new message${delta === 1 ? "" : "s"} in Team Chat`,
-          href: "/portal/chat",
+          href: "/chat",
         });
       }
       lastChatUnread.current = total;

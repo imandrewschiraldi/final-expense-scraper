@@ -18,7 +18,7 @@ export function SubmitPolicyPanel({ isAgent, agentName }: { isAgent: boolean; ag
         {lastSubmitted && (
           <p className="mb-4 text-sm text-teal-light">
             Submitted {lastSubmitted.clientName} with {lastSubmitted.carrier}. View it on{" "}
-            <Link href="/portal/book-of-business" className="underline">
+            <Link href="/book-of-business" className="underline">
               Book of Business
             </Link>
             .

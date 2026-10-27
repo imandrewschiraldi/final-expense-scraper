@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
       sendPushToUser(userId, {
         title: `#${channel.name}`,
         body: `${message.authorName}: ${preview}`,
-        url: "/portal/chat",
+        url: "/chat",
       }),
     ),
   );

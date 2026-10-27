@@ -93,7 +93,7 @@ export function ProfileMenu({
           </div>
           <div className="my-1 border-t border-border" />
           <MenuLink
-            href="/portal/profile"
+            href="/profile"
             icon={User}
             label="My Profile"
             onClick={() => {

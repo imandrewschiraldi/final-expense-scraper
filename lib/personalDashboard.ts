@@ -286,7 +286,7 @@ export async function checkAndAwardGoals(userId: string, now: Date = new Date())
       await sendPushToUser(userId, {
         title: "Goal Reached!",
         body: `${GOAL_CATEGORY_LABELS[g.category] ?? "Goal"} goal reached`,
-        url: "/portal/dashboard",
+        url: "/dashboard",
       });
     }
   }

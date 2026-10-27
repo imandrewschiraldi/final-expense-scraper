@@ -147,7 +147,7 @@ export function ProfilePanel() {
       // can race the just-applied session update. Always the unified
       // Portal dashboard, not the legacy per-role /admin or /agent
       // dashboards, which both roles can still reach from the sidebar.
-      window.location.href = "/portal/dashboard";
+      window.location.href = "/dashboard";
     } else {
       const data = await res.json().catch(() => null);
       setError(data?.error ?? "Failed to switch role.");

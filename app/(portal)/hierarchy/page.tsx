@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function HierarchyPage() {
   const session = await auth();
   if (session?.user.role !== "ADMIN" && session?.user.role !== "MANAGER") {
-    redirect("/portal/dashboard");
+    redirect("/dashboard");
   }
 
   return (
