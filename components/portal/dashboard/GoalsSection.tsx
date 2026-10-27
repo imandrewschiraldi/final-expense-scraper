@@ -203,7 +203,7 @@ export function GoalsSection({
           {recentWins.map((win) => (
             <span
               key={win.id}
-              className="flex items-center gap-1.5 rounded-full border border-copper-dim bg-copper/5 px-3 py-1 text-xs text-copper"
+              className="flex items-center gap-1.5 rounded-full border-copper-dim-gradient bg-copper-gradient-05 px-3 py-1 text-xs text-[var(--copper-metal)]"
             >
               <Trophy className="h-3.5 w-3.5" />
               {GOAL_CATEGORY_LABELS[win.category] ?? win.category}
