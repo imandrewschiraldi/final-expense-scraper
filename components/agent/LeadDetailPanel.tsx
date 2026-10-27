@@ -20,7 +20,7 @@ function PhoneLink({ phone }: { phone: string }) {
   return (
     <a
       href={telHref(phone)}
-      className="inline-flex items-center gap-1 font-semibold text-copper transition-colors hover:text-copper-dim hover:underline"
+      className="inline-flex items-center gap-1 font-semibold metal-copper-text transition-colors hover:metal-copper-dim-text hover:underline"
     >
       <PhoneIcon className="h-3.5 w-3.5 shrink-0" />
       {formatPhone(phone)}
@@ -521,7 +521,7 @@ export function LeadDetailPanel({
             value={noteBody}
             onChange={(e) => setNoteBody(e.target.value)}
             placeholder="Add a note about this lead..."
-            className="min-h-20 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper-dim focus:outline-none"
+            className="min-h-20 w-full rounded-lg border-copper-focus-gradient bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none"
           />
           <Button onClick={addNote} disabled={saving || !noteBody.trim()}>
             Add

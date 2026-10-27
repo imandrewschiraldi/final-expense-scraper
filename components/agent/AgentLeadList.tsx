@@ -120,7 +120,7 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
                 "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
                 !archiveView && tab === t.value
                   ? "toggle-pill-active"
-                  : "border-copper-dim text-muted hover:border-copper hover:text-foreground",
+                  : "border-copper-hover-gradient text-muted hover:text-foreground",
               )}
             >
               {t.label}
@@ -147,7 +147,7 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
             onClick={() => setArchiveView(true)}
             className={cn(
               "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-              archiveView ? "toggle-pill-active" : "border-border text-muted hover:border-copper hover:text-foreground",
+              archiveView ? "toggle-pill-active" : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
             )}
           >
             Archive
@@ -178,12 +178,12 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
             {leads.map((lead) => (
               <tr key={lead.id} className="border-b border-border/60 hover:bg-surface2">
                 <td className="px-4 py-3">
-                  <Link href={`/agent/leads/${lead.id}?${filterQuery}`} className="text-white hover:text-copper">
+                  <Link href={`/agent/leads/${lead.id}?${filterQuery}`} className="text-white hover:metal-copper-text">
                     {lead.firstName} {lead.lastName}
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-muted">
-                  <a href={telHref(lead.phone)} className="hover:text-copper hover:underline">
+                  <a href={telHref(lead.phone)} className="hover:metal-copper-text hover:underline">
                     {formatPhone(lead.phone)}
                   </a>
                 </td>
