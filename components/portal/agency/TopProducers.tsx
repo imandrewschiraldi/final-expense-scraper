@@ -7,9 +7,9 @@ import { TopProducer } from "@/lib/agencyDashboardShared";
 function Avatar({ url, name }: { url: string | null; name: string }) {
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-copper-dim object-cover" />
+    <img src={url} alt="" className="h-8 w-8 shrink-0 rounded-full border-copper-dim-gradient object-cover" />
   ) : (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-copper-dim bg-surface2 text-sm font-bold text-muted">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-copper-dim-gradient bg-surface2 text-sm font-bold text-muted">
       {name.charAt(0).toUpperCase()}
     </div>
   );
