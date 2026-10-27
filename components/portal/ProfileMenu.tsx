@@ -16,7 +16,7 @@ type Profile = {
 };
 
 const ITEM_CLASS =
-  "font-condensed flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-bold tracking-[0.03em] text-muted uppercase transition-colors hover:bg-copper/[0.08] hover:text-copper";
+  "font-condensed flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-bold tracking-[0.03em] text-muted uppercase transition-colors hover:bg-copper-gradient-08 hover:metal-copper-text";
 
 /**
  * The sidebar footer's avatar/name — click opens a menu (My Profile,
@@ -149,7 +149,7 @@ function SoundMenuItem() {
     <button type="button" onClick={() => setSoundEnabled(!soundEnabled)} className={ITEM_CLASS}>
       {soundEnabled ? <Volume2 className="h-4 w-4 shrink-0" /> : <VolumeX className="h-4 w-4 shrink-0" />}
       <span className="flex-1">Interaction Sounds</span>
-      {soundEnabled && <Check className="h-4 w-4 shrink-0 text-copper" />}
+      {soundEnabled && <Check className="h-4 w-4 shrink-0 text-[var(--copper-metal)]" />}
     </button>
   );
 }
