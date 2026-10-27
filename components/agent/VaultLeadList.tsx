@@ -104,12 +104,12 @@ export function VaultLeadList() {
             {leads.map((lead) => (
               <tr key={lead.id} className="border-b border-border/60 hover:bg-surface2">
                 <td className="px-4 py-3">
-                  <Link href={`/agent/vault/${lead.id}?${filterQuery}`} className="text-white hover:text-copper">
+                  <Link href={`/agent/vault/${lead.id}?${filterQuery}`} className="text-white hover:metal-copper-text">
                     {lead.firstName} {lead.lastName}
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-muted">
-                  <a href={telHref(lead.phone)} className="hover:text-copper hover:underline">
+                  <a href={telHref(lead.phone)} className="hover:metal-copper-text hover:underline">
                     {formatPhone(lead.phone)}
                   </a>
                 </td>
