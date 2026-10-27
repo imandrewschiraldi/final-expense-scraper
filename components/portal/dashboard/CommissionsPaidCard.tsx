@@ -80,7 +80,7 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
       <p
         className="font-scoreboard text-[68px] leading-none font-black tracking-tight"
         style={{
-          filter: "drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 48px rgba(200,121,65,.55))",
+          filter: "drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 48px rgba(202,126,64,.55))",
         }}
       >
         <span className="metal-copper-text">{currency(animated ?? value)}</span>
