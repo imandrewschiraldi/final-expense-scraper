@@ -16,9 +16,9 @@ function formatAP(value: number) {
 }
 
 const PODIUM_STYLES = [
-  "border-copper bg-gradient-to-b from-copper/15 to-surface md:order-2 md:-translate-y-4 shadow-[0_0_40px_rgba(200,121,65,0.18)]",
-  "border-copper-dim bg-gradient-to-b from-surface2 to-surface md:order-1",
-  "border-copper-dim bg-gradient-to-b from-surface2 to-surface md:order-3",
+  "border-copper-gradient glow-copper-gradient bg-gradient-to-b from-copper/15 to-surface md:order-2 md:-translate-y-4",
+  "border-copper-dim-gradient bg-gradient-to-b from-surface2 to-surface md:order-1",
+  "border-copper-dim-gradient bg-gradient-to-b from-surface2 to-surface md:order-3",
 ];
 
 function AnimatedAP({ value, className }: { value: number; className?: string }) {
@@ -29,11 +29,11 @@ function AnimatedAP({ value, className }: { value: number; className?: string })
 function Avatar({ url, name, sizeClassName }: { url: string | null; name: string; sizeClassName: string }) {
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" className={cn("shrink-0 rounded-full border-2 border-copper object-cover", sizeClassName)} />
+    <img src={url} alt="" className={cn("shrink-0 rounded-full border-2 border-copper-gradient object-cover", sizeClassName)} />
   ) : (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full border-2 border-copper-dim bg-surface2 text-base font-bold text-muted sm:text-xl",
+        "flex shrink-0 items-center justify-center rounded-full border-2 border-copper-dim-gradient bg-surface2 text-base font-bold text-muted sm:text-xl",
         sizeClassName,
       )}
     >
@@ -116,7 +116,7 @@ export function LeaderboardPanel() {
                         transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 15 }}
                         className="absolute -top-1 left-1/2 -translate-x-1/2"
                       >
-                        <Crown className="h-4 w-4 fill-copper text-copper sm:h-6 sm:w-6" />
+                        <Crown className="h-4 w-4 fill-[var(--copper-metal)] text-[var(--copper-metal)] sm:h-6 sm:w-6" />
                       </motion.div>
                     )}
                     <span className="metal-copper-text font-scoreboard mt-2 text-sm font-bold sm:mt-3 sm:text-2xl">
@@ -139,7 +139,7 @@ export function LeaderboardPanel() {
                     </span>
                     <AnimatedAP
                       value={isPlaceholder ? 0 : agent.issuedAP}
-                      className="metal-copper-text font-scoreboard text-sm font-bold drop-shadow-[0_0_18px_rgba(200,121,65,0.3)] sm:text-2xl"
+                      className="metal-copper-text font-scoreboard text-sm font-bold drop-shadow-[0_0_18px_rgba(202,126,64,0.3)] sm:text-2xl"
                     />
                     <span className="text-[10px] text-muted sm:text-xs">
                       {isPlaceholder ? "—" : `${agent.issuedCount} issued`}

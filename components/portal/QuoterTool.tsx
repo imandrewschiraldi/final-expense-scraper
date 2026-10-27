@@ -55,7 +55,7 @@ export function QuoterTool() {
                 "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
                 active === key
                   ? "toggle-pill-active"
-                  : "border-border text-muted hover:border-copper hover:text-foreground",
+                  : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
               )}
             >
               {QUOTE_TOOLS[key].label}
@@ -66,7 +66,7 @@ export function QuoterTool() {
           href={tool.src}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-condensed flex items-center gap-1.5 rounded-lg border-[1.5px] border-border px-3 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper hover:text-foreground"
+          className="font-condensed flex items-center gap-1.5 rounded-lg border-[1.5px] border-border px-3 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase transition-colors hover:border-copper-gradient hover:text-foreground"
         >
           <ExternalLink className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Open in New Tab</span>

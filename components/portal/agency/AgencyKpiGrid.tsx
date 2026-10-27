@@ -52,7 +52,7 @@ function AgencyKpiCard({ index, kpiKey, entry }: { index: number; kpiKey: Agency
       whileHover={{ y: -2 }}
       title={meta.explain}
     >
-      <PremiumPanel className="h-full p-4 transition-colors duration-200 hover:border-copper-dim">
+      <PremiumPanel className="h-full p-4 transition-colors duration-200 hover:border-copper-dim-gradient">
         <div className="flex items-center justify-between">
           <div className="metal-copper-surface flex h-9 w-9 items-center justify-center rounded-lg">
             <Icon className="h-4.5 w-4.5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)]" />

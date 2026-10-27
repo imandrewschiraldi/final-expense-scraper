@@ -43,7 +43,7 @@ export function ReportsPanel() {
               "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
               scope === "personal"
                 ? "toggle-pill-active"
-                : "border-border text-muted hover:border-copper hover:text-foreground",
+                : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
             )}
           >
             My Production
@@ -54,7 +54,7 @@ export function ReportsPanel() {
               "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
               scope === "org"
                 ? "toggle-pill-active"
-                : "border-border text-muted hover:border-copper hover:text-foreground",
+                : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
             )}
           >
             Organization

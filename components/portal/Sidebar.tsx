@@ -360,7 +360,7 @@ export function Sidebar({
                 title={wide ? "Use standard width" : "Use wide layout for large monitors"}
                 className={cn(
                   "transition-colors hover:text-foreground",
-                  wide ? "text-copper" : "text-muted",
+                  wide ? "text-[var(--copper-metal)]" : "text-muted",
                 )}
               >
                 {wide ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
