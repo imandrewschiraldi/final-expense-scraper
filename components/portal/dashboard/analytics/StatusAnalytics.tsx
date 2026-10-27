@@ -45,7 +45,7 @@ export function StatusAnalytics({
                 className="h-full rounded-full"
                 style={{
                   width: `${Math.max(b.percent, b.count > 0 ? 2 : 0)}%`,
-                  backgroundImage: metallicGradient(STATUS_COLORS[b.status] ?? "#a85a28"),
+                  backgroundImage: metallicGradient(STATUS_COLORS[b.status] ?? "#ac5a2a"),
                 }}
               />
             </div>

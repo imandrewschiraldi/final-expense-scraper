@@ -11,12 +11,12 @@
 // same depth instead.
 export const APPLICATION_STATUSES = [
   { id: "NEW", label: "New", color: "#7f7f7a" },
-  { id: "CONTACTED", label: "Contacted", color: "#a85a28" },
+  { id: "CONTACTED", label: "Contacted", color: "#ac5a2a" },
   { id: "SCHEDULED", label: "Scheduled", color: "#a7764a" },
   { id: "INTERVIEWED", label: "Interviewed", color: "#3a70a9" },
-  { id: "HIRED", label: "Hired", color: "#a85a28" },
+  { id: "HIRED", label: "Hired", color: "#ac5a2a" },
   { id: "PRE_LICENSING", label: "Pre-Licensing", color: "#7f7f7a" },
-  { id: "LICENSED", label: "Licensed", color: "#a85a28" },
+  { id: "LICENSED", label: "Licensed", color: "#ac5a2a" },
   { id: "ONBOARDED", label: "Onboarded", color: "#27ae60" },
   { id: "REJECTED", label: "Rejected", color: "#c0392b" },
 ] as const;

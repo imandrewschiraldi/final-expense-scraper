@@ -44,9 +44,9 @@
      drive the gradient treatment. Gray and blue have no brand button to
      anchor to, so they're tuned to sit at the same depth as the rest.
      See lib/metallic.ts for the JS-side version of this same table. */
-  --copper-metal: #a85a28;
-  --copper-metal-hi: #d9a478;
-  --copper-metal-dk: #3d1600;
+  --copper-metal: #ac5a2a;
+  --copper-metal-hi: #ca7e40;
+  --copper-metal-dk: #833d1a;
   --green-metal-hi: #79cd9c;
   --green-metal-dk: #156035;
   --red-metal-hi: #d8847c;
@@ -135,10 +135,8 @@ body {
 .metal-copper-surface {
   background-image: linear-gradient(
     135deg,
-    var(--copper-metal-dk) 0%,
-    var(--copper-metal-hi) 25%,
-    var(--copper-metal) 50%,
-    var(--copper-metal-hi) 75%,
+    var(--copper-metal-hi) 0%,
+    var(--copper-metal) 45%,
     var(--copper-metal-dk) 100%
   );
   box-shadow:
@@ -152,10 +150,8 @@ body {
 .metal-copper-card {
   background-image: linear-gradient(
     135deg,
-    var(--copper-metal-dk) 0%,
-    var(--copper-metal-hi) 25%,
-    var(--copper-metal) 50%,
-    var(--copper-metal-hi) 75%,
+    var(--copper-metal-hi) 0%,
+    var(--copper-metal) 45%,
     var(--copper-metal-dk) 100%
   );
   box-shadow:
@@ -274,13 +270,13 @@ body {
   border: 1.5px solid transparent;
   background-image:
     linear-gradient(var(--surface), var(--surface)),
-    linear-gradient(135deg, var(--copper-metal-dk), var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk));
+    linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
   background-origin: border-box;
   background-clip: padding-box, border-box;
   color: var(--copper-metal-hi);
 }
 .btn-metal-copper:hover {
-  background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
+  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
   color: #000;
 }
 /* The "currently selected" state of a btn-metal-copper toggle (e.g. a
@@ -290,7 +286,7 @@ body {
    instead of looking identical to every unselected option. */
 .btn-metal-copper-active {
   border: 1.5px solid var(--copper-metal);
-  background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
+  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
   color: #000;
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
@@ -330,7 +326,7 @@ body {
 .toggle-pill-active {
   border-color: transparent;
   color: #000;
-  background-image: linear-gradient(135deg, var(--copper-metal-dk) 0%, var(--copper-metal-hi) 25%, var(--copper-metal) 50%, var(--copper-metal-hi) 75%, var(--copper-metal-dk) 100%);
+  background-image: linear-gradient(135deg, var(--copper-metal-hi) 0%, var(--copper-metal) 45%, var(--copper-metal-dk) 100%);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
     inset 0 -2px 3px rgba(0, 0, 0, 0.45);

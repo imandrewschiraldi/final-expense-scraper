@@ -22,9 +22,9 @@
 
 var WC_COLORS = {
   bg: ["#1a1005", "#0c0703", "#050302"],
-  copperDk: "#3d1600",
-  copperHi: "#d9a478",
-  copperBase: "#a85a28",
+  copperDk: "#833d1a",
+  copperHi: "#ca7e40",
+  copperBase: "#ac5a2a",
   copperFlat: "#c87941",
   silver: ["#ffffff", "#c7ccd1", "#7f868c"],
   white: "#ffffff",

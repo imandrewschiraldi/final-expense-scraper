@@ -5,7 +5,7 @@
 // can't reach. Keep both tables in sync if either changes.
 const METAL_STOPS: Record<string, { hi: string; dk: string }> = {
   "#7f7f7a": { hi: "#b0b0ad", dk: "#464643" }, // gray — New / Pre-Licensing / Submitted
-  "#a85a28": { hi: "#d9a478", dk: "#3d1600" }, // copper — Contacted / Hired / Licensed / primary button
+  "#ac5a2a": { hi: "#ca7e40", dk: "#833d1a" }, // copper — Contacted / Hired / Licensed / primary button
   "#a7764a": { hi: "#c8aa8f", dk: "#5c4129" }, // amber — Scheduled
   "#3a70a9": { hi: "#85a6ca", dk: "#203e5d" }, // blue — Interviewed
   "#27ae60": { hi: "#79cd9c", dk: "#156035" }, // green — Onboarded / Issued / success button
