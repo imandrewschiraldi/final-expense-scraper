@@ -79,6 +79,19 @@
   --red-light-metal-dk: #8c3b3b;
   --copper-dim-metal-hi: #ad8f78;
   --copper-dim-metal-dk: #432915;
+
+  /* A generated grayscale noise tile (SVG feTurbulence, baked into a data
+     URI so no extra image request) layered over every FILLED metal
+     surface/button/badge below via mix-blend-mode: overlay — the gradient
+     alone reads as brushed metal (smooth, directional), this adds the
+     fine random sparkle/fleck grain that's what actually reads as car-
+     paint metallic rather than a flat painted gradient. Shared by every
+     color so the grain scale/density stays identical everywhere it's
+     used. Not applied to thin 1-2px gradient-ring borders (too narrow
+     for a tiled grain to register as anything but noise), translucent
+     bg-copper-gradient-* washes, box-shadow glows, or gradient-clipped
+     TEXT (grain would just reduce legibility at text scale). */
+  --metal-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' result='t'/><feColorMatrix in='t' type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
 @theme inline {
@@ -365,6 +378,70 @@ body {
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
     inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+}
+
+/* Metallic fleck/sparkle grain — see --metal-noise above. Shared by every
+   FILLED metal surface/button/badge (all colors) via one ::after layer so
+   the gradient bevel reads as actual painted metal, not just a smooth
+   gradient. `isolation: isolate` keeps the overlay's blend mode scoped to
+   this element instead of blending with whatever sits behind it on the
+   page. Grouped into two selector lists: surfaces/badges that are always
+   filled, and the two outline buttons (copper/red) whose fill only
+   appears on hover — green's button is solid at rest so it's in the
+   always-filled list alongside the rest. */
+.metal-copper-surface,
+.metal-copper-card,
+.metal-green-surface,
+.metal-red-surface,
+.metal-teal-surface,
+.metal-gold-surface,
+.metal-blue-surface,
+.metal-amber-surface,
+.metal-gray-surface,
+.btn-metal-copper-active,
+.btn-metal-green,
+.toggle-pill-active {
+  position: relative;
+  isolation: isolate;
+}
+.metal-copper-surface::after,
+.metal-copper-card::after,
+.metal-green-surface::after,
+.metal-red-surface::after,
+.metal-teal-surface::after,
+.metal-gold-surface::after,
+.metal-blue-surface::after,
+.metal-amber-surface::after,
+.metal-gray-surface::after,
+.btn-metal-copper-active::after,
+.btn-metal-green::after,
+.toggle-pill-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--metal-noise);
+  background-size: 140px 140px;
+  mix-blend-mode: overlay;
+  opacity: 0.55;
+}
+.btn-metal-copper,
+.btn-metal-red {
+  position: relative;
+  isolation: isolate;
+}
+.btn-metal-copper:hover::after,
+.btn-metal-red:hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--metal-noise);
+  background-size: 140px 140px;
+  mix-blend-mode: overlay;
+  opacity: 0.55;
 }
 
 /* Metallic gradient TEXT — for standalone large numbers/labels that are
