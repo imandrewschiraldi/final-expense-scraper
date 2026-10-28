@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "motion/react";
-import { Coins, Crown, Radio } from "lucide-react";
+import { Crown, Radio } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useCountUp } from "@/lib/useCountUp";
 
@@ -33,6 +34,7 @@ const RANK_THEME = [
     ordinal: "1ST",
     height: "h-28 sm:h-44",
     avatarSize: "h-16 w-16 sm:h-28 sm:w-28",
+    avatarPixels: 224,
     crownSize: "h-9 w-9 sm:h-14 sm:w-14",
     delay: 0.3,
   },
@@ -46,6 +48,7 @@ const RANK_THEME = [
     ordinal: "2ND",
     height: "h-20 sm:h-32",
     avatarSize: "h-13 w-13 sm:h-20 sm:w-20",
+    avatarPixels: 160,
     crownSize: "h-7 w-7 sm:h-10 sm:w-10",
     delay: 0.1,
   },
@@ -59,6 +62,7 @@ const RANK_THEME = [
     ordinal: "3RD",
     height: "h-14 sm:h-24",
     avatarSize: "h-13 w-13 sm:h-20 sm:w-20",
+    avatarPixels: 160,
     crownSize: "h-7 w-7 sm:h-10 sm:w-10",
     delay: 0.18,
   },
@@ -74,10 +78,21 @@ function AnimatedAP({ value, className }: { value: number; className?: string })
   return <span className={className}>{formatAP(animated ?? 0)}</span>;
 }
 
-function Avatar({ url, name, sizeClassName }: { url: string | null; name: string; sizeClassName: string }) {
+// `pixels` drives next/image's actual optimized output size (2x the
+// biggest on-screen size it's used at, for retina) — a plain <img> here
+// would just hand the browser whatever resolution was originally uploaded
+// and let it naively scale that, which is what was reading as blurry at
+// the podium's larger avatar sizes.
+function Avatar({ url, name, sizeClassName, pixels = 96 }: { url: string | null; name: string; sizeClassName: string; pixels?: number }) {
   return url ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" className={cn("shrink-0 rounded-full object-cover", sizeClassName)} />
+    <Image
+      src={url}
+      alt=""
+      width={pixels}
+      height={pixels}
+      quality={90}
+      className={cn("shrink-0 rounded-full object-cover", sizeClassName)}
+    />
   ) : (
     <div
       className={cn(
@@ -90,52 +105,65 @@ function Avatar({ url, name, sizeClassName }: { url: string | null; name: string
   );
 }
 
-// A pointed lens/feather shape (two bezier curves meeting at both ends) for
-// one laurel leaf — reads as an actual leaf instead of the plain oval a
-// <ellipse> gives.
+// A pointed lens/feather shape (two bezier curves meeting at both ends),
+// drawn pointing along +X from the origin.
 function leafPath(length: number, width: number) {
   const hw = width / 2;
   return `M0,0 Q${length * 0.3},${-hw} ${length},0 Q${length * 0.3},${hw} 0,0`;
 }
 
-// A stylized laurel branch flanking the podium, built from plain SVG shapes
-// (lucide has no wreath/laurel icon) — leaves spaced along a curved stem,
-// shrinking and fanning out toward the top. `flip` mirrors it for the
-// right-hand side.
+// A proper crest flanking the podium (lucide has no wreath/feather icon):
+// a central spine with a mirrored PAIR of feathers at each point along it —
+// one left, one right — which is what actually reads as a frond/wing
+// instead of a row of blobs down one side. Grows and fans out further
+// toward the tip, warm red-orange at the base shading to bright gold at
+// the top for some color variation instead of one flat gold. `flip`
+// mirrors the whole thing for the right-hand side.
 function LaurelBranch({ flip }: { flip?: boolean }) {
-  const leafCount = 9;
-  const leaves = Array.from({ length: leafCount }, (_, i) => {
-    const t = i / (leafCount - 1); // 0 (base) -> 1 (tip)
-    const y = 214 - t * 206;
-    const x = 36 + Math.sin(t * Math.PI * 0.9) * 14;
-    const angle = -20 - t * 52;
-    const scale = 1 - t * 0.34;
-    return { x, y, angle, scale };
+  const pairCount = 10;
+  const pairs = Array.from({ length: pairCount }, (_, i) => {
+    const t = i / (pairCount - 1); // 0 (base) -> 1 (tip)
+    const y = 218 - t * 206;
+    const spineX = 40 + Math.sin(t * Math.PI * 0.55) * 8;
+    const spineAngle = -92 + t * 58; // vertical at the base, leaning out toward the tip
+    const spread = 32 + t * 18; // how far each feather splays off the spine
+    const length = 15 + t * 27;
+    const width = 7 + t * 9;
+    return { spineX, y, spineAngle, spread, length, width };
   });
 
   return (
     <svg
-      viewBox="0 0 86 222"
-      className={cn("h-52 w-auto drop-shadow-[0_0_22px_rgba(228,205,131,0.55)] sm:h-72", flip && "-scale-x-100")}
+      viewBox="0 0 120 230"
+      className={cn("h-56 w-auto drop-shadow-[0_0_24px_rgba(234,88,12,0.45)] sm:h-80", flip && "-scale-x-100")}
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id="laurelGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="var(--gold-metal-dk)" />
-          <stop offset="50%" stopColor="var(--gold)" />
+        <linearGradient id="laurelGradient" x1="0%" y1="100%" x2="20%" y2="0%">
+          <stop offset="0%" stopColor="#9a3412" />
+          <stop offset="35%" stopColor="var(--gold-metal-dk)" />
+          <stop offset="70%" stopColor="var(--gold)" />
           <stop offset="100%" stopColor="var(--gold-metal-hi)" />
         </linearGradient>
       </defs>
-      <path d="M36 218 C14 176, 20 116, 38 6" stroke="url(#laurelGradient)" strokeWidth="3" fill="none" strokeLinecap="round" />
-      {leaves.map((leaf, i) => (
-        <path
-          key={i}
-          d={leafPath(28 * leaf.scale, 12 * leaf.scale)}
-          transform={`translate(${leaf.x} ${leaf.y}) rotate(${leaf.angle})`}
-          fill="url(#laurelGradient)"
-          stroke="var(--gold-metal-dk)"
-          strokeWidth="0.75"
-        />
+      <path d="M40 224 C26 178, 30 112, 42 6" stroke="url(#laurelGradient)" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+      {pairs.map((p, i) => (
+        <g key={i} transform={`translate(${p.spineX} ${p.y})`}>
+          <path
+            d={leafPath(p.length, p.width)}
+            transform={`rotate(${p.spineAngle - p.spread})`}
+            fill="url(#laurelGradient)"
+            stroke="var(--gold-metal-dk)"
+            strokeWidth="0.75"
+          />
+          <path
+            d={leafPath(p.length, p.width)}
+            transform={`rotate(${p.spineAngle + p.spread})`}
+            fill="url(#laurelGradient)"
+            stroke="var(--gold-metal-dk)"
+            strokeWidth="0.75"
+          />
+        </g>
       ))}
     </svg>
   );
@@ -199,10 +227,10 @@ export function LeaderboardPanel() {
             <div className="relative rounded-2xl bg-[radial-gradient(120%_90%_at_50%_0%,rgba(139,92,246,0.22),transparent_65%),linear-gradient(180deg,#0c0714_0%,#050309_100%)] px-3 pt-10 pb-0 sm:px-12 sm:pt-16">
               <div className="relative flex flex-row items-end justify-center gap-2 sm:gap-10">
                 {/* Side crests — desktop/tablet only, no room on a phone-width card. */}
-                <div className="pointer-events-none absolute inset-y-0 -left-2 hidden items-end pb-2 sm:-left-6 sm:flex sm:pb-8">
+                <div className="pointer-events-none absolute inset-y-0 -left-4 hidden items-end pb-2 sm:-left-10 sm:flex sm:pb-8">
                   <LaurelBranch />
                 </div>
-                <div className="pointer-events-none absolute inset-y-0 -right-2 hidden items-end pb-2 sm:-right-6 sm:flex sm:pb-8">
+                <div className="pointer-events-none absolute inset-y-0 -right-4 hidden items-end pb-2 sm:-right-10 sm:flex sm:pb-8">
                   <LaurelBranch flip />
                 </div>
 
@@ -270,7 +298,12 @@ export function LeaderboardPanel() {
                             —
                           </div>
                         ) : (
-                          <Avatar url={agent.profileImageUrl} name={agent.name} sizeClassName={theme.avatarSize} />
+                          <Avatar
+                            url={agent.profileImageUrl}
+                            name={agent.name}
+                            sizeClassName={theme.avatarSize}
+                            pixels={theme.avatarPixels}
+                          />
                         )}
                       </div>
 
@@ -290,12 +323,11 @@ export function LeaderboardPanel() {
                       >
                         <div className="absolute inset-x-0 top-0 h-3 sm:h-4" style={{ backgroundColor: theme.cap }} />
 
-                        <span className="font-scoreboard relative text-xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)] sm:text-4xl">
+                        <span className="font-podium relative text-2xl font-extrabold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)] sm:text-5xl">
                           {theme.ordinal}
                         </span>
 
-                        <span className="relative flex items-center gap-1 rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold text-white sm:px-3 sm:py-1.5 sm:text-sm">
-                          <Coins className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
+                        <span className="relative rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold text-white sm:px-3 sm:py-1.5 sm:text-sm">
                           <AnimatedAP value={isPlaceholder ? 0 : agent.issuedAP} className="font-scoreboard" />
                         </span>
                       </div>
@@ -320,6 +352,7 @@ export function LeaderboardPanel() {
                       url={agent.profileImageUrl}
                       name={agent.name}
                       sizeClassName="h-7 w-7 border-2 border-copper-dim-gradient"
+                      pixels={56}
                     />
                     <span className="min-w-0 flex-1 truncate text-white">{agent.name}</span>
                     <AnimatedAP value={agent.issuedAP} className="metal-copper-text font-scoreboard shrink-0" />

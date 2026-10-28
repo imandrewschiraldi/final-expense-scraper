@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Barlow, Orbitron, Montserrat } from "next/font/google";
+import { Barlow_Condensed, Barlow, Orbitron, Montserrat, Baloo_2 } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -28,6 +28,16 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
   weight: ["600", "700", "800", "900"],
+});
+
+// Chunky, rounded, playful display face for the Leaderboard podium's
+// 1ST/2ND/3RD badges — distinct from font-scoreboard (Orbitron's digital-LCD
+// look, used for the actual metric numbers elsewhere), which read too
+// technical/cold for a game-y badge label.
+const baloo2 = Baloo_2({
+  variable: "--font-podium",
+  subsets: ["latin"],
+  weight: ["700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -72,7 +82,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} ${montserrat.variable} h-full antialiased`}
+      className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} ${montserrat.variable} ${baloo2.variable} h-full antialiased`}
     >
       <head>
         {/* Reads the saved theme choice and sets data-theme before first
