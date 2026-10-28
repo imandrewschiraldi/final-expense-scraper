@@ -47,7 +47,11 @@ export type PageHeadingSlug = keyof typeof HEADINGS;
  * Desktop vertical centering: content starts 8px below main's top (its
  * `pt-2`) and the accent line sits at HEADER_HEIGHT (74px, see Sidebar.tsx),
  * leaving a 66px band above the line. A 26px-tall image centered in that
- * band gets an even 20px margin-top and 20px gap before the line.
+ * band gets an even 20px margin-top and 20px gap before the line. The
+ * wrapper's own `mb-8` below that is clearance AFTER the line — the page's
+ * real content (whatever follows PageHeading) starts there, not at the
+ * image's own bottom edge, so it needs enough room that it visibly starts
+ * below the line instead of butting up against it.
  */
 export function PageHeading({
   slug,
@@ -62,7 +66,7 @@ export function PageHeading({
 }) {
   const { width, height } = HEADINGS[slug];
   return (
-    <div className={wrapperClassName ?? "mb-6 mt-3 flex justify-center lg:mt-[20px]"}>
+    <div className={wrapperClassName ?? "mb-8 mt-3 flex justify-center lg:mt-[20px]"}>
       <Image
         src={`/headings/${slug}.png`}
         alt={alt}
