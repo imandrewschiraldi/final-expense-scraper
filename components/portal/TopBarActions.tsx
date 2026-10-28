@@ -31,9 +31,17 @@ type ChatTurn = { role: "user" | "model"; text: string };
  * off to the side whenever it sits over a page's own title/heading/logo —
  * `position: fixed` once moved, so it's pinned to the viewport rather than
  * scrolling away, and clamped so it can never be dragged fully off-screen.
- * The dragged spot is remembered (localStorage) across page loads.
+ * Intentionally NOT persisted — this is in-memory React state, so a page
+ * refresh always puts it back at its default top-left header spot, same as
+ * the conversation itself resetting.
+ *
+ * The open chat panel is also resizable from its bottom-right corner (plain
+ * CSS `resize`, not custom drag logic) — `min-width`/`min-height` are
+ * pinned to its own default `w-96`/`max-h-[480px]` size, so it can only be
+ * dragged bigger, never smaller than what you'd see without touching it.
  */
-const DRAG_POS_KEY = "portal-ai-search-pos";
+const CHAT_PANEL_MIN_WIDTH = 384; // matches the default w-96
+const CHAT_PANEL_MIN_HEIGHT = 480; // matches the default max-h-[480px]
 
 function AiSearchBox() {
   const [question, setQuestion] = useState("");
@@ -63,22 +71,6 @@ function AiSearchBox() {
     };
   }
 
-  // Restores a remembered position on mount — re-clamped in case the
-  // viewport is now smaller than it was when it was saved.
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(DRAG_POS_KEY);
-      if (!stored) return;
-      const parsed = JSON.parse(stored);
-      if (typeof parsed?.x === "number" && typeof parsed?.y === "number") {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setPos(clamp(parsed));
-      }
-    } catch {
-      // Corrupt/unavailable storage — just keep the default header position.
-    }
-  }, []);
-
   function onDragHandlePointerDown(e: React.PointerEvent) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     const rect = containerRef.current?.getBoundingClientRect();
@@ -95,20 +87,8 @@ function AiSearchBox() {
   }
 
   function onDragHandlePointerUp(e: React.PointerEvent) {
-    const drag = dragRef.current;
     dragRef.current = null;
     e.currentTarget.releasePointerCapture(e.pointerId);
-    if (!drag?.moved) return;
-    setPos((current) => {
-      if (current) {
-        try {
-          localStorage.setItem(DRAG_POS_KEY, JSON.stringify(current));
-        } catch {
-          // Storage unavailable — the position still holds for this visit.
-        }
-      }
-      return current;
-    });
   }
 
   useEffect(() => {
@@ -222,7 +202,15 @@ function AiSearchBox() {
         </div>
       )}
       {open && (loading || hasThread || error) && (
-        <div className="absolute top-full left-0 z-20 mt-2 flex max-h-[480px] w-96 flex-col overflow-hidden rounded-[10px] border border-border bg-surface shadow-lg">
+        <div
+          className="resize absolute top-full left-0 z-20 mt-2 flex w-96 flex-col overflow-hidden rounded-[10px] border border-border bg-surface shadow-lg"
+          style={{
+            minWidth: CHAT_PANEL_MIN_WIDTH,
+            minHeight: CHAT_PANEL_MIN_HEIGHT,
+            maxWidth: "min(900px, 90vw)",
+            maxHeight: "80vh",
+          }}
+        >
           <div className="min-h-0 flex-1 overflow-y-auto p-3 text-sm">
             {messages.map((m, i) => (
               <div key={i} className={i > 0 ? "mt-3" : ""}>
@@ -322,19 +310,29 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
 
   return (
     <>
-      {/* Desktop: search (left) + utility icons (right) on every normal
-          page, same row the copper accent line sits just below. Commission
-          Calculator skips the search box and just right-aligns the icon
-          cluster — there's nothing to its left there. */}
+      {/* Desktop: search box (left) and utility icon cluster (right) are
+          two independently-anchored containers, not two flex children of
+          one "justify-between" row — the search box can go position:fixed
+          once dragged (removing it from flow entirely), and a flex row with
+          only one remaining child collapses "space-between" to flex-start,
+          which was yanking the icon cluster over to the left, right where
+          the search box used to sit, the moment it was dragged away. Each
+          one keeping its own fixed anchor means the icon cluster never
+          moves, no matter what the search box is doing. Commission
+          Calculator just skips the search box entirely — nothing to its
+          left there. */}
+      {!iconsOnly && (
+        <div
+          className="absolute top-0 left-4 z-40 hidden items-center sm:left-6 lg:left-10 lg:flex"
+          style={{ height: HEADER_HEIGHT }}
+        >
+          <AiSearchBox />
+        </div>
+      )}
       <div
-        className={
-          iconsOnly
-            ? "absolute top-0 right-4 z-40 hidden items-center justify-end sm:right-6 lg:right-10 lg:flex"
-            : "absolute top-0 left-4 right-4 z-40 hidden items-center justify-between gap-3 sm:left-6 sm:right-6 lg:left-10 lg:right-10 lg:flex"
-        }
+        className="absolute top-0 right-4 z-40 hidden items-center sm:right-6 lg:right-10 lg:flex"
         style={{ height: HEADER_HEIGHT }}
       >
-        {!iconsOnly && <AiSearchBox />}
         {iconCluster}
       </div>
 
