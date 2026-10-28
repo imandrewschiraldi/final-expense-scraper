@@ -63,6 +63,27 @@ export function BuyLeadsGrid() {
             ref={(el) => {
               refs.current[slug] = el;
             }}
+            // Vendor logos are designed to sit on a dark card — pin this
+            // subtree to the dark-theme palette regardless of the page's
+            // actual theme, by overriding the same CSS vars globals.css
+            // flips for light mode (see the `[data-theme="light"]` block).
+            // `cn()` is a bare clsx with no tailwind-merge, so overriding
+            // Card's own bg-surface/border-border via a conflicting
+            // className wouldn't reliably win the cascade — scoping the
+            // variables themselves sidesteps that and fixes the inner
+            // text-white/text-muted usages too, with no changes to Card or
+            // StatusPill needed.
+            style={
+              {
+                "--background": "#000000",
+                "--surface": "#0d0d0d",
+                "--surface2": "#141414",
+                "--border": "rgba(255, 255, 255, 0.08)",
+                "--foreground": "#d0d0d0",
+                "--white": "#ffffff",
+                "--muted": "#606060",
+              } as React.CSSProperties
+            }
             className={cn("rounded-[10px] transition-shadow", highlighted === slug && "ring-2 ring-[var(--copper-metal)]")}
           >
             <Card className="flex h-full flex-col gap-4">
