@@ -40,29 +40,37 @@ export function QuickLinksMenu() {
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 z-20 mt-2 w-60 rounded-[10px] border border-border bg-surface p-3 shadow-lg">
-          <p className="font-condensed mb-2 text-[10px] font-bold tracking-[0.12em] text-muted uppercase">Quick Links</p>
+        <div className="absolute top-full right-0 z-20 mt-2 w-64 rounded-[10px] border border-border bg-surface p-3 shadow-lg">
           <div className="grid grid-cols-2 gap-2">
             {QUICK_LINKS.map((link) => {
               const enabled = !!link.url;
               const tile = (
-                <div
-                  className={`flex flex-col items-center gap-1.5 rounded-lg border border-border bg-surface2 p-3 text-center transition-colors ${
-                    enabled ? "hover:border-copper-dim-gradient" : "cursor-not-allowed opacity-50"
-                  }`}
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-bold text-muted">
-                    {link.logo ? (
-                      <Image src={link.logo} alt="" width={36} height={36} className="rounded-full object-contain" />
-                    ) : (
-                      link.name.charAt(0)
-                    )}
-                  </div>
-                  <span className="line-clamp-2 text-[11px] font-semibold text-foreground">{link.name}</span>
+                <div className={`flex flex-col items-center gap-1 ${enabled ? "" : "cursor-not-allowed opacity-50"}`}>
+                  {link.logo ? (
+                    <Image
+                      src={link.logo}
+                      alt={link.name}
+                      width={200}
+                      height={200}
+                      className="h-16 w-full rounded-lg object-contain"
+                    />
+                  ) : (
+                    <div className="flex h-16 w-full items-center justify-center rounded-lg bg-surface2 text-xs font-bold text-muted">
+                      {link.name}
+                    </div>
+                  )}
+                  <span className="line-clamp-1 text-[11px] font-semibold text-foreground">{link.name}</span>
                 </div>
               );
               return enabled ? (
-                <a key={link.id} href={link.url!} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>
+                <a
+                  key={link.id}
+                  href={link.url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setOpen(false)}
+                  className="rounded-lg transition-opacity hover:opacity-80"
+                >
                   {tile}
                 </a>
               ) : (

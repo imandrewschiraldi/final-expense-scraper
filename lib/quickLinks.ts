@@ -21,4 +21,5 @@ export const QUICK_LINKS: QuickLink[] = [
     url: "https://accounts.surancebay.com/oauth/authorize?redirect_uri=https:%2F%2Fsurelc.surancebay.com%2Fproducer%2Foauth%3FreturnUrl%3D%252Fprofile%252Fcontact-info%253FgaId%253D689&gaId=689&client_id=surecrmweb&response_type=code",
     logo: "/quick-links/surelc.jpg",
   },
+  { id: "hcms", name: "HCMS", url: "https://hcms.chims.uppatop.com/login", logo: "/quick-links/hcms.jpg" },
 ];
