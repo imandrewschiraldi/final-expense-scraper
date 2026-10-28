@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { Bot, Moon, Sun, X } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
-import { NO_OUTER_LINE_PREFIXES } from "@/components/portal/HeaderDivider";
 import { ProfileMenu } from "@/components/portal/ProfileMenu";
 import { QuickLinksMenu } from "@/components/portal/QuickLinksMenu";
 import { useTheme } from "@/lib/useTheme";
@@ -27,21 +26,89 @@ type ChatTurn = { role: "user" | "model"; text: string };
  * it (clicking outside, or the clear button) wipes the conversation, so
  * reopening the box always starts a fresh search instead of resurfacing a
  * stale answer from an unrelated question asked earlier.
+ *
+ * Draggable by its Bot icon (press and hold, then move) so it can be pulled
+ * off to the side whenever it sits over a page's own title/heading/logo —
+ * `position: fixed` once moved, so it's pinned to the viewport rather than
+ * scrolling away, and clamped so it can never be dragged fully off-screen.
+ * The dragged spot is remembered (localStorage) across page loads.
  */
+const DRAG_POS_KEY = "portal-ai-search-pos";
+
 function AiSearchBox() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ offsetX: number; offsetY: number; moved: boolean } | null>(null);
 
   function reset() {
     setOpen(false);
     setMessages([]);
     setError(null);
     setQuestion("");
+  }
+
+  function clamp(next: { x: number; y: number }) {
+    const margin = 8;
+    const w = containerRef.current?.offsetWidth ?? 290;
+    const h = containerRef.current?.offsetHeight ?? 40;
+    return {
+      x: Math.min(Math.max(next.x, margin), window.innerWidth - w - margin),
+      y: Math.min(Math.max(next.y, margin), window.innerHeight - h - margin),
+    };
+  }
+
+  // Restores a remembered position on mount — re-clamped in case the
+  // viewport is now smaller than it was when it was saved.
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(DRAG_POS_KEY);
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      if (typeof parsed?.x === "number" && typeof parsed?.y === "number") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPos(clamp(parsed));
+      }
+    } catch {
+      // Corrupt/unavailable storage — just keep the default header position.
+    }
+  }, []);
+
+  function onDragHandlePointerDown(e: React.PointerEvent) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    dragRef.current = { offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onDragHandlePointerMove(e: React.PointerEvent) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    drag.moved = true;
+    setPos(clamp({ x: e.clientX - drag.offsetX, y: e.clientY - drag.offsetY }));
+  }
+
+  function onDragHandlePointerUp(e: React.PointerEvent) {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    if (!drag?.moved) return;
+    setPos((current) => {
+      if (current) {
+        try {
+          localStorage.setItem(DRAG_POS_KEY, JSON.stringify(current));
+        } catch {
+          // Storage unavailable — the position still holds for this visit.
+        }
+      }
+      return current;
+    });
   }
 
   useEffect(() => {
@@ -93,15 +160,33 @@ function AiSearchBox() {
 
   const hasThread = messages.length > 0;
 
+  const dragHandle = (
+    <span
+      onPointerDown={onDragHandlePointerDown}
+      onPointerMove={onDragHandlePointerMove}
+      onPointerUp={onDragHandlePointerUp}
+      onPointerCancel={onDragHandlePointerUp}
+      onClick={(e) => e.stopPropagation()}
+      title="Drag to move"
+      className="absolute top-1/2 left-1.5 z-10 flex h-6 w-6 -translate-y-1/2 cursor-grab touch-none items-center justify-center text-muted active:cursor-grabbing"
+    >
+      <Bot className="pointer-events-none h-4 w-4" />
+    </span>
+  );
+
   return (
-    <div ref={containerRef} className="relative w-full max-w-[290px]">
+    <div
+      ref={containerRef}
+      className={pos ? "fixed z-[999] w-[290px]" : "relative w-full max-w-[290px]"}
+      style={pos ? { left: pos.x, top: pos.y } : undefined}
+    >
       {/* Before a conversation starts, the header pill itself is the input.
           Once there's a thread, it becomes a non-editable trigger — typing
           happens in the chat panel's own input, docked at the bottom of the
           thread like any chat window, not back up here. */}
       {!hasThread ? (
         <form onSubmit={ask}>
-          <Bot className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
+          {dragHandle}
           <input
             type="text"
             value={question}
@@ -121,7 +206,7 @@ function AiSearchBox() {
           }}
           className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-border bg-input-bg py-2 pr-8 pl-9 text-left text-sm text-muted hover:text-foreground"
         >
-          <Bot className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
+          {dragHandle}
           <span className="truncate">Gemini conversation — click to continue</span>
           <button
             type="button"
@@ -193,10 +278,13 @@ function AiSearchBox() {
  * (see HeaderDivider's own note on this), so it has to be replicated here to
  * land in the same place normal content's edges do.
  *
- * Omitted on Scripts/Commission Calculator — same reasoning as
- * HeaderDivider's own copper line there: the embedded tool on those pages
- * draws its own Notifications-equivalent control in its own header, and our
- * outer copy would render right on top of it.
+ * Omitted entirely on Scripts — the embedded tool there draws its own
+ * Notifications-equivalent control (and a busy New Call header of its own)
+ * in its own header, so our outer copy would render right on top of it.
+ * Commission Calculator's own header has no such controls (just a centered
+ * title, see its light-mode build), so it keeps the icon cluster — just
+ * without the search box, which isn't part of this request and would sit
+ * awkwardly with nothing to its left.
  */
 export function TopBarActions({ role, name }: { role: Role; name: string }) {
   const pathname = usePathname();
@@ -209,34 +297,45 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
       .then((data) => data?.profile && setProfile(data.profile));
   }, []);
 
-  if (NO_OUTER_LINE_PREFIXES.some((p) => pathname.startsWith(p))) return null;
+  if (pathname.startsWith("/scripts")) return null;
+  const iconsOnly = pathname.startsWith("/commission-calculator");
+
+  const iconCluster = (
+    <div className="flex items-center gap-3">
+      <QuickLinksMenu />
+      <button
+        type="button"
+        onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+        aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+        title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+        className="flex h-9 w-9 shrink-0 items-center justify-center text-muted transition-colors hover:text-foreground"
+      >
+        {/* Shows the icon for what clicking it switches TO, not the
+            current theme — dark mode shows the sun (tap for light),
+            light mode shows the moon (tap for dark). */}
+        {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+      </button>
+      <NotificationBell />
+      <ProfileMenu profile={profile} name={name} role={role} collapsed showTour={role !== "ADMIN"} menuAlign="down" />
+    </div>
+  );
 
   return (
     <>
-      {/* Desktop: search (left) + utility icons (right), same row the
-          copper accent line sits just below. */}
+      {/* Desktop: search (left) + utility icons (right) on every normal
+          page, same row the copper accent line sits just below. Commission
+          Calculator skips the search box and just right-aligns the icon
+          cluster — there's nothing to its left there. */}
       <div
-        className="absolute top-0 left-4 right-4 z-40 hidden items-center justify-between gap-3 sm:left-6 sm:right-6 lg:left-10 lg:right-10 lg:flex"
+        className={
+          iconsOnly
+            ? "absolute top-0 right-4 z-40 hidden items-center justify-end sm:right-6 lg:right-10 lg:flex"
+            : "absolute top-0 left-4 right-4 z-40 hidden items-center justify-between gap-3 sm:left-6 sm:right-6 lg:left-10 lg:right-10 lg:flex"
+        }
         style={{ height: HEADER_HEIGHT }}
       >
-        <AiSearchBox />
-        <div className="flex items-center gap-3">
-          <QuickLinksMenu />
-          <button
-            type="button"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-            title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-            className="flex h-9 w-9 shrink-0 items-center justify-center text-muted transition-colors hover:text-foreground"
-          >
-            {/* Shows the icon for what clicking it switches TO, not the
-                current theme — dark mode shows the sun (tap for light),
-                light mode shows the moon (tap for dark). */}
-            {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-          </button>
-          <NotificationBell />
-          <ProfileMenu profile={profile} name={name} role={role} collapsed showTour={role !== "ADMIN"} menuAlign="down" />
-        </div>
+        {!iconsOnly && <AiSearchBox />}
+        {iconCluster}
       </div>
 
       {/* Mobile/tablet: unchanged from before — just the bell, same spot. */}
