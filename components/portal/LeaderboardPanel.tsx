@@ -29,12 +29,12 @@ const TEXT = "#F3EEFF";
 
 const RANK_THEME = [
   {
-    // 1st — the one rank that gets a distinctly brighter pillar + glow.
+    // 1st — the one rank that gets a distinctly brighter copper pillar +
+    // pulsing glow (see .leaderboard-pillar-glow in globals.css).
     order: "md:order-2",
-    pillarTop: "#5A2FB0",
-    pillarBottom: "#24115C",
-    pillarBorder: "#9B6BFF",
-    pillarGlow: "rgba(155,107,255,0.35)",
+    pillarTop: "#B5480E",
+    pillarBottom: "#4A1A05",
+    pillarBorder: "#FF9A4D",
     avatarRing: "#FFD23F",
     avatarGlow: "rgba(255,210,63,0.7)",
     crownColor: "#F2B21E",
@@ -55,21 +55,20 @@ const RANK_THEME = [
     delay: 0.3,
   },
   {
-    // 2nd and 3rd share the same muted-indigo pillar and blue AP chip in
-    // the reference — only the crown/avatar-ring/number color (silver vs
-    // bronze) tells them apart, not the block itself.
+    // 2nd and 3rd share the same muted copper-brown pillar and orange AP
+    // chip in the reference — only the crown/avatar-ring/number color
+    // (silver vs bronze) tells them apart, not the block itself.
     order: "md:order-1",
-    pillarTop: "#3A2A78",
-    pillarBottom: "#1B1045",
-    pillarBorder: "#6B5BC4",
-    pillarGlow: null,
+    pillarTop: "#5A2A10",
+    pillarBottom: "#2A1206",
+    pillarBorder: "#A8663A",
     avatarRing: "#C9D3E6",
     avatarGlow: "rgba(201,211,230,0.55)",
     crownColor: "#BFC8D9",
     crownGlow: "rgba(201,211,230,0.7)",
-    chipBg: "rgba(46,123,255,0.18)",
-    chipBorder: "#2E7BFF",
-    chipText: "#BFE3FF",
+    chipBg: "rgba(255,140,40,0.18)",
+    chipBorder: "#FF8A2A",
+    chipText: "#FFD9B0",
     numberColor: "#E7ECF7",
     numberGlow: "#C9D3E6",
     laurelColor: "#C9D3E6",
@@ -84,17 +83,16 @@ const RANK_THEME = [
   },
   {
     order: "md:order-3",
-    pillarTop: "#3A2A78",
-    pillarBottom: "#1B1045",
-    pillarBorder: "#6B5BC4",
-    pillarGlow: null,
+    pillarTop: "#5A2A10",
+    pillarBottom: "#2A1206",
+    pillarBorder: "#A8663A",
     avatarRing: "#E08A4B",
     avatarGlow: "rgba(224,138,75,0.55)",
     crownColor: "#C9783E",
     crownGlow: "rgba(224,138,75,0.7)",
-    chipBg: "rgba(46,123,255,0.18)",
-    chipBorder: "#2E7BFF",
-    chipText: "#BFE3FF",
+    chipBg: "rgba(255,140,40,0.18)",
+    chipBorder: "#FF8A2A",
+    chipText: "#FFD9B0",
     numberColor: "#F7B987",
     numberGlow: "#E08A4B",
     laurelColor: "#E08A4B",
@@ -108,6 +106,23 @@ const RANK_THEME = [
     delay: 0.18,
   },
 ] as const;
+
+// Small twinkling stars scattered around the #1 spot only, matching the
+// reference template's update. Positions/colors/delays copied from it.
+const STARS = [
+  { size: 18, color: "#FFE27A", top: "4%", left: "14%", delay: "0s" },
+  { size: 13, color: "#FFFFFF", top: "1%", right: "16%", delay: "-0.6s" },
+  { size: 15, color: "#FFD23F", top: "34%", right: "8%", delay: "-1.2s" },
+  { size: 11, color: "#FFFFFF", top: "40%", left: "8%", delay: "-0.9s" },
+] as const;
+
+function StarIcon({ color, size }: { color: string; size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill={color} aria-hidden="true">
+      <path d="M20 0 C22 14 26 18 40 20 C26 22 22 26 20 40 C18 26 14 22 0 20 C14 18 18 14 20 0 Z" />
+    </svg>
+  );
+}
 
 function AnimatedAP({ value, className }: { value: number; className?: string }) {
   const animated = useCountUp(value);
@@ -132,7 +147,7 @@ function Avatar({ url, name, sizeClassName, pixels = 96 }: { url: string | null;
   ) : (
     <div
       className={cn("flex shrink-0 items-center justify-center rounded-full text-base font-bold sm:text-xl", sizeClassName)}
-      style={{ backgroundColor: "#23134F", color: TEXT }}
+      style={{ backgroundColor: "#2E1408", color: TEXT }}
     >
       {name.charAt(0).toUpperCase()}
     </div>
@@ -172,7 +187,7 @@ function CrownIcon({ color, className }: { color: string; className?: string }) 
       <rect x="12" y="58" width="96" height="20" rx="3" fill="none" stroke="#000000" strokeOpacity="0.35" strokeWidth="2" />
       <line x1="14" y1="61" x2="106" y2="61" stroke="#FFFFFF" strokeOpacity="0.5" strokeWidth="1.5" />
       <ellipse cx="34" cy="68" rx="6" ry="5" fill="#E0245E" stroke="#FFFFFF" strokeOpacity="0.7" strokeWidth="1" />
-      <ellipse cx="60" cy="68" rx="7" ry="5.5" fill="#2E7BFF" stroke="#FFFFFF" strokeOpacity="0.7" strokeWidth="1" />
+      <ellipse cx="60" cy="68" rx="7" ry="5.5" fill="#FF8A2A" stroke="#FFFFFF" strokeOpacity="0.7" strokeWidth="1" />
       <ellipse cx="86" cy="68" rx="6" ry="5" fill="#1FBF75" stroke="#FFFFFF" strokeOpacity="0.7" strokeWidth="1" />
       <circle cx="32" cy="66" r="1.6" fill="#FFFFFF" />
       <circle cx="58" cy="66" r="1.8" fill="#FFFFFF" />
@@ -269,12 +284,12 @@ export function LeaderboardPanel() {
         ) : loadError ? (
           <p className="text-sm text-red-light">{loadError}</p>
         ) : (
-          // The "stage" — same radial violet-on-near-black gradient as the
+          // The "stage" — same radial copper-on-near-black gradient as the
           // reference template, covering the WHOLE leaderboard (podium and
           // the rest-of-the-pack list below it), not just the top 3.
           <div
             className="relative rounded-2xl px-3 pt-10 pb-6 sm:px-12 sm:pt-16"
-            style={{ background: "radial-gradient(ellipse 70% 90% at 50% 10%, #3B1A7E 0%, #1A0C45 45%, #07041A 100%)" }}
+            style={{ background: "radial-gradient(ellipse 70% 90% at 50% 10%, #7A2E05 0%, #2E1204 45%, #0D0603 100%)" }}
           >
             <div className="flex flex-row items-end justify-center gap-2 sm:gap-8">
               {top3.map((agent, i) => {
@@ -288,6 +303,18 @@ export function LeaderboardPanel() {
                     transition={{ duration: 0.45, delay: theme.delay, ease: "easeOut" }}
                     className={cn("relative flex min-w-0 flex-1 flex-col items-center", theme.order, theme.width, isPlaceholder && "opacity-40")}
                   >
+                    {i === 0 &&
+                      !isPlaceholder &&
+                      STARS.map((star, si) => (
+                        <span
+                          key={si}
+                          className="leaderboard-twinkle pointer-events-none absolute"
+                          style={{ top: star.top, left: "left" in star ? star.left : undefined, right: "right" in star ? star.right : undefined, animationDelay: star.delay }}
+                        >
+                          <StarIcon color={star.color} size={star.size} />
+                        </span>
+                      ))}
+
                     {!isPlaceholder && (
                       <>
                         <motion.div
@@ -332,14 +359,20 @@ export function LeaderboardPanel() {
                         corners / near-square bottom corners, matching the
                         reference template exactly. */}
                     <div
-                      className={cn("relative mt-3 flex w-full items-center justify-center overflow-hidden sm:mt-4", theme.height)}
+                      className={cn(
+                        "relative mt-3 flex w-full items-center justify-center overflow-hidden sm:mt-4",
+                        theme.height,
+                        i === 0 && "leaderboard-pillar-glow",
+                      )}
                       style={{
                         background: `linear-gradient(180deg, ${theme.pillarTop} 0%, ${theme.pillarBottom} 100%)`,
                         border: `1px solid ${theme.pillarBorder}`,
                         borderRadius: "16px 16px 6px 6px",
-                        boxShadow: theme.pillarGlow
-                          ? `inset 0 2px 0 rgba(255,255,255,0.12), 0 0 40px ${theme.pillarGlow}`
-                          : "inset 0 2px 0 rgba(255,255,255,0.12)",
+                        // 1st place's pulsing glow comes from the
+                        // .leaderboard-pillar-glow CSS animation (see
+                        // globals.css) — an inline boxShadow here would
+                        // override it every render and freeze the pulse.
+                        boxShadow: i === 0 ? undefined : "inset 0 2px 0 rgba(255,255,255,0.12)",
                       }}
                     >
                       <LaurelIcon
@@ -362,11 +395,11 @@ export function LeaderboardPanel() {
             {rest.length > 0 && (
               <div
                 className="relative mt-8 max-h-[560px] overflow-y-auto rounded-2xl p-3 sm:p-4"
-                style={{ background: "rgba(14,8,40,0.82)", border: "1px solid #3E2A8C", boxShadow: "0 0 40px rgba(46,123,255,0.18)" }}
+                style={{ background: "rgba(28,12,4,0.82)", border: "1px solid #7A3A12", boxShadow: "0 0 40px rgba(255,140,40,0.18)" }}
               >
                 <div
                   className="grid gap-3 px-2 pb-2 text-[10px] font-bold tracking-[0.15em] uppercase sm:text-xs"
-                  style={{ gridTemplateColumns: "40px minmax(0,1fr) 70px 90px", color: "#A99BDB" }}
+                  style={{ gridTemplateColumns: "40px minmax(0,1fr) 70px 90px", color: "#E0B48C" }}
                 >
                   <div>Place</div>
                   <div>Agent</div>
@@ -380,9 +413,9 @@ export function LeaderboardPanel() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.3 + i * 0.04 }}
                     className="grid items-center gap-3 rounded-xl px-2 py-2.5 text-sm sm:px-3"
-                    style={{ gridTemplateColumns: "40px minmax(0,1fr) 70px 90px", background: i % 2 === 0 ? "rgba(60,36,140,0.35)" : "rgba(40,24,100,0.25)" }}
+                    style={{ gridTemplateColumns: "40px minmax(0,1fr) 70px 90px", background: i % 2 === 0 ? "rgba(140,60,20,0.35)" : "rgba(100,40,12,0.25)" }}
                   >
-                    <span className="font-pixel text-[11px]" style={{ color: "#8FD3FF" }}>
+                    <span className="font-pixel text-[11px]" style={{ color: "#FFB547" }}>
                       #{i + 4}
                     </span>
                     <div className="flex min-w-0 items-center gap-2.5">
@@ -392,8 +425,8 @@ export function LeaderboardPanel() {
                       </span>
                     </div>
                     <span style={{ color: TEXT }}>{agent.issuedCount}</span>
-                    <span className="flex items-center gap-1.5 font-bold" style={{ color: "#8FD3FF" }}>
-                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "#2E7BFF", boxShadow: "0 0 8px #2E7BFF" }} />
+                    <span className="flex items-center gap-1.5 font-bold" style={{ color: "#FFB547" }}>
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "#FF8A2A", boxShadow: "0 0 8px #FF8A2A" }} />
                       <AnimatedAP value={agent.issuedAP} />
                     </span>
                   </motion.div>
