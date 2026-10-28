@@ -830,6 +830,177 @@ h4,
 .leaderboard-twinkle {
   animation: leaderboard-twinkle 1.8s ease-in-out infinite;
 }
+
+/* Leaderboard ambient effects — coins bobbing in place, $100 bills raining,
+   confetti streaming, and corner fireworks. `top`/`left` (not transform) are
+   animated for the fall/drift since percentage values in transform resolve
+   against the moving element's own box, not its container, which would
+   collapse the fall distance to nothing on an element only a few px tall. */
+@keyframes leaderboard-coin-float {
+  0%,
+  100% {
+    transform: translateY(0) rotateY(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotateY(180deg);
+  }
+}
+.leaderboard-coin-float {
+  animation: leaderboard-coin-float 6s ease-in-out infinite;
+}
+
+@keyframes leaderboard-bill-fall {
+  0% {
+    top: -12%;
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 1;
+  }
+  100% {
+    top: 112%;
+    transform: rotate(340deg);
+    opacity: 0;
+  }
+}
+.leaderboard-bill {
+  top: -12%;
+  animation-name: leaderboard-bill-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes leaderboard-confetti-fall {
+  0% {
+    top: -5%;
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 1;
+  }
+  100% {
+    top: 105%;
+    transform: rotate(540deg);
+    opacity: 0;
+  }
+}
+.leaderboard-confetti {
+  top: -5%;
+  border-radius: 2px;
+  animation-name: leaderboard-confetti-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes leaderboard-firework-flash {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  6% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes leaderboard-firework-burst {
+  0% {
+    transform: rotate(var(--lb-fw-angle)) translateY(0) scaleY(0.2);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  55% {
+    transform: rotate(var(--lb-fw-angle)) translateY(-95px) scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--lb-fw-angle)) translateY(-130px) scaleY(0.2);
+    opacity: 0;
+  }
+}
+.leaderboard-firework {
+  width: 0;
+  height: 0;
+}
+.leaderboard-firework::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: currentColor;
+  filter: blur(6px);
+  animation: leaderboard-firework-flash 3.2s ease-out infinite;
+  animation-delay: inherit;
+}
+.leaderboard-firework i {
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+  transform-origin: 2px 2px;
+  animation: leaderboard-firework-burst 3.2s ease-out infinite;
+  animation-delay: inherit;
+}
+.leaderboard-firework i:nth-child(1) {
+  --lb-fw-angle: 0deg;
+}
+.leaderboard-firework i:nth-child(2) {
+  --lb-fw-angle: 30deg;
+}
+.leaderboard-firework i:nth-child(3) {
+  --lb-fw-angle: 60deg;
+}
+.leaderboard-firework i:nth-child(4) {
+  --lb-fw-angle: 90deg;
+}
+.leaderboard-firework i:nth-child(5) {
+  --lb-fw-angle: 120deg;
+}
+.leaderboard-firework i:nth-child(6) {
+  --lb-fw-angle: 150deg;
+}
+.leaderboard-firework i:nth-child(7) {
+  --lb-fw-angle: 180deg;
+}
+.leaderboard-firework i:nth-child(8) {
+  --lb-fw-angle: 210deg;
+}
+.leaderboard-firework i:nth-child(9) {
+  --lb-fw-angle: 240deg;
+}
+.leaderboard-firework i:nth-child(10) {
+  --lb-fw-angle: 270deg;
+}
+.leaderboard-firework i:nth-child(11) {
+  --lb-fw-angle: 300deg;
+}
+.leaderboard-firework i:nth-child(12) {
+  --lb-fw-angle: 330deg;
+}
+
 .animate-lead-card-next {
   animation: lead-card-slide-from-right 0.16s ease-out;
 }

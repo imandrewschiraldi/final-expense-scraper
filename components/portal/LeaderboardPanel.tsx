@@ -124,6 +124,107 @@ function StarIcon({ color, size }: { color: string; size: number }) {
   );
 }
 
+// Ambient "slot machine" effects layered over the whole stage, matching the
+// reference template's always-on rain/party effects (not one-off triggers —
+// the template defaults both props to true): coins bob in place near the
+// edges, $100 bills rain down continuously, confetti streams over the top,
+// and a few fireworks burst on a loop in the corners. All pointer-events
+// none and clipped by the stage's overflow-hidden so they never affect
+// layout or scroll.
+const COINS = [
+  { top: "6%", left: "4%", size: 34, delay: "0s" },
+  { top: "16%", right: "5%", size: 26, delay: "-1.5s" },
+  { top: "42%", left: "2%", size: 30, delay: "-3s" },
+  { top: "55%", right: "3%", size: 22, delay: "-4.5s" },
+  { top: "78%", left: "5%", size: 28, delay: "-2s" },
+  { top: "88%", right: "4%", size: 24, delay: "-5s" },
+] as const;
+
+const BILLS = [
+  { left: "8%", width: 54, duration: "9s", delay: "-1s" },
+  { left: "28%", width: 44, duration: "11s", delay: "-4s" },
+  { left: "50%", width: 58, duration: "10s", delay: "-7s" },
+  { left: "68%", width: 42, duration: "12s", delay: "-2.5s" },
+  { left: "88%", width: 50, duration: "9.5s", delay: "-6s" },
+] as const;
+
+const CONFETTI = [
+  { left: "3%", w: 10, h: 6, color: "#FFD23F", duration: "9s", delay: "-1s" },
+  { left: "11%", w: 7, h: 11, color: "#FF3B6B", duration: "11s", delay: "-6s" },
+  { left: "19%", w: 9, h: 9, color: "#3AD6FF", duration: "8s", delay: "-3s" },
+  { left: "27%", w: 8, h: 12, color: "#6CFF8A", duration: "12s", delay: "-9s" },
+  { left: "35%", w: 11, h: 6, color: "#FFFFFF", duration: "10s", delay: "-2s" },
+  { left: "43%", w: 9, h: 9, color: "#FF7A1A", duration: "9.5s", delay: "-7s" },
+  { left: "51%", w: 10, h: 6, color: "#B46CFF", duration: "11.5s", delay: "-4s" },
+  { left: "59%", w: 7, h: 11, color: "#FFD23F", duration: "8.5s", delay: "-10s" },
+  { left: "67%", w: 11, h: 6, color: "#3AD6FF", duration: "10.5s", delay: "-5s" },
+  { left: "75%", w: 8, h: 10, color: "#FF3B6B", duration: "9s", delay: "-8s" },
+  { left: "83%", w: 9, h: 9, color: "#6CFF8A", duration: "12.5s", delay: "-1.5s" },
+  { left: "91%", w: 10, h: 6, color: "#FF7A1A", duration: "11s", delay: "-3.5s" },
+  { left: "97%", w: 8, h: 9, color: "#B46CFF", duration: "9.5s", delay: "-9.5s" },
+] as const;
+
+const FIREWORKS = [
+  { top: "8%", left: "12%", color: "#FFD23F", delay: "0s" },
+  { top: "5%", left: "55%", color: "#FF7A1A", delay: "-1.6s" },
+  { top: "10%", left: "85%", color: "#3AD6FF", delay: "-2.4s" },
+] as const;
+
+function CoinIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="47" fill="#F2B21E" />
+      <circle cx="50" cy="50" r="47" fill="url(#lbSheen)" />
+      <circle cx="50" cy="50" r="47" fill="none" stroke="#FFE9A8" strokeWidth="3" strokeDasharray="9 6" />
+      <circle cx="50" cy="50" r="33" fill="#D9940C" stroke="#FFE08A" strokeWidth="3" />
+      <text x="50" y="64" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="bold" fontSize="40" fill="#FFF3C4" stroke="#8A5200" strokeWidth="1">
+        $
+      </text>
+    </svg>
+  );
+}
+
+function BillIcon({ width }: { width: number }) {
+  const height = (width * 110) / 260;
+  return (
+    <svg width={width} height={height} viewBox="0 0 260 110" aria-hidden="true">
+      <rect x="1" y="1" width="258" height="108" rx="6" fill="#A9D3A0" stroke="#3E6B4E" strokeWidth="2" />
+      <rect x="10" y="10" width="240" height="90" rx="3" fill="none" stroke="#5E8A68" strokeWidth="1.5" strokeDasharray="2 3" />
+      <ellipse cx="130" cy="55" rx="28" ry="36" fill="#86BD7E" stroke="#3E6B4E" strokeWidth="2" />
+      <circle cx="130" cy="45" r="10" fill="#4E6E57" />
+      <text x="20" y="34" fontFamily="Georgia, serif" fontWeight="bold" fontSize="20" fill="#2F5340">
+        100
+      </text>
+      <text x="240" y="34" textAnchor="end" fontFamily="Georgia, serif" fontWeight="bold" fontSize="20" fill="#2F5340">
+        100
+      </text>
+      <text x="20" y="92" fontFamily="Georgia, serif" fontWeight="bold" fontSize="20" fill="#2F5340">
+        100
+      </text>
+      <text x="240" y="92" textAnchor="end" fontFamily="Georgia, serif" fontWeight="bold" fontSize="20" fill="#2F5340">
+        100
+      </text>
+    </svg>
+  );
+}
+
+// Flash + 12 radiating sparks, matching the template's .lb-fw — the 12
+// nth-child angle rules live in globals.css since CSS custom properties set
+// per-child can't be expressed as inline style on a mapped array cleanly.
+function Firework({ color, top, left, delay }: { color: string; top: string; left: string; delay: string }) {
+  return (
+    <span
+      className="leaderboard-firework absolute"
+      style={{ color, top, left, animationDelay: delay }}
+      aria-hidden="true"
+    >
+      {Array.from({ length: 12 }, (_, i) => (
+        <i key={i} />
+      ))}
+    </span>
+  );
+}
+
 function AnimatedAP({ value, className }: { value: number; className?: string }) {
   const animated = useCountUp(value);
   return <span className={className}>{formatAP(animated ?? 0)}</span>;
@@ -288,10 +389,33 @@ export function LeaderboardPanel() {
           // reference template, covering the WHOLE leaderboard (podium and
           // the rest-of-the-pack list below it), not just the top 3.
           <div
-            className="relative rounded-2xl px-3 pt-10 pb-6 sm:px-12 sm:pt-16"
+            className="relative overflow-hidden rounded-2xl px-3 pt-10 pb-6 sm:px-12 sm:pt-16"
             style={{ background: "radial-gradient(ellipse 70% 90% at 50% 10%, #7A2E05 0%, #2E1204 45%, #0D0603 100%)" }}
           >
-            <div className="flex flex-row items-end justify-center gap-2 sm:gap-8">
+            {/* Ambient layer: coins bobbing near the edges + corner
+                fireworks, sitting behind the podium/list content below it
+                in DOM order. */}
+            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+              {COINS.map((coin, i) => (
+                <span
+                  key={i}
+                  className="leaderboard-coin-float absolute"
+                  style={{
+                    top: coin.top,
+                    left: "left" in coin ? coin.left : undefined,
+                    right: "right" in coin ? coin.right : undefined,
+                    animationDelay: coin.delay,
+                  }}
+                >
+                  <CoinIcon size={coin.size} />
+                </span>
+              ))}
+              {FIREWORKS.map((fw, i) => (
+                <Firework key={i} color={fw.color} top={fw.top} left={fw.left} delay={fw.delay} />
+              ))}
+            </div>
+
+            <div className="relative flex flex-row items-end justify-center gap-2 sm:gap-8">
               {top3.map((agent, i) => {
                 const isPlaceholder = "placeholder" in agent;
                 const theme = RANK_THEME[i];
@@ -433,6 +557,28 @@ export function LeaderboardPanel() {
                 ))}
               </div>
             )}
+
+            {/* Front layer: confetti streaming down + $100 bills raining,
+                stacked above the podium/list by DOM order (no z-index
+                needed, since stacking context is the stage's own). */}
+            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+              {CONFETTI.map((c, i) => (
+                <span
+                  key={i}
+                  className="leaderboard-confetti absolute"
+                  style={{ left: c.left, width: c.w, height: c.h, background: c.color, animationDuration: c.duration, animationDelay: c.delay }}
+                />
+              ))}
+              {BILLS.map((bill, i) => (
+                <span
+                  key={i}
+                  className="leaderboard-bill absolute opacity-50"
+                  style={{ left: bill.left, animationDuration: bill.duration, animationDelay: bill.delay }}
+                >
+                  <BillIcon width={bill.width} />
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>
