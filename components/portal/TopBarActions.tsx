@@ -221,6 +221,7 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
       >
         <AiSearchBox />
         <div className="flex items-center gap-3">
+          <QuickLinksMenu />
           <button
             type="button"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
@@ -230,7 +231,6 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
           >
             {theme === "light" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
-          <QuickLinksMenu />
           <NotificationBell />
           <ProfileMenu profile={profile} name={name} role={role} collapsed showTour={role !== "ADMIN"} menuAlign="down" />
         </div>
