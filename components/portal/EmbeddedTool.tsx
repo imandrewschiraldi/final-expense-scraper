@@ -1,4 +1,7 @@
+"use client";
+
 import { ExternalLink } from "lucide-react";
+import { useTheme } from "@/lib/useTheme";
 
 /** Renders a third-party tool directly on the page via iframe — no card/
  * border, no page title, and the frame stretches past the page's own
@@ -12,15 +15,23 @@ import { ExternalLink } from "lucide-react";
  * on screen. "Open in New Tab" links to the plain URL instead, so a
  * standalone visit still shows the tool's full branded header. The link
  * sits top-left, where the now-hidden logo used to be, since the tool's own
- * header controls occupy the top-right. */
-export function EmbeddedTool({ title, src }: { title: string; src: string }) {
-  const embedSrc = `${src}${src.includes("?") ? "&" : "?"}embed=1`;
+ * header controls occupy the top-right.
+ *
+ * `lightSrc` — an optional self-hosted light-mode build of the same tool
+ * (e.g. /tools/sales-script-light.html), swapped in for `src` whenever the
+ * portal itself is in light mode. The tools are otherwise dark-only (hosted
+ * externally, no theme awareness of their own), so without this a light-mode
+ * visitor would hit a jarring dark iframe inside an otherwise light page. */
+export function EmbeddedTool({ title, src, lightSrc }: { title: string; src: string; lightSrc?: string }) {
+  const [theme] = useTheme();
+  const activeSrc = theme === "light" && lightSrc ? lightSrc : src;
+  const embedSrc = `${activeSrc}${activeSrc.includes("?") ? "&" : "?"}embed=1`;
 
   return (
     <div data-tour="embedded-tool" className="relative -mx-4 -mb-8 h-[calc(100dvh-74px)] sm:-mx-6 lg:-mx-10 lg:-mt-2 lg:h-screen">
       <iframe src={embedSrc} title={title} className="h-full w-full border-0" />
       <a
-        href={src}
+        href={activeSrc}
         target="_blank"
         rel="noopener noreferrer"
         className="absolute top-3 left-3 flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-semibold text-muted backdrop-blur-sm transition-colors hover:text-white"
