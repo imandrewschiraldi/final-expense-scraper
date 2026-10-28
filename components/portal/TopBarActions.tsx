@@ -227,7 +227,7 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
             title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-            className="text-muted transition-colors hover:text-foreground"
+            className="flex h-9 w-9 shrink-0 items-center justify-center text-muted transition-colors hover:text-foreground"
           >
             {theme === "light" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>

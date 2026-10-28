@@ -34,7 +34,7 @@ export function QuickLinksMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-label="Quick links"
         title="Quick links"
-        className="text-muted transition-colors hover:text-foreground"
+        className="flex h-9 w-9 shrink-0 items-center justify-center text-muted transition-colors hover:text-foreground"
       >
         <Grip className="h-5 w-5" />
       </button>
