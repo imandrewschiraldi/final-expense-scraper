@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Bot, Moon, Sun } from "lucide-react";
+import { Bot, Moon, Sun, X } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { NO_OUTER_LINE_PREFIXES } from "@/components/portal/HeaderDivider";
@@ -12,26 +12,41 @@ import { useTheme } from "@/lib/useTheme";
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 type Profile = { name: string; profileImageUrl: string | null };
 
+type ChatTurn = { role: "user" | "model"; text: string };
+
 /**
  * The header's search box — not a platform search (that's the sidebar's
  * own search, which filters the nav), this asks Gemini general insurance/
- * underwriting questions and shows the answer in a dropdown underneath.
- * Server-side key, scoped system prompt, and the "not your actual lead
- * data" disclaimer all live in the API route, not here.
+ * underwriting questions as an open conversation: a follow-up question
+ * reuses the thread above it instead of starting over. Server-side key,
+ * scoped system prompt, and the "not your actual lead data" disclaimer all
+ * live in the API route, not here.
+ *
+ * The thread is intentionally NOT kept once you step away from it — closing
+ * it (clicking outside, or the clear button) wipes the conversation, so
+ * reopening the box always starts a fresh search instead of resurfacing a
+ * stale answer from an unrelated question asked earlier.
  */
 function AiSearchBox() {
   const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  function reset() {
+    setOpen(false);
+    setMessages([]);
+    setError(null);
+    setQuestion("");
+  }
+
   useEffect(() => {
     if (!open) return;
     function onClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        reset();
       }
     }
     document.addEventListener("mousedown", onClickOutside);
@@ -42,21 +57,23 @@ function AiSearchBox() {
     e.preventDefault();
     const trimmed = question.trim();
     if (!trimmed || loading) return;
+    const history = messages;
+    setMessages((m) => [...m, { role: "user", text: trimmed }]);
+    setQuestion("");
     setLoading(true);
     setError(null);
-    setAnswer(null);
     setOpen(true);
     try {
       const res = await fetch("/api/portal/ask-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmed }),
+        body: JSON.stringify({ question: trimmed, history }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setError(data?.error ?? "Something went wrong.");
       } else {
-        setAnswer(data.answer);
+        setMessages((m) => [...m, { role: "model", text: data.answer }]);
       }
     } catch {
       setError("Couldn't reach the AI assistant.");
@@ -65,24 +82,47 @@ function AiSearchBox() {
     }
   }
 
+  const hasThread = messages.length > 0;
+
   return (
-    <div ref={containerRef} className="relative w-full max-w-[340px]">
+    <div ref={containerRef} className="relative w-full max-w-[290px]">
       <form onSubmit={ask}>
         <Bot className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
         <input
           type="text"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          onFocus={() => (answer || error) && setOpen(true)}
-          placeholder="Ask Gemini — insurance, underwriting..."
-          className="w-full rounded-lg border border-border bg-input-bg py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+          onFocus={() => setOpen(true)}
+          placeholder={hasThread ? "Ask a follow-up..." : "Ask Gemini — insurance, underwriting..."}
+          className="w-full rounded-lg border border-border bg-input-bg py-2 pr-8 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
         />
+        {hasThread && (
+          <button
+            type="button"
+            onClick={reset}
+            aria-label="Clear conversation"
+            className="absolute top-1/2 right-2 -translate-y-1/2 text-muted hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </form>
-      {open && (loading || answer || error) && (
-        <div className="absolute top-full left-0 z-20 mt-2 w-80 rounded-[10px] border border-border bg-surface p-3 text-sm shadow-lg">
-          {loading && <p className="text-muted">Thinking…</p>}
-          {error && <p className="text-red-light">{error}</p>}
-          {answer && <p className="whitespace-pre-wrap text-foreground">{answer}</p>}
+      {open && (loading || hasThread || error) && (
+        <div className="absolute top-full left-0 z-20 mt-2 max-h-[420px] w-96 overflow-y-auto rounded-[10px] border border-border bg-surface p-3 text-sm shadow-lg">
+          {messages.map((m, i) => (
+            <div key={i} className={i > 0 ? "mt-3" : ""}>
+              <p
+                className={`mb-1 font-condensed text-[10px] font-bold tracking-[0.1em] uppercase ${
+                  m.role === "user" ? "text-muted" : "metal-copper-text"
+                }`}
+              >
+                {m.role === "user" ? "You" : "Gemini"}
+              </p>
+              <p className="whitespace-pre-wrap text-foreground">{m.text}</p>
+            </div>
+          ))}
+          {loading && <p className={`text-muted ${hasThread ? "mt-3" : ""}`}>Thinking…</p>}
+          {error && <p className={`text-red-light ${hasThread ? "mt-3" : ""}`}>{error}</p>}
         </div>
       )}
     </div>

@@ -12,9 +12,28 @@ const GEMINI_MODEL = "gemini-flash-lite-latest";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const SYSTEM_INSTRUCTION =
-  "You are a quick-reference assistant built into a final expense insurance agency's internal sales platform, surfaced from a header search box. Answer directly and briefly — get straight to the point. No preamble, no restating the question, no disclaimers or caveats, no hedging about what you do or don't have access to. One or two sentences for most questions; a short list only when the question genuinely calls for one. When the user message includes a block of underwriting-guide excerpts, those are this agency's own real, current carrier rules — use them directly and name the carrier/product you're quoting, no need to flag that you're using them. Treat anything plausibly about coverage, face amounts, ages, health, carriers, or policies as in-scope even if it doesn't use the word \"insurance\" — only redirect in one line when a question is clearly unrelated to any of that.";
+  "You are a quick-reference assistant built into a final expense insurance agency's internal sales platform, surfaced from a header search box that supports follow-up questions in the same conversation. Answer directly and briefly — get straight to the point. No preamble, no restating the question, no disclaimers or caveats, no hedging about what you do or don't have access to. One or two sentences for most questions; a short list only when the question genuinely calls for one. Use the conversation history to understand follow-ups (\"what about...\", \"and if they also...\") without making the user repeat earlier details. " +
+  "Exception: when asked which carriers would accept, or which carrier to use, for a specific person's age and health profile, don't limit yourself to one or two sentences — list every carrier/product from the underwriting-guide excerpts that could work, not just the single best one. For each one, state the outcome and the condition it comes with (a waiting period, a specific rating/tier, a diagnosis-date cutoff, guaranteed issue only, etc.) rather than glossing over it. " +
+  "When the user message includes a block of underwriting-guide excerpts, those are this agency's own real, current carrier rules — use them directly and name the carrier/product you're quoting, no need to flag that you're using them. Treat anything plausibly about coverage, face amounts, ages, health, carriers, or policies as in-scope even if it doesn't use the word \"insurance\" — only redirect in one line when a question is clearly unrelated to any of that.";
 
 const MAX_QUESTION_LENGTH = 500;
+const MAX_HISTORY_TURNS = 12;
+
+type ChatTurn = { role: "user" | "model"; text: string };
+
+function parseHistory(raw: unknown): ChatTurn[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(
+      (t): t is ChatTurn =>
+        !!t &&
+        (t.role === "user" || t.role === "model") &&
+        typeof t.text === "string" &&
+        t.text.trim().length > 0,
+    )
+    .slice(-MAX_HISTORY_TURNS)
+    .map((t) => ({ role: t.role, text: t.text.slice(0, MAX_QUESTION_LENGTH * 2) }));
+}
 
 export async function POST(req: NextRequest) {
   const guard = await requireAnyRole();
@@ -34,8 +53,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Keep questions under ${MAX_QUESTION_LENGTH} characters.` }, { status: 400 });
   }
 
-  const guideContext = buildUnderwritingContext(question);
+  const history = parseHistory(body?.history);
+
+  // Ground on everything the user has asked so far in this conversation, not
+  // just the latest message — a follow-up like "what if they also smoke?"
+  // needs the condition named in an earlier turn to still pull the right
+  // guide excerpts.
+  const priorQuestions = history.filter((t) => t.role === "user").map((t) => t.text);
+  const guideContext = buildUnderwritingContext([...priorQuestions, question].join(" "));
   const userText = guideContext ? `${guideContext}\n\nQuestion: ${question}` : question;
+
+  const contents = [
+    ...history.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
+    { role: "user", parts: [{ text: userText }] },
+  ];
 
   let res: Response;
   try {
@@ -44,8 +75,8 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        contents: [{ role: "user", parts: [{ text: userText }] }],
-        generationConfig: { maxOutputTokens: 220, temperature: 0.3 },
+        contents,
+        generationConfig: { maxOutputTokens: 600, temperature: 0.3 },
       }),
     });
   } catch (err) {

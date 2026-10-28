@@ -69,7 +69,7 @@ function scoreMatches(words: string[], conditions: Condition[]): Condition[] {
     })
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score);
-  return scored.slice(0, 3).map((x) => x.c);
+  return scored.slice(0, 5).map((x) => x.c);
 }
 
 /**
@@ -113,10 +113,10 @@ export function buildUnderwritingContext(question: string): string {
 
   const blocks = [
     ...Array.from(wlMatches.values())
-      .slice(0, 3)
+      .slice(0, 5)
       .map((c) => summarizeCondition(c, PRODUCTS.wholeLife, "Whole Life / FEX")),
     ...Array.from(tmMatches.values())
-      .slice(0, 3)
+      .slice(0, 5)
       .map((c) => summarizeCondition(c, PRODUCTS.termUlIul, "Term / UL / IUL")),
   ].filter(Boolean);
 
