@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Bot, Mic, Moon, Sun, X } from "lucide-react";
+import { Bot, Mic, Moon, Send, Sun, X } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { ProfileMenu } from "@/components/portal/ProfileMenu";
@@ -239,9 +239,23 @@ function AiSearchBox() {
       onClick={toggleListening}
       aria-label={listening ? "Stop dictation" : "Dictate with your microphone"}
       title={listening ? "Stop dictation" : "Dictate with your microphone"}
-      className={`absolute top-1/2 right-2 -translate-y-1/2 ${listening ? "text-red-light" : "text-muted hover:text-foreground"}`}
+      className={`absolute top-1/2 right-9 -translate-y-1/2 ${listening ? "text-red-light" : "text-muted hover:text-foreground"}`}
     >
       <Mic className={`h-4 w-4 ${listening ? "animate-pulse" : ""}`} />
+    </button>
+  );
+
+  // Explicit send button next to the mic, same as this platform's own chat
+  // input — Enter still submits too, this is just a visible click target.
+  const sendButton = (
+    <button
+      type="submit"
+      disabled={!question.trim() || loading}
+      aria-label="Send"
+      title="Send"
+      className="absolute top-1/2 right-2 -translate-y-1/2 text-muted hover:text-foreground disabled:opacity-40 disabled:hover:text-muted"
+    >
+      <Send className="h-4 w-4" />
     </button>
   );
 
@@ -264,9 +278,10 @@ function AiSearchBox() {
             onChange={(e) => setQuestion(e.target.value)}
             onFocus={() => setOpen(true)}
             placeholder="Ask Gemini — insurance, underwriting..."
-            className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none ${speechSupported ? "pr-9" : "pr-3"}`}
+            className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none ${speechSupported ? "pr-16" : "pr-9"}`}
           />
           {micButton}
+          {sendButton}
         </form>
       ) : (
         <div
@@ -330,9 +345,10 @@ function AiSearchBox() {
                 placeholder="Ask a follow-up..."
                 autoFocus
                 disabled={loading}
-                className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-3 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none disabled:opacity-60 ${speechSupported ? "pr-9" : "pr-3"}`}
+                className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-3 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none disabled:opacity-60 ${speechSupported ? "pr-16" : "pr-9"}`}
               />
               {micButton}
+              {sendButton}
             </div>
           </form>
         </div>
