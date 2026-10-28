@@ -229,7 +229,10 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
             title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
             className="flex h-9 w-9 shrink-0 items-center justify-center text-muted transition-colors hover:text-foreground"
           >
-            {theme === "light" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {/* Shows the icon for what clicking it switches TO, not the
+                current theme — dark mode shows the sun (tap for light),
+                light mode shows the moon (tap for dark). */}
+            {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </button>
           <NotificationBell />
           <ProfileMenu profile={profile} name={name} role={role} collapsed showTour={role !== "ADMIN"} menuAlign="down" />
