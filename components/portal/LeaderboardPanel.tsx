@@ -457,26 +457,26 @@ export function LeaderboardPanel() {
               and the pulsing "live" dot, plus the period tabs. Matches the
               reference template's header exactly, and stays up regardless
               of load state since it's the stage's own persistent chrome. */}
-          <div className="relative flex flex-col items-center gap-3 pb-6">
-            <div className="leaderboard-bulbs h-2 w-full max-w-[640px] rounded-full" />
-            <div className="flex items-center gap-3 sm:gap-4">
+          <div className="relative flex flex-col items-center gap-3 pb-8 sm:gap-4">
+            <div className="leaderboard-bulbs h-2.5 w-full max-w-[900px] rounded-full sm:h-3" />
+            <div className="flex items-center gap-3 sm:gap-5">
               <span
-                className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full sm:h-3.5 sm:w-3.5"
+                className="h-3 w-3 shrink-0 animate-pulse rounded-full sm:h-5 sm:w-5"
                 style={{ background: "#FF3B30", boxShadow: "0 0 22px #FF3B30" }}
               />
               <h1
-                className="font-bungee text-center text-xl leading-none sm:text-4xl"
+                className="font-bungee text-center leading-none tracking-tight text-balance text-3xl sm:text-5xl md:text-6xl lg:text-7xl"
                 style={{ color: "#FFFFFF", textShadow: "0 0 18px #FF7A1A, 0 0 42px #FF4D00, 0 4px 0 #5A1E00" }}
               >
                 LIVE LEADERBOARD
               </h1>
             </div>
-            <div className="leaderboard-bulbs h-2 w-full max-w-[640px] rounded-full" style={{ animationDirection: "reverse" }} />
+            <div className="leaderboard-bulbs h-2.5 w-full max-w-[900px] rounded-full sm:h-3" style={{ animationDirection: "reverse" }} />
 
             <div
               role="tablist"
               aria-label="Leaderboard period"
-              className="mt-2 flex gap-1 rounded-full p-1 sm:gap-1.5 sm:p-1.5"
+              className="mt-2 flex gap-1.5 rounded-full p-1.5 sm:gap-2 sm:p-2"
               style={{ background: "rgba(30,12,4,0.85)", border: "1px solid #8A4A1E", boxShadow: "0 0 24px rgba(255,122,26,0.3)" }}
             >
               {PERIODS.map((p) => {
@@ -488,7 +488,7 @@ export function LeaderboardPanel() {
                     role="tab"
                     aria-selected={active}
                     onClick={() => setPeriod(p.value)}
-                    className="rounded-full px-3 py-1.5 text-[11px] font-bold tracking-wide uppercase transition-colors sm:px-4 sm:text-sm"
+                    className="rounded-full px-4 py-2 text-xs font-bold tracking-wide uppercase transition-colors sm:px-6 sm:py-2.5 sm:text-base"
                     style={
                       active
                         ? { background: "linear-gradient(180deg, #FF9A4D, #FF7A1A)", color: "#2E1204", boxShadow: "0 0 16px rgba(255,138,42,0.6)" }
