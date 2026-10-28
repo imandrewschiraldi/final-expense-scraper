@@ -109,62 +109,64 @@ function Avatar({ url, name, sizeClassName, pixels = 96 }: { url: string | null;
 // drawn pointing along +X from the origin.
 function leafPath(length: number, width: number) {
   const hw = width / 2;
-  return `M0,0 Q${length * 0.3},${-hw} ${length},0 Q${length * 0.3},${hw} 0,0`;
+  return `M0,0 Q${length * 0.32},${-hw} ${length},0 Q${length * 0.32},${hw} 0,0`;
 }
 
-// A proper crest flanking the podium (lucide has no wreath/feather icon):
-// a central spine with a mirrored PAIR of feathers at each point along it —
-// one left, one right — which is what actually reads as a frond/wing
-// instead of a row of blobs down one side. Grows and fans out further
-// toward the tip, warm red-orange at the base shading to bright gold at
-// the top for some color variation instead of one flat gold. `flip`
-// mirrors the whole thing for the right-hand side.
+// A wing-shaped crest flanking the podium (lucide has no wreath/feather
+// icon): every feather fans out from ONE base point across a wide angle,
+// with feather length following a bell curve — short at both ends of the
+// fan, longest in the upper-middle — which is what actually produces a
+// curved wing silhouette, verified by screenshotting a standalone render
+// of this (an earlier spine-of-leaves version just looked like a thin
+// stick with blobs, not a crest). `flip` mirrors it for the right side.
 function LaurelBranch({ flip }: { flip?: boolean }) {
-  const pairCount = 10;
-  const pairs = Array.from({ length: pairCount }, (_, i) => {
-    const t = i / (pairCount - 1); // 0 (base) -> 1 (tip)
-    const y = 218 - t * 206;
-    const spineX = 40 + Math.sin(t * Math.PI * 0.55) * 8;
-    const spineAngle = -92 + t * 58; // vertical at the base, leaning out toward the tip
-    const spread = 32 + t * 18; // how far each feather splays off the spine
-    const length = 15 + t * 27;
-    const width = 7 + t * 9;
-    return { spineX, y, spineAngle, spread, length, width };
+  const count = 11;
+  const baseX = 16;
+  const baseY = 220;
+  const startAngle = -4; // near-horizontal, pointing outward
+  const endAngle = -132; // curling up and back over the top
+  const feathers = Array.from({ length: count }, (_, i) => {
+    const t = i / (count - 1); // 0..1 across the fan
+    const angle = startAngle + (endAngle - startAngle) * t;
+    const bell = Math.sin(t * Math.PI); // 0 at both ends, 1 in the middle
+    const length = 40 + bell * 96;
+    const width = 11 + bell * 18;
+    return { angle, length, width };
   });
 
   return (
     <svg
-      viewBox="0 0 120 230"
+      viewBox="0 0 150 240"
       className={cn("h-56 w-auto drop-shadow-[0_0_24px_rgba(234,88,12,0.45)] sm:h-80", flip && "-scale-x-100")}
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id="laurelGradient" x1="0%" y1="100%" x2="20%" y2="0%">
+        {/* userSpaceOnUse, not the default objectBoundingBox — each
+            feather is its own tiny rotated shape, so a per-shape gradient
+            would cycle through the whole color range inside every single
+            feather instead of sweeping once across the whole crest. Fixed
+            coordinates in the same space the feathers are placed in (the
+            <g> below) make the color depend on actual position: dark
+            orange near the base, gold out at the tips. */}
+        <linearGradient id="laurelGradient" gradientUnits="userSpaceOnUse" x1={baseX} y1={baseY} x2={baseX + 110} y2={baseY - 180}>
           <stop offset="0%" stopColor="#9a3412" />
-          <stop offset="35%" stopColor="var(--gold-metal-dk)" />
-          <stop offset="70%" stopColor="var(--gold)" />
+          <stop offset="30%" stopColor="var(--gold-metal-dk)" />
+          <stop offset="65%" stopColor="var(--gold)" />
           <stop offset="100%" stopColor="var(--gold-metal-hi)" />
         </linearGradient>
       </defs>
-      <path d="M40 224 C26 178, 30 112, 42 6" stroke="url(#laurelGradient)" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-      {pairs.map((p, i) => (
-        <g key={i} transform={`translate(${p.spineX} ${p.y})`}>
+      <g transform={`translate(${baseX} ${baseY})`}>
+        {feathers.map((f, i) => (
           <path
-            d={leafPath(p.length, p.width)}
-            transform={`rotate(${p.spineAngle - p.spread})`}
+            key={i}
+            d={leafPath(f.length, f.width)}
+            transform={`rotate(${f.angle})`}
             fill="url(#laurelGradient)"
             stroke="var(--gold-metal-dk)"
             strokeWidth="0.75"
           />
-          <path
-            d={leafPath(p.length, p.width)}
-            transform={`rotate(${p.spineAngle + p.spread})`}
-            fill="url(#laurelGradient)"
-            stroke="var(--gold-metal-dk)"
-            strokeWidth="0.75"
-          />
-        </g>
-      ))}
+        ))}
+      </g>
     </svg>
   );
 }

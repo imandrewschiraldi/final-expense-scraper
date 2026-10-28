@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
   // display sizes bigger than ~80px, not a CSS tweak.
   images: {
     remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com" }],
+    // next/image rejects any `quality` not explicitly listed here (default
+    // is just [75]) — LeaderboardPanel's Avatar passes quality={90} for
+    // sharper podium avatars, which would 500 at request time without this.
+    qualities: [75, 90],
   },
 };
 
