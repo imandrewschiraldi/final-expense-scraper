@@ -134,19 +134,27 @@ export function productVerdict(
 // "uhl"/"UHL ..." products count as United Home Life, their underwriting
 // brand. A carrier with no match (currently just F&G, the one carrier the
 // agency didn't rank) sorts after every named one.
+//
+// The first four — Americo, Transamerica, Ethos, Mutual of Omaha — are a
+// fixed, explicitly-ranked priority order; everything after that is just
+// "the rest," in whatever order (no further agency preference given).
 const CARRIER_ORDER: ((name: string) => boolean)[] = [
   (n) => n.includes("americo"),
   (n) => n.includes("transamerica"),
   (n) => n.includes("ethos") || n.includes("trustage") || n.includes("lga") || n.includes("banner"),
+  (n) => n.includes("mutual of omaha"),
   (n) => n.includes("american amicable"),
   (n) => n.includes("corebridge"),
-  (n) => n.includes("mutual of omaha"),
   (n) => n.includes("royal neighbors"),
   (n) => n.includes("united home life") || n.includes("uhl"),
   (n) => n.includes("foresters"),
 ];
 
-function carrierRank(product: Product): number {
+/** Agency-specified carrier priority (Americo, Transamerica, Ethos, Mutual
+ *  of Omaha first, then the rest) — exported so the Ask Gemini route's
+ *  underwriting-guide context can present carriers in the same order the
+ *  cards here do, instead of raw data order. */
+export function carrierRank(product: Product): number {
   const name = product.name.toLowerCase();
   const idx = CARRIER_ORDER.findIndex((test) => test(name));
   return idx === -1 ? CARRIER_ORDER.length : idx;

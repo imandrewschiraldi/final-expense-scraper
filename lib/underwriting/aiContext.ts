@@ -8,11 +8,20 @@ import wlConditionsData from "@/data/underwriting/conditions-whole-life.json";
 import tmConditionsData from "@/data/underwriting/conditions-term-ul-iul.json";
 import medicationsData from "@/data/underwriting/medications.json";
 import { Condition, Medication, Product } from "@/lib/underwriting/types";
+import { carrierRank } from "@/lib/underwriting/engine";
 
 const PRODUCTS = productsData as { wholeLife: Product[]; termUlIul: Product[] };
 const WL_CONDITIONS = wlConditionsData as Condition[];
 const TM_CONDITIONS = tmConditionsData as Condition[];
 const MEDICATIONS = medicationsData as Medication;
+
+// Same agency-specified carrier priority the Underwriting Genie's own cards
+// sort by (Americo, Transamerica, Ethos, Mutual of Omaha first) — sorted
+// once up front so every condition's guide excerpt below already lists
+// carriers in that order, rather than raw products.json order, since
+// Gemini tends to follow the order information is given to it in.
+const WL_PRODUCTS_ORDERED = [...PRODUCTS.wholeLife].sort((a, b) => carrierRank(a) - carrierRank(b));
+const TM_PRODUCTS_ORDERED = [...PRODUCTS.termUlIul].sort((a, b) => carrierRank(a) - carrierRank(b));
 
 const STOPWORDS = new Set([
   "the", "and", "for", "with", "that", "this", "does", "what", "who", "how",
@@ -114,10 +123,10 @@ export function buildUnderwritingContext(question: string): string {
   const blocks = [
     ...Array.from(wlMatches.values())
       .slice(0, 5)
-      .map((c) => summarizeCondition(c, PRODUCTS.wholeLife, "Whole Life / FEX")),
+      .map((c) => summarizeCondition(c, WL_PRODUCTS_ORDERED, "Whole Life / FEX")),
     ...Array.from(tmMatches.values())
       .slice(0, 5)
-      .map((c) => summarizeCondition(c, PRODUCTS.termUlIul, "Term / UL / IUL")),
+      .map((c) => summarizeCondition(c, TM_PRODUCTS_ORDERED, "Term / UL / IUL")),
   ].filter(Boolean);
 
   if (blocks.length === 0) return "";
