@@ -284,7 +284,7 @@ function SidebarSearch({
           }
         }}
         placeholder="Search everything..."
-        className="w-full rounded-lg border border-border bg-surface2 py-1.5 pr-9 pl-8 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+        className="w-full rounded-lg border border-border bg-input-bg py-1.5 pr-9 pl-8 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
       />
       <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1 py-0.5 text-[10px] text-muted">
         ⌘K

@@ -62,12 +62,12 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
           onClick={() => setShowAdvance((s) => !s)}
           aria-pressed={showAdvance}
           className={`rounded-full border px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] uppercase transition-colors ${
-            showAdvance ? "toggle-pill-active" : "border-white/[0.12] text-muted hover:text-foreground"
+            showAdvance ? "toggle-pill-active" : "border-white/[0.12] text-white/60 hover:text-white"
           }`}
         >
           Advance
         </button>
-        <span className="rounded-full border border-white/[0.12] px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] text-muted uppercase">
+        <span className="rounded-full border border-white/[0.12] px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] text-white/60 uppercase">
           {RANGE_PILL_LABEL[range]}
         </span>
       </div>
@@ -105,11 +105,11 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
             // eslint-disable-next-line @next/next/no-img-element
             <img src={data.agentProfileImageUrl} alt="" className="h-[22px] w-[22px] rounded-full object-cover" />
           ) : (
-            <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-surface2 text-[11px] font-bold text-muted">
+            <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-white/10 text-[11px] font-bold text-white/70">
               {data.agentName.charAt(0).toUpperCase()}
             </div>
           )}
-          <span className="text-xs font-bold text-foreground">{data.agentName}</span>
+          <span className="text-xs font-bold text-white">{data.agentName}</span>
         </div>
       </div>
     </div>

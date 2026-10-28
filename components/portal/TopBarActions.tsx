@@ -66,7 +66,7 @@ function AiSearchBox() {
   }
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-[240px]">
+    <div ref={containerRef} className="relative w-full max-w-[340px]">
       <form onSubmit={ask}>
         <Bot className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
         <input
@@ -75,7 +75,7 @@ function AiSearchBox() {
           onChange={(e) => setQuestion(e.target.value)}
           onFocus={() => (answer || error) && setOpen(true)}
           placeholder="Ask Gemini — insurance, underwriting..."
-          className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+          className="w-full rounded-lg border border-border bg-input-bg py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
         />
       </form>
       {open && (loading || answer || error) && (

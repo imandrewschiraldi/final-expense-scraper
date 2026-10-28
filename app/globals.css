@@ -14,6 +14,11 @@
   --foreground: #d0d0d0;
   --white: #ffffff;
   --muted: #606060;
+  /* A dedicated step for search/input fields — deliberately not --surface2
+     (tuned for subtle panel backgrounds, so it barely reads against
+     --background in light mode) — needs to stand out against the page
+     behind it in both themes. */
+  --input-bg: #1a1a1a;
 
   --copper: #c87941;
   --copper-dim: #7a4a26;
@@ -120,6 +125,7 @@
   --foreground: #2a2622;
   --white: #17140f;
   --muted: #746f67;
+  --input-bg: #e7e3da;
 }
 
 @theme inline {
@@ -130,6 +136,7 @@
   --color-foreground: var(--foreground);
   --color-white: var(--white);
   --color-muted: var(--muted);
+  --color-input-bg: var(--input-bg);
 
   --color-copper: var(--copper);
   --color-copper-dim: var(--copper-dim);
