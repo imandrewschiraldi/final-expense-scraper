@@ -30,6 +30,7 @@ import {
   ChevronsRight,
   Maximize2,
   Minimize2,
+  Search,
   X,
   LucideIcon,
 } from "lucide-react";
@@ -44,11 +45,14 @@ const COLLAPSE_STORAGE_KEY = "portal-sidebar-collapsed";
 // desktop sidebar's own logo row at the same height.
 export const HEADER_HEIGHT = 74;
 
+type NavSection = "overview" | "team" | "leads" | "sell" | "ops" | "admin";
+
 type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
   roles: Role[];
+  section: NavSection;
   requiresVault?: boolean;
   requiresAgencyDashboard?: boolean;
   requiresRecruitingRadar?: boolean;
@@ -57,38 +61,49 @@ type NavItem = {
 // One shared sidebar for the entire platform — Agent Accelerator (leads,
 // vault, training) and the Agent Portal (dashboards, book of business, etc.)
 // are a single app now, not two navs stitched together.
+//
+// Grouped into sections (a thin divider renders between each, see NavLinks)
+// instead of one flat list — Team Chat and Training sit right after
+// Overview rather than buried near the bottom, so a new agent lands on
+// training/communication tools immediately below their dashboard.
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"], requiresAgencyDashboard: true },
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/chat", label: "Team Chat", icon: MessagesSquare, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/book-of-business", label: "Book of Business", icon: BookOpen, roles: ["MANAGER", "AGENT"] },
-  { href: "/submit-policy", label: "Submit Policy", icon: FilePlus2, roles: ["MANAGER", "AGENT"] },
-  { href: "/scripts", label: "Scripts", icon: FileText, roles: ["MANAGER", "AGENT"] },
-  { href: "/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"] },
-  { href: "/underwriting-genie", label: "Underwriting Genie", icon: Stethoscope, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["MANAGER", "AGENT"] },
-  { href: "/ask-integrity", label: "Ask Integrity", icon: Bot, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["MANAGER", "AGENT"] },
-  { href: "/admin/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["ADMIN"] },
-  { href: "/agent/dashboard", label: "My Leads", icon: Users, roles: ["MANAGER", "AGENT"] },
-  { href: "/agent/vault", label: "Vault", icon: Archive, roles: ["MANAGER", "AGENT"], requiresVault: true },
-  { href: "/agent/buy-leads", label: "Buy Leads", icon: ShoppingCart, roles: ["MANAGER", "AGENT"] },
-  { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"] },
-  { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"] },
-  { href: "/agent/training", label: "Training", icon: GraduationCap, roles: ["MANAGER", "AGENT"] },
-  { href: "/admin/training", label: "Training", icon: GraduationCap, roles: ["ADMIN"] },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "AGENT"], section: "overview" },
+  { href: "/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"], requiresAgencyDashboard: true, section: "overview" },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"], section: "overview" },
+
+  { href: "/chat", label: "Team Chat", icon: MessagesSquare, roles: ["ADMIN", "MANAGER", "AGENT"], section: "team" },
+  { href: "/agent/training", label: "Training", icon: GraduationCap, roles: ["MANAGER", "AGENT"], section: "team" },
+  { href: "/admin/training", label: "Training", icon: GraduationCap, roles: ["ADMIN"], section: "team" },
+
+  { href: "/agent/dashboard", label: "My Leads", icon: Users, roles: ["MANAGER", "AGENT"], section: "leads" },
+  { href: "/agent/vault", label: "Vault", icon: Archive, roles: ["MANAGER", "AGENT"], requiresVault: true, section: "leads" },
+  { href: "/agent/buy-leads", label: "Buy Leads", icon: ShoppingCart, roles: ["MANAGER", "AGENT"], section: "leads" },
+  { href: "/book-of-business", label: "Book of Business", icon: BookOpen, roles: ["MANAGER", "AGENT"], section: "leads" },
+  { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"], section: "leads" },
+  { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"], section: "leads" },
+
+  { href: "/submit-policy", label: "Submit Policy", icon: FilePlus2, roles: ["MANAGER", "AGENT"], section: "sell" },
+  { href: "/scripts", label: "Scripts", icon: FileText, roles: ["MANAGER", "AGENT"], section: "sell" },
+  { href: "/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"], section: "sell" },
+  { href: "/underwriting-genie", label: "Underwriting Genie", icon: Stethoscope, roles: ["ADMIN", "MANAGER", "AGENT"], section: "sell" },
+  { href: "/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["MANAGER", "AGENT"], section: "sell" },
+  { href: "/ask-integrity", label: "Ask Integrity", icon: Bot, roles: ["ADMIN", "MANAGER", "AGENT"], section: "sell" },
+  { href: "/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["MANAGER", "AGENT"], section: "sell" },
+  { href: "/admin/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["ADMIN"], section: "sell" },
+
   {
     href: "/admin/recruiting-radar",
     label: "Recruiting Radar",
     icon: Radar,
     roles: ["ADMIN", "MANAGER", "AGENT"],
     requiresRecruitingRadar: true,
+    section: "ops",
   },
-  { href: "/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"] },
-  { href: "/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"] },
-  { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"] },
-  { href: "/admin/carriers", label: "Carrier Rates", icon: Percent, roles: ["ADMIN"] },
+  { href: "/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"], section: "ops" },
+
+  { href: "/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"], section: "admin" },
+  { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"], section: "admin" },
+  { href: "/admin/carriers", label: "Carrier Rates", icon: Percent, roles: ["ADMIN"], section: "admin" },
 ];
 
 // "/admin/leads" is a strict prefix of "/admin/leads/vault", so a plain
@@ -154,6 +169,21 @@ function NavLeaf({
   );
 }
 
+function SidebarSearch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="relative mb-3 px-0.5">
+      <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Search everything..."
+        className="w-full rounded-lg border border-border bg-surface2 py-1.5 pr-2.5 pl-8 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+      />
+    </div>
+  );
+}
+
 function NavLinks({
   items,
   pathname,
@@ -169,20 +199,27 @@ function NavLinks({
 }) {
   return (
     <>
-      {items.map((item) => {
+      {items.map((item, index) => {
         const active = isItemActive(pathname, item.href);
         const showDot = Boolean(item.href === "/chat" && chatUnread && !active);
+        // A thin divider between sections instead of a text label — only
+        // between two items whose section actually differs, so a search
+        // filter (or a role hiding a whole section) never leaves a stray
+        // line at the top of the list.
+        const showDivider = index > 0 && item.section !== items[index - 1].section;
         return (
-          <NavLeaf
-            key={item.href}
-            href={item.href}
-            label={item.label}
-            icon={item.icon}
-            collapsed={collapsed}
-            active={active}
-            showDot={showDot}
-            onNavigate={onNavigate}
-          />
+          <div key={item.href}>
+            {showDivider && <div className="mx-1 my-1.5 border-t border-border" />}
+            <NavLeaf
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              collapsed={collapsed}
+              active={active}
+              showDot={showDot}
+              onNavigate={onNavigate}
+            />
+          </div>
         );
       })}
     </>
@@ -235,6 +272,7 @@ export function Sidebar({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [chatUnread, setChatUnread] = useState(false);
   const [wide, setWide] = useWideLayout();
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -285,6 +323,9 @@ export function Sidebar({
       (!item.requiresRecruitingRadar || role === "ADMIN" || profile?.recruitingRadarEnabled),
   );
 
+  const query = search.trim().toLowerCase();
+  const visibleItems = query ? items.filter((item) => item.label.toLowerCase().includes(query)) : items;
+
   return (
     <>
       {mobileOpen && (
@@ -319,8 +360,11 @@ export function Sidebar({
             <X className="h-5 w-5" />
           </button>
         </div>
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
-          <NavLinks items={items} pathname={pathname} collapsed={false} onNavigate={onCloseMobile} chatUnread={chatUnread} />
+        <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
+          <SidebarSearch value={search} onChange={setSearch} />
+          <div className="flex flex-col gap-1">
+            <NavLinks items={visibleItems} pathname={pathname} collapsed={false} onNavigate={onCloseMobile} chatUnread={chatUnread} />
+          </div>
         </nav>
         <SidebarFooter collapsed={false} profile={profile} name={name} role={role} onNavigate={onCloseMobile} />
       </aside>
@@ -394,8 +438,11 @@ export function Sidebar({
           </button>
         )}
 
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 py-4">
-          <NavLinks items={items} pathname={pathname} collapsed={collapsed} chatUnread={chatUnread} />
+        <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
+          {!collapsed && <SidebarSearch value={search} onChange={setSearch} />}
+          <div className="flex flex-col gap-1">
+            <NavLinks items={collapsed ? items : visibleItems} pathname={pathname} collapsed={collapsed} chatUnread={chatUnread} />
+          </div>
         </nav>
 
         <SidebarFooter collapsed={collapsed} profile={profile} name={name} role={role} />
