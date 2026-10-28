@@ -12,8 +12,13 @@ export type QuickLink = {
 };
 
 export const QUICK_LINKS: QuickLink[] = [
-  { id: "ffl-training-camp", name: "FFL Training Camp", url: null, logo: null },
-  { id: "ffl-gateway", name: "FFL Gateway", url: null, logo: null },
-  { id: "nlc", name: "NLC", url: null, logo: null },
-  { id: "surelc", name: "SureLC", url: null, logo: null },
+  { id: "ffl-training-camp", name: "FFL Training Camp", url: "https://trainingcamp.ffl.uppatop.com/login", logo: "/quick-links/ffl-training-camp.png" },
+  { id: "ffl-gateway", name: "Gateway", url: "https://ww3.familyfirstlife.com", logo: "/quick-links/ffl-gateway.png" },
+  { id: "nlc", name: "NLC", url: "https://nlc.chims.uppatop.com/login", logo: "/quick-links/nlc.jpg" },
+  {
+    id: "surelc",
+    name: "SureLC",
+    url: "https://accounts.surancebay.com/oauth/authorize?redirect_uri=https:%2F%2Fsurelc.surancebay.com%2Fproducer%2Foauth%3FreturnUrl%3D%252Fprofile%252Fcontact-info%253FgaId%253D689&gaId=689&client_id=surecrmweb&response_type=code",
+    logo: "/quick-links/surelc.jpg",
+  },
 ];
