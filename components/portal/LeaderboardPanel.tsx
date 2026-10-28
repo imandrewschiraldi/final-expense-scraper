@@ -79,8 +79,7 @@ export function LeaderboardPanel() {
   return (
     <div className="space-y-10">
       <div>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-condensed text-lg font-extrabold tracking-wide text-white uppercase">Top Agents</h2>
+        <div className="mb-4 flex items-center justify-end">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-green-light">
             <Radio className="h-3.5 w-3.5 animate-pulse" />
             Live
@@ -114,12 +113,27 @@ export function LeaderboardPanel() {
                         initial={{ opacity: 0, scale: 0.5, rotate: -12 }}
                         animate={{ opacity: 1, scale: 1, rotate: 0 }}
                         transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 15 }}
-                        className="absolute -top-1 left-1/2 -translate-x-1/2"
+                        // top-2/top-3, not a negative offset — the card above
+                        // this sits inside has overflow-hidden, so anything
+                        // positioned above its own top edge gets clipped
+                        // instead of floating free, which read as the crown
+                        // "touching"/merging into the card's top border.
+                        className="glow-copper-gradient absolute top-2 left-1/2 -translate-x-1/2 rounded-full sm:top-3"
                       >
-                        <Crown className="h-4 w-4 fill-[var(--copper-metal)] text-[var(--copper-metal)] sm:h-6 sm:w-6" />
+                        <div className="metal-copper-surface flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-background sm:h-9 sm:w-9">
+                          <Crown className="h-3.5 w-3.5 fill-white text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)] sm:h-4.5 sm:w-4.5" />
+                        </div>
                       </motion.div>
                     )}
-                    <span className="metal-copper-text font-scoreboard mt-2 text-sm font-bold sm:mt-3 sm:text-2xl">
+                    <span
+                      className={cn(
+                        "metal-copper-text font-scoreboard text-sm font-bold sm:text-2xl",
+                        // Extra clearance only for the winner's card — its
+                        // crown medallion sits in this same top area (see
+                        // above), so #1 needs more headroom than #2/#3.
+                        i === 0 && !isPlaceholder ? "mt-[42px] sm:mt-[56px]" : "mt-2 sm:mt-3",
+                      )}
+                    >
                       #{i + 1}
                     </span>
                     {isPlaceholder ? (
