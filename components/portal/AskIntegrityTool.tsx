@@ -21,7 +21,7 @@ export function AskIntegrityTool() {
         href={ASK_INTEGRITY_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex w-full max-w-2xl items-start gap-5 rounded-lg border border-black/10 bg-white p-8 text-left shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg"
+        className="flex w-full max-w-2xl items-start gap-5 rounded-lg border border-black/10 bg-[#ffffff] p-8 text-left shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg"
       >
         <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-[#e8edf7]">
           <Laptop className="h-10 w-10 text-[#1a2f5c]" />

@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Settings } from "lucide-react";
+import { Moon, Search, Settings, Sun } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { NO_OUTER_LINE_PREFIXES } from "@/components/portal/HeaderDivider";
+import { useTheme } from "@/lib/useTheme";
 
 type Profile = { name: string; profileImageUrl: string | null };
 
@@ -35,6 +36,7 @@ type Profile = { name: string; profileImageUrl: string | null };
 export function TopBarActions() {
   const pathname = usePathname();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [theme, setTheme] = useTheme();
 
   useEffect(() => {
     fetch("/api/profile")
@@ -61,6 +63,15 @@ export function TopBarActions() {
           />
         </div>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+            title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+            className="text-muted transition-colors hover:text-foreground"
+          >
+            {theme === "light" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
           <NotificationBell />
           <Link
             href="/profile"

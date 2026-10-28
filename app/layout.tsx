@@ -74,6 +74,18 @@ export default function RootLayout({
       lang="en"
       className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} ${montserrat.variable} h-full antialiased`}
     >
+      <head>
+        {/* Reads the saved theme choice and sets data-theme before first
+            paint — the lib/useTheme.ts hook does the same thing, but as a
+            React effect that only runs after hydration, which would flash
+            dark-then-light on every load for anyone who picked light mode. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{if(localStorage.getItem("portal-theme")==="light"){document.documentElement.setAttribute("data-theme","light");}}catch(e){}})();',
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
       </body>

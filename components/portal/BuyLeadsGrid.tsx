@@ -68,7 +68,7 @@ function VisitSiteButton({ url }: { url: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="font-condensed inline-flex w-fit items-center gap-2 rounded-full bg-white py-2 pr-2 pl-4 text-sm font-bold text-background transition-opacity hover:opacity-90"
+      className="font-condensed inline-flex w-fit items-center gap-2 rounded-full bg-[#ffffff] py-2 pr-2 pl-4 text-sm font-bold text-black transition-opacity hover:opacity-90"
     >
       Visit Site
       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-white">
@@ -84,7 +84,7 @@ export function BuyLeadsGrid() {
       {VENDORS.map((vendor) => (
         <Card key={vendor.name} className="flex h-full flex-col gap-4">
           <div className="flex items-center justify-between">
-            <span className={cn("inline-flex items-center", vendor.logoOnLight && "rounded-full bg-white px-3 py-1.5")}>
+            <span className={cn("inline-flex items-center", vendor.logoOnLight && "rounded-full bg-[#ffffff] px-3 py-1.5")}>
               <Image
                 src={vendor.logo.src}
                 alt={vendor.name}

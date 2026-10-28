@@ -160,7 +160,7 @@ function NavLeaf({
       <span className="relative shrink-0">
         <Icon className="h-4.5 w-4.5" />
         {showDot && collapsed && (
-          <span className="metal-copper-surface absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-[#0a0a0a]" />
+          <span className="metal-copper-surface absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-surface" />
         )}
       </span>
       {!collapsed && <span className={cn("truncate", active && "metal-copper-text")}>{label}</span>}
@@ -343,7 +343,7 @@ export function Sidebar({
           the (now-hidden) top bar's. */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col bg-gradient-to-b from-[#0a0a0a] to-black transition-transform duration-300 ease-out lg:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col bg-gradient-to-b from-surface to-background transition-transform duration-300 ease-out lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -373,7 +373,7 @@ export function Sidebar({
       <aside
         data-tour-ui="sidebar"
         className={cn(
-          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-[#0a0a0a] to-black transition-all duration-300 ease-out lg:flex",
+          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-surface to-background transition-all duration-300 ease-out lg:flex",
           collapsed ? "w-[68px]" : "w-60",
         )}
       >

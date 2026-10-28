@@ -94,6 +94,34 @@
   --metal-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' result='t'/><feColorMatrix in='t' type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
+/* Light mode — flips the same 7 base tokens every `bg-background`/
+   `bg-surface`/`text-foreground`/`border-border`/`text-white` call site
+   already reads from (set via TopBarActions' toggle, see lib/useTheme.ts;
+   defaults to dark, unchanged, until someone opts in). `--white` is the
+   important one: it's not literally "the color white", it's "the
+   strongest/brightest readable foreground" (headline numbers, card
+   titles) used as `text-white` in ~125 places across the app — remapping
+   it here, rather than editing every call site, is what makes those
+   correctly go dark-on-light instead of turning invisible white-on-white.
+   The handful of places that want a LITERALLY white surface regardless of
+   theme (external brand cards, the odd "pop" button) use a hardcoded
+   `bg-[#ffffff]` instead of `bg-white` specifically so they're exempt from
+   this remap. The brand copper/green/red/teal/gold/blue/amber -metal
+   tokens, the grain overlay, and the header's copper accent line are
+   deliberately NOT touched here — those are brand color, not theme
+   chrome, and stay identical in both modes. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --background: #f5f3ef;
+  --surface: #ffffff;
+  --surface2: #f2f0ea;
+  --border: rgba(0, 0, 0, 0.1);
+  --foreground: #2a2622;
+  --white: #17140f;
+  --muted: #746f67;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);

@@ -73,7 +73,7 @@ export function QuoterTool() {
         </a>
       </div>
 
-      <div className="relative flex-1 overflow-hidden bg-white">
+      <div className="relative flex-1 overflow-hidden bg-[#ffffff]">
         <iframe key={active} src={tool.src} title={tool.label} className="h-full w-full border-0" />
       </div>
     </div>
