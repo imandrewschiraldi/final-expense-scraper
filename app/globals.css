@@ -167,7 +167,7 @@
   --font-sans: var(--font-barlow);
   --font-scoreboard: var(--font-scoreboard);
   --font-montserrat: var(--font-montserrat);
-  --font-podium: var(--font-podium);
+  --font-pixel: var(--font-pixel);
 }
 
 body {
@@ -759,8 +759,8 @@ h4,
   font-variant-numeric: tabular-nums;
 }
 
-.font-podium {
-  font-family: var(--font-podium), Arial, Helvetica, sans-serif;
+.font-pixel {
+  font-family: var(--font-pixel), monospace;
 }
 
 ::selection {
