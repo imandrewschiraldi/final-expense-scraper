@@ -1,57 +1,12 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { ArrowUpRight, Store } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Card } from "@/components/ui/Card";
-
-type Vendor = {
-  name: string;
-  description?: string;
-  bullets?: string[];
-  url: string;
-  logo: { src: string; width: number; height: number };
-  // Proven Leads' logo keeps its white background (the others blend
-  // directly onto the dark card) — this puts it on a rounded white chip
-  // instead of a hard-edged rectangle.
-  logoOnLight?: boolean;
-  // Most logos are wide wordmark lockups that read fine at a compact h-8.
-  // A near-square/stacked logo (e.g. a mark sitting above its wordmark)
-  // needs more height for its own text to stay legible at the same width.
-  logoHeightClass?: string;
-};
-
-// Live, working vendors only — one not ready yet doesn't get a placeholder
-// card of its own with nothing behind it; the generic "More Vendors" card
-// below covers that instead of listing fake names.
-const VENDORS: Vendor[] = [
-  {
-    name: "Proven Lead Solutions",
-    url: "https://provenleadsolutions.com/",
-    logo: { src: "/vendor-logos/proven-leads.png", width: 1001, height: 383 },
-    logoOnLight: true,
-  },
-  {
-    name: "Closr Leads",
-    description: "Unlimited lead dialers, plus real-time and aged insurance leads.",
-    bullets: [
-      "Final Expense, Veteran, Trucker, Mortgage Protection & IUL",
-      "Built-in dialer to work leads the moment they come in",
-      "Delivered straight to your CRM",
-    ],
-    url: "https://closrleads.com/go.php?c=TIER1FINANCIAL",
-    logo: { src: "/vendor-logos/closr-leads.png", width: 264, height: 85 },
-  },
-  {
-    name: "G.O.A.T Leads",
-    url: "https://goatleads.com/",
-    logo: { src: "/vendor-logos/goat-leads.png", width: 219, height: 225 },
-    logoHeightClass: "h-14",
-  },
-  {
-    name: "Titan Leads",
-    url: "https://www.titanleadsolutions.com/",
-    logo: { src: "/vendor-logos/titan-leads.png", width: 238, height: 70 },
-  },
-];
+import { VENDORS, vendorSlug } from "@/lib/vendors";
 
 function StatusPill({ live }: { live: boolean }) {
   return (
@@ -79,41 +34,71 @@ function VisitSiteButton({ url }: { url: string }) {
 }
 
 export function BuyLeadsGrid() {
+  // Deep link from the sidebar's global search ("type a vendor name, land
+  // on it") — ?vendor=<slug> scrolls that card into view and briefly rings
+  // it so it's obvious which one matched, instead of just loading the page.
+  const searchParams = useSearchParams();
+  const targetSlug = searchParams.get("vendor");
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+  const refs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!targetSlug) return;
+    const el = refs.current[targetSlug];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlighted(targetSlug);
+    const t = setTimeout(() => setHighlighted(null), 2000);
+    return () => clearTimeout(t);
+  }, [targetSlug]);
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      {VENDORS.map((vendor) => (
-        <Card key={vendor.name} className="flex h-full flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <span className={cn("inline-flex items-center", vendor.logoOnLight && "rounded-full bg-[#ffffff] px-3 py-1.5")}>
-              <Image
-                src={vendor.logo.src}
-                alt={vendor.name}
-                width={vendor.logo.width}
-                height={vendor.logo.height}
-                className={cn("w-auto", vendor.logoHeightClass ?? "h-8")}
-              />
-            </span>
-            <StatusPill live />
+      {VENDORS.map((vendor) => {
+        const slug = vendorSlug(vendor.name);
+        return (
+          <div
+            key={vendor.name}
+            id={`vendor-${slug}`}
+            ref={(el) => {
+              refs.current[slug] = el;
+            }}
+            className={cn("rounded-[10px] transition-shadow", highlighted === slug && "ring-2 ring-[var(--copper-metal)]")}
+          >
+            <Card className="flex h-full flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className={cn("inline-flex items-center", vendor.logoOnLight && "rounded-full bg-[#ffffff] px-3 py-1.5")}>
+                  <Image
+                    src={vendor.logo.src}
+                    alt={vendor.name}
+                    width={vendor.logo.width}
+                    height={vendor.logo.height}
+                    className={cn("w-auto", vendor.logoHeightClass ?? "h-8")}
+                  />
+                </span>
+                <StatusPill live />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">{vendor.name}</h2>
+                {vendor.description && <p className="mt-1 text-sm text-muted">{vendor.description}</p>}
+              </div>
+              {vendor.bullets && (
+                <ul className="space-y-1.5">
+                  {vendor.bullets.map((bullet) => (
+                    <li key={bullet} className="flex items-start gap-2 text-sm text-muted">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-copper-dim" />
+                      {bullet}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="mt-auto pt-1">
+                <VisitSiteButton url={vendor.url} />
+              </div>
+            </Card>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-white">{vendor.name}</h2>
-            {vendor.description && <p className="mt-1 text-sm text-muted">{vendor.description}</p>}
-          </div>
-          {vendor.bullets && (
-            <ul className="space-y-1.5">
-              {vendor.bullets.map((bullet) => (
-                <li key={bullet} className="flex items-start gap-2 text-sm text-muted">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-copper-dim" />
-                  {bullet}
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="mt-auto pt-1">
-            <VisitSiteButton url={vendor.url} />
-          </div>
-        </Card>
-      ))}
+        );
+      })}
 
       <Card className="flex h-full flex-col gap-4">
         <div className="flex items-center justify-between">

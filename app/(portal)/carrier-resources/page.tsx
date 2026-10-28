@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { CarrierResourcesGrid } from "@/components/portal/CarrierResourcesGrid";
 import { PageHeading } from "@/components/portal/PageHeading";
 
@@ -10,7 +11,11 @@ export default function CarrierResourcesPage() {
         guides, customer support contacts, and other key documents — everything you need to write business
         efficiently.
       </p>
-      <CarrierResourcesGrid />
+      {/* CarrierResourcesGrid reads ?carrier= via useSearchParams (deep
+          link from global search) — Next requires that behind Suspense. */}
+      <Suspense fallback={null}>
+        <CarrierResourcesGrid />
+      </Suspense>
     </div>
   );
 }

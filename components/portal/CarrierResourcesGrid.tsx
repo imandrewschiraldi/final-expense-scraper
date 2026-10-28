@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/cn";
 
 type Contact = { id: string; label: string; phone: string };
@@ -17,6 +18,14 @@ export function CarrierResourcesGrid() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Deep link from the sidebar's global search ("type a carrier, land on
+  // their card") — ?carrier=<id> scrolls that card into view and briefly
+  // rings it once the list has loaded.
+  const searchParams = useSearchParams();
+  const targetId = searchParams.get("carrier");
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+  const refs = useRef<Record<string, HTMLDivElement | null>>({});
+
   useEffect(() => {
     fetch("/api/portal/carrier-resources")
       .then(async (res) => {
@@ -27,6 +36,16 @@ export function CarrierResourcesGrid() {
       .catch(() => setError("Failed to load carrier resources."))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!targetId || carriers.length === 0) return;
+    const el = refs.current[targetId];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlighted(targetId);
+    const t = setTimeout(() => setHighlighted(null), 2000);
+    return () => clearTimeout(t);
+  }, [targetId, carriers]);
 
   if (loading) return <p className="text-sm text-muted">Loading...</p>;
   if (error) return <p className="text-sm text-red-light">{error}</p>;
@@ -44,13 +63,22 @@ export function CarrierResourcesGrid() {
       {carriers.map((carrier, i) => (
         <div
           key={carrier.id}
-          className={cn("mx-auto w-full max-w-sm", isTrailingOdd(i) && "lg:col-span-2")}
+          id={`carrier-${carrier.id}`}
+          ref={(el) => {
+            refs.current[carrier.id] = el;
+          }}
+          className={cn("mx-auto w-full max-w-sm scroll-mt-24", isTrailingOdd(i) && "lg:col-span-2")}
         >
           <h2 className="font-montserrat mb-3 text-center text-2xl font-black tracking-wide text-white uppercase">
             {carrier.name}
           </h2>
 
-          <div className="metal-copper-card rounded-lg p-5">
+          <div
+            className={cn(
+              "metal-copper-card rounded-lg p-5 transition-shadow",
+              highlighted === carrier.id && "ring-2 ring-white",
+            )}
+          >
             {carrier.contacts.length > 0 && (
               <div className="mb-4 space-y-2 text-center">
                 {carrier.contacts.map((contact) => (

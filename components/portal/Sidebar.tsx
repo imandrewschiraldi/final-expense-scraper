@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
@@ -169,8 +169,41 @@ function NavLeaf({
   );
 }
 
-function SidebarSearch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+type RemoteResultType = "lead" | "carrier" | "training" | "vendor";
+type RemoteResult = { type: RemoteResultType; id: string; title: string; subtitle?: string; href: string };
+
+const REMOTE_ICON: Record<RemoteResultType, LucideIcon> = {
+  lead: Users,
+  carrier: Landmark,
+  training: GraduationCap,
+  vendor: ShoppingCart,
+};
+const REMOTE_LABEL: Record<RemoteResultType, string> = {
+  lead: "Leads",
+  carrier: "Carriers",
+  training: "Training",
+  vendor: "Lead Vendors",
+};
+const REMOTE_ORDER: RemoteResultType[] = ["lead", "carrier", "training", "vendor"];
+
+function SidebarSearch({
+  value,
+  onChange,
+  navItems,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  // Full role-filtered nav list (not the already-filtered one rendered
+  // below) — the dropdown does its own "Pages" match independently of the
+  // existing inline nav filter, which keeps working exactly as it did.
+  navItems: NavItem[];
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [remoteResults, setRemoteResults] = useState<RemoteResult[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // ⌘K/Ctrl+K jumps to whichever copy of this is actually visible — mobile
   // drawer and desktop sidebar both render one, but only one is ever
@@ -187,20 +220,127 @@ function SidebarSearch({ value, onChange }: { value: string; onChange: (v: strin
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // Real cross-platform search (leads/contacts, carriers, training, lead
+  // vendors) — debounced so it's not firing on every keystroke. The
+  // existing nav-item filter below stays instant/local, untouched.
+  useEffect(() => {
+    const q = value.trim();
+    if (q.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRemoteResults([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const timer = setTimeout(() => {
+      fetch(`/api/portal/global-search?q=${encodeURIComponent(q)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => setRemoteResults(data?.results ?? []))
+        .catch(() => setRemoteResults([]))
+        .finally(() => setLoading(false));
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  const trimmed = value.trim();
+  const pageMatches = trimmed ? navItems.filter((item) => item.label.toLowerCase().includes(trimmed.toLowerCase())) : [];
+  const topHref = pageMatches[0]?.href ?? remoteResults[0]?.href;
+  const hasAnyMatch = pageMatches.length > 0 || remoteResults.length > 0;
+
+  function go(href: string) {
+    setOpen(false);
+    onChange("");
+    router.push(href);
+  }
+
   return (
-    <div className="relative mb-3 px-0.5">
+    <div ref={containerRef} className="relative mb-3 px-0.5">
       <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
       <input
         ref={inputRef}
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => trimmed.length > 0 && setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setOpen(false);
+            inputRef.current?.blur();
+          } else if (e.key === "Enter" && topHref) {
+            e.preventDefault();
+            go(topHref);
+          }
+        }}
         placeholder="Search everything..."
         className="w-full rounded-lg border border-border bg-surface2 py-1.5 pr-9 pl-8 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
       />
       <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1 py-0.5 text-[10px] text-muted">
         ⌘K
       </kbd>
+
+      {open && trimmed.length > 0 && (
+        <div className="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-96 overflow-y-auto rounded-[10px] border border-border bg-surface p-2 shadow-lg">
+          {pageMatches.length > 0 && (
+            <div className="mb-1.5">
+              <p className="px-2 pb-1 text-[10px] font-bold tracking-[0.1em] text-muted uppercase">Pages</p>
+              {pageMatches.slice(0, 5).map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    type="button"
+                    key={item.href}
+                    onClick={() => go(item.href)}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground hover:bg-copper-gradient-08"
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-muted" />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {REMOTE_ORDER.map((type) => {
+            const group = remoteResults.filter((r) => r.type === type);
+            if (group.length === 0) return null;
+            const Icon = REMOTE_ICON[type];
+            return (
+              <div key={type} className="mb-1.5">
+                <p className="px-2 pb-1 text-[10px] font-bold tracking-[0.1em] text-muted uppercase">{REMOTE_LABEL[type]}</p>
+                {group.map((r) => (
+                  <button
+                    type="button"
+                    key={`${r.type}-${r.id}`}
+                    onClick={() => go(r.href)}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-copper-gradient-08"
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-muted" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] text-foreground">{r.title}</span>
+                      {r.subtitle && <span className="block truncate text-[11px] text-muted">{r.subtitle}</span>}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+
+          {loading && <p className="px-2 py-1.5 text-[11px] text-muted">Searching...</p>}
+          {!loading && !hasAnyMatch && trimmed.length >= 2 && <p className="px-2 py-1.5 text-[11px] text-muted">No matches.</p>}
+        </div>
+      )}
     </div>
   );
 }
@@ -382,7 +522,7 @@ export function Sidebar({
           </button>
         </div>
         <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
-          <SidebarSearch value={search} onChange={setSearch} />
+          <SidebarSearch value={search} onChange={setSearch} navItems={items} />
           <div className="flex flex-col gap-1">
             <NavLinks items={visibleItems} pathname={pathname} collapsed={false} onNavigate={onCloseMobile} chatUnread={chatUnread} />
           </div>
@@ -460,7 +600,7 @@ export function Sidebar({
         )}
 
         <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
-          {!collapsed && <SidebarSearch value={search} onChange={setSearch} />}
+          {!collapsed && <SidebarSearch value={search} onChange={setSearch} navItems={items} />}
           <div className="flex flex-col gap-1">
             <NavLinks items={collapsed ? items : visibleItems} pathname={pathname} collapsed={collapsed} chatUnread={chatUnread} />
           </div>
