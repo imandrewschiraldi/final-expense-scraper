@@ -18,18 +18,32 @@ import { useTheme } from "@/lib/useTheme";
  * header controls occupy the top-right.
  *
  * `lightSrc` — an optional self-hosted light-mode build of the same tool
- * (e.g. /tools/sales-script-light.html), swapped in for `src` whenever the
+ * (e.g. /tools/sales-script-light.html), shown instead of `src` whenever the
  * portal itself is in light mode. The tools are otherwise dark-only (hosted
  * externally, no theme awareness of their own), so without this a light-mode
- * visitor would hit a jarring dark iframe inside an otherwise light page. */
+ * visitor would hit a jarring dark iframe inside an otherwise light page.
+ *
+ * Both iframes mount at once and stay mounted — only a CSS `hidden` toggles
+ * which one shows — rather than flipping a single iframe's `src` between
+ * them. Changing an iframe's `src` throws away and fully reloads whatever
+ * was in it (every script re-parses, any in-progress calculator inputs are
+ * lost), which is what made the theme toggle feel laggy specifically on
+ * these two pages: every flip reloaded the whole embedded tool from
+ * scratch. This way each one loads once, in parallel, right when the page
+ * mounts, and toggling is an instant visibility swap from then on. */
 export function EmbeddedTool({ title, src, lightSrc }: { title: string; src: string; lightSrc?: string }) {
   const [theme] = useTheme();
-  const activeSrc = theme === "light" && lightSrc ? lightSrc : src;
-  const embedSrc = `${activeSrc}${activeSrc.includes("?") ? "&" : "?"}embed=1`;
+  const showLight = theme === "light" && !!lightSrc;
+  const activeSrc = showLight ? lightSrc! : src;
+
+  function embed(url: string) {
+    return `${url}${url.includes("?") ? "&" : "?"}embed=1`;
+  }
 
   return (
     <div data-tour="embedded-tool" className="relative -mx-4 -mb-8 h-[calc(100dvh-74px)] sm:-mx-6 lg:-mx-10 lg:-mt-2 lg:h-screen">
-      <iframe src={embedSrc} title={title} className="h-full w-full border-0" />
+      <iframe src={embed(src)} title={title} className={`h-full w-full border-0 ${showLight ? "hidden" : ""}`} />
+      {lightSrc && <iframe src={embed(lightSrc)} title={title} className={`h-full w-full border-0 ${showLight ? "" : "hidden"}`} />}
       <a
         href={activeSrc}
         target="_blank"
