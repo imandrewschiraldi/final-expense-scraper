@@ -74,7 +74,7 @@ function AiSearchBox() {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onFocus={() => (answer || error) && setOpen(true)}
-          placeholder="Ask about insurance, underwriting..."
+          placeholder="Ask Gemini — insurance, underwriting..."
           className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
         />
       </form>
