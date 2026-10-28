@@ -189,21 +189,10 @@ function AiSearchBox() {
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") setOpen(true);
           }}
-          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-border bg-input-bg py-2 pr-8 pl-9 text-left text-sm text-muted hover:text-foreground"
+          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-border bg-input-bg py-2 pr-3 pl-9 text-left text-sm text-muted hover:text-foreground"
         >
           {dragHandle}
           <span className="truncate">Gemini conversation — click to continue</span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              reset();
-            }}
-            aria-label="Clear conversation"
-            className="absolute top-1/2 right-2 -translate-y-1/2 text-muted hover:text-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
         </div>
       )}
       {open && (loading || hasThread || error) && (
