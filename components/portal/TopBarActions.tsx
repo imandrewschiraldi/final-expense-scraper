@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Bot, Moon, Sun, X } from "lucide-react";
+import { Bot, Mic, Moon, Sun, X } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { ProfileMenu } from "@/components/portal/ProfileMenu";
@@ -13,6 +13,27 @@ type Role = "ADMIN" | "MANAGER" | "AGENT";
 type Profile = { name: string; profileImageUrl: string | null };
 
 type ChatTurn = { role: "user" | "model"; text: string };
+
+// Minimal ambient typing for the Web Speech API's SpeechRecognition — not
+// reliably present across TS's DOM lib versions, and the webkit-prefixed
+// constructor (the only one Chrome/Edge actually expose) isn't typed at
+// all. Only the handful of members "talk to type" below actually uses.
+type SpeechRecognitionResultLike = { 0: { transcript: string } };
+type SpeechRecognitionEventLike = { results: ArrayLike<SpeechRecognitionResultLike> };
+interface SpeechRecognitionLike extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onresult: ((e: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+}
+type SpeechRecognitionWindow = typeof window & {
+  SpeechRecognition?: new () => SpeechRecognitionLike;
+  webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+};
 
 /**
  * The header's search box — not a platform search (that's the sidebar's
@@ -50,15 +71,64 @@ function AiSearchBox() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [listening, setListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ offsetX: number; offsetY: number; moved: boolean } | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  // What was already typed when dictation started — spoken words are
+  // appended after it rather than overwriting it.
+  const listenBaseRef = useRef("");
 
   function reset() {
+    recognitionRef.current?.stop();
     setOpen(false);
     setMessages([]);
     setError(null);
     setQuestion("");
+  }
+
+  // Feature-detected client-side only — not every browser (Firefox desktop,
+  // notably) implements SpeechRecognition at all, so the mic button simply
+  // doesn't render there instead of showing something that does nothing.
+  useEffect(() => {
+    const w = window as SpeechRecognitionWindow;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSpeechSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
+
+  function toggleListening() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const w = window as SpeechRecognitionWindow;
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!Ctor) return;
+    const recognition = new Ctor();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    listenBaseRef.current = question;
+    recognition.onresult = (e) => {
+      let transcript = "";
+      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      const base = listenBaseRef.current;
+      setQuestion((base ? `${base} ${transcript}` : transcript).trim());
+    };
+    // Covers both an explicit stop() and the browser's own silence timeout
+    // ending it on its own — either way the mic button needs to stop
+    // showing "listening".
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setOpen(true);
+    setListening(true);
   }
 
   function clamp(next: { x: number; y: number }) {
@@ -116,6 +186,7 @@ function AiSearchBox() {
 
   async function ask(e: React.FormEvent) {
     e.preventDefault();
+    recognitionRef.current?.stop();
     const trimmed = question.trim();
     if (!trimmed || loading) return;
     const history = messages;
@@ -159,6 +230,21 @@ function AiSearchBox() {
     </span>
   );
 
+  // "Talk to type" — only rendered where the browser actually implements
+  // SpeechRecognition (feature-detected above). Appends to whatever's
+  // already typed rather than replacing it.
+  const micButton = speechSupported && (
+    <button
+      type="button"
+      onClick={toggleListening}
+      aria-label={listening ? "Stop dictation" : "Dictate with your microphone"}
+      title={listening ? "Stop dictation" : "Dictate with your microphone"}
+      className={`absolute top-1/2 right-2 -translate-y-1/2 ${listening ? "text-red-light" : "text-muted hover:text-foreground"}`}
+    >
+      <Mic className={`h-4 w-4 ${listening ? "animate-pulse" : ""}`} />
+    </button>
+  );
+
   return (
     <div
       ref={containerRef}
@@ -178,8 +264,9 @@ function AiSearchBox() {
             onChange={(e) => setQuestion(e.target.value)}
             onFocus={() => setOpen(true)}
             placeholder="Ask Gemini — insurance, underwriting..."
-            className="w-full rounded-lg border border-border bg-input-bg py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+            className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none ${speechSupported ? "pr-9" : "pr-3"}`}
           />
+          {micButton}
         </form>
       ) : (
         <div
@@ -235,15 +322,18 @@ function AiSearchBox() {
           {/* The follow-up input, fixed at the bottom of the conversation —
               keep asking without losing the thread above it. */}
           <form onSubmit={ask} className="shrink-0 border-t border-border p-2">
-            <input
-              type="text"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask a follow-up..."
-              autoFocus
-              disabled={loading}
-              className="w-full rounded-lg border border-border bg-input-bg px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none disabled:opacity-60"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Ask a follow-up..."
+                autoFocus
+                disabled={loading}
+                className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-3 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none disabled:opacity-60 ${speechSupported ? "pr-9" : "pr-3"}`}
+              />
+              {micButton}
+            </div>
           </form>
         </div>
       )}
