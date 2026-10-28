@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -170,16 +170,37 @@ function NavLeaf({
 }
 
 function SidebarSearch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // ⌘K/Ctrl+K jumps to whichever copy of this is actually visible — mobile
+  // drawer and desktop sidebar both render one, but only one is ever
+  // on-screen at a time (the other's display:none, so .focus() on it is a
+  // no-op), so both listeners existing at once is harmless.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     <div className="relative mb-3 px-0.5">
       <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
       <input
+        ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search everything..."
-        className="w-full rounded-lg border border-border bg-surface2 py-1.5 pr-2.5 pl-8 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+        className="w-full rounded-lg border border-border bg-surface2 py-1.5 pr-9 pl-8 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
       />
+      <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1 py-0.5 text-[10px] text-muted">
+        ⌘K
+      </kbd>
     </div>
   );
 }
