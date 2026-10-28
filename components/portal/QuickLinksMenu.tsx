@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Grid3x3 } from "lucide-react";
+import { Grip } from "lucide-react";
 import { QUICK_LINKS } from "@/lib/quickLinks";
 
 /**
@@ -36,7 +36,7 @@ export function QuickLinksMenu() {
         title="Quick links"
         className="text-muted transition-colors hover:text-foreground"
       >
-        <Grid3x3 className="h-5 w-5" />
+        <Grip className="h-5 w-5" />
       </button>
 
       {open && (
