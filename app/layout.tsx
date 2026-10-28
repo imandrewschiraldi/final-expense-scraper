@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Barlow, Orbitron, Montserrat, Press_Start_2P } from "next/font/google";
+import { Barlow_Condensed, Barlow, Orbitron, Montserrat, Press_Start_2P, Bungee } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -34,6 +34,14 @@ const montserrat = Montserrat({
 // matches the reference template's own font choice exactly.
 const pressStart2P = Press_Start_2P({
   variable: "--font-pixel",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
+// Big neon marquee face for the Leaderboard's "LIVE LEADERBOARD" title —
+// also matches the reference template's own font choice exactly.
+const bungee = Bungee({
+  variable: "--font-bungee",
   subsets: ["latin"],
   weight: ["400"],
 });
@@ -80,7 +88,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} ${montserrat.variable} ${pressStart2P.variable} h-full antialiased`}
+      className={`${barlowCondensed.variable} ${barlow.variable} ${orbitron.variable} ${montserrat.variable} ${pressStart2P.variable} ${bungee.variable} h-full antialiased`}
     >
       <head>
         {/* Reads the saved theme choice and sets data-theme before first

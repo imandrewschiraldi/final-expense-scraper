@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
-import { Radio } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useCountUp } from "@/lib/useCountUp";
 
 const POLL_MS = 20000;
+
+const PERIODS = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "all", label: "All Time" },
+] as const;
+type Period = (typeof PERIODS)[number]["value"];
 
 type Ranking = { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number };
 type PodiumSlot = Ranking | { id: string; placeholder: true };
@@ -132,52 +139,81 @@ function StarIcon({ color, size }: { color: string; size: number }) {
 // none and clipped by the stage's overflow-hidden so they never affect
 // layout or scroll.
 const COINS = [
-  { top: "6%", left: "4%", size: 34, delay: "0s" },
-  { top: "16%", right: "5%", size: 26, delay: "-1.5s" },
-  { top: "42%", left: "2%", size: 30, delay: "-3s" },
-  { top: "55%", right: "3%", size: 22, delay: "-4.5s" },
-  { top: "78%", left: "5%", size: 28, delay: "-2s" },
-  { top: "88%", right: "4%", size: 24, delay: "-5s" },
+  { top: "6%", left: "4%", size: 36, delay: "0s" },
+  { top: "16%", right: "5%", size: 28, delay: "-1.5s" },
+  { top: "42%", left: "2%", size: 32, delay: "-3s" },
+  { top: "55%", right: "3%", size: 24, delay: "-4.5s" },
+  { top: "78%", left: "5%", size: 30, delay: "-2s" },
+  { top: "88%", right: "4%", size: 26, delay: "-5s" },
+  { top: "30%", right: "9%", size: 20, delay: "-3.8s" },
+  { top: "65%", left: "9%", size: 22, delay: "-1.2s" },
 ] as const;
 
 const BILLS = [
-  { left: "8%", width: 54, duration: "9s", delay: "-1s" },
-  { left: "28%", width: 44, duration: "11s", delay: "-4s" },
-  { left: "50%", width: 58, duration: "10s", delay: "-7s" },
-  { left: "68%", width: 42, duration: "12s", delay: "-2.5s" },
-  { left: "88%", width: 50, duration: "9.5s", delay: "-6s" },
+  { left: "5%", width: 56, duration: "9s", delay: "-1s" },
+  { left: "20%", width: 42, duration: "11s", delay: "-4s" },
+  { left: "35%", width: 58, duration: "10s", delay: "-7s" },
+  { left: "50%", width: 46, duration: "12s", delay: "-2.5s" },
+  { left: "65%", width: 54, duration: "9.5s", delay: "-6s" },
+  { left: "80%", width: 44, duration: "10.5s", delay: "-3s" },
+  { left: "93%", width: 50, duration: "11.5s", delay: "-8s" },
 ] as const;
 
 const CONFETTI = [
-  { left: "3%", w: 10, h: 6, color: "#FFD23F", duration: "9s", delay: "-1s" },
-  { left: "11%", w: 7, h: 11, color: "#FF3B6B", duration: "11s", delay: "-6s" },
-  { left: "19%", w: 9, h: 9, color: "#3AD6FF", duration: "8s", delay: "-3s" },
-  { left: "27%", w: 8, h: 12, color: "#6CFF8A", duration: "12s", delay: "-9s" },
-  { left: "35%", w: 11, h: 6, color: "#FFFFFF", duration: "10s", delay: "-2s" },
-  { left: "43%", w: 9, h: 9, color: "#FF7A1A", duration: "9.5s", delay: "-7s" },
-  { left: "51%", w: 10, h: 6, color: "#B46CFF", duration: "11.5s", delay: "-4s" },
-  { left: "59%", w: 7, h: 11, color: "#FFD23F", duration: "8.5s", delay: "-10s" },
-  { left: "67%", w: 11, h: 6, color: "#3AD6FF", duration: "10.5s", delay: "-5s" },
-  { left: "75%", w: 8, h: 10, color: "#FF3B6B", duration: "9s", delay: "-8s" },
-  { left: "83%", w: 9, h: 9, color: "#6CFF8A", duration: "12.5s", delay: "-1.5s" },
-  { left: "91%", w: 10, h: 6, color: "#FF7A1A", duration: "11s", delay: "-3.5s" },
-  { left: "97%", w: 8, h: 9, color: "#B46CFF", duration: "9.5s", delay: "-9.5s" },
+  { left: "2%", w: 10, h: 6, color: "#FFD23F", duration: "7s", delay: "-1s", round: false },
+  { left: "8%", w: 8, h: 8, color: "#FF3B6B", duration: "8.5s", delay: "-5s", round: true },
+  { left: "14%", w: 7, h: 11, color: "#3AD6FF", duration: "6.5s", delay: "-3s", round: false },
+  { left: "20%", w: 9, h: 9, color: "#6CFF8A", duration: "9s", delay: "-7s", round: true },
+  { left: "26%", w: 11, h: 6, color: "#FFFFFF", duration: "7.5s", delay: "-2s", round: false },
+  { left: "32%", w: 8, h: 8, color: "#FF7A1A", duration: "8s", delay: "-6s", round: true },
+  { left: "38%", w: 10, h: 6, color: "#B46CFF", duration: "9.5s", delay: "-4s", round: false },
+  { left: "44%", w: 7, h: 11, color: "#FFD23F", duration: "6.5s", delay: "-8s", round: false },
+  { left: "50%", w: 9, h: 9, color: "#3AD6FF", duration: "8s", delay: "-1.5s", round: true },
+  { left: "56%", w: 8, h: 10, color: "#FF3B6B", duration: "7s", delay: "-5.5s", round: false },
+  { left: "62%", w: 9, h: 9, color: "#6CFF8A", duration: "9s", delay: "-3.5s", round: true },
+  { left: "68%", w: 10, h: 6, color: "#FF7A1A", duration: "7.5s", delay: "-7.5s", round: false },
+  { left: "74%", w: 8, h: 9, color: "#B46CFF", duration: "8.5s", delay: "-2.5s", round: true },
+  { left: "80%", w: 10, h: 6, color: "#FFD23F", duration: "6.5s", delay: "-6.5s", round: false },
+  { left: "86%", w: 9, h: 9, color: "#3AD6FF", duration: "9s", delay: "-4.5s", round: true },
+  { left: "92%", w: 8, h: 10, color: "#6CFF8A", duration: "7.5s", delay: "-0.5s", round: false },
+  { left: "97%", w: 9, h: 9, color: "#FFFFFF", duration: "8s", delay: "-8.5s", round: true },
 ] as const;
 
 const FIREWORKS = [
-  { top: "8%", left: "12%", color: "#FFD23F", delay: "0s" },
-  { top: "5%", left: "55%", color: "#FF7A1A", delay: "-1.6s" },
-  { top: "10%", left: "85%", color: "#3AD6FF", delay: "-2.4s" },
+  { top: "6%", left: "10%", color: "#FFD23F", delay: "0s", scale: 1 },
+  { top: "4%", left: "35%", color: "#3AD6FF", delay: "-1.1s", scale: 0.8 },
+  { top: "7%", left: "55%", color: "#FF7A1A", delay: "-2.2s", scale: 1.1 },
+  { top: "4%", left: "75%", color: "#6CFF8A", delay: "-0.6s", scale: 0.85 },
+  { top: "8%", left: "90%", color: "#FF3B6B", delay: "-1.7s", scale: 0.95 },
 ] as const;
 
+// Multi-stop radial gradient + an embossed "$" (dark offset behind a bright
+// face) for a dimensional, coin-like shine instead of a flat gold circle.
+// Each instance gets its own gradient id via useId — reusing one fixed id
+// across several rendered coins would collide (SVG `url(#id)` references
+// resolve document-wide, not scoped per <svg>).
 function CoinIcon({ size }: { size: number }) {
+  const uid = useId();
+  const gradId = `lb-coin-${uid}`;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="47" fill="#F2B21E" />
-      <circle cx="50" cy="50" r="47" fill="url(#lbSheen)" />
-      <circle cx="50" cy="50" r="47" fill="none" stroke="#FFE9A8" strokeWidth="3" strokeDasharray="9 6" />
-      <circle cx="50" cy="50" r="33" fill="#D9940C" stroke="#FFE08A" strokeWidth="3" />
-      <text x="50" y="64" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="bold" fontSize="40" fill="#FFF3C4" stroke="#8A5200" strokeWidth="1">
+      <defs>
+        <radialGradient id={gradId} cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="#FFF6D0" />
+          <stop offset="35%" stopColor="#FFD75E" />
+          <stop offset="70%" stopColor="#E8A317" />
+          <stop offset="100%" stopColor="#8A5A00" />
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="47" fill={`url(#${gradId})`} stroke="#6B4300" strokeWidth="1.5" />
+      <circle cx="50" cy="50" r="47" fill="none" stroke="#FFE9A8" strokeWidth="2.5" strokeDasharray="8 6" opacity="0.8" />
+      <circle cx="50" cy="50" r="34" fill="none" stroke="#8A5A00" strokeWidth="2" opacity="0.6" />
+      <circle cx="50" cy="50" r="31" fill="none" stroke="#FFE9A8" strokeWidth="1.5" opacity="0.7" />
+      <path d="M22 28 A34 34 0 0 1 60 17" fill="none" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" opacity="0.45" />
+      <text x="51" y="65" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="bold" fontSize="42" fill="#5E3B00" opacity="0.6">
+        $
+      </text>
+      <text x="50" y="63" textAnchor="middle" fontFamily="Georgia, serif" fontWeight="bold" fontSize="42" fill="#FFF8E0" stroke="#8A5200" strokeWidth="0.8">
         $
       </text>
     </svg>
@@ -208,17 +244,17 @@ function BillIcon({ width }: { width: number }) {
   );
 }
 
-// Flash + 12 radiating sparks, matching the template's .lb-fw — the 12
+// Flash + 16 radiating sparks for a fuller jackpot-style burst — the
 // nth-child angle rules live in globals.css since CSS custom properties set
 // per-child can't be expressed as inline style on a mapped array cleanly.
-function Firework({ color, top, left, delay }: { color: string; top: string; left: string; delay: string }) {
+function Firework({ color, top, left, delay, scale }: { color: string; top: string; left: string; delay: string; scale: number }) {
   return (
     <span
       className="leaderboard-firework absolute"
-      style={{ color, top, left, animationDelay: delay }}
+      style={{ color, top, left, animationDelay: delay, transform: `scale(${scale})` }}
       aria-hidden="true"
     >
-      {Array.from({ length: 12 }, (_, i) => (
+      {Array.from({ length: 16 }, (_, i) => (
         <i key={i} />
       ))}
     </span>
@@ -337,13 +373,21 @@ function LaurelIcon({
 }
 
 export function LeaderboardPanel() {
+  const [period, setPeriod] = useState<Period>("all");
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    let first = true;
+
     function load() {
-      fetch("/api/portal/leaderboard")
+      if (first) {
+        setLoading(true);
+        first = false;
+      }
+      fetch(`/api/portal/leaderboard?period=${period}`)
         .then(async (res) => {
           if (!res.ok) {
             const body = await res.json().catch(() => null);
@@ -352,11 +396,13 @@ export function LeaderboardPanel() {
           return res.json();
         })
         .then((data) => {
+          if (cancelled) return;
           setRankings(data.rankings ?? []);
           setLoading(false);
           setLoadError(null);
         })
         .catch((err) => {
+          if (cancelled) return;
           setLoadError(err instanceof Error ? err.message : "Failed to load leaderboard.");
           setLoading(false);
         });
@@ -364,8 +410,11 @@ export function LeaderboardPanel() {
 
     load();
     const interval = setInterval(load, POLL_MS);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [period]);
 
   const top3: PodiumSlot[] = Array.from({ length: 3 }, (_, i) => rankings[i] ?? { id: `empty-${i}`, placeholder: true });
   const rest = rankings.slice(3);
@@ -373,49 +422,97 @@ export function LeaderboardPanel() {
   return (
     <div className="space-y-10">
       <div>
-        <div className="mb-4 flex items-center justify-end">
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-green-light">
-            <Radio className="h-3.5 w-3.5 animate-pulse" />
-            Live
-          </span>
-        </div>
+        {/* The "stage" — same radial copper-on-near-black gradient as the
+            reference template, covering the WHOLE leaderboard (title, period
+            tabs, podium, and the rest-of-the-pack list below it), always
+            rendered regardless of load state so the marquee header and
+            ambient effects are never hidden behind a bare loading line. */}
+        <div
+          className="relative overflow-hidden rounded-2xl px-3 pt-8 pb-6 sm:px-12"
+          style={{ background: "radial-gradient(ellipse 70% 90% at 50% 10%, #7A2E05 0%, #2E1204 45%, #0D0603 100%)" }}
+        >
+          {/* Ambient layer: coins bobbing near the edges + corner
+              fireworks, sitting behind everything else in DOM order. */}
+          <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            {COINS.map((coin, i) => (
+              <span
+                key={i}
+                className="leaderboard-coin-float absolute"
+                style={{
+                  top: coin.top,
+                  left: "left" in coin ? coin.left : undefined,
+                  right: "right" in coin ? coin.right : undefined,
+                  animationDelay: coin.delay,
+                }}
+              >
+                <CoinIcon size={coin.size} />
+              </span>
+            ))}
+            {FIREWORKS.map((fw, i) => (
+              <Firework key={i} color={fw.color} top={fw.top} left={fw.left} delay={fw.delay} scale={fw.scale} />
+            ))}
+          </div>
 
-        {loading ? (
-          <p className="text-sm text-muted">Loading...</p>
-        ) : loadError ? (
-          <p className="text-sm text-red-light">{loadError}</p>
-        ) : (
-          // The "stage" — same radial copper-on-near-black gradient as the
-          // reference template, covering the WHOLE leaderboard (podium and
-          // the rest-of-the-pack list below it), not just the top 3.
-          <div
-            className="relative overflow-hidden rounded-2xl px-3 pt-10 pb-6 sm:px-12 sm:pt-16"
-            style={{ background: "radial-gradient(ellipse 70% 90% at 50% 10%, #7A2E05 0%, #2E1204 45%, #0D0603 100%)" }}
-          >
-            {/* Ambient layer: coins bobbing near the edges + corner
-                fireworks, sitting behind the podium/list content below it
-                in DOM order. */}
-            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-              {COINS.map((coin, i) => (
-                <span
-                  key={i}
-                  className="leaderboard-coin-float absolute"
-                  style={{
-                    top: coin.top,
-                    left: "left" in coin ? coin.left : undefined,
-                    right: "right" in coin ? coin.right : undefined,
-                    animationDelay: coin.delay,
-                  }}
-                >
-                  <CoinIcon size={coin.size} />
-                </span>
-              ))}
-              {FIREWORKS.map((fw, i) => (
-                <Firework key={i} color={fw.color} top={fw.top} left={fw.left} delay={fw.delay} />
-              ))}
+          {/* Marquee header — big neon title with chase-light bulb strips
+              and the pulsing "live" dot, plus the period tabs. Matches the
+              reference template's header exactly, and stays up regardless
+              of load state since it's the stage's own persistent chrome. */}
+          <div className="relative flex flex-col items-center gap-3 pb-6">
+            <div className="leaderboard-bulbs h-2 w-full max-w-[640px] rounded-full" />
+            <div className="flex items-center gap-3 sm:gap-4">
+              <span
+                className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full sm:h-3.5 sm:w-3.5"
+                style={{ background: "#FF3B30", boxShadow: "0 0 22px #FF3B30" }}
+              />
+              <h1
+                className="font-bungee text-center text-xl leading-none sm:text-4xl"
+                style={{ color: "#FFFFFF", textShadow: "0 0 18px #FF7A1A, 0 0 42px #FF4D00, 0 4px 0 #5A1E00" }}
+              >
+                LIVE LEADERBOARD
+              </h1>
             </div>
+            <div className="leaderboard-bulbs h-2 w-full max-w-[640px] rounded-full" style={{ animationDirection: "reverse" }} />
 
-            <div className="relative flex flex-row items-end justify-center gap-2 sm:gap-8">
+            <div
+              role="tablist"
+              aria-label="Leaderboard period"
+              className="mt-2 flex gap-1 rounded-full p-1 sm:gap-1.5 sm:p-1.5"
+              style={{ background: "rgba(30,12,4,0.85)", border: "1px solid #8A4A1E", boxShadow: "0 0 24px rgba(255,122,26,0.3)" }}
+            >
+              {PERIODS.map((p) => {
+                const active = period === p.value;
+                return (
+                  <button
+                    key={p.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setPeriod(p.value)}
+                    className="rounded-full px-3 py-1.5 text-[11px] font-bold tracking-wide uppercase transition-colors sm:px-4 sm:text-sm"
+                    style={
+                      active
+                        ? { background: "linear-gradient(180deg, #FF9A4D, #FF7A1A)", color: "#2E1204", boxShadow: "0 0 16px rgba(255,138,42,0.6)" }
+                        : { color: "#E0B48C" }
+                    }
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {loading ? (
+            <p className="relative py-10 text-center text-sm" style={{ color: TEXT }}>
+              Loading...
+            </p>
+          ) : loadError ? (
+            <p className="relative py-10 text-center text-sm" style={{ color: "#FF8A8A" }}>
+              {loadError}
+            </p>
+          ) : (
+            <>
+              <div className="relative flex flex-row items-end justify-center gap-2 sm:gap-8">
               {top3.map((agent, i) => {
                 const isPlaceholder = "placeholder" in agent;
                 const theme = RANK_THEME[i];
@@ -557,30 +654,40 @@ export function LeaderboardPanel() {
                 ))}
               </div>
             )}
+            </>
+          )}
 
-            {/* Front layer: confetti streaming down + $100 bills raining,
-                stacked above the podium/list by DOM order (no z-index
-                needed, since stacking context is the stage's own). */}
-            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-              {CONFETTI.map((c, i) => (
-                <span
-                  key={i}
-                  className="leaderboard-confetti absolute"
-                  style={{ left: c.left, width: c.w, height: c.h, background: c.color, animationDuration: c.duration, animationDelay: c.delay }}
-                />
-              ))}
-              {BILLS.map((bill, i) => (
-                <span
-                  key={i}
-                  className="leaderboard-bill absolute opacity-50"
-                  style={{ left: bill.left, animationDuration: bill.duration, animationDelay: bill.delay }}
-                >
-                  <BillIcon width={bill.width} />
-                </span>
-              ))}
-            </div>
+          {/* Front layer: confetti streaming down + $100 bills raining —
+              always on (not gated by load state) like the coins/fireworks
+              above, stacked above everything else by DOM order (no z-index
+              needed, since stacking context is the stage's own). */}
+          <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            {CONFETTI.map((c, i) => (
+              <span
+                key={i}
+                className="leaderboard-confetti absolute"
+                style={{
+                  left: c.left,
+                  width: c.w,
+                  height: c.h,
+                  background: c.color,
+                  borderRadius: c.round ? "50%" : 2,
+                  animationDuration: c.duration,
+                  animationDelay: c.delay,
+                }}
+              />
+            ))}
+            {BILLS.map((bill, i) => (
+              <span
+                key={i}
+                className="leaderboard-bill absolute opacity-50"
+                style={{ left: bill.left, animationDuration: bill.duration, animationDelay: bill.delay }}
+              >
+                <BillIcon width={bill.width} />
+              </span>
+            ))}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

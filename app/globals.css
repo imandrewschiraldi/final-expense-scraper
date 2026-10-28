@@ -168,6 +168,7 @@
   --font-scoreboard: var(--font-scoreboard);
   --font-montserrat: var(--font-montserrat);
   --font-pixel: var(--font-pixel);
+  --font-bungee: var(--font-bungee);
 }
 
 body {
@@ -763,6 +764,10 @@ h4,
   font-family: var(--font-pixel), monospace;
 }
 
+.font-bungee {
+  font-family: var(--font-bungee), cursive;
+}
+
 ::selection {
   background: var(--copper);
   color: #000000;
@@ -941,13 +946,13 @@ h4,
 .leaderboard-firework::before {
   content: "";
   position: absolute;
-  left: -14px;
-  top: -14px;
-  width: 28px;
-  height: 28px;
+  left: -20px;
+  top: -20px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: currentColor;
-  filter: blur(6px);
+  filter: blur(8px);
   animation: leaderboard-firework-flash 3.2s ease-out infinite;
   animation-delay: inherit;
 }
@@ -956,49 +961,78 @@ h4,
   left: -2px;
   top: -2px;
   width: 4px;
-  height: 22px;
+  height: 26px;
   border-radius: 2px;
   background: currentColor;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 12px currentColor;
   transform-origin: 2px 2px;
   animation: leaderboard-firework-burst 3.2s ease-out infinite;
   animation-delay: inherit;
 }
+/* 16 sparks, 22.5deg apart, for a fuller jackpot-style burst. */
 .leaderboard-firework i:nth-child(1) {
   --lb-fw-angle: 0deg;
 }
 .leaderboard-firework i:nth-child(2) {
-  --lb-fw-angle: 30deg;
+  --lb-fw-angle: 22.5deg;
 }
 .leaderboard-firework i:nth-child(3) {
-  --lb-fw-angle: 60deg;
+  --lb-fw-angle: 45deg;
 }
 .leaderboard-firework i:nth-child(4) {
-  --lb-fw-angle: 90deg;
+  --lb-fw-angle: 67.5deg;
 }
 .leaderboard-firework i:nth-child(5) {
-  --lb-fw-angle: 120deg;
+  --lb-fw-angle: 90deg;
 }
 .leaderboard-firework i:nth-child(6) {
-  --lb-fw-angle: 150deg;
+  --lb-fw-angle: 112.5deg;
 }
 .leaderboard-firework i:nth-child(7) {
-  --lb-fw-angle: 180deg;
+  --lb-fw-angle: 135deg;
 }
 .leaderboard-firework i:nth-child(8) {
-  --lb-fw-angle: 210deg;
+  --lb-fw-angle: 157.5deg;
 }
 .leaderboard-firework i:nth-child(9) {
-  --lb-fw-angle: 240deg;
+  --lb-fw-angle: 180deg;
 }
 .leaderboard-firework i:nth-child(10) {
-  --lb-fw-angle: 270deg;
+  --lb-fw-angle: 202.5deg;
 }
 .leaderboard-firework i:nth-child(11) {
-  --lb-fw-angle: 300deg;
+  --lb-fw-angle: 225deg;
 }
 .leaderboard-firework i:nth-child(12) {
-  --lb-fw-angle: 330deg;
+  --lb-fw-angle: 247.5deg;
+}
+.leaderboard-firework i:nth-child(13) {
+  --lb-fw-angle: 270deg;
+}
+.leaderboard-firework i:nth-child(14) {
+  --lb-fw-angle: 292.5deg;
+}
+.leaderboard-firework i:nth-child(15) {
+  --lb-fw-angle: 315deg;
+}
+.leaderboard-firework i:nth-child(16) {
+  --lb-fw-angle: 337.5deg;
+}
+
+/* Marquee chase-light strip above/below the "LIVE LEADERBOARD" title. */
+@keyframes leaderboard-bulb-chase {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 28px 0;
+  }
+}
+.leaderboard-bulbs {
+  background-image: radial-gradient(circle, #ffe27a 0 3px, transparent 4px);
+  background-size: 28px 10px;
+  background-repeat: repeat-x;
+  animation: leaderboard-bulb-chase 1.2s linear infinite;
 }
 
 .animate-lead-card-next {

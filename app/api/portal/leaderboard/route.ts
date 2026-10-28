@@ -2,27 +2,41 @@ import { NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { generateDemoPolicies, demoLeaderboardTotals, generateDemoAgencyPolicies, demoAgencyLeaderboardTotals } from "@/lib/demoData";
+import { rangeSince, type DashboardRange } from "@/lib/dashboardRange";
 
-// Always a live, all-time ranking — no period selector. Sales leaderboards
-// that reset weekly/monthly hide who's actually ahead right now; this stays
-// continuous and just reflects current standings as they change. Every
-// active user is included (even at $0), regardless of role — an admin who
-// also personally writes business is still part of the agency's production,
-// and excluding them by role previously meant their issued premium was
-// silently dropped instead of just not ranking anyone: new accounts show up
-// on the board immediately instead of waiting for their first issued policy.
-export async function GET() {
+// Defaults to a live, all-time ranking — the board's normal state, since
+// sales leaderboards that silently reset weekly/monthly hide who's actually
+// ahead right now. A `period` query param (daily/weekly/monthly/all) lets
+// the UI additionally show a shorter contest window on request, reusing the
+// same day/week(Mon-start)/month boundaries as the rest of the Dashboard.
+// Every active user is included (even at $0), regardless of role — an admin
+// who also personally writes business is still part of the agency's
+// production, and excluding them by role previously meant their issued
+// premium was silently dropped instead of just not ranking anyone: new
+// accounts show up on the board immediately instead of waiting for their
+// first issued policy.
+const LEADERBOARD_PERIODS = ["daily", "weekly", "monthly", "all"] as const satisfies readonly DashboardRange[];
+type LeaderboardPeriod = (typeof LEADERBOARD_PERIODS)[number];
+
+function parsePeriod(value: string | null): LeaderboardPeriod {
+  return (LEADERBOARD_PERIODS as readonly string[]).includes(value ?? "") ? (value as LeaderboardPeriod) : "all";
+}
+
+export async function GET(request: Request) {
   const guard = await requireAnyRole();
   if ("error" in guard) return guard.error;
 
   try {
+    const period = parsePeriod(new URL(request.url).searchParams.get("period"));
+    const since = rangeSince(period);
+
     const [agents, policies] = await Promise.all([
       db.user.findMany({
         where: { active: true },
         select: { id: true, name: true, profileImageUrl: true },
       }),
       db.policy.findMany({
-        where: { status: "ISSUED", agentId: { not: null } },
+        where: { status: "ISSUED", agentId: { not: null }, ...(since ? { issuedAt: { gte: since } } : {}) },
         select: { annualPremium: true, agentId: true },
       }),
     ]);
@@ -53,13 +67,15 @@ export async function GET() {
     if (viewer?.demoModeEnabled) {
       const own = byAgent.get(guard.session.user.id);
       if (own) {
-        const { issuedAP, issuedCount } = demoLeaderboardTotals(generateDemoPolicies());
+        const ownPolicies = generateDemoPolicies();
+        const { issuedAP, issuedCount } = demoLeaderboardTotals(since ? ownPolicies.filter((p) => p.issuedAt && p.issuedAt >= since) : ownPolicies);
         own.issuedAP = issuedAP;
         own.issuedCount = issuedCount;
       }
 
       const otherAgents = agents.filter((a) => a.id !== guard.session.user.id);
-      const agencyTotals = demoAgencyLeaderboardTotals(generateDemoAgencyPolicies(otherAgents));
+      const agencyPolicies = generateDemoAgencyPolicies(otherAgents);
+      const agencyTotals = demoAgencyLeaderboardTotals(since ? agencyPolicies.filter((p) => p.issuedAt && p.issuedAt >= since) : agencyPolicies);
       for (const [agentId, totals] of agencyTotals) {
         const entry = byAgent.get(agentId);
         if (entry) {
