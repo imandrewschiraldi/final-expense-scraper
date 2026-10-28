@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Moon, Search, Sun } from "lucide-react";
+import { Bot, Moon, Sun } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { NO_OUTER_LINE_PREFIXES } from "@/components/portal/HeaderDivider";
@@ -11,6 +11,83 @@ import { useTheme } from "@/lib/useTheme";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 type Profile = { name: string; profileImageUrl: string | null };
+
+/**
+ * The header's search box — not a platform search (that's the sidebar's
+ * own search, which filters the nav), this asks Gemini general insurance/
+ * underwriting questions and shows the answer in a dropdown underneath.
+ * Server-side key, scoped system prompt, and the "not your actual lead
+ * data" disclaimer all live in the API route, not here.
+ */
+function AiSearchBox() {
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  async function ask(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = question.trim();
+    if (!trimmed || loading) return;
+    setLoading(true);
+    setError(null);
+    setAnswer(null);
+    setOpen(true);
+    try {
+      const res = await fetch("/api/portal/ask-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(data?.error ?? "Something went wrong.");
+      } else {
+        setAnswer(data.answer);
+      }
+    } catch {
+      setError("Couldn't reach the AI assistant.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div ref={containerRef} className="relative w-full max-w-[240px]">
+      <form onSubmit={ask}>
+        <Bot className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
+        <input
+          type="text"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onFocus={() => (answer || error) && setOpen(true)}
+          placeholder="Ask about insurance, underwriting..."
+          className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+        />
+      </form>
+      {open && (loading || answer || error) && (
+        <div className="absolute top-full left-0 z-20 mt-2 w-80 rounded-[10px] border border-border bg-surface p-3 text-sm shadow-lg">
+          {loading && <p className="text-muted">Thinking…</p>}
+          {error && <p className="text-red-light">{error}</p>}
+          {answer && <p className="whitespace-pre-wrap text-foreground">{answer}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * Notifications — pulled out of the sidebar footer and into the top-right
@@ -57,14 +134,7 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
         className="absolute top-0 left-4 right-4 z-40 hidden items-center justify-between gap-3 sm:left-6 sm:right-6 lg:left-10 lg:right-10 lg:flex"
         style={{ height: HEADER_HEIGHT }}
       >
-        <div className="relative w-full max-w-[240px]">
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
-          <input
-            type="text"
-            placeholder="Search everything..."
-            className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
-          />
-        </div>
+        <AiSearchBox />
         <div className="flex items-center gap-3">
           <button
             type="button"
