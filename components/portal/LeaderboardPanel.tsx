@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
-import { Crown, Radio } from "lucide-react";
+import { Radio } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useCountUp } from "@/lib/useCountUp";
 
@@ -15,6 +15,17 @@ type PodiumSlot = Ranking | { id: string; placeholder: true };
 function formatAP(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
+
+// This whole card is a fixed dark "stage" by design (see the wrapper below)
+// regardless of the site's light/dark toggle — only the page behind it
+// changes with theme. So every color in this file is a literal value, not
+// a theme token: bare Tailwind color names like `white`/`muted`/`border`
+// resolve to this app's theme-remapped tokens (app/globals.css redefines
+// them per light/dark), which would make text go dark-on-dark here in
+// light mode. `[#ffffff]` etc. opt out of that remap.
+const WHITE = "text-[#ffffff]";
+const WHITE_DIM = "text-[#ffffff]/90";
+const MUTED = "text-[#9c96ab]";
 
 // Flat saturated purple/red/orange blocks, matching the reference's own
 // glossy-toy palette — deliberately NOT the app's usual brushed-metal
@@ -35,7 +46,8 @@ const RANK_THEME = [
     height: "h-28 sm:h-44",
     avatarSize: "h-16 w-16 sm:h-28 sm:w-28",
     avatarPixels: 224,
-    crownSize: "h-9 w-9 sm:h-14 sm:w-14",
+    crownSize: "h-12 w-12 sm:h-20 sm:w-20",
+    crown: { src: "/crowns/crown-1st.png", width: 197, height: 177 },
     delay: 0.3,
   },
   {
@@ -49,7 +61,8 @@ const RANK_THEME = [
     height: "h-20 sm:h-32",
     avatarSize: "h-13 w-13 sm:h-20 sm:w-20",
     avatarPixels: 160,
-    crownSize: "h-7 w-7 sm:h-10 sm:w-10",
+    crownSize: "h-9 w-9 sm:h-14 sm:w-14",
+    crown: { src: "/crowns/crown-2nd.png", width: 197, height: 176 },
     delay: 0.1,
   },
   {
@@ -63,15 +76,11 @@ const RANK_THEME = [
     height: "h-14 sm:h-24",
     avatarSize: "h-13 w-13 sm:h-20 sm:w-20",
     avatarPixels: 160,
-    crownSize: "h-7 w-7 sm:h-10 sm:w-10",
+    crownSize: "h-9 w-9 sm:h-14 sm:w-14",
+    crown: { src: "/crowns/crown-3rd.png", width: 197, height: 190 },
     delay: 0.18,
   },
 ] as const;
-
-// Every rank's crown stays gold — "royalty" color regardless of the
-// pillar it's standing on, same as the reference's three crowns, which are
-// all the same warm gold rather than tinted per rank.
-const CROWN_CLASS = "fill-[var(--gold)] text-[var(--gold-metal-dk)]";
 
 function AnimatedAP({ value, className }: { value: number; className?: string }) {
   const animated = useCountUp(value);
@@ -94,12 +103,7 @@ function Avatar({ url, name, sizeClassName, pixels = 96 }: { url: string | null;
       className={cn("shrink-0 rounded-full object-cover", sizeClassName)}
     />
   ) : (
-    <div
-      className={cn(
-        "flex shrink-0 items-center justify-center rounded-full bg-surface2 text-base font-bold text-muted sm:text-xl",
-        sizeClassName,
-      )}
-    >
+    <div className={cn("flex shrink-0 items-center justify-center rounded-full bg-[#ffffff]/10 text-base font-bold sm:text-xl", WHITE, sizeClassName)}>
       {name.charAt(0).toUpperCase()}
     </div>
   );
@@ -220,13 +224,18 @@ export function LeaderboardPanel() {
         ) : loadError ? (
           <p className="text-sm text-red-light">{loadError}</p>
         ) : (
-          <>
-            {/* The "stage" — a dark backdrop with a violet glow rising from
-                center, separate from the page background, so the podium
-                reads as a lit scene rather than floating on a plain panel.
-                No overflow-hidden: the crests/crowns below are deliberately
-                allowed to spill past this box's own edges. */}
-            <div className="relative rounded-2xl bg-[radial-gradient(120%_90%_at_50%_0%,rgba(139,92,246,0.22),transparent_65%),linear-gradient(180deg,#0c0714_0%,#050309_100%)] px-3 pt-10 pb-0 sm:px-12 sm:pt-16">
+          // The "stage" — a fixed dark backdrop with a violet glow rising
+          // from center, covering the WHOLE leaderboard (podium and the
+          // rest-of-the-pack list below it), not just the top 3. It's a
+          // deliberately fixed look regardless of the site's light/dark
+          // toggle — see the WHITE/MUTED constants' comment above — only
+          // the page behind this card is meant to change with theme.
+          // No overflow-hidden here — the crests below are positioned to
+          // intentionally spill past this box's left/right edges (see
+          // LaurelBranch's own comment); clipping happens lower down, only
+          // around the rest-of-the-pack list, which has no reason to spill.
+          <div className="relative rounded-2xl bg-[radial-gradient(120%_90%_at_50%_0%,rgba(139,92,246,0.22),transparent_65%),linear-gradient(180deg,#0c0714_0%,#050309_100%)]">
+            <div className="relative px-3 pt-10 pb-0 sm:px-12 sm:pt-16">
               <div className="relative flex flex-row items-end justify-center gap-2 sm:gap-10">
                 {/* Side crests — desktop/tablet only, no room on a phone-width card. */}
                 <div className="pointer-events-none absolute inset-y-0 -left-4 hidden items-end pb-2 sm:-left-10 sm:flex sm:pb-8">
@@ -271,16 +280,15 @@ export function LeaderboardPanel() {
                             transition={{ delay: theme.delay + 0.25, type: "spring", stiffness: 280, damping: 14 }}
                             className="relative z-10 drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)]"
                           >
-                            {/* Pulse lives on a plain inner element, not the
-                                motion.div above — Framer Motion drives that
-                                one's opacity via inline style, which would
-                                fight a CSS keyframe animation on the same
-                                property instead of layering cleanly. */}
-                            <div className={i === 0 ? "animate-pulse" : undefined}>
-                              <Crown className={cn(theme.crownSize, CROWN_CLASS)} />
-                            </div>
+                            <Image
+                              src={theme.crown.src}
+                              alt=""
+                              width={theme.crown.width}
+                              height={theme.crown.height}
+                              className={cn("w-auto object-contain", theme.crownSize)}
+                            />
                           </motion.div>
-                          <span className="relative z-10 mt-1 w-full truncate px-1 text-center text-[10px] font-bold tracking-[0.04em] text-white/90 uppercase sm:text-xs">
+                          <span className={cn("relative z-10 mt-1 w-full truncate px-1 text-center text-[10px] font-bold tracking-[0.04em] uppercase sm:text-xs", WHITE_DIM)}>
                             {agent.name}
                           </span>
                         </>
@@ -293,7 +301,8 @@ export function LeaderboardPanel() {
                         {isPlaceholder ? (
                           <div
                             className={cn(
-                              "flex items-center justify-center rounded-full border-2 border-dashed border-white/20 bg-surface2 text-muted",
+                              "flex items-center justify-center rounded-full border-2 border-dashed border-[#ffffff]/20 bg-[#ffffff]/5",
+                              MUTED,
                               theme.avatarSize,
                             )}
                           >
@@ -325,11 +334,11 @@ export function LeaderboardPanel() {
                       >
                         <div className="absolute inset-x-0 top-0 h-3 sm:h-4" style={{ backgroundColor: theme.cap }} />
 
-                        <span className="font-podium relative text-2xl font-extrabold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)] sm:text-5xl">
+                        <span className={cn("font-podium relative text-2xl font-extrabold drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)] sm:text-5xl", WHITE)}>
                           {theme.ordinal}
                         </span>
 
-                        <span className="relative rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold text-white sm:px-3 sm:py-1.5 sm:text-sm">
+                        <span className={cn("relative rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold sm:px-3 sm:py-1.5 sm:text-sm", WHITE)}>
                           <AnimatedAP value={isPlaceholder ? 0 : agent.issuedAP} className="font-scoreboard" />
                         </span>
                       </div>
@@ -340,29 +349,29 @@ export function LeaderboardPanel() {
             </div>
 
             {rest.length > 0 && (
-              <div className="mt-6 max-h-[560px] overflow-y-auto rounded-2xl border border-border">
+              <div className="relative mt-8 max-h-[560px] overflow-y-auto border-t border-[#ffffff]/10 pb-2">
                 {rest.map((agent, i) => (
                   <motion.div
                     key={agent.id}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.3 + i * 0.04 }}
-                    className="flex items-center gap-4 border-b border-border/60 px-4 py-3 text-sm last:border-b-0 hover:bg-surface2"
+                    className="flex items-center gap-4 border-b border-[#ffffff]/10 px-4 py-3 text-sm last:border-b-0 hover:bg-[#ffffff]/5"
                   >
-                    <span className="font-scoreboard w-8 shrink-0 text-muted">#{i + 4}</span>
+                    <span className={cn("font-scoreboard w-8 shrink-0", MUTED)}>#{i + 4}</span>
                     <Avatar
                       url={agent.profileImageUrl}
                       name={agent.name}
                       sizeClassName="h-7 w-7 border-2 border-copper-dim-gradient"
                       pixels={56}
                     />
-                    <span className="min-w-0 flex-1 truncate text-white">{agent.name}</span>
+                    <span className={cn("min-w-0 flex-1 truncate", WHITE)}>{agent.name}</span>
                     <AnimatedAP value={agent.issuedAP} className="metal-copper-text font-scoreboard shrink-0" />
                   </motion.div>
                 ))}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
