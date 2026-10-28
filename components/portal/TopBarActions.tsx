@@ -7,6 +7,7 @@ import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { NO_OUTER_LINE_PREFIXES } from "@/components/portal/HeaderDivider";
 import { ProfileMenu } from "@/components/portal/ProfileMenu";
+import { QuickLinksMenu } from "@/components/portal/QuickLinksMenu";
 import { useTheme } from "@/lib/useTheme";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
@@ -229,6 +230,7 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
           >
             {theme === "light" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
+          <QuickLinksMenu />
           <NotificationBell />
           <ProfileMenu profile={profile} name={name} role={role} collapsed showTour={role !== "ADMIN"} menuAlign="down" />
         </div>

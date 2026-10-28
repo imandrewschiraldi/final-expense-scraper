@@ -48,68 +48,67 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
   const DeltaIcon = isUp ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <div
-      className="relative mb-5 overflow-hidden rounded-[20px] border-copper-gradient p-[18px_28px]"
-      style={{
-        background:
-          "radial-gradient(130% 160% at 100% 0%, rgba(202,126,64,.20), transparent 60%), linear-gradient(160deg,#0d0d0d 0%,#080808 60%,#000 100%)",
-        boxShadow: "0 30px 80px -30px rgba(202,126,64,.3), 0 24px 48px -28px rgba(0,0,0,.8)",
-      }}
-    >
-      <div className="mb-2.5 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setShowAdvance((s) => !s)}
-          aria-pressed={showAdvance}
-          className={`rounded-full border px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] uppercase transition-colors ${
-            showAdvance ? "toggle-pill-active" : "border-white/[0.12] text-white/60 hover:text-white"
-          }`}
-        >
-          Advance
-        </button>
-        <span className="rounded-full border border-white/[0.12] px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] text-white/60 uppercase">
-          {RANGE_PILL_LABEL[range]}
-        </span>
-      </div>
-
-      <p className="font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] uppercase">
-        <span className="metal-copper-text">
-          Commissions Paid{showAdvance ? " · 75% Advance" : ""}
-        </span>
-      </p>
-      <p
-        className="font-scoreboard text-[68px] leading-none font-black tracking-tight"
-        style={{
-          filter: "drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 48px rgba(202,126,64,.55))",
-        }}
-      >
-        <span className="metal-copper-text">{currency(animated ?? value)}</span>
-      </p>
-
-      <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
-        {showDelta ? (
-          <span
-            className={`font-condensed flex items-center gap-1 text-[13px] font-extrabold tracking-[0.04em] uppercase ${
-              isUp ? "text-green-light" : "text-red-light"
+    <div className="relative mb-5 overflow-hidden rounded-[20px] border-copper-gradient bg-surface p-[18px_28px] shadow-[0_24px_48px_-28px_rgba(0,0,0,0.5)]">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(130% 160% at 100% 0%, rgba(202,126,64,.16), transparent 60%)" }}
+      />
+      <div className="relative">
+        <div className="mb-2.5 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAdvance((s) => !s)}
+            aria-pressed={showAdvance}
+            className={`rounded-full border px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] uppercase transition-colors ${
+              showAdvance ? "toggle-pill-active" : "border-border text-muted hover:text-foreground"
             }`}
           >
-            <DeltaIcon className="h-3.5 w-3.5" />
-            {isUp ? "+" : "-"}
-            {currency(Math.abs(delta))} {RANGE_DELTA_LABEL[range]}
+            Advance
+          </button>
+          <span className="rounded-full border border-border px-3 py-[5px] text-[11px] font-bold tracking-[0.08em] text-muted uppercase">
+            {RANGE_PILL_LABEL[range]}
           </span>
-        ) : (
-          <span />
-        )}
-        <div className="flex items-center gap-2">
-          {data.agentProfileImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={data.agentProfileImageUrl} alt="" className="h-[22px] w-[22px] rounded-full object-cover" />
+        </div>
+
+        <p className="font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] uppercase">
+          <span className="metal-copper-text">
+            Commissions Paid{showAdvance ? " · 75% Advance" : ""}
+          </span>
+        </p>
+        <p
+          className="font-scoreboard text-[68px] leading-none font-black tracking-tight"
+          style={{
+            filter: "drop-shadow(0 2px 0 rgba(0,0,0,.45)) drop-shadow(0 0 48px rgba(202,126,64,.55))",
+          }}
+        >
+          <span className="metal-copper-text">{currency(animated ?? value)}</span>
+        </p>
+
+        <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+          {showDelta ? (
+            <span
+              className={`font-condensed flex items-center gap-1 text-[13px] font-extrabold tracking-[0.04em] uppercase ${
+                isUp ? "text-green-light" : "text-red-light"
+              }`}
+            >
+              <DeltaIcon className="h-3.5 w-3.5" />
+              {isUp ? "+" : "-"}
+              {currency(Math.abs(delta))} {RANGE_DELTA_LABEL[range]}
+            </span>
           ) : (
-            <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-white/10 text-[11px] font-bold text-white/70">
-              {data.agentName.charAt(0).toUpperCase()}
-            </div>
+            <span />
           )}
-          <span className="text-xs font-bold text-white">{data.agentName}</span>
+          <div className="flex items-center gap-2">
+            {data.agentProfileImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={data.agentProfileImageUrl} alt="" className="h-[22px] w-[22px] rounded-full object-cover" />
+            ) : (
+              <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-surface2 text-[11px] font-bold text-muted">
+                {data.agentName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span className="text-xs font-bold text-foreground">{data.agentName}</span>
+          </div>
         </div>
       </div>
     </div>
