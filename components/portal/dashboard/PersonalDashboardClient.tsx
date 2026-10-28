@@ -31,7 +31,7 @@ const POLL_MS = 25000;
 export function PersonalDashboardClient() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [range, setRange] = useState<DashboardRange>("monthly");
+  const [range, setRange] = useState<DashboardRange>("daily");
   const [celebration, setCelebration] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const seenWinIds = useRef<Set<string> | null>(null);
