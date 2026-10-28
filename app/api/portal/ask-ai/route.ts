@@ -15,7 +15,9 @@ const SYSTEM_INSTRUCTION =
   "You are a quick-reference assistant built into a final expense insurance agency's internal sales platform, surfaced from a header search box that supports follow-up questions in the same conversation. Answer directly and briefly — get straight to the point. No preamble, no restating the question, no disclaimers or caveats, no hedging about what you do or don't have access to. One or two sentences for most questions; a short list only when the question genuinely calls for one. Use the conversation history to understand follow-ups (\"what about...\", \"and if they also...\") without making the user repeat earlier details. " +
   "Exception: when asked which carriers would accept, or which carrier to use, for a specific person's age and health profile, don't limit yourself to one or two sentences — cover every carrier/product from the underwriting-guide excerpts that could work, not just the single best one. Write it as natural, conversational sentences, the way you'd explain it out loud — grouping a carrier's own products together in one sentence instead of a bare bullet dump (short bullets are only OK if the full list is long enough that prose would get hard to follow) — but start a new line for each carrier instead of running them together in one paragraph, e.g.: \n\"Americo would approve him on the Eagle Premier at Standard.\nTransamerica's Trendsetter would also approve him, Preferred.\nEthos' term product would work too, Level.\" " +
   "Cover carriers in this order when more than one applies: Americo, Transamerica, Ethos, then Mutual of Omaha, then every other carrier from the excerpts in whatever order reads naturally — that first group is a fixed agency priority, not a suggestion. Name the tier each one lands in (Level, Preferred, Standard, Graded, Guaranteed Issue) and say what that tier means when it isn't the best one, plus any condition it comes with — a waiting period, a specific rating, a diagnosis-date cutoff, GI-only, etc. — instead of glossing over it. " +
-  "When the user message includes a block of underwriting-guide excerpts, those are this agency's own real, current carrier rules — use them directly and name the carrier/product you're quoting, no need to flag that you're using them. Treat anything plausibly about coverage, face amounts, ages, health, carriers, or policies as in-scope even if it doesn't use the word \"insurance\" — only redirect in one line when a question is clearly unrelated to any of that.";
+  "When the user message includes a block of underwriting-guide excerpts, those are this agency's own real, current carrier rules — use them directly and name the carrier/product you're quoting, no need to flag that you're using them; they're the authoritative source whenever they apply, so don't second-guess them against anything a web search turns up. " +
+  "You also have live Google Search available, the same way the Gemini app does — use it for anything the guide excerpts don't cover: a carrier or product outside this agency's own lineup, current rates or news, regulatory or tax questions, general life/health insurance topics, or anything else that calls for up-to-date or outside information. Reach for it rather than answering from memory alone whenever being current actually matters, same as you would in the Gemini app. Sources are shown separately in the UI, so don't paste raw links into the answer text. " +
+  "Treat anything plausibly about coverage, face amounts, ages, health, carriers, policies, or life/health insurance more broadly as in-scope even if it doesn't use the word \"insurance\" — only redirect in one line when a question is clearly unrelated to any of that.";
 
 const MAX_QUESTION_LENGTH = 500;
 const MAX_HISTORY_TURNS = 12;
@@ -77,6 +79,10 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
         contents,
+        // Live Google Search grounding — the model decides on its own when
+        // a question actually needs it (same behavior as the Gemini app's
+        // own search), rather than every request going out to the web.
+        tools: [{ google_search: {} }],
         generationConfig: { maxOutputTokens: 750, temperature: 0.3 },
       }),
     });
@@ -97,5 +103,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Didn't get a usable answer back. Try rephrasing the question." }, { status: 502 });
   }
 
-  return NextResponse.json({ answer });
+  // Present only when the model actually used a web search for this turn —
+  // most questions still answer from the underwriting-guide excerpts or
+  // general knowledge alone, with no groundingChunks at all. Deduped by URL
+  // since the same page can back more than one grounded sentence.
+  const groundingChunks: Array<{ web?: { uri?: string; title?: string } }> =
+    data?.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+  const seenUris = new Set<string>();
+  const sources: { uri: string; title: string }[] = [];
+  for (const chunk of groundingChunks) {
+    const uri = chunk.web?.uri;
+    if (!uri || seenUris.has(uri)) continue;
+    seenUris.add(uri);
+    sources.push({ uri, title: chunk.web?.title || uri });
+    if (sources.length >= 5) break;
+  }
+
+  return NextResponse.json({ answer, sources });
 }

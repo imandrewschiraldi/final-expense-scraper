@@ -12,7 +12,8 @@ import { useTheme } from "@/lib/useTheme";
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 type Profile = { name: string; profileImageUrl: string | null };
 
-type ChatTurn = { role: "user" | "model"; text: string };
+type Source = { uri: string; title: string };
+type ChatTurn = { role: "user" | "model"; text: string; sources?: Source[] };
 
 // Minimal ambient typing for the Web Speech API's SpeechRecognition — not
 // reliably present across TS's DOM lib versions, and the webkit-prefixed
@@ -205,7 +206,7 @@ function AiSearchBox() {
       if (!res.ok) {
         setError(data?.error ?? "Something went wrong.");
       } else {
-        setMessages((m) => [...m, { role: "model", text: data.answer }]);
+        setMessages((m) => [...m, { role: "model", text: data.answer, sources: data.sources }]);
       }
     } catch {
       setError("Couldn't reach the AI assistant.");
@@ -230,33 +231,39 @@ function AiSearchBox() {
     </span>
   );
 
-  // "Talk to type" — only rendered where the browser actually implements
-  // SpeechRecognition (feature-detected above). Appends to whatever's
-  // already typed rather than replacing it.
-  const micButton = speechSupported && (
-    <button
-      type="button"
-      onClick={toggleListening}
-      aria-label={listening ? "Stop dictation" : "Dictate with your microphone"}
-      title={listening ? "Stop dictation" : "Dictate with your microphone"}
-      className={`absolute top-1/2 right-9 -translate-y-1/2 ${listening ? "text-red-light" : "text-muted hover:text-foreground"}`}
-    >
-      <Mic className={`h-4 w-4 ${listening ? "animate-pulse" : ""}`} />
-    </button>
-  );
-
-  // Explicit send button next to the mic, same as this platform's own chat
-  // input — Enter still submits too, this is just a visible click target.
-  const sendButton = (
-    <button
-      type="submit"
-      disabled={!question.trim() || loading}
-      aria-label="Send"
-      title="Send"
-      className="absolute top-1/2 right-2 -translate-y-1/2 text-muted hover:text-foreground disabled:opacity-40 disabled:hover:text-muted"
-    >
-      <Send className="h-4 w-4" />
-    </button>
+  // Mic ("talk to type" — only where the browser actually implements
+  // SpeechRecognition, feature-detected above; appends to whatever's
+  // already typed rather than replacing it) and Send share one small
+  // rounded-icon-button treatment in a single flex group, instead of each
+  // being its own independently-offset absolute element — reads as one
+  // cohesive control built into the pill rather than two floating icons
+  // guessed into alignment. Enter still submits too; Send is just a
+  // visible click target, same as this platform's own chat input.
+  const micSendGroup = (
+    <div className="absolute top-1/2 right-1.5 flex -translate-y-1/2 items-center gap-0.5">
+      {speechSupported && (
+        <button
+          type="button"
+          onClick={toggleListening}
+          aria-label={listening ? "Stop dictation" : "Dictate with your microphone"}
+          title={listening ? "Stop dictation" : "Dictate with your microphone"}
+          className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
+            listening ? "bg-red-light/15 text-red-light" : "text-muted hover:bg-surface2 hover:text-foreground"
+          }`}
+        >
+          <Mic className={`h-4 w-4 ${listening ? "animate-pulse" : ""}`} />
+        </button>
+      )}
+      <button
+        type="submit"
+        disabled={!question.trim() || loading}
+        aria-label="Send"
+        title="Send"
+        className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
+      >
+        <Send className="h-4 w-4" />
+      </button>
+    </div>
   );
 
   return (
@@ -280,8 +287,7 @@ function AiSearchBox() {
             placeholder="Ask Gemini — insurance, underwriting..."
             className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none ${speechSupported ? "pr-16" : "pr-9"}`}
           />
-          {micButton}
-          {sendButton}
+          {micSendGroup}
         </form>
       ) : (
         <div
@@ -328,6 +334,26 @@ function AiSearchBox() {
                   {m.role === "user" ? "You" : "Gemini"}
                 </p>
                 <p className="whitespace-pre-wrap text-foreground">{m.text}</p>
+                {/* Only present when this turn actually triggered a live
+                    Google Search (most don't) — same grounding behavior as
+                    the Gemini app, surfaced as plain source links rather
+                    than inline citation markers. */}
+                {m.sources && m.sources.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                    {m.sources.map((s, si) => (
+                      <a
+                        key={si}
+                        href={s.uri}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="max-w-[200px] truncate text-[11px] text-teal-light hover:underline"
+                        title={s.title}
+                      >
+                        {s.title}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             {loading && <p className={`text-muted ${hasThread ? "mt-3" : ""}`}>Thinking…</p>}
@@ -347,8 +373,7 @@ function AiSearchBox() {
                 disabled={loading}
                 className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-3 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none disabled:opacity-60 ${speechSupported ? "pr-16" : "pr-9"}`}
               />
-              {micButton}
-              {sendButton}
+              {micSendGroup}
             </div>
           </form>
         </div>
