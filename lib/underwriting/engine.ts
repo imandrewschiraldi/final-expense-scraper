@@ -194,18 +194,48 @@ export function runUnderwriting({
   return out;
 }
 
+// Lowercases and splits on anything that isn't a letter/digit, so trailing
+// punctuation ("diabetes.") and the commas/parens already inside condition
+// names ("High Blood Pressure (Controlled, less than 3 meds...)") don't
+// affect matching either way.
+function tokenize(s: string): string[] {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+// A name matches once every query word appears *somewhere* in it, in any
+// order — "controlled high blood pressure" matches "High Blood Pressure
+// (Controlled...)" even though the word order doesn't line up. Ranks an
+// exact (in-order) phrase match above an out-of-order one so a precise
+// query still sorts its best hit first.
+function matchScore(query: string, queryTokens: string[], name: string): number {
+  const nameTokens = tokenize(name);
+  if (!queryTokens.every((t) => nameTokens.some((nt) => nt.includes(t)))) return 0;
+  return nameTokens.join(" ").includes(queryTokens.join(" ")) ? 2 : 1;
+}
+
 /** Search conditions and medications. */
 export function search(query: string, conditions: Condition[], medications: Medication, sheet: "wl" | "tm"): SearchHit[] {
-  const q = query.trim().toLowerCase();
-  if (q.length < 2) return [];
-  const hits: SearchHit[] = conditions
-    .filter((c) => c.name.toLowerCase().includes(q))
-    .map((c) => ({ type: "condition" as const, id: c.id, name: c.name }));
+  const queryTokens = tokenize(query);
+  if (queryTokens.join("").length < 2) return [];
+
+  const condHits: SearchHit[] = conditions
+    .map((c) => ({ c, score: matchScore(query, queryTokens, c.name) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((x) => ({ type: "condition" as const, id: x.c.id, name: x.c.name }));
+
+  const medHits: SearchHit[] = [];
   for (const [med, m] of Object.entries(medications)) {
     const target = m[sheet];
-    if (target != null && med.includes(q)) hits.push({ type: "medication", id: target, name: med, mapsTo: m.label });
+    if (target != null && matchScore(query, queryTokens, med) > 0) {
+      medHits.push({ type: "medication", id: target, name: med, mapsTo: m.label });
+    }
   }
-  return hits.slice(0, 15);
+  return [...condHits, ...medHits].slice(0, 15);
 }
 
 /** BMI helper. */
