@@ -71,30 +71,54 @@ export async function POST(req: NextRequest) {
     { role: "user", parts: [{ text: userText }] },
   ];
 
-  let res: Response;
-  try {
-    res = await fetch(GEMINI_URL, {
+  // Google Search grounding draws against its own, much smaller free-tier
+  // quota than a plain answer does — so a 429 on the grounded call doesn't
+  // necessarily mean the key itself is out of quota, just that search
+  // specifically is. `useSearch=false` drops the tool entirely for the
+  // retry, which also means no sources come back for that turn.
+  function callGemini(key: string, useSearch: boolean) {
+    return fetch(GEMINI_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
         contents,
-        // Live Google Search grounding — the model decides on its own when
-        // a question actually needs it (same behavior as the Gemini app's
-        // own search), rather than every request going out to the web.
-        tools: [{ google_search: {} }],
+        ...(useSearch ? { tools: [{ google_search: {} }] } : {}),
         generationConfig: { maxOutputTokens: 750, temperature: 0.3 },
       }),
     });
+  }
+
+  let res: Response;
+  try {
+    res = await callGemini(apiKey, true);
   } catch (err) {
     console.error("Gemini API request failed", err);
     return NextResponse.json({ error: "Couldn't reach the AI assistant. Try again in a moment." }, { status: 502 });
   }
 
+  if (res.status === 429) {
+    const detail = await res.text().catch(() => "");
+    console.error("Gemini API error (with search) 429 — retrying without search", detail);
+    try {
+      res = await callGemini(apiKey, false);
+    } catch (err) {
+      console.error("Gemini API request failed on no-search retry", err);
+      return NextResponse.json({ error: "Couldn't reach the AI assistant. Try again in a moment." }, { status: 502 });
+    }
+  }
+
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     console.error("Gemini API error", res.status, detail);
-    return NextResponse.json({ error: "Couldn't reach the AI assistant. Try again in a moment." }, { status: 502 });
+    // A 429 surviving the no-search retry means the key's base quota
+    // itself is exhausted, not just search's — worth saying plainly
+    // instead of implying a quick retry will fix it.
+    const error =
+      res.status === 429
+        ? "The AI assistant has hit its usage limit for now. Check the Gemini API plan/billing — this won't clear on its own until quota resets."
+        : "Couldn't reach the AI assistant. Try again in a moment.";
+    return NextResponse.json({ error }, { status: 502 });
   }
 
   const data = await res.json();
