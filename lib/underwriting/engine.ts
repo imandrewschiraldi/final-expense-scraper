@@ -139,7 +139,7 @@ const CARRIER_ORDER: ((name: string) => boolean)[] = [
   (n) => n.includes("transamerica"),
   (n) => n.includes("ethos") || n.includes("trustage") || n.includes("lga") || n.includes("banner"),
   (n) => n.includes("american amicable"),
-  (n) => n.includes("aig"),
+  (n) => n.includes("corebridge"),
   (n) => n.includes("mutual of omaha"),
   (n) => n.includes("royal neighbors"),
   (n) => n.includes("united home life") || n.includes("uhl"),

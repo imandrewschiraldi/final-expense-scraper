@@ -2,7 +2,7 @@
   "wholeLife": [
     {
       "id": "wl_B",
-      "name": "AIG Guaranteed Issue",
+      "name": "CoreBridge Guaranteed Issue",
       "cov": "GRADED",
       "face": "$5,000 \u2013 $35,000",
       "age": "50 - 80",
@@ -15,7 +15,7 @@
     },
     {
       "id": "wl_C",
-      "name": "AIG (SIWL)",
+      "name": "CoreBridge (SIWL)",
       "cov": "LEVEL",
       "face": "",
       "age": "HIV",
