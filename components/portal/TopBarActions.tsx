@@ -91,11 +91,16 @@ function AiSearchBox() {
     e.currentTarget.releasePointerCapture(e.pointerId);
   }
 
+  // Clicking outside just collapses the panel back into the trigger pill —
+  // it does NOT clear the conversation. An accidental click-off used to
+  // wipe the whole thread; now the thread survives, and clicking the pill
+  // again reopens it exactly where it was left off. Clearing is explicit:
+  // the X at the top of the open panel, or the pill's own X once collapsed.
   useEffect(() => {
     if (!open) return;
     function onClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        reset();
+        setOpen(false);
       }
     }
     document.addEventListener("mousedown", onClickOutside);
@@ -211,6 +216,16 @@ function AiSearchBox() {
             maxHeight: "80vh",
           }}
         >
+          {/* Explicit clear, separate from closing the panel — click-outside
+              (or the drag handle collapsing it back into the pill) only
+              hides this panel now, it doesn't wipe the thread. This is the
+              one deliberate way to clear it all at once. */}
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5">
+            <span className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase">Gemini conversation</span>
+            <button type="button" onClick={reset} aria-label="Clear conversation" className="text-muted hover:text-foreground">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3 text-sm">
             {messages.map((m, i) => (
               <div key={i} className={i > 0 ? "mt-3" : ""}>
