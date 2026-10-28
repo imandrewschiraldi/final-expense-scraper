@@ -149,7 +149,7 @@ function NavLeaf({
       title={collapsed ? label : undefined}
       onClick={onNavigate}
       className={cn(
-        "font-condensed relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-all duration-200",
+        "font-condensed relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-all duration-200",
         collapsed && "justify-center px-0",
         active
           ? "bg-copper-gradient-12 text-[var(--copper-metal)] shadow-[inset_0_0_0_1px_rgba(172,90,42,0.25)]"
@@ -370,7 +370,7 @@ function NavLinks({
         const showDivider = index > 0 && item.section !== items[index - 1].section;
         return (
           <div key={item.href}>
-            {showDivider && <div className="mx-1 my-1.5 border-t border-border" />}
+            {showDivider && <div className="mx-1 my-1 border-t border-sidebar-divider" />}
             <NavLeaf
               href={item.href}
               label={item.label}

@@ -14,6 +14,13 @@
   --foreground: #d0d0d0;
   --white: #ffffff;
   --muted: #606060;
+  /* The sidebar's between-sections divider needs more contrast than the
+     general-purpose --border above — 8% white barely registers against
+     the sidebar's own near-black gradient background, where it needs to
+     actually separate groups rather than just outline a panel edge.
+     Light mode doesn't have this problem (10% black already reads fine
+     against the light sidebar), so it stays equal to --border there. */
+  --sidebar-divider: rgba(255, 255, 255, 0.16);
   /* A dedicated step for search/input fields — deliberately not --surface2
      (tuned for subtle panel backgrounds, so it barely reads against
      --background in light mode) — needs to stand out against the page
@@ -126,6 +133,7 @@
   --white: #17140f;
   --muted: #746f67;
   --input-bg: #e7e3da;
+  --sidebar-divider: rgba(0, 0, 0, 0.1);
 }
 
 @theme inline {
@@ -133,6 +141,7 @@
   --color-surface: var(--surface);
   --color-surface2: var(--surface2);
   --color-border: var(--border);
+  --color-sidebar-divider: var(--sidebar-divider);
   --color-foreground: var(--foreground);
   --color-white: var(--white);
   --color-muted: var(--muted);
