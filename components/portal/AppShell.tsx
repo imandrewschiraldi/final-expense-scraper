@@ -35,7 +35,7 @@ export function AppShell({ role, name, children }: { role: Role; name: string; c
       <Sidebar role={role} name={name} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
       <main className="relative min-w-0 flex-1 overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10">
         <PageHeader onOpenMenu={() => setMobileOpen(true)} />
-        <TopBarActions />
+        <TopBarActions role={role} name={name} />
         {/* Continues the logo header's bottom edge across the content area
             with a copper accent. Lives inside the scrollable region (not
             viewport-fixed) so it scrolls away with the rest of the page

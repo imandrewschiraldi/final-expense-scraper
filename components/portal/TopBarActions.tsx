@@ -1,26 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Moon, Search, Settings, Sun } from "lucide-react";
+import { Moon, Search, Sun } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { NO_OUTER_LINE_PREFIXES } from "@/components/portal/HeaderDivider";
+import { ProfileMenu } from "@/components/portal/ProfileMenu";
 import { useTheme } from "@/lib/useTheme";
 
+type Role = "ADMIN" | "MANAGER" | "AGENT";
 type Profile = { name: string; profileImageUrl: string | null };
 
 /**
  * Notifications — pulled out of the sidebar footer and into the top-right
  * corner of every page instead, above the copper accent line (HeaderDivider
- * sits at HEADER_HEIGHT). Sound, Tour, and Sign Out still live in the
- * sidebar's own profile menu (see ProfileMenu) — the avatar button here is
- * a shortcut to /profile, not a second copy of that dropdown.
+ * sits at HEADER_HEIGHT). The avatar here is the same ProfileMenu the
+ * sidebar footer uses (Profile/Sound/Tour/Log Out), just opening downward
+ * instead of upward — no separate Settings icon, since that was just a
+ * second link to the same /profile page the menu's own "Profile" item
+ * already covers.
  *
- * The search box + Settings/avatar shortcuts are lg+ only: below that,
- * PageHeader already fills this same row with the mobile hamburger + logo,
- * so only the bell (the original, unchanged mobile behavior) renders there.
+ * The search box + avatar are lg+ only: below that, PageHeader already
+ * fills this same row with the mobile hamburger + logo, so only the bell
+ * (the original, unchanged mobile behavior) renders there.
  *
  * `left-4/right-4 sm:left-6/right-6 lg:left-10/right-10` deliberately
  * mirrors main's own padding — an absolutely positioned child's inset is
@@ -33,7 +36,7 @@ type Profile = { name: string; profileImageUrl: string | null };
  * draws its own Notifications-equivalent control in its own header, and our
  * outer copy would render right on top of it.
  */
-export function TopBarActions() {
+export function TopBarActions({ role, name }: { role: Role; name: string }) {
   const pathname = usePathname();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [theme, setTheme] = useTheme();
@@ -73,24 +76,7 @@ export function TopBarActions() {
             {theme === "light" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
           <NotificationBell />
-          <Link
-            href="/profile"
-            aria-label="Settings"
-            title="Settings"
-            className="text-muted transition-colors hover:text-foreground"
-          >
-            <Settings className="h-5 w-5" />
-          </Link>
-          <Link href="/profile" aria-label="My Profile" title={profile?.name ?? "My Profile"}>
-            {profile?.profileImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.profileImageUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
-            ) : (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface2 text-sm font-bold text-muted">
-                {(profile?.name ?? "?").charAt(0).toUpperCase()}
-              </div>
-            )}
-          </Link>
+          <ProfileMenu profile={profile} name={name} role={role} collapsed showTour={role !== "ADMIN"} menuAlign="down" />
         </div>
       </div>
 

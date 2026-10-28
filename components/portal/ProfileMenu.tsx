@@ -36,6 +36,7 @@ export function ProfileMenu({
   collapsed,
   showTour,
   onNavigate,
+  menuAlign = "up",
 }: {
   profile: Profile | null;
   name: string;
@@ -43,6 +44,11 @@ export function ProfileMenu({
   collapsed: boolean;
   showTour: boolean;
   onNavigate?: () => void;
+  // "up": sidebar footer usage — opens above the trigger, since it sits at
+  // the very bottom of the screen with no room below. "down": header usage
+  // (TopBarActions) — opens below the trigger instead, right-aligned so it
+  // doesn't run off the viewport's right edge.
+  menuAlign?: "up" | "down";
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -83,10 +89,13 @@ export function ProfileMenu({
         )}
       </button>
 
-      {/* Opens upward — this sits at the very bottom of the sidebar, so
-          there's no room below it for a dropdown. */}
       {open && (
-        <div className="absolute bottom-full left-0 z-20 mb-2 w-64 rounded-[10px] border border-border bg-surface p-2 shadow-lg">
+        <div
+          className={cn(
+            "absolute z-20 w-64 rounded-[10px] border border-border bg-surface p-2 shadow-lg",
+            menuAlign === "up" ? "bottom-full left-0 mb-2" : "top-full right-0 mt-2",
+          )}
+        >
           <div className="flex items-center gap-2.5 rounded-lg p-2">
             <Avatar profile={profile} displayName={displayName} size={9} />
             <p className="truncate text-sm font-semibold text-white">{displayName}</p>
@@ -95,7 +104,7 @@ export function ProfileMenu({
           <MenuLink
             href="/profile"
             icon={User}
-            label="My Profile"
+            label="Profile"
             onClick={() => {
               close();
               onNavigate?.();
