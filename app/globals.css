@@ -42,10 +42,6 @@
   --blue: #2980b9;
   --blue-light: #74b9ff;
   --gold: #d4af37;
-  /* Added for the Leaderboard podium's #1 tower — every other brand color
-     above already had a use before this, purple didn't, so it's scoped to
-     that one feature rather than claimed for some future general meaning. */
-  --purple: #8b5cf6;
   --radius: 10px;
 
   /* Metallic gradient stops — the "flat brand color -> real metal" palette
@@ -78,8 +74,6 @@
   --amber-metal-dk: #5c4129;
   --gold-metal-hi: #e4cd83;
   --gold-metal-dk: #75601e;
-  --purple-metal-hi: #c4b5fd;
-  --purple-metal-dk: #4c1d95;
 
   /* Metallic stops for DistributionAnalytics' donut-chart categorical
      palette (Carrier/Product Analytics) — a rotating set of 6 distinct
@@ -168,7 +162,6 @@
   --color-blue: var(--blue);
   --color-blue-light: var(--blue-light);
   --color-gold: var(--gold);
-  --color-purple: var(--purple);
 
   --font-condensed: var(--font-barlow-condensed);
   --font-sans: var(--font-barlow);
@@ -330,19 +323,6 @@ body {
     inset 0 1px 1px rgba(255, 255, 255, 0.5),
     inset 0 -2px 3px rgba(0, 0, 0, 0.35);
 }
-.metal-purple-surface {
-  background-image: linear-gradient(
-    135deg,
-    var(--purple-metal-hi) 0%,
-    var(--purple) 32%,
-    var(--purple-metal-dk) 55%,
-    var(--purple) 80%,
-    var(--purple-metal-hi) 100%
-  );
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.5),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
-}
 
 /* Outline buttons (primary/secondary/danger): a gradient border via the
    double-background trick — an opaque inner layer the exact color of the
@@ -462,7 +442,6 @@ body {
 .metal-blue-surface,
 .metal-amber-surface,
 .metal-gray-surface,
-.metal-purple-surface,
 .btn-metal-copper-active,
 .btn-metal-green,
 .toggle-pill-active {
@@ -478,7 +457,6 @@ body {
 .metal-blue-surface::after,
 .metal-amber-surface::after,
 .metal-gray-surface::after,
-.metal-purple-surface::after,
 .btn-metal-copper-active::after,
 .btn-metal-green::after,
 .toggle-pill-active::after {
@@ -577,13 +555,6 @@ body {
 }
 .metal-amber-text {
   background-image: linear-gradient(100deg, var(--amber-metal) 0%, var(--amber-metal) 38%, var(--amber-metal-hi) 50%, var(--amber-metal) 62%, var(--amber-metal) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-.metal-purple-text {
-  background-image: linear-gradient(100deg, var(--purple) 0%, var(--purple) 38%, var(--purple-metal-hi) 50%, var(--purple) 62%, var(--purple) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

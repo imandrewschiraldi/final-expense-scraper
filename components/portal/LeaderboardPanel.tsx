@@ -15,42 +15,51 @@ function formatAP(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-// Purple/red/orange — matching the reference screenshot's own palette
-// (that's a casino-style leaderboard, not gold/silver/bronze) rather than
-// a medal scheme. Purple is new (globals.css's --purple/.metal-purple-*,
-// added for this), red/amber reuse the app's existing brand reds/ambers.
+// Flat saturated purple/red/orange blocks, matching the reference's own
+// glossy-toy palette — deliberately NOT the app's usual brushed-metal
+// .metal-*-surface treatment (that's a diagonal 5-stop gradient + grain
+// texture meant for small badges/icon tiles; at podium-block size it reads
+// as a textured smudge instead of the clean glossy color field the
+// reference has), so these are their own simple top-to-bottom gradients,
+// one-off to this component.
 const RANK_THEME = [
   {
     order: "md:order-2",
-    surface: "metal-purple-surface",
-    text: "metal-purple-text",
+    top: "#c084fc",
+    base: "#9333ea",
+    bottom: "#6b21a8",
+    cap: "#e9d5ff",
+    glow: "#a855f7",
     ordinal: "1ST",
     height: "h-28 sm:h-44",
     avatarSize: "h-16 w-16 sm:h-28 sm:w-28",
     crownSize: "h-9 w-9 sm:h-14 sm:w-14",
-    glow: "bg-purple",
     delay: 0.3,
   },
   {
     order: "md:order-1",
-    surface: "metal-red-surface",
-    text: "metal-red-text",
+    top: "#fb7185",
+    base: "#e11d48",
+    bottom: "#9f1239",
+    cap: "#fecdd3",
+    glow: "#f43f5e",
     ordinal: "2ND",
     height: "h-20 sm:h-32",
     avatarSize: "h-13 w-13 sm:h-20 sm:w-20",
     crownSize: "h-7 w-7 sm:h-10 sm:w-10",
-    glow: "bg-red",
     delay: 0.1,
   },
   {
     order: "md:order-3",
-    surface: "metal-amber-surface",
-    text: "metal-amber-text",
+    top: "#fb923c",
+    base: "#ea580c",
+    bottom: "#9a3412",
+    cap: "#fed7aa",
+    glow: "#f97316",
     ordinal: "3RD",
     height: "h-14 sm:h-24",
     avatarSize: "h-13 w-13 sm:h-20 sm:w-20",
     crownSize: "h-7 w-7 sm:h-10 sm:w-10",
-    glow: "bg-amber",
     delay: 0.18,
   },
 ] as const;
@@ -81,25 +90,33 @@ function Avatar({ url, name, sizeClassName }: { url: string | null; name: string
   );
 }
 
+// A pointed lens/feather shape (two bezier curves meeting at both ends) for
+// one laurel leaf — reads as an actual leaf instead of the plain oval a
+// <ellipse> gives.
+function leafPath(length: number, width: number) {
+  const hw = width / 2;
+  return `M0,0 Q${length * 0.3},${-hw} ${length},0 Q${length * 0.3},${hw} 0,0`;
+}
+
 // A stylized laurel branch flanking the podium, built from plain SVG shapes
 // (lucide has no wreath/laurel icon) — leaves spaced along a curved stem,
 // shrinking and fanning out toward the top. `flip` mirrors it for the
 // right-hand side.
 function LaurelBranch({ flip }: { flip?: boolean }) {
-  const leafCount = 8;
+  const leafCount = 9;
   const leaves = Array.from({ length: leafCount }, (_, i) => {
     const t = i / (leafCount - 1); // 0 (base) -> 1 (tip)
-    const y = 212 - t * 204;
-    const x = 34 + Math.sin(t * Math.PI * 0.9) * 12;
-    const angle = -22 - t * 50;
-    const scale = 1 - t * 0.32;
+    const y = 214 - t * 206;
+    const x = 36 + Math.sin(t * Math.PI * 0.9) * 14;
+    const angle = -20 - t * 52;
+    const scale = 1 - t * 0.34;
     return { x, y, angle, scale };
   });
 
   return (
     <svg
-      viewBox="0 0 80 220"
-      className={cn("h-48 w-auto drop-shadow-[0_0_20px_rgba(228,205,131,0.55)] sm:h-64", flip && "-scale-x-100")}
+      viewBox="0 0 86 222"
+      className={cn("h-52 w-auto drop-shadow-[0_0_22px_rgba(228,205,131,0.55)] sm:h-72", flip && "-scale-x-100")}
       aria-hidden="true"
     >
       <defs>
@@ -109,24 +126,15 @@ function LaurelBranch({ flip }: { flip?: boolean }) {
           <stop offset="100%" stopColor="var(--gold-metal-hi)" />
         </linearGradient>
       </defs>
-      <path
-        d="M34 216 C14 176, 18 118, 36 6"
-        stroke="url(#laurelGradient)"
-        strokeWidth="3"
-        fill="none"
-        strokeLinecap="round"
-      />
+      <path d="M36 218 C14 176, 20 116, 38 6" stroke="url(#laurelGradient)" strokeWidth="3" fill="none" strokeLinecap="round" />
       {leaves.map((leaf, i) => (
-        <ellipse
+        <path
           key={i}
-          cx={leaf.x + 17 * leaf.scale}
-          cy={leaf.y}
-          rx={15 * leaf.scale}
-          ry={6.5 * leaf.scale}
+          d={leafPath(28 * leaf.scale, 12 * leaf.scale)}
+          transform={`translate(${leaf.x} ${leaf.y}) rotate(${leaf.angle})`}
           fill="url(#laurelGradient)"
           stroke="var(--gold-metal-dk)"
           strokeWidth="0.75"
-          transform={`rotate(${leaf.angle} ${leaf.x + 17 * leaf.scale} ${leaf.y})`}
         />
       ))}
     </svg>
@@ -189,12 +197,12 @@ export function LeaderboardPanel() {
                 No overflow-hidden: the crests/crowns below are deliberately
                 allowed to spill past this box's own edges. */}
             <div className="relative rounded-2xl bg-[radial-gradient(120%_90%_at_50%_0%,rgba(139,92,246,0.22),transparent_65%),linear-gradient(180deg,#0c0714_0%,#050309_100%)] px-3 pt-10 pb-0 sm:px-12 sm:pt-16">
-              <div className="relative flex flex-row items-end justify-center gap-2 sm:gap-8">
+              <div className="relative flex flex-row items-end justify-center gap-2 sm:gap-10">
                 {/* Side crests — desktop/tablet only, no room on a phone-width card. */}
-                <div className="pointer-events-none absolute inset-y-0 -left-2 hidden items-end pb-2 sm:-left-4 sm:flex sm:pb-6">
+                <div className="pointer-events-none absolute inset-y-0 -left-2 hidden items-end pb-2 sm:-left-6 sm:flex sm:pb-8">
                   <LaurelBranch />
                 </div>
-                <div className="pointer-events-none absolute inset-y-0 -right-2 hidden items-end pb-2 sm:-right-4 sm:flex sm:pb-6">
+                <div className="pointer-events-none absolute inset-y-0 -right-2 hidden items-end pb-2 sm:-right-6 sm:flex sm:pb-8">
                   <LaurelBranch flip />
                 </div>
 
@@ -213,34 +221,45 @@ export function LeaderboardPanel() {
                         isPlaceholder && "opacity-40",
                       )}
                     >
-                      {/* Spotlight glow behind each column — the "arcade
-                          stage light" the dark backdrop above is lit by. */}
+                      {/* Spotlight glow sitting behind the crown/name/avatar
+                          cluster — the "arcade stage light" the dark
+                          backdrop above is lit by. Inline style, not a
+                          Tailwind arbitrary-value class — RANK_THEME's
+                          colors are runtime values, and Tailwind's scanner
+                          only picks up class names that appear literally in
+                          source, not ones built via template interpolation. */}
                       <div
-                        className={cn(
-                          "pointer-events-none absolute -top-6 h-28 w-28 rounded-full opacity-30 blur-2xl sm:h-40 sm:w-40",
-                          theme.glow,
-                        )}
+                        className="pointer-events-none absolute -top-4 h-24 w-24 rounded-full opacity-35 blur-2xl sm:h-32 sm:w-32"
+                        style={{ backgroundColor: theme.glow }}
                       />
 
                       {!isPlaceholder && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.4, rotate: -16 }}
-                          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                          transition={{ delay: theme.delay + 0.25, type: "spring", stiffness: 280, damping: 14 }}
-                          className="relative z-10 mb-1 drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)]"
-                        >
-                          {/* Pulse lives on a plain inner element, not the
-                              motion.div above — Framer Motion drives that
-                              one's opacity via inline style, which would
-                              fight a CSS keyframe animation on the same
-                              property instead of layering cleanly. */}
-                          <div className={i === 0 ? "animate-pulse" : undefined}>
-                            <Crown className={cn(theme.crownSize, CROWN_CLASS)} />
-                          </div>
-                        </motion.div>
+                        <>
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.4, rotate: -16 }}
+                            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                            transition={{ delay: theme.delay + 0.25, type: "spring", stiffness: 280, damping: 14 }}
+                            className="relative z-10 drop-shadow-[0_3px_10px_rgba(0,0,0,0.6)]"
+                          >
+                            {/* Pulse lives on a plain inner element, not the
+                                motion.div above — Framer Motion drives that
+                                one's opacity via inline style, which would
+                                fight a CSS keyframe animation on the same
+                                property instead of layering cleanly. */}
+                            <div className={i === 0 ? "animate-pulse" : undefined}>
+                              <Crown className={cn(theme.crownSize, CROWN_CLASS)} />
+                            </div>
+                          </motion.div>
+                          <span className="relative z-10 mt-1 w-full truncate px-1 text-center text-[10px] font-bold tracking-[0.04em] text-white/90 uppercase sm:text-xs">
+                            {agent.name}
+                          </span>
+                        </>
                       )}
 
-                      <div className={cn("relative z-10 -mb-4 rounded-full p-[3px] sm:-mb-6", theme.surface)}>
+                      <div
+                        className="relative z-10 mt-1 -mb-4 rounded-full p-[3px] sm:-mb-6"
+                        style={{ backgroundColor: theme.base }}
+                      >
                         {isPlaceholder ? (
                           <div
                             className={cn(
@@ -258,39 +277,27 @@ export function LeaderboardPanel() {
                       {/* The pillar itself — height differs by rank, giving
                           the classic 1st-tallest podium silhouette. The
                           avatar above overlaps its top edge (-mb- above)
-                          like a figure standing on the block. */}
+                          like a figure standing on the block. Flat 2-stop
+                          color (not the metallic badge system — see
+                          RANK_THEME's own comment) plus a lighter cap band
+                          for a cheap stand-in for a lit 3D top face. */}
                       <div
                         className={cn(
-                          // No outer shadow utility here — .metal-*-surface
-                          // (theme.surface) is hand-authored CSS outside any
-                          // Tailwind layer, so it always wins the box-shadow
-                          // property over a layered utility regardless of
-                          // class order; its own inset bevel is the shadow.
-                          "relative z-0 flex w-full flex-col items-center gap-1.5 overflow-hidden rounded-xl pt-6 pb-3 sm:gap-2 sm:pt-8 sm:pb-4",
-                          theme.surface,
+                          "relative z-0 flex w-full flex-col items-center justify-center gap-1.5 overflow-hidden rounded-2xl pt-5 pb-3 shadow-[0_14px_30px_-10px_rgba(0,0,0,0.65)] sm:gap-2 sm:rounded-3xl sm:pt-7 sm:pb-4",
                           theme.height,
                         )}
+                        style={{ backgroundImage: `linear-gradient(180deg, ${theme.top} 0%, ${theme.base} 55%, ${theme.bottom} 100%)` }}
                       >
-                        {/* A lighter strip along the very top edge — a cheap
-                            stand-in for a lit top face on a 3D block. */}
-                        <div className="absolute inset-x-0 top-0 h-2.5 bg-white/25 sm:h-3.5" />
+                        <div className="absolute inset-x-0 top-0 h-3 sm:h-4" style={{ backgroundColor: theme.cap }} />
 
-                        <span className="font-scoreboard text-xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)] sm:text-4xl">
+                        <span className="font-scoreboard relative text-xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)] sm:text-4xl">
                           {theme.ordinal}
                         </span>
 
-                        <span className="w-full truncate px-2 text-center text-[11px] font-bold text-white/95 sm:text-sm">
-                          {isPlaceholder ? "Open Slot" : agent.name}
-                        </span>
-
-                        <span className="flex items-center gap-1 rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold text-white sm:px-3 sm:py-1.5 sm:text-sm">
+                        <span className="relative flex items-center gap-1 rounded-full bg-black/25 px-2.5 py-1 text-[10px] font-bold text-white sm:px-3 sm:py-1.5 sm:text-sm">
                           <Coins className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
                           <AnimatedAP value={isPlaceholder ? 0 : agent.issuedAP} className="font-scoreboard" />
                         </span>
-
-                        {!isPlaceholder && (
-                          <span className="text-[10px] font-semibold text-white/70 sm:text-xs">{agent.issuedCount} issued</span>
-                        )}
                       </div>
                     </motion.div>
                   );
