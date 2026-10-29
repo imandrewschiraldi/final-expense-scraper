@@ -68,6 +68,10 @@ const CHAT_PANEL_MIN_HEIGHT = 480; // matches the default max-h-[480px]
 // auto-sent — reset on every new word, not just a one-shot timer from when
 // listening started.
 const SILENCE_AUTO_SEND_MS = 4000;
+// Follow-up textarea grows with content (so typed text always wraps onto a
+// new line instead of scrolling sideways out of view) up to this height,
+// then scrolls internally rather than eating the whole panel.
+const FOLLOWUP_MAX_HEIGHT = 160;
 
 function AiSearchBox() {
   const [question, setQuestion] = useState("");
@@ -80,6 +84,7 @@ function AiSearchBox() {
   const [speechSupported, setSpeechSupported] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const followUpRef = useRef<HTMLTextAreaElement>(null);
   const dragRef = useRef<{ offsetX: number; offsetY: number; moved: boolean } | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   // What was already typed when dictation started — spoken words are
@@ -259,8 +264,23 @@ function AiSearchBox() {
     threadEndRef.current?.scrollIntoView({ block: "end" });
   }, [messages, loading]);
 
-  async function ask(e: React.FormEvent) {
-    e.preventDefault();
+  // Grows the follow-up textarea to fit what's typed (up to a cap, then it
+  // scrolls internally) — a plain single-line input scrolls text sideways
+  // out of view once it's wider than the box; wrapping onto new lines
+  // instead means everything typed stays visible.
+  useEffect(() => {
+    const el = followUpRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, FOLLOWUP_MAX_HEIGHT)}px`;
+  }, [question]);
+
+  // Takes any SyntheticEvent (a real form submit, or a keydown for
+  // Enter-to-send on the follow-up textarea) rather than specifically
+  // FormEvent, since both need the same preventDefault/stop-dictation/
+  // submit sequence.
+  async function ask(e?: React.SyntheticEvent) {
+    e?.preventDefault();
     recognitionRef.current?.stop();
     clearSilenceTimer();
     await submitQuestion(question);
@@ -290,32 +310,44 @@ function AiSearchBox() {
   // cohesive control built into the pill rather than two floating icons
   // guessed into alignment. Enter still submits too; Send is just a
   // visible click target, same as this platform's own chat input.
-  const micSendGroup = (
-    <div className="absolute top-1/2 right-1.5 flex -translate-y-1/2 items-center gap-0.5">
-      {speechSupported && (
-        <button
-          type="button"
-          onClick={toggleListening}
-          aria-label={listening ? "Stop dictation" : "Dictate with your microphone"}
-          title={listening ? "Stop dictation" : "Dictate with your microphone"}
-          className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
-            listening ? "bg-red-light/15 text-red-light" : "text-muted hover:bg-surface2 hover:text-foreground"
-          }`}
-        >
-          <Mic className={`h-4 w-4 ${listening ? "animate-pulse" : ""}`} />
-        </button>
-      )}
-      <button
-        type="submit"
-        disabled={!question.trim() || loading}
-        aria-label="Send"
-        title="Send"
-        className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
+  //
+  // `align="bottom"` for the follow-up textarea, which grows taller as you
+  // type — vertically centering the icons there would leave them stranded
+  // in the middle of a multi-line box, so they pin to the bottom-right
+  // (where the cursor/send action naturally is) instead, same as any
+  // auto-growing chat composer.
+  function micSendGroup(align: "center" | "bottom" = "center") {
+    return (
+      <div
+        className={`absolute right-1.5 flex items-center gap-0.5 ${
+          align === "bottom" ? "bottom-1.5" : "top-1/2 -translate-y-1/2"
+        }`}
       >
-        <Send className="h-4 w-4" />
-      </button>
-    </div>
-  );
+        {speechSupported && (
+          <button
+            type="button"
+            onClick={toggleListening}
+            aria-label={listening ? "Stop dictation" : "Dictate with your microphone"}
+            title={listening ? "Stop dictation" : "Dictate with your microphone"}
+            className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
+              listening ? "bg-red-light/15 text-red-light" : "text-muted hover:bg-surface2 hover:text-foreground"
+            }`}
+          >
+            <Mic className={`h-4 w-4 ${listening ? "animate-pulse" : ""}`} />
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={!question.trim() || loading}
+          aria-label="Send"
+          title="Send"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -338,7 +370,7 @@ function AiSearchBox() {
             placeholder="Ask Gemini — insurance, underwriting..."
             className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none ${speechSupported ? "pr-16" : "pr-9"}`}
           />
-          {micSendGroup}
+          {micSendGroup("center")}
         </form>
       ) : (
         <div
@@ -412,19 +444,31 @@ function AiSearchBox() {
             <div ref={threadEndRef} />
           </div>
           {/* The follow-up input, fixed at the bottom of the conversation —
-              keep asking without losing the thread above it. */}
+              keep asking without losing the thread above it. A growing
+              textarea (not a single-line input) so typed text wraps onto a
+              new line and stays visible instead of scrolling sideways out
+              of view once it's wider than the box; Enter sends, Shift+Enter
+              inserts an actual newline. */}
           <form onSubmit={ask} className="shrink-0 border-t border-border p-2">
             <div className="relative">
-              <input
-                type="text"
+              <textarea
+                ref={followUpRef}
+                rows={1}
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void ask(e);
+                  }
+                }}
                 placeholder="Ask a follow-up..."
                 autoFocus
                 disabled={loading}
-                className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-3 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none disabled:opacity-60 ${speechSupported ? "pr-16" : "pr-9"}`}
+                style={{ maxHeight: FOLLOWUP_MAX_HEIGHT }}
+                className={`w-full resize-none overflow-y-auto rounded-lg border border-border bg-input-bg py-2 pl-3 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none disabled:opacity-60 ${speechSupported ? "pr-16" : "pr-9"}`}
               />
-              {micSendGroup}
+              {micSendGroup("bottom")}
             </div>
           </form>
         </div>
