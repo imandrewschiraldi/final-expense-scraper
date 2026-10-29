@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useTheme } from "@/lib/useTheme";
 
 // Intrinsic pixel size of each cropped wordmark in public/headings/ — needed
 // by next/image to reserve layout space before the file loads. Add an entry
@@ -28,6 +31,30 @@ const HEADINGS = {
   "underwriting-genie": { width: 776, height: 47 },
   notifications: { width: 553, height: 45 },
 } as const;
+
+// Light-mode counterparts, cropped to the same glyph-to-image-height ratio
+// as their dark original (see HEADINGS above) so the lettering reads the
+// same size when the theme swaps — only cover the slugs a light wordmark
+// actually exists for; everything else keeps using the dark PNG in both
+// themes (it already reads fine on a light background).
+const HEADINGS_LIGHT = {
+  reports: { width: 326, height: 43 },
+  hierarchy: { width: 421, height: 45 },
+  training: { width: 348, height: 42 },
+  "lead-vault": { width: 416, height: 42 },
+  "trusted-lead-vendors": { width: 861, height: 45 },
+  "submit-policy": { width: 534, height: 43 },
+  leads: { width: 237, height: 43 },
+  "import-leads": { width: 523, height: 43 },
+  "all-leads": { width: 389, height: 43 },
+  "assign-leads": { width: 510, height: 42 },
+  "quote-tool": { width: 428, height: 46 },
+  "carrier-resources": { width: 739, height: 41 },
+  "recruiting-radar": { width: 690, height: 39 },
+  "job-applications": { width: 527, height: 41 },
+  "underwriting-genie": { width: 768, height: 43 },
+  notifications: { width: 548, height: 38 },
+} satisfies Partial<Record<keyof typeof HEADINGS, { width: number; height: number }>>;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;
 
@@ -64,11 +91,14 @@ export function PageHeading({
   // default, without changing every other page's heading.
   wrapperClassName?: string;
 }) {
-  const { width, height } = HEADINGS[slug];
+  const [theme] = useTheme();
+  const lightSize = (HEADINGS_LIGHT as Partial<Record<PageHeadingSlug, { width: number; height: number }>>)[slug];
+  const useLight = theme === "light" && !!lightSize;
+  const { width, height } = useLight ? lightSize! : HEADINGS[slug];
   return (
     <div className={wrapperClassName ?? "mb-8 mt-3 flex justify-center lg:mt-[20px]"}>
       <Image
-        src={`/headings/${slug}.png`}
+        src={`/headings/${slug}${useLight ? "-light" : ""}.png`}
         alt={alt}
         width={width}
         height={height}
