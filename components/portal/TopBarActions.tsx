@@ -419,26 +419,6 @@ function AiSearchBox() {
                   {m.role === "user" ? "You" : "Gemini"}
                 </p>
                 <p className="whitespace-pre-wrap text-foreground">{m.text}</p>
-                {/* Only present when this turn actually triggered a live
-                    Google Search (most don't) — same grounding behavior as
-                    the Gemini app, surfaced as plain source links rather
-                    than inline citation markers. */}
-                {m.sources && m.sources.length > 0 && (
-                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-                    {m.sources.map((s, si) => (
-                      <a
-                        key={si}
-                        href={s.uri}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="max-w-[200px] truncate text-[11px] text-teal-light hover:underline"
-                        title={s.title}
-                      >
-                        {s.title}
-                      </a>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
             {loading && <p className={`text-muted ${hasThread ? "mt-3" : ""}`}>Thinking…</p>}
