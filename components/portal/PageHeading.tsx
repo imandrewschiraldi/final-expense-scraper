@@ -38,6 +38,11 @@ const HEADINGS = {
 // actually exists for; everything else keeps using the dark PNG in both
 // themes (it already reads fine on a light background).
 const HEADINGS_LIGHT = {
+  "book-of-business": { width: 662, height: 43 },
+  leaderboard: { width: 538, height: 43 },
+  "team-chat": { width: 410, height: 43 },
+  "agency-dashboard": { width: 748, height: 43 },
+  dashboard: { width: 444, height: 42 },
   reports: { width: 326, height: 43 },
   hierarchy: { width: 421, height: 45 },
   training: { width: 348, height: 42 },
