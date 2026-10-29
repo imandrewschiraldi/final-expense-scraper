@@ -39,7 +39,7 @@ async function firecrawlSearch(apiKey: string, query: string): Promise<LiveSearc
     for (const hit of hits) {
       if (!hit.url || seen.has(hit.url)) continue;
       seen.add(hit.url);
-      lines.push(`- ${hit.title ?? hit.url}: ${hit.description ?? ""}`);
+      lines.push(`- ${hit.title ?? hit.url} (${hit.url}): ${hit.description ?? ""}`);
       sources.push({ uri: hit.url, title: hit.title || hit.url });
       if (sources.length >= 5) break;
     }
@@ -75,7 +75,8 @@ async function linkupSearch(apiKey: string, query: string): Promise<LiveSearchRe
       sources.push({ uri: s.url, title: s.name || s.url });
       if (sources.length >= 5) break;
     }
-    return { contextText: answer, sources };
+    const sourceLines = sources.map((s) => `- ${s.title} (${s.uri})`).join("\n");
+    return { contextText: sourceLines ? `${answer}\n\nSources:\n${sourceLines}` : answer, sources };
   } catch (err) {
     console.error("LinkUp API request failed", err);
     return null;
@@ -105,7 +106,8 @@ const SYSTEM_INSTRUCTION =
   "Route to the agency's own underwriting-guide excerpts (when the user message includes a block of them) whenever the question is about a specific person's eligibility — gender, age, a medical condition, prescription, or medication, which carrier(s)/product(s) would accept them, which carrier to use, or where they'd get approved. Those excerpts are this agency's own real, current carrier rules — the authoritative source for that kind of question. Use them directly (name the carrier/product you're quoting, no need to flag that you're using them) and treat them as the proof check that overrides the live web search findings for that question where the two disagree — the search findings can still fill in whatever the excerpts themselves don't address. " +
   "On that eligibility/carrier-matching question, don't limit yourself to one or two sentences — cover every carrier/product from the excerpts that could work, not just the single best one. Write it as natural, conversational sentences, the way you'd explain it out loud — grouping a carrier's own products together in one sentence instead of a bare bullet dump (short bullets are only OK if the full list is long enough that prose would get hard to follow) — but start a new line for each carrier instead of running them together in one paragraph, e.g.: \n\"Americo would approve him on the Eagle Premier at Standard.\nTransamerica's Trendsetter would also approve him, Preferred.\nEthos' term product would work too, Level.\" " +
   "Cover carriers in this order when more than one applies: Americo, Transamerica, Ethos, then Mutual of Omaha, then every other carrier from the excerpts in whatever order reads naturally — that first group is a fixed agency priority, not a suggestion. Name the tier each one lands in (Level, Preferred, Standard, Graded, Guaranteed Issue) and say what that tier means when it isn't the best one, plus any condition it comes with — a waiting period, a specific rating, a diagnosis-date cutoff, GI-only, etc. — instead of glossing over it. " +
-  "Every question is run through a live web search before you see it. When the user message includes a \"Live web search findings\" block, treat that as this turn's real, current search result and answer from it as your primary source — rather than from memory alone — for everything except the eligibility/carrier-matching case above, where the agency's own guide excerpts take priority instead. This covers lead vendors, insurance/financial industry terminology, current financial markets, stocks, crypto, housing markets, funeral/burial/cremation costs, annuities, mortgage protection, equity, business-building and sales topics, and financial services more broadly — not just insurance, and not just the eligibility case above. Sources are shown separately in the UI, so don't paste raw links into the answer text. " +
+  "Every question is run through a live web search before you see it. When the user message includes a \"Live web search findings\" block, treat that as this turn's real, current search result and answer from it as your primary source — rather than from memory alone — for everything except the eligibility/carrier-matching case above, where the agency's own guide excerpts take priority instead. This covers lead vendors, insurance/financial industry terminology, current financial markets, stocks, crypto, housing markets, funeral/burial/cremation costs, annuities, mortgage protection, equity, business-building and sales topics, and financial services more broadly — not just insurance, and not just the eligibility case above. " +
+  "Don't cite sources or append links as backup for an answer — just give the straight, accurate answer itself. The one exception: when the answer IS a place to go do something — buy or renew a license, apply/sign up/register for something, a specific tool or site to use — include that one link right in the answer, since the link itself is what's being asked for, not a citation for it. " +
   "Scope is broad, not insurance-only — treat any reasonable work topic as answerable rather than redirecting on subject matter. The only thing to decline or redirect for is content that's inappropriate for a work setting (profanity, weapons/violence, drugs, partying, or similar) — never redirect just because a question isn't about insurance.";
 
 const MAX_QUESTION_LENGTH = 500;
