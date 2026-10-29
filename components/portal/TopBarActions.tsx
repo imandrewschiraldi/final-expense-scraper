@@ -64,6 +64,10 @@ type SpeechRecognitionWindow = typeof window & {
  */
 const CHAT_PANEL_MIN_WIDTH = 384; // matches the default w-96
 const CHAT_PANEL_MIN_HEIGHT = 480; // matches the default max-h-[480px]
+// How long dictation can go quiet before it's treated as "done talking" and
+// auto-sent — reset on every new word, not just a one-shot timer from when
+// listening started.
+const SILENCE_AUTO_SEND_MS = 4000;
 
 function AiSearchBox() {
   const [question, setQuestion] = useState("");
@@ -81,13 +85,54 @@ function AiSearchBox() {
   // What was already typed when dictation started — spoken words are
   // appended after it rather than overwriting it.
   const listenBaseRef = useRef("");
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function clearSilenceTimer() {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }
 
   function reset() {
     recognitionRef.current?.stop();
+    clearSilenceTimer();
     setOpen(false);
     setMessages([]);
     setError(null);
     setQuestion("");
+  }
+
+  // Shared by the form's Enter/Send submit and dictation's own auto-send —
+  // takes the text explicitly rather than reading `question` state, since
+  // the auto-send path calls this from inside a setTimeout where state
+  // read via closure could theoretically be stale.
+  async function submitQuestion(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || loading) return;
+    const history = messages;
+    setMessages((m) => [...m, { role: "user", text: trimmed }]);
+    setQuestion("");
+    setLoading(true);
+    setError(null);
+    setOpen(true);
+    try {
+      const res = await fetch("/api/portal/ask-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed, history }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError(data?.error ?? "Something went wrong.");
+      } else {
+        setMessages((m) => [...m, { role: "model", text: data.answer, sources: data.sources }]);
+      }
+    } catch {
+      setError("Couldn't reach the AI assistant.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Feature-detected client-side only — not every browser (Firefox desktop,
@@ -99,6 +144,7 @@ function AiSearchBox() {
     setSpeechSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
     return () => {
       recognitionRef.current?.stop();
+      clearSilenceTimer();
     };
   }, []);
 
@@ -115,21 +161,49 @@ function AiSearchBox() {
     recognition.interimResults = true;
     recognition.lang = "en-US";
     listenBaseRef.current = question;
+
+    // Restarted on every result, not just armed once — 4 straight seconds
+    // without any new speech (not 4 seconds total) is what counts as "done
+    // talking". Takes the text explicitly so it sends exactly what was
+    // heard as of the last word, not whatever `question` reads as by the
+    // time the timeout actually fires.
+    function armSilenceTimer(textSoFar: string) {
+      clearSilenceTimer();
+      silenceTimerRef.current = setTimeout(() => {
+        recognitionRef.current?.stop();
+        if (textSoFar.trim()) void submitQuestion(textSoFar);
+      }, SILENCE_AUTO_SEND_MS);
+    }
+
     recognition.onresult = (e) => {
       let transcript = "";
       for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
       const base = listenBaseRef.current;
-      setQuestion((base ? `${base} ${transcript}` : transcript).trim());
+      const combined = (base ? `${base} ${transcript}` : transcript).trim();
+      setQuestion(combined);
+      armSilenceTimer(combined);
     };
     // Covers both an explicit stop() and the browser's own silence timeout
     // ending it on its own — either way the mic button needs to stop
-    // showing "listening".
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
+    // showing "listening", and any pending auto-send timer needs to stop
+    // with it (ask() already submits on its own, and a stale timer firing
+    // afterward would just no-op against an already-cleared question).
+    recognition.onend = () => {
+      setListening(false);
+      clearSilenceTimer();
+    };
+    recognition.onerror = () => {
+      setListening(false);
+      clearSilenceTimer();
+    };
     recognitionRef.current = recognition;
     recognition.start();
     setOpen(true);
     setListening(true);
+    // Armed immediately too, in case nothing is ever said at all — covers
+    // both "clicked mic and stayed silent" and the gap before the first
+    // word lands.
+    armSilenceTimer(listenBaseRef.current);
   }
 
   function clamp(next: { x: number; y: number }) {
@@ -188,31 +262,8 @@ function AiSearchBox() {
   async function ask(e: React.FormEvent) {
     e.preventDefault();
     recognitionRef.current?.stop();
-    const trimmed = question.trim();
-    if (!trimmed || loading) return;
-    const history = messages;
-    setMessages((m) => [...m, { role: "user", text: trimmed }]);
-    setQuestion("");
-    setLoading(true);
-    setError(null);
-    setOpen(true);
-    try {
-      const res = await fetch("/api/portal/ask-ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmed, history }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(data?.error ?? "Something went wrong.");
-      } else {
-        setMessages((m) => [...m, { role: "model", text: data.answer, sources: data.sources }]);
-      }
-    } catch {
-      setError("Couldn't reach the AI assistant.");
-    } finally {
-      setLoading(false);
-    }
+    clearSilenceTimer();
+    await submitQuestion(question);
   }
 
   const hasThread = messages.length > 0;
