@@ -24,7 +24,12 @@ export function PushNotificationSettings() {
 
   useEffect(() => {
     async function check() {
-      if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+      if (
+        typeof window === "undefined" ||
+        !("Notification" in window) ||
+        !("serviceWorker" in navigator) ||
+        !("PushManager" in window)
+      ) {
         setStatus("unsupported");
         return;
       }
