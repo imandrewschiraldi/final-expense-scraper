@@ -38,11 +38,13 @@ type SpeechRecognitionWindow = typeof window & {
 
 /**
  * The header's search box — not a platform search (that's the sidebar's
- * own search, which filters the nav), this asks Gemini general insurance/
- * underwriting questions as an open conversation: a follow-up question
- * reuses the thread above it instead of starting over. Server-side key,
- * scoped system prompt, and the "not your actual lead data" disclaimer all
- * live in the API route, not here.
+ * own search, which filters the nav), this asks Gemini as an open
+ * conversation: a follow-up question reuses the thread above it instead of
+ * starting over. Scope is broad (not just insurance/underwriting — general
+ * work topics too, live-searched), with one narrow exception: a specific
+ * person's carrier eligibility routes to the agency's own underwriting
+ * guide instead. Server-side key, the actual system prompt, and the "not
+ * your actual lead data" disclaimer all live in the API route, not here.
  *
  * The thread is intentionally NOT kept once you step away from it — closing
  * it (clicking outside, or the clear button) wipes the conversation, so
