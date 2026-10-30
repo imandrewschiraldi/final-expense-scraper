@@ -3,23 +3,26 @@ import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { generateDemoPolicies, demoLeaderboardTotals, generateDemoAgencyPolicies, demoAgencyLeaderboardTotals } from "@/lib/demoData";
 import { rangeSince, type DashboardRange } from "@/lib/dashboardRange";
+import { getAgencySettings } from "@/lib/agencySettings";
 
-// Defaults to a live, all-time ranking — the board's normal state, since
-// sales leaderboards that silently reset weekly/monthly hide who's actually
-// ahead right now. A `period` query param (daily/weekly/monthly/all) lets
-// the UI additionally show a shorter contest window on request, reusing the
-// same day/week(Mon-start)/month boundaries as the rest of the Dashboard.
-// Every active user is included (even at $0), regardless of role — an admin
-// who also personally writes business is still part of the agency's
-// production, and excluding them by role previously meant their issued
-// premium was silently dropped instead of just not ranking anyone: new
-// accounts show up on the board immediately instead of waiting for their
-// first issued policy.
+// A `period` query param (daily/weekly/monthly/all) lets the UI show
+// different contest windows, reusing the same day/week(Mon-start)/month
+// boundaries as the rest of the Dashboard. "all" is additionally gated by
+// the agency-wide leaderboardAllTimeEnabled toggle (off by default) — an
+// admin flips it on for everyone at once rather than it always being
+// available, so a disabled "all" request below falls back to "monthly"
+// same as an invalid/missing one. Every active user is included (even at
+// $0), regardless of role — an admin who also personally writes business
+// is still part of the agency's production, and excluding them by role
+// previously meant their issued premium was silently dropped instead of
+// just not ranking anyone: new accounts show up on the board immediately
+// instead of waiting for their first issued policy.
 const LEADERBOARD_PERIODS = ["daily", "weekly", "monthly", "all"] as const satisfies readonly DashboardRange[];
 type LeaderboardPeriod = (typeof LEADERBOARD_PERIODS)[number];
 
-function parsePeriod(value: string | null): LeaderboardPeriod {
-  return (LEADERBOARD_PERIODS as readonly string[]).includes(value ?? "") ? (value as LeaderboardPeriod) : "all";
+function parsePeriod(value: string | null, allTimeEnabled: boolean): LeaderboardPeriod {
+  if (value === "all") return allTimeEnabled ? "all" : "monthly";
+  return (LEADERBOARD_PERIODS as readonly string[]).includes(value ?? "") ? (value as LeaderboardPeriod) : "monthly";
 }
 
 export async function GET(request: Request) {
@@ -27,7 +30,8 @@ export async function GET(request: Request) {
   if ("error" in guard) return guard.error;
 
   try {
-    const period = parsePeriod(new URL(request.url).searchParams.get("period"));
+    const { leaderboardAllTimeEnabled } = await getAgencySettings();
+    const period = parsePeriod(new URL(request.url).searchParams.get("period"), leaderboardAllTimeEnabled);
     const since = rangeSince(period);
 
     const [agents, policies] = await Promise.all([
@@ -87,7 +91,7 @@ export async function GET(request: Request) {
 
     const rankings = Array.from(byAgent.values()).sort((a, b) => b.issuedAP - a.issuedAP);
 
-    return NextResponse.json({ rankings });
+    return NextResponse.json({ rankings, period, allTimeEnabled: leaderboardAllTimeEnabled });
   } catch (err) {
     console.error("GET /api/portal/leaderboard failed:", err);
     return NextResponse.json({ error: err instanceof Error ? err.message : "Failed to load leaderboard" }, { status: 500 });

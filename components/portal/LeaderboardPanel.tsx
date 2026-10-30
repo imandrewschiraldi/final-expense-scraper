@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/cn";
 import { useCountUp } from "@/lib/useCountUp";
 
@@ -373,10 +374,18 @@ function LaurelIcon({
 }
 
 export function LeaderboardPanel() {
-  const [period, setPeriod] = useState<Period>("all");
+  const { data: session } = useSession();
+  const isAdmin = session?.user.role === "ADMIN";
+
+  const [period, setPeriod] = useState<Period>("monthly");
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Agency-wide, not per-viewer — whatever the admin last set it to,
+  // read fresh off every leaderboard fetch rather than its own endpoint so
+  // one poll keeps both the rankings and this flag in sync.
+  const [allTimeEnabled, setAllTimeEnabled] = useState(false);
+  const [togglingAllTime, setTogglingAllTime] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -398,6 +407,13 @@ export function LeaderboardPanel() {
         .then((data) => {
           if (cancelled) return;
           setRankings(data.rankings ?? []);
+          setAllTimeEnabled(!!data.allTimeEnabled);
+          // The server falls an "all" request back to "monthly" when the
+          // toggle is off — e.g. this tab was still open when an admin
+          // turned it off elsewhere. Syncing here keeps the active tab
+          // honest instead of showing "All Time" highlighted over monthly
+          // data.
+          if (data.period && data.period !== period) setPeriod(data.period);
           setLoading(false);
           setLoadError(null);
         })
@@ -415,6 +431,23 @@ export function LeaderboardPanel() {
       clearInterval(interval);
     };
   }, [period]);
+
+  async function toggleAllTime() {
+    setTogglingAllTime(true);
+    try {
+      const res = await fetch("/api/admin/leaderboard-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leaderboardAllTimeEnabled: !allTimeEnabled }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAllTimeEnabled(!!data.leaderboardAllTimeEnabled);
+      }
+    } finally {
+      setTogglingAllTime(false);
+    }
+  }
 
   const top3: PodiumSlot[] = Array.from({ length: 3 }, (_, i) => rankings[i] ?? { id: `empty-${i}`, placeholder: true });
   const rest = rankings.slice(3);
@@ -479,7 +512,7 @@ export function LeaderboardPanel() {
               className="mt-2 flex gap-1.5 rounded-full p-1.5 sm:gap-2 sm:p-2"
               style={{ background: "rgba(30,12,4,0.85)", border: "1px solid #8A4A1E", boxShadow: "0 0 24px rgba(255,122,26,0.3)" }}
             >
-              {PERIODS.map((p) => {
+              {PERIODS.filter((p) => p.value !== "all" || allTimeEnabled).map((p) => {
                 const active = period === p.value;
                 return (
                   <button
@@ -500,6 +533,18 @@ export function LeaderboardPanel() {
                 );
               })}
             </div>
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={toggleAllTime}
+                disabled={togglingAllTime}
+                className="text-[11px] font-bold tracking-wide uppercase transition-colors disabled:opacity-50"
+                style={{ color: allTimeEnabled ? "#FF9A4D" : "#8A6A52" }}
+              >
+                {togglingAllTime ? "Saving..." : `All Time Tab: ${allTimeEnabled ? "On" : "Off"} for Everyone`}
+              </button>
+            )}
           </div>
 
           {loading ? (

@@ -789,3 +789,14 @@ model JobApplicationStatusHistory {
   @@index([applicationId, createdAt])
   @@map("job_application_status_history")
 }
+
+/// A single always-present row (id "singleton") holding agency-wide feature
+/// toggles — settings that apply to every account at once, as opposed to
+/// User's own per-agent flags like demoModeEnabled. Add new global switches
+/// here as fields rather than new tables.
+model AgencySettings {
+  id                        String  @id @default("singleton")
+  leaderboardAllTimeEnabled Boolean @default(false)
+
+  @@map("agency_settings")
+}
