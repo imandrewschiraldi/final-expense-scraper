@@ -33,13 +33,23 @@ export function PushNotificationSettings() {
         setStatus("unsupported");
         return;
       }
-      if (Notification.permission === "denied") {
-        setStatus("denied");
-        return;
+      try {
+        if (Notification.permission === "denied") {
+          setStatus("denied");
+          return;
+        }
+        const reg = await navigator.serviceWorker.getRegistration();
+        const sub = await reg?.pushManager.getSubscription();
+        setStatus(sub ? "on" : "off");
+      } catch (err) {
+        // Belt and suspenders: the three feature checks above should rule
+        // out any browser where these calls would misbehave, but this is
+        // the one effect on the Profile page that runs unprompted on every
+        // visit — it degrading to "unsupported" beats it ever throwing
+        // unhandled here.
+        console.error("Push notification support check failed:", err);
+        setStatus("unsupported");
       }
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = await reg?.pushManager.getSubscription();
-      setStatus(sub ? "on" : "off");
     }
     check();
   }, []);
