@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -193,8 +194,12 @@ export function ProfilePanel() {
             title="Change profile picture"
           >
             {profile.profileImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.profileImageUrl} alt="" className="h-full w-full object-cover" />
+              // A raw <img> would decode the picture at full upload
+              // resolution — a large phone photo can be big enough to crash
+              // a memory-constrained mobile WebView (especially the
+              // installed iOS Home Screen app) over an 80px avatar.
+              // next/image routes it through Vercel's optimizer first.
+              <Image src={profile.profileImageUrl} alt="" width={80} height={80} className="h-full w-full object-cover" />
             ) : (
               <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-muted">
                 {profile.name.charAt(0).toUpperCase()}

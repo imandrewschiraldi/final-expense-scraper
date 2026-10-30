@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { Check, HelpCircle, LogOut, LucideIcon, User, Volume2, VolumeX } from "lucide-react";
@@ -132,9 +133,23 @@ export function ProfileMenu({
 
 function Avatar({ profile, displayName, size }: { profile: Profile | null; displayName: string; size: 8 | 9 }) {
   const dimension = size === 8 ? "h-8 w-8" : "h-9 w-9";
+  const pixels = size === 8 ? 32 : 36;
   if (profile?.profileImageUrl) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={profile.profileImageUrl} alt="" className={cn(dimension, "shrink-0 rounded-full object-cover")} />;
+    // A raw <img> here would decode the picture at whatever resolution the
+    // user uploaded it at — a full-size phone photo can be large enough to
+    // crash a memory-constrained mobile WebView (especially the installed
+    // iOS Home Screen app) just rendering an avatar this small. next/image
+    // routes it through Vercel's optimizer first, so the client only ever
+    // fetches/decodes an already-tiny version.
+    return (
+      <Image
+        src={profile.profileImageUrl}
+        alt=""
+        width={pixels}
+        height={pixels}
+        className={cn(dimension, "shrink-0 rounded-full object-cover")}
+      />
+    );
   }
   return (
     <div className={cn(dimension, "flex shrink-0 items-center justify-center rounded-full bg-surface2 text-sm font-bold text-muted")}>

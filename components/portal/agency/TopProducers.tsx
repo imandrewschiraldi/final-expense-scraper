@@ -1,13 +1,20 @@
 "use client";
 
 import { motion } from "motion/react";
+import Image from "next/image";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
 import { TopProducer } from "@/lib/agencyDashboardShared";
 
 function Avatar({ url, name }: { url: string | null; name: string }) {
   return url ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" className="h-8 w-8 shrink-0 rounded-full border-copper-dim-gradient object-cover" />
+    // next/image, not a raw <img> — see ProfileMenu's Avatar for why.
+    <Image
+      src={url}
+      alt=""
+      width={32}
+      height={32}
+      className="h-8 w-8 shrink-0 rounded-full border-copper-dim-gradient object-cover"
+    />
   ) : (
     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-copper-dim-gradient bg-surface2 text-sm font-bold text-muted">
       {name.charAt(0).toUpperCase()}
