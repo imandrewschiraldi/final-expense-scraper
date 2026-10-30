@@ -4,17 +4,15 @@ import { motion } from "motion/react";
 import Image from "next/image";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
 import { TopProducer } from "@/lib/agencyDashboardShared";
+import { optimizableImageUrl } from "@/lib/profileImage";
 
 function Avatar({ url, name }: { url: string | null; name: string }) {
-  return url ? (
+  const src = optimizableImageUrl(url);
+  return src ? (
     // next/image, not a raw <img> — see ProfileMenu's Avatar for why.
-    <Image
-      src={url}
-      alt=""
-      width={32}
-      height={32}
-      className="h-8 w-8 shrink-0 rounded-full border-copper-dim-gradient object-cover"
-    />
+    // Only for a URL next/image is actually configured to optimize, since
+    // anything else throws at render and crashes the whole page.
+    <Image src={src} alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-full border-copper-dim-gradient object-cover" />
   ) : (
     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-copper-dim-gradient bg-surface2 text-sm font-bold text-muted">
       {name.charAt(0).toUpperCase()}

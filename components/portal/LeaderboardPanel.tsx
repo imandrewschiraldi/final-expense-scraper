@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/cn";
+import { optimizableImageUrl } from "@/lib/profileImage";
 import { useCountUp } from "@/lib/useCountUp";
 
 const POLL_MS = 20000;
@@ -273,15 +274,13 @@ function AnimatedAP({ value, className }: { value: number; className?: string })
 // and let it naively scale that, which is what was reading as blurry at
 // the podium's larger avatar sizes.
 function Avatar({ url, name, sizeClassName, pixels = 96 }: { url: string | null; name: string; sizeClassName: string; pixels?: number }) {
-  return url ? (
-    <Image
-      src={url}
-      alt=""
-      width={pixels}
-      height={pixels}
-      quality={90}
-      className={cn("shrink-0 rounded-full object-cover", sizeClassName)}
-    />
+  // Only for a URL next/image is actually configured to optimize (see
+  // lib/profileImage.ts) — anything else throws at render, and this is a
+  // shared page everyone views, so one entrant's bad URL would otherwise
+  // crash it for the whole agency, not just that one account.
+  const src = optimizableImageUrl(url);
+  return src ? (
+    <Image src={src} alt="" width={pixels} height={pixels} quality={90} className={cn("shrink-0 rounded-full object-cover", sizeClassName)} />
   ) : (
     <div
       className={cn("flex shrink-0 items-center justify-center rounded-full text-base font-bold sm:text-xl", sizeClassName)}

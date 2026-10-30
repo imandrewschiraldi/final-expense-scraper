@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input, Select } from "@/components/ui/Input";
 import { StateMultiSelect } from "@/components/shared/StateMultiSelect";
+import { optimizableImageUrl } from "@/lib/profileImage";
 import { US_STATES } from "@/lib/usStates";
 import { ROLE_SWITCH_EMAIL, SwitchableRole } from "@/lib/roleSwitch";
 import { ProfileTourButton } from "@/components/portal/ProfileTourButton";
@@ -179,6 +180,8 @@ export function ProfilePanel() {
     return <p className="text-sm text-muted">Loading...</p>;
   }
 
+  const avatarSrc = optimizableImageUrl(profile.profileImageUrl);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -193,13 +196,16 @@ export function ProfilePanel() {
             className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-[1.5px] border-copper-dim-gradient bg-surface"
             title="Change profile picture"
           >
-            {profile.profileImageUrl ? (
+            {avatarSrc ? (
               // A raw <img> would decode the picture at full upload
               // resolution — a large phone photo can be big enough to crash
               // a memory-constrained mobile WebView (especially the
               // installed iOS Home Screen app) over an 80px avatar.
-              // next/image routes it through Vercel's optimizer first.
-              <Image src={profile.profileImageUrl} alt="" width={80} height={80} className="h-full w-full object-cover" />
+              // next/image routes it through Vercel's optimizer first — but
+              // only for a URL it's actually configured to optimize;
+              // anything else throws at render and takes the whole page
+              // down with it, so that case falls back to the plain initial.
+              <Image src={avatarSrc} alt="" width={80} height={80} className="h-full w-full object-cover" />
             ) : (
               <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-muted">
                 {profile.name.charAt(0).toUpperCase()}

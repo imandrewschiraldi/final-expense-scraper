@@ -6,6 +6,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { Check, HelpCircle, LogOut, LucideIcon, User, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { optimizableImageUrl } from "@/lib/profileImage";
 import { useSoundEnabled } from "@/lib/useSoundEnabled";
 import { useTour } from "@/components/tour/TourProvider";
 
@@ -134,21 +135,19 @@ export function ProfileMenu({
 function Avatar({ profile, displayName, size }: { profile: Profile | null; displayName: string; size: 8 | 9 }) {
   const dimension = size === 8 ? "h-8 w-8" : "h-9 w-9";
   const pixels = size === 8 ? 32 : 36;
-  if (profile?.profileImageUrl) {
-    // A raw <img> here would decode the picture at whatever resolution the
-    // user uploaded it at — a full-size phone photo can be large enough to
-    // crash a memory-constrained mobile WebView (especially the installed
-    // iOS Home Screen app) just rendering an avatar this small. next/image
-    // routes it through Vercel's optimizer first, so the client only ever
-    // fetches/decodes an already-tiny version.
+  // A raw <img> here would decode the picture at whatever resolution the
+  // user uploaded it at — a full-size phone photo can be large enough to
+  // crash a memory-constrained mobile WebView (especially the installed
+  // iOS Home Screen app) just rendering an avatar this small. next/image
+  // routes it through Vercel's optimizer first, so the client only ever
+  // fetches/decodes an already-tiny version — but only for a URL it's
+  // actually configured to optimize; anything else throws at render and
+  // takes the whole page down with it, so that case falls back to the
+  // plain initial instead.
+  const src = optimizableImageUrl(profile?.profileImageUrl);
+  if (src) {
     return (
-      <Image
-        src={profile.profileImageUrl}
-        alt=""
-        width={pixels}
-        height={pixels}
-        className={cn(dimension, "shrink-0 rounded-full object-cover")}
-      />
+      <Image src={src} alt="" width={pixels} height={pixels} className={cn(dimension, "shrink-0 rounded-full object-cover")} />
     );
   }
   return (
