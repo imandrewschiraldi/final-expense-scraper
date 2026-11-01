@@ -108,7 +108,7 @@ function MessageAvatar({ url, name }: { url: string | null; name: string }) {
   if (mark) {
     return (
       <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-copper-dim-gradient p-1.5"
+        className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border-copper-dim-gradient"
         style={{ background: mark.bg }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}

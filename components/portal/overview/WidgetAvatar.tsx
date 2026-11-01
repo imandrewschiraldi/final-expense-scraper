@@ -18,7 +18,10 @@ export function WidgetAvatar({ url, name, sizeClassName }: { url: string | null;
   const mark = resolveMarkImage(url, theme);
   if (mark) {
     return (
-      <div className={cn("flex shrink-0 items-center justify-center rounded-full border border-border p-1", sizeClassName)} style={{ background: mark.bg }}>
+      <div
+        className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border", sizeClassName)}
+        style={{ background: mark.bg }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={mark.src} alt="" className="h-full w-full object-contain" />
       </div>
