@@ -54,6 +54,7 @@ export async function GET() {
           authorName: true,
           createdAt: true,
           channel: { select: { name: true, slug: true } },
+          author: { select: { role: true } },
         },
       })
     : [];
@@ -64,7 +65,10 @@ export async function GET() {
     messages: messages.map((m) => ({
       id: m.id,
       body: m.body,
-      authorName: m.authorName,
+      // "Test Agent" is a leftover demo account's denormalised name from
+      // before it was cleaned up — relabelled the same way an admin's own
+      // name is on the Team Chat page, rather than shown as a real agent.
+      authorName: m.author?.role === "ADMIN" || m.authorName === "Test Agent" ? "Admin" : m.authorName,
       createdAt: m.createdAt,
       channelName: m.channel.name,
       channelSlug: m.channel.slug,

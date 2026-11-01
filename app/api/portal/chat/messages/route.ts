@@ -55,7 +55,10 @@ function shape(rows: Row[], me: string) {
       entry.mine ||= r.userId === me;
       byEmoji.set(r.emoji, entry);
     }
-    const isAdmin = author?.role === "ADMIN";
+    // "Test Agent" is a leftover demo account's denormalised name from
+    // messages sent before it was cleaned up — relabelled the same way an
+    // admin's own name is, rather than shown as if a real agent sent it.
+    const isAdmin = author?.role === "ADMIN" || authorName === "Test Agent";
     const isSystem = authorId === null;
     return {
       ...rest,
