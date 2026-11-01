@@ -15,7 +15,6 @@ import { SortableContext, useSortable, rectSortingStrategy } from "@dnd-kit/sort
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { GripVertical, Eye, EyeOff, LayoutGrid, Check, FilePlus2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { PageHeading } from "@/components/portal/PageHeading";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
@@ -152,7 +151,7 @@ export function OverviewClient() {
     <div>
       <PageHeading slug="agent-accelerator" alt="Agent Accelerator" />
 
-      <div className="mb-7 flex items-start justify-between gap-3">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.18em] text-muted uppercase">{today}</p>
           <h1 className="font-condensed text-[28px] font-extrabold tracking-wide text-white uppercase sm:text-[32px]">
@@ -172,20 +171,24 @@ export function OverviewClient() {
             {editing ? "Done" : "Edit Layout"}
           </button>
         )}
-      </div>
-
-      {/* Moved here from the sidebar's "Sell" section — same audience
-          (manager/agent, not admin) it was already scoped to there. */}
-      {!isAdmin && (
-        <div className="mb-7 flex justify-end">
-          <Link href="/submit-policy">
-            <Button variant="primary" className="rounded-full">
-              <FilePlus2 className="h-4 w-4" />
-              Submit Policy
-            </Button>
+        {/* Moved here from the sidebar's "Sell" section — same audience
+            (manager/agent, not admin) it was already scoped to there.
+            Deliberately not the shared Button component: its variants each
+            bake in their own background/text classes, and this codebase's
+            cn() is plain clsx (no tailwind-merge), so layering bg-white/
+            text-background on top of a variant's own background/color
+            classes would leave which one wins to Tailwind's generated
+            stylesheet order rather than anything predictable here. */}
+        {!isAdmin && (
+          <Link
+            href="/submit-policy"
+            className="font-condensed inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-bold tracking-[0.08em] text-background uppercase transition-opacity hover:opacity-90"
+          >
+            <FilePlus2 className="h-4 w-4" />
+            Submit Policy
           </Link>
-        </div>
-      )}
+        )}
+      </div>
 
       <AnnouncementsCarousel />
 
