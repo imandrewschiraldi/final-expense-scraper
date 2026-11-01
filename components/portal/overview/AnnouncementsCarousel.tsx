@@ -34,7 +34,7 @@ function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Thumbnail({ item }: { item: Item }) {
+function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
   if (item.type === "VIDEO" || item.type === "UPLOADED_VIDEO") {
     const thumb = item.type === "VIDEO" ? youtubeThumbnailUrl(item.url) : item.thumbnailUrl;
     return (
@@ -65,7 +65,17 @@ function Thumbnail({ item }: { item: Item }) {
 
   if (item.type === "PDF") {
     return (
-      <div className="relative w-full overflow-hidden rounded-[10px] border border-border bg-surface2" style={{ height: CARD_HEIGHT }}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onOpen}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") onOpen();
+        }}
+        className="relative w-full cursor-pointer overflow-hidden rounded-[10px] border border-border bg-surface2"
+        style={{ height: CARD_HEIGHT }}
+        title={item.title}
+      >
         {item.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
@@ -81,6 +91,7 @@ function Thumbnail({ item }: { item: Item }) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Download ${item.title}`}
+          onClick={(e) => e.stopPropagation()}
           className="absolute right-2 bottom-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
         >
           <Download className="h-3.5 w-3.5" />
@@ -91,7 +102,17 @@ function Thumbnail({ item }: { item: Item }) {
 
   const src = optimizableImageUrl(item.url);
   return (
-    <div className="relative w-full overflow-hidden rounded-[10px] border border-border bg-surface2" style={{ height: CARD_HEIGHT }}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onOpen();
+      }}
+      className="relative w-full cursor-pointer overflow-hidden rounded-[10px] border border-border bg-surface2"
+      style={{ height: CARD_HEIGHT }}
+      title={item.title}
+    >
       {src ? (
         <Image src={src} alt="" fill sizes="280px" className="object-cover" />
       ) : (
@@ -103,11 +124,42 @@ function Thumbnail({ item }: { item: Item }) {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`Download ${item.title}`}
+        onClick={(e) => e.stopPropagation()}
         className="absolute right-2 bottom-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
       >
         <Download className="h-3.5 w-3.5" />
       </a>
     </div>
+  );
+}
+
+/** Full-size preview of a downloadable Announcements item — an enlarged
+ *  image, or the actual PDF rendered in an iframe (the browser's own PDF
+ *  viewer, not just the first-page thumbnail blown up) — with a download
+ *  link alongside, not instead of, the small per-card one. */
+function Lightbox({ item, onClose }: { item: Item; onClose: () => void }) {
+  const src = item.type === "IMAGE" ? (optimizableImageUrl(item.url) ?? item.url) : item.url;
+  return (
+    <Modal open onClose={onClose} title={item.title} maxWidthClassName="max-w-4xl">
+      <div className="space-y-4">
+        {item.type === "PDF" ? (
+          <iframe src={item.url} title={item.title} className="h-[75vh] w-full rounded-lg border border-border bg-white" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt={item.title} className="max-h-[75vh] w-full rounded-lg object-contain" />
+        )}
+        <a
+          href={item.url}
+          download
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-condensed inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-teal-light uppercase hover:underline"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Download
+        </a>
+      </div>
+    </Modal>
   );
 }
 
@@ -320,6 +372,7 @@ export function AnnouncementsCarousel() {
   const [paused, setPaused] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [managing, setManaging] = useState(false);
+  const [lightbox, setLightbox] = useState<Item | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   // Last animation-frame timestamp — null whenever the drift isn't actively
   // running (paused, hovered, or just (re)started), so the first frame
@@ -350,7 +403,7 @@ export function AnnouncementsCarousel() {
 
     function tick(ts: number) {
       const el = scrollerRef.current;
-      const running = el && !paused && !hovering;
+      const running = el && !paused && !hovering && !lightbox;
       if (running) {
         if (lastTickRef.current !== null) {
           el.scrollLeft += SCROLL_SPEED * ((ts - lastTickRef.current) / 1000);
@@ -364,7 +417,7 @@ export function AnnouncementsCarousel() {
     }
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [paused, hovering, items.length]);
+  }, [paused, hovering, lightbox, items.length]);
 
   function step(dir: 1 | -1) {
     const el = scrollerRef.current;
@@ -432,13 +485,19 @@ export function AnnouncementsCarousel() {
         >
           {[...items, ...items].map((item, i) => (
             <div key={`${item.id}-${i}`} className="shrink-0" style={{ width: CARD_WIDTH }}>
-              <Thumbnail item={item} />
+              <Thumbnail
+                item={item}
+                onOpen={() => {
+                  if (item.type === "IMAGE" || item.type === "PDF") setLightbox(item);
+                }}
+              />
             </div>
           ))}
         </div>
       )}
 
       {managing && <AdminManageModal onClose={() => setManaging(false)} onChanged={load} />}
+      {lightbox && <Lightbox item={lightbox} onClose={() => setLightbox(null)} />}
     </div>
   );
 }
