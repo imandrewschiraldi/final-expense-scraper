@@ -37,9 +37,8 @@ import {
   CHAT_POLL_ACTIVE_MS,
   CHAT_POLL_HIDDEN_MS,
   CHAT_REACTIONS,
-  resolveMarkImage,
+  markBackground,
 } from "@/lib/chat";
-import { useTheme } from "@/lib/useTheme";
 
 /** The "no category" bucket at the top of the rail — not a real category id. */
 const LOOSE = "loose";
@@ -103,16 +102,15 @@ type Message = {
 };
 
 function MessageAvatar({ url, name }: { url: string | null; name: string }) {
-  const [theme] = useTheme();
-  const mark = resolveMarkImage(url, theme);
-  if (mark) {
+  const markBg = markBackground(url);
+  if (markBg) {
     return (
       <div
         className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border-copper-dim-gradient"
-        style={{ background: mark.bg }}
+        style={{ background: markBg }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={mark.src} alt="" className="h-full w-full object-contain" />
+        <img src={url!} alt="" className="h-full w-full object-contain" />
       </div>
     );
   }

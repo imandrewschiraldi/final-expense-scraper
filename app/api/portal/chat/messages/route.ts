@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { CHAT_PAGE_SIZE, ADMIN_MARK_SENTINEL, BOT_MARK_SENTINEL, normaliseMessage } from "@/lib/chat";
+import { CHAT_PAGE_SIZE, ADMIN_MARK_URL, BOT_MARK_URL, normaliseMessage } from "@/lib/chat";
 import { openChannelFor, channelRecipientIds } from "@/lib/chatAccess";
 import { sendPushToUser } from "@/lib/push";
 
@@ -60,7 +60,7 @@ function shape(rows: Row[], me: string) {
       ...rest,
       authorId,
       authorName: isAdmin ? "Admin" : authorName,
-      authorProfileImageUrl: isAdmin ? ADMIN_MARK_SENTINEL : isSystem ? BOT_MARK_SENTINEL : (author?.profileImageUrl ?? null),
+      authorProfileImageUrl: isAdmin ? ADMIN_MARK_URL : isSystem ? BOT_MARK_URL : (author?.profileImageUrl ?? null),
       reactions: [...byEmoji.values()],
     };
   });
