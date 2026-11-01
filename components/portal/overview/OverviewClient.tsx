@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
@@ -38,16 +39,18 @@ export function OverviewClient() {
 
   return (
     <div>
-      {/* The Ask Gemini box and icon cluster float as position:absolute
-          over the top ~74px of this page at the lg breakpoint and up
-          (where they're shown at all — hidden below lg) rather than taking
-          up document flow space, since TopBarActions renders nothing but
-          those two absolutely-positioned layers. Every other page clears
-          them for free because its PageHeading sits centered, away from
-          the left-anchored search box; Overview's own left-aligned header
-          needs this top clearance instead, only at the breakpoint where
-          there's actually something to clear. */}
-      <div className="mb-7 lg:pt-24">
+      {/* Centered logo, same role every other page's PageHeading plays —
+          its own height plus margin is what clears the Ask Gemini box and
+          icon cluster (pure position:absolute overlays with no document
+          flow height of their own) at the lg breakpoint and up, where
+          they're actually shown. The copper line right below it is
+          AppShell's own HeaderDivider, already rendered above this
+          component for every page. */}
+      <div className="mt-3 mb-8 flex justify-center lg:mt-20">
+        <Image src="/agent-accelerator-full-logo.jpg" alt="Agent Accelerator" width={1320} height={492} className="h-14 w-auto sm:h-16 lg:h-20" priority />
+      </div>
+
+      <div className="mb-7">
         <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.18em] text-muted uppercase">{today}</p>
         <h1 className="font-condensed text-[28px] font-extrabold tracking-wide text-white uppercase sm:text-[32px]">
           Welcome back, {name}
