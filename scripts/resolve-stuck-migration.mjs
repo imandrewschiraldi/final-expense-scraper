@@ -38,40 +38,125 @@ async function getStuckMigration(client) {
   return rows[0]?.migration_name ?? null;
 }
 
-// Looks only for the additive DDL Prisma actually generates (CREATE TABLE,
-// ADD COLUMN, CREATE TYPE) and checks whether those specific objects already
-// exist. Anything it can't find a clear signal for (all exist / none exist)
-// it refuses to guess on, so a genuinely broken migration fails loudly
-// instead of silently resolved the wrong way.
+// Looks for the DDL Prisma actually generates — CREATE/DROP TABLE, CREATE
+// TYPE, ALTER TYPE ADD VALUE, CREATE/DROP INDEX, and (scoped per ALTER TABLE
+// statement) ADD/DROP COLUMN, ALTER COLUMN (DROP|SET) NOT NULL/DEFAULT, ADD/
+// DROP CONSTRAINT — and checks whether those specific objects already
+// exist. A data backfill alongside one of those (INSERT/UPDATE/DELETE) is
+// NOT separately checked or bailed on: Prisma runs each migration.sql as one
+// transaction by default, so the schema either committed together with its
+// backfill or neither did — the schema-level signal alone tells us which.
+// Plain RENAMEs and column-type casts aren't safe to infer this way (the
+// old and new names/types both "exist" in a sense), so a migration
+// containing one is left for manual review — except the one recognized
+// idiom for narrowing/widening an enum (CREATE TYPE "<Enum>_new" AS ENUM
+// (...) ... ALTER TYPE "<Enum>_new" RENAME TO "<Enum>"), which is verified
+// by checking whether any of the enum's old-only values (found in the
+// migration's own CASE-mapping) are still present. Anything that still
+// isn't a clear, unanimous signal (all exist / none exist) is refused
+// rather than guessed at, so a genuinely broken migration fails loudly
+// instead of being silently resolved the wrong way.
 async function decideOutcome(client, migrationName) {
-  const sql = readFileSync(path.join(MIGRATIONS_DIR, migrationName, "migration.sql"), "utf8");
-
-  const tables = [...new Set([...sql.matchAll(/CREATE TABLE "([^"]+)"/gi)].map((m) => m[1]))];
-  const columns = [...sql.matchAll(/ALTER TABLE "([^"]+)" ADD COLUMN "([^"]+)"/gi)].map((m) => ({
-    table: m[1],
-    column: m[2],
-  }));
-  const types = [...new Set([...sql.matchAll(/CREATE TYPE "([^"]+)"/gi)].map((m) => m[1]))];
-
-  if (tables.length === 0 && columns.length === 0 && types.length === 0) return null;
+  let sql = readFileSync(path.join(MIGRATIONS_DIR, migrationName, "migration.sql"), "utf8");
 
   const checks = [];
-  for (const t of tables) {
-    const { rows } = await client.query(`SELECT to_regclass($1) IS NOT NULL AS exists`, [`public.${t}`]);
+  const push = async (query, params) => {
+    const { rows } = await client.query(query, params);
     checks.push(rows[0].exists);
-  }
-  for (const { table, column } of columns) {
-    const { rows } = await client.query(
-      `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2) AS exists`,
-      [table, column],
+  };
+
+  const enumSwap = sql.match(/CREATE TYPE "(\w+)_new" AS ENUM \(([^)]*)\)[\s\S]*?ALTER TYPE "\1_new" RENAME TO "\1"/);
+  if (enumSwap) {
+    const [whole, typeName, newValuesRaw] = enumSwap;
+    const newValues = new Set([...newValuesRaw.matchAll(/'([^']+)'/g)].map((m) => m[1]));
+    const oldOnlyValues = [...new Set([...sql.matchAll(/WHEN '([^']+)' THEN/gi)].map((m) => m[1]))].filter(
+      (v) => !newValues.has(v),
     );
-    checks.push(rows[0].exists);
-  }
-  for (const t of types) {
-    const { rows } = await client.query(`SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = $1) AS exists`, [t]);
-    checks.push(rows[0].exists);
+    if (oldOnlyValues.length > 0) {
+      await push(
+        `SELECT NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = $1 AND e.enumlabel = ANY($2)) AS exists`,
+        [typeName, oldOnlyValues],
+      );
+    }
+    sql = sql.slice(0, enumSwap.index) + sql.slice(enumSwap.index + whole.length);
   }
 
+  if (/\bRENAME\b/i.test(sql)) return null;
+  if (/ALTER COLUMN\s+"[^"]+"\s+TYPE\b/i.test(sql)) return null;
+
+  for (const m of sql.matchAll(/CREATE TABLE "([^"]+)"/gi)) {
+    await push(`SELECT to_regclass($1) IS NOT NULL AS exists`, [`public.${m[1]}`]);
+  }
+  for (const m of sql.matchAll(/DROP TABLE(?: IF EXISTS)? "([^"]+)"/gi)) {
+    await push(`SELECT to_regclass($1) IS NULL AS exists`, [`public.${m[1]}`]);
+  }
+  for (const m of sql.matchAll(/CREATE TYPE "([^"]+)"/gi)) {
+    await push(`SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = $1) AS exists`, [m[1]]);
+  }
+  for (const m of sql.matchAll(/ALTER TYPE "([^"]+)" ADD VALUE '([^']+)'/gi)) {
+    await push(
+      `SELECT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = $1 AND e.enumlabel = $2) AS exists`,
+      [m[1], m[2]],
+    );
+  }
+  for (const m of sql.matchAll(/CREATE (?:UNIQUE )?INDEX "([^"]+)"/gi)) {
+    await push(`SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = $1) AS exists`, [m[1]]);
+  }
+  for (const m of sql.matchAll(/DROP INDEX(?: IF EXISTS)? "([^"]+)"/gi)) {
+    await push(`SELECT NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = $1) AS exists`, [m[1]]);
+  }
+  for (const m of sql.matchAll(/DROP TYPE(?: IF EXISTS)? "([^"]+)"/gi)) {
+    await push(`SELECT NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = $1) AS exists`, [m[1]]);
+  }
+
+  for (const block of sql.matchAll(/ALTER TABLE "([^"]+)"([\s\S]*?);/g)) {
+    const [, table, body] = block;
+
+    for (const m of body.matchAll(/ADD COLUMN\s+"([^"]+)"/gi)) {
+      await push(
+        `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2) AS exists`,
+        [table, m[1]],
+      );
+    }
+    for (const m of body.matchAll(/DROP COLUMN\s+"([^"]+)"/gi)) {
+      await push(
+        `SELECT NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2) AS exists`,
+        [table, m[1]],
+      );
+    }
+    for (const m of body.matchAll(/ALTER COLUMN\s+"([^"]+)"\s+DROP NOT NULL/gi)) {
+      await push(
+        `SELECT COALESCE((SELECT is_nullable = 'YES' FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2), false) AS exists`,
+        [table, m[1]],
+      );
+    }
+    for (const m of body.matchAll(/ALTER COLUMN\s+"([^"]+)"\s+SET NOT NULL/gi)) {
+      await push(
+        `SELECT COALESCE((SELECT is_nullable = 'NO' FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2), false) AS exists`,
+        [table, m[1]],
+      );
+    }
+    for (const m of body.matchAll(/ADD CONSTRAINT\s+"([^"]+)"/gi)) {
+      await push(`SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = $1) AS exists`, [m[1]]);
+    }
+    for (const m of body.matchAll(/DROP CONSTRAINT\s+(?:IF EXISTS\s+)?"([^"]+)"/gi)) {
+      await push(`SELECT NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = $1) AS exists`, [m[1]]);
+    }
+    for (const m of body.matchAll(/ALTER COLUMN\s+"([^"]+)"\s+DROP DEFAULT/gi)) {
+      await push(
+        `SELECT COALESCE((SELECT column_default IS NULL FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2), false) AS exists`,
+        [table, m[1]],
+      );
+    }
+    for (const m of body.matchAll(/ALTER COLUMN\s+"([^"]+)"\s+SET DEFAULT/gi)) {
+      await push(
+        `SELECT COALESCE((SELECT column_default IS NOT NULL FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2), false) AS exists`,
+        [table, m[1]],
+      );
+    }
+  }
+
+  if (checks.length === 0) return null;
   if (checks.every(Boolean)) return "applied";
   if (checks.every((c) => !c)) return "rolled-back";
   return "mixed";
