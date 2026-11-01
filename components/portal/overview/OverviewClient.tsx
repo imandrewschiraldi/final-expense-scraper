@@ -13,7 +13,9 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, rectSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Eye, EyeOff, LayoutGrid, Check } from "lucide-react";
+import Link from "next/link";
+import { GripVertical, Eye, EyeOff, LayoutGrid, Check, FilePlus2 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { PageHeading } from "@/components/portal/PageHeading";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
@@ -171,6 +173,19 @@ export function OverviewClient() {
           </button>
         )}
       </div>
+
+      {/* Moved here from the sidebar's "Sell" section — same audience
+          (manager/agent, not admin) it was already scoped to there. */}
+      {!isAdmin && (
+        <div className="mb-7 flex justify-end">
+          <Link href="/submit-policy">
+            <Button variant="primary" className="rounded-full">
+              <FilePlus2 className="h-4 w-4" />
+              Submit Policy
+            </Button>
+          </Link>
+        </div>
+      )}
 
       <AnnouncementsCarousel />
 

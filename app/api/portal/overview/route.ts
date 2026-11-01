@@ -6,6 +6,7 @@ import { rangeSince } from "@/lib/dashboardRange";
 import { getAgencySettings } from "@/lib/agencySettings";
 import { resolveOverviewLayout } from "@/lib/overviewWidgets";
 import { getDownlineIds } from "@/lib/hierarchy";
+import { generateDemoPolicies, generateDemoAgencyPolicies } from "@/lib/demoData";
 
 const RECENT_MESSAGES = 5;
 const RECENT_LESSONS = 5;
@@ -33,6 +34,7 @@ export async function GET() {
     settings,
     widgetRows,
     recruitingUser,
+    viewer,
   ] = await Promise.all([
     db.chatChannel
       .findMany({
@@ -71,6 +73,7 @@ export async function GET() {
     getAgencySettings(),
     db.overviewWidget.findMany({ select: { id: true, order: true, enabled: true } }),
     role === "ADMIN" ? null : db.user.findUnique({ where: { id: userId }, select: { recruitingRadarEnabled: true } }),
+    db.user.findUnique({ where: { id: userId }, select: { demoModeEnabled: true } }),
   ]);
 
   // Recruiting Radar is dropped from the layout entirely (not just left
@@ -100,13 +103,45 @@ export async function GET() {
       })
     : [];
 
-  const personalLifeAP = personalLifeIssued.reduce((sum, p) => sum + Number(p.annualPremium), 0);
-  const personalAnnuityAP = personalAnnuityIssued.reduce((sum, p) => sum + Number(p.annualPremium), 0);
-  const agencyAP = agencyIssued.reduce((sum, p) => sum + Number(p.annualPremium), 0);
+  let personalLifeAP = personalLifeIssued.reduce((sum, p) => sum + Number(p.annualPremium), 0);
+  let personalAnnuityAP = personalAnnuityIssued.reduce((sum, p) => sum + Number(p.annualPremium), 0);
+  let agencyAP = agencyIssued.reduce((sum, p) => sum + Number(p.annualPremium), 0);
   // Bonus Volume is a monthly schedule, not calendar-YTD like Hall of
   // Fame — it resets at the start of every month, so it reads against its
   // own monthly-only issued total rather than the year-to-date figure.
-  const monthlyIssuedAP = monthIssuedPolicies.reduce((sum, p) => sum + Number(p.annualPremium), 0);
+  let monthlyIssuedAP = monthIssuedPolicies.reduce((sum, p) => sum + Number(p.annualPremium), 0);
+
+  // Demo Mode: same per-viewer, read-time-only overlay every other page
+  // applies (nothing written back, no other viewer's numbers touched) —
+  // Hall of Fame's three tracks and Bonus Volume all swap to fake
+  // production instead of the viewer's own real (often near-empty) rows.
+  if (viewer?.demoModeEnabled) {
+    const demoPolicies = generateDemoPolicies();
+    const demoIssuedSince = (since: Date) =>
+      demoPolicies.filter((p) => p.status === "ISSUED" && p.issuedAt && p.issuedAt >= since);
+
+    const demoYearIssued = demoIssuedSince(yearStart);
+    personalLifeAP = demoYearIssued
+      .filter((p) => p.product !== "Annuities")
+      .reduce((sum, p) => sum + p.annualPremium, 0);
+    personalAnnuityAP = demoYearIssued
+      .filter((p) => p.product === "Annuities")
+      .reduce((sum, p) => sum + p.annualPremium, 0);
+    monthlyIssuedAP = demoIssuedSince(monthStart).reduce((sum, p) => sum + p.annualPremium, 0);
+
+    // The Agency track reads as the whole agency, not just this viewer's
+    // downline, same "reads as one thriving agency" approach the Agency
+    // Dashboard's own Demo Mode overlay already uses — fake production for
+    // every other active agent, generated fresh (not stored) same as the
+    // viewer's own.
+    const otherAgents = await db.user.findMany({
+      where: { active: true, id: { not: userId } },
+      select: { id: true, name: true, profileImageUrl: true },
+    });
+    const demoAgencyPolicies = generateDemoAgencyPolicies(otherAgents);
+    const demoAgencyYearIssued = demoAgencyPolicies.filter((p) => p.status === "ISSUED" && p.issuedAt && p.issuedAt >= yearStart);
+    agencyAP = personalLifeAP + personalAnnuityAP + demoAgencyYearIssued.reduce((sum, p) => sum + p.annualPremium, 0);
+  }
 
   return NextResponse.json({
     messages: messages.map((m) => {

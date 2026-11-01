@@ -10,7 +10,6 @@ import {
   Building2,
   Trophy,
   BookOpen,
-  FilePlus2,
   FileBarChart2,
   Network,
   Users,
@@ -84,7 +83,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"], section: "leads" },
   { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"], section: "leads" },
 
-  { href: "/submit-policy", label: "Submit Policy", icon: FilePlus2, roles: ["MANAGER", "AGENT"], section: "sell" },
   { href: "/scripts", label: "Scripts", icon: FileText, roles: ["MANAGER", "AGENT"], section: "sell" },
   { href: "/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"], section: "sell" },
   { href: "/underwriting-genie", label: "Underwriting Genie", icon: Stethoscope, roles: ["ADMIN", "MANAGER", "AGENT"], section: "sell" },
