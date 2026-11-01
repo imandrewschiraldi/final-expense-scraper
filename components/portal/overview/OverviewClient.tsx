@@ -27,7 +27,7 @@ import { UnderwritingGenieMini } from "@/components/portal/overview/Underwriting
 type LayoutWidget = { id: string; label: string; order: number; enabled: boolean };
 
 type OverviewData = {
-  messages: { id: string; body: string; authorName: string; createdAt: string; channelName: string }[];
+  messages: { id: string; body: string; authorName: string; authorProfileImageUrl: string | null; createdAt: string; channelName: string }[];
   newLessons: { id: string; title: string; moduleTitle: string }[];
   hallOfFame: {
     personal: { issuedAP: number; targetAP: number };

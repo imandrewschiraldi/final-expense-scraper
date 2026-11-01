@@ -94,7 +94,7 @@ export async function GET() {
           authorName: true,
           createdAt: true,
           channel: { select: { name: true, slug: true } },
-          author: { select: { role: true } },
+          author: { select: { role: true, profileImageUrl: true } },
         },
       })
     : [];
@@ -115,6 +115,7 @@ export async function GET() {
       // before it was cleaned up — relabelled the same way an admin's own
       // name is on the Team Chat page, rather than shown as a real agent.
       authorName: m.author?.role === "ADMIN" || m.authorName === "Test Agent" ? "Admin" : m.authorName,
+      authorProfileImageUrl: m.author?.profileImageUrl ?? null,
       createdAt: m.createdAt,
       channelName: m.channel.name,
       channelSlug: m.channel.slug,

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { WidgetAvatar } from "@/components/portal/overview/WidgetAvatar";
 
-type Message = { id: string; body: string; authorName: string; createdAt: string; channelName: string };
+type Message = { id: string; body: string; authorName: string; authorProfileImageUrl: string | null; createdAt: string; channelName: string };
 
 function timeAgo(iso: string) {
   const ms = Date.now() - new Date(iso).getTime();
@@ -35,9 +36,7 @@ export function TeamChatWidget({ messages }: { messages: Message[] }) {
         <div className="flex flex-col gap-3.5">
           {messages.map((m) => (
             <div key={m.id} className="flex items-start gap-2.5">
-              <div className="font-condensed flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full border border-border bg-surface2 text-[11.5px] font-bold text-muted">
-                {m.authorName.charAt(0).toUpperCase()}
-              </div>
+              <WidgetAvatar url={m.authorProfileImageUrl} name={m.authorName} sizeClassName="h-[30px] w-[30px] text-[11.5px]" />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-1.5">
                   <span className="text-[13.5px] font-semibold text-foreground">{m.authorName}</span>

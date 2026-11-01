@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Crown } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { formatCurrency } from "@/lib/formatMoney";
+import { WidgetAvatar } from "@/components/portal/overview/WidgetAvatar";
 
-type Ranking = { id: string; name: string; issuedAP: number; issuedCount: number };
+type Ranking = { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number };
 
 const TOP_N = 5;
 
@@ -50,9 +51,7 @@ export function MiniLeaderboard() {
           {top.map((r, i) => (
             <div key={r.id} className="flex items-center gap-2.5">
               <span className="font-condensed w-4 shrink-0 text-[13px] font-extrabold text-muted">{i + 1}</span>
-              <div className="font-condensed flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full border border-border bg-surface2 text-[11px] font-bold text-muted">
-                {r.name.charAt(0).toUpperCase()}
-              </div>
+              <WidgetAvatar url={r.profileImageUrl} name={r.name} sizeClassName="h-[28px] w-[28px] text-[11px]" />
               <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-foreground">{r.name}</span>
               <span className="font-condensed shrink-0 text-[12.5px] font-bold" style={{ color: "var(--green-light)" }}>
                 {formatCurrency(r.issuedAP)}
