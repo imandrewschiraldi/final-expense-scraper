@@ -97,11 +97,17 @@ export default async function RootLayout({
         {/* Reads the saved theme choice and sets data-theme before first
             paint — the lib/useTheme.ts hook does the same thing, but as a
             React effect that only runs after hydration, which would flash
-            dark-then-light on every load for anyone who picked light mode. */}
+            dark-then-light on every load for anyone who picked light mode.
+            Skipped on /login specifically: that preference lives in
+            localStorage, which outlives the session it was set during, so
+            without this check, logging out after picking light mode would
+            leave the credentials form sitting on a light background the
+            next time someone opens the link — a login page should always
+            be dark, same as if light mode had never been touched. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              '(function(){try{if(localStorage.getItem("portal-theme")==="light"){document.documentElement.setAttribute("data-theme","light");}}catch(e){}})();',
+              '(function(){try{if(localStorage.getItem("portal-theme")==="light"&&location.pathname!=="/login"){document.documentElement.setAttribute("data-theme","light");}}catch(e){}})();',
           }}
         />
       </head>
