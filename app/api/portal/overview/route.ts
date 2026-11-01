@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { visibleChannelRoles, COMPANY_MARK_URL } from "@/lib/chat";
+import { visibleChannelRoles, ADMIN_MARK_SENTINEL, BOT_MARK_SENTINEL } from "@/lib/chat";
 import { rangeSince } from "@/lib/dashboardRange";
 import { getAgencySettings } from "@/lib/agencySettings";
 import { resolveOverviewLayout } from "@/lib/overviewWidgets";
@@ -120,10 +120,11 @@ export async function GET() {
         body: m.body,
         authorName: isAdmin ? "Admin" : m.authorName,
         // Admin and system (Sales Bot) posts speak for the agency, not a
-        // person — the company mark, never whichever personal photo the
+        // person — a company mark, never whichever personal photo the
         // admin account happens to have set, same override the full Team
-        // Chat page applies (see COMPANY_MARK_URL in lib/chat.ts).
-        authorProfileImageUrl: isAdmin || isSystem ? COMPANY_MARK_URL : (m.author?.profileImageUrl ?? null),
+        // Chat page applies (see the sentinels' own doc comment in
+        // lib/chat.ts for why these aren't real asset paths).
+        authorProfileImageUrl: isAdmin ? ADMIN_MARK_SENTINEL : isSystem ? BOT_MARK_SENTINEL : (m.author?.profileImageUrl ?? null),
         createdAt: m.createdAt,
         channelName: m.channel.name,
         channelSlug: m.channel.slug,

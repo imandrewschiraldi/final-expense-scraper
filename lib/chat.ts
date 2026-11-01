@@ -34,11 +34,40 @@ export const CHAT_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 /** Accepted image types, shared between the file picker and the upload route. */
 export const CHAT_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"] as const;
 
-/** Admin and system (Sales Bot) posts speak for the agency, not a person —
- *  shown with the company mark instead of whichever personal photo the
- *  admin account happens to have set, everywhere a chat message's author
- *  picture is rendered (the full Team Chat page, the Overview widget). */
-export const COMPANY_MARK_URL = "/tier1-mark-collapsed.png";
+/**
+ * Admin and system (Sales Bot) posts speak for the agency, not a person —
+ * shown with a company mark instead of whichever personal photo the admin
+ * account happens to have set, everywhere a chat message's author picture
+ * is rendered (the full Team Chat page, the Overview widget).
+ *
+ * `authorProfileImageUrl` carries one of the two sentinels below rather
+ * than a real asset path, because which actual image to show depends on
+ * the viewer's own light/dark theme (admin only — Sales Bot's mark is the
+ * same either way), and theme is a per-viewer, client-only preference
+ * (see lib/useTheme.ts) the server has no way to know when it builds the
+ * response. The avatar components resolve the sentinel to one of the
+ * asset paths below at render time, once they can read the viewer's
+ * actual theme.
+ */
+export const ADMIN_MARK_SENTINEL = "admin-mark";
+export const BOT_MARK_SENTINEL = "bot-mark";
+
+export const ADMIN_MARK_LIGHT_URL = "/tier1-mark-admin-light.png";
+export const ADMIN_MARK_DARK_URL = "/tier1-mark-admin-dark.png";
+export const BOT_MARK_URL = "/tier1-mark-bot.png";
+
+/** Resolves one of the sentinels above to the actual asset to render plus
+ *  the flat background color its own artwork is drawn on (each mark is a
+ *  baked, non-transparent image — not a cutout — so the avatar circle's
+ *  fill needs to match it exactly or the corners show a mismatched seam).
+ *  Returns null for an ordinary personal photo URL or no photo at all. */
+export function resolveMarkImage(url: string | null, theme: "dark" | "light"): { src: string; bg: string } | null {
+  if (url === BOT_MARK_SENTINEL) return { src: BOT_MARK_URL, bg: "#ffffff" };
+  if (url === ADMIN_MARK_SENTINEL) {
+    return theme === "light" ? { src: ADMIN_MARK_LIGHT_URL, bg: "#ffffff" } : { src: ADMIN_MARK_DARK_URL, bg: "#000000" };
+  }
+  return null;
+}
 
 /**
  * Roles that can read a channel gated at `minRole`.
