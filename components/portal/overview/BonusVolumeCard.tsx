@@ -1,6 +1,6 @@
 "use client";
 
-import { Gift } from "lucide-react";
+import { Gift, Info } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { BONUS_TIERS, currentBonusTier, nextBonusTier } from "@/lib/bonusTiers";
 
@@ -8,10 +8,24 @@ function formatCurrency(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-function daysLeftInMonth() {
-  const now = new Date();
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return Math.max(0, Math.ceil((monthEnd.getTime() - now.getTime()) / 86_400_000));
+function formatCompact(value: number) {
+  return value >= 1000 ? `$${Math.round(value / 1000)}K` : `$${Math.round(value)}`;
+}
+
+function monthLabel() {
+  return new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+/** Label row with the same native-title tooltip convention the Agency
+ *  Dashboard's KPI tiles already use (title={meta.explain}) — an Info icon
+ *  for the visual cue, no new tooltip component needed. */
+function SectionLabel({ children, explain }: { children: React.ReactNode; explain: string }) {
+  return (
+    <span className="flex items-center gap-1 text-sm font-semibold text-white" title={explain}>
+      {children}
+      <Info className="h-3.5 w-3.5 text-muted" />
+    </span>
+  );
 }
 
 /** Personal production bonus progress — a monthly schedule, unlike Hall of
@@ -26,12 +40,21 @@ export function BonusVolumeCard({ issuedAP }: { issuedAP: number }) {
 
   return (
     <Card data-tour="bonus-volume-card" className="p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Gift className="h-[18px] w-[18px]" style={{ color: "var(--copper-metal-hi)" }} />
-          <h3 className="font-condensed text-[15.5px] font-extrabold tracking-wide text-white uppercase">Bonus Volume</h3>
-        </div>
-        <span className="text-xs text-muted">{formatCurrency(issuedAP)} issued</span>
+      <div className="mb-4 flex items-center gap-2 border-b border-border pb-4">
+        <Gift className="h-[18px] w-[18px]" style={{ color: "var(--copper-metal-hi)" }} />
+        <h3 className="font-condensed text-[15.5px] font-extrabold tracking-wide text-white uppercase">Bonus</h3>
+      </div>
+
+      <div className="mb-2 flex items-center justify-between">
+        <SectionLabel explain="Personal issued premium so far this month, against the agency's tiered bonus schedule.">
+          Bonus Volume
+        </SectionLabel>
+        <span className="text-sm">
+          <span className="font-bold" style={{ color: "var(--green-light)" }}>
+            {formatCurrency(issuedAP)}
+          </span>
+          <span className="text-muted"> / {formatCompact(ceiling)}</span>
+        </span>
       </div>
 
       <div className="h-2 w-full overflow-hidden rounded-full bg-surface2">
@@ -41,15 +64,23 @@ export function BonusVolumeCard({ issuedAP }: { issuedAP: number }) {
         />
       </div>
 
-      <p className="mt-3 text-sm text-foreground">
-        {current ? `${formatCurrency(current.bonus)} bonus earned` : "No bonus tier reached yet"}
+      <div className="mt-2 flex items-center justify-between text-xs text-foreground">
+        <span>{Math.round(pct)}% to next tier</span>
+        <span>{next ? `${formatCurrency(ceiling - issuedAP)} to the ${formatCompact(next.threshold)} tier` : "Top tier reached"}</span>
+      </div>
+
+      <div className="mt-4 border-t border-border pt-4">
+        <SectionLabel explain="The bonus you've earned at your current tier, based on this month's issued premium so far.">
+          Bonus Earned
+        </SectionLabel>
+        <p className="mt-1.5 text-sm text-foreground">
+          {current ? `${formatCurrency(current.bonus)} earned at the ${formatCompact(current.threshold)} tier.` : "No bonus tier reached yet this month."}
+        </p>
+      </div>
+
+      <p className="mt-4 border-t border-border pt-3 text-xs text-muted">
+        Month of {monthLabel()} &middot; Estimate
       </p>
-      <p className="mt-1 text-xs text-muted">
-        {next
-          ? `${formatCurrency(ceiling - issuedAP)} to a ${formatCurrency(next.bonus)} bonus at ${formatCurrency(next.threshold)} issued`
-          : "Top bonus tier reached for the month"}
-      </p>
-      <p className="mt-1 text-xs text-muted">Calendar month &middot; {daysLeftInMonth()} days left</p>
     </Card>
   );
 }
