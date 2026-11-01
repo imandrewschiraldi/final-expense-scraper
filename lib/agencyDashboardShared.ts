@@ -22,6 +22,15 @@ export const AGENCY_KPI_META: Record<AgencyKpiKey, { label: string; format: "cur
 
 export type AgencyKpiData = Partial<Record<AgencyKpiKey, { value: number; previousValue?: number }>>;
 
+export function formatKpiValue(key: AgencyKpiKey, value: number | undefined) {
+  if (value === undefined) return "—";
+  const format = AGENCY_KPI_META[key].format;
+  if (format === "currency") {
+    return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  }
+  return Math.round(value).toLocaleString("en-US");
+}
+
 export type TopProducer = { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number };
 
 export type RecentActivityItem = {

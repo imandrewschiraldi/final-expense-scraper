@@ -51,13 +51,9 @@ type SpeechRecognitionWindow = typeof window & {
  * reopening the box always starts a fresh search instead of resurfacing a
  * stale answer from an unrelated question asked earlier.
  *
- * Draggable by its Bot icon (press and hold, then move) so it can be pulled
- * off to the side whenever it sits over a page's own title/heading/logo —
- * `position: fixed` once moved, so it's pinned to the viewport rather than
- * scrolling away, and clamped so it can never be dragged fully off-screen.
- * Intentionally NOT persisted — this is in-memory React state, so a page
- * refresh always puts it back at its default top-left header spot, same as
- * the conversation itself resetting.
+ * Fixed at its default top-left header spot — not draggable. Pages that need
+ * clearance for it (e.g. a centered PageHeading) handle that themselves
+ * rather than this box moving out of the way.
  *
  * The open chat panel is also resizable from its bottom-right corner (plain
  * CSS `resize`, not custom drag logic) — `min-width`/`min-height` are
@@ -81,13 +77,11 @@ function AiSearchBox() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const [listening, setListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const followUpRef = useRef<HTMLTextAreaElement>(null);
-  const dragRef = useRef<{ offsetX: number; offsetY: number; moved: boolean } | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   // What was already typed when dictation started — spoken words are
   // appended after it rather than overwriting it.
@@ -213,36 +207,6 @@ function AiSearchBox() {
     armSilenceTimer(listenBaseRef.current);
   }
 
-  function clamp(next: { x: number; y: number }) {
-    const margin = 8;
-    const w = containerRef.current?.offsetWidth ?? 290;
-    const h = containerRef.current?.offsetHeight ?? 40;
-    return {
-      x: Math.min(Math.max(next.x, margin), window.innerWidth - w - margin),
-      y: Math.min(Math.max(next.y, margin), window.innerHeight - h - margin),
-    };
-  }
-
-  function onDragHandlePointerDown(e: React.PointerEvent) {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    dragRef.current = { offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top, moved: false };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }
-
-  function onDragHandlePointerMove(e: React.PointerEvent) {
-    const drag = dragRef.current;
-    if (!drag) return;
-    drag.moved = true;
-    setPos(clamp({ x: e.clientX - drag.offsetX, y: e.clientY - drag.offsetY }));
-  }
-
-  function onDragHandlePointerUp(e: React.PointerEvent) {
-    dragRef.current = null;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-  }
-
   // Clicking outside just collapses the panel back into the trigger pill —
   // it does NOT clear the conversation. An accidental click-off used to
   // wipe the whole thread; now the thread survives, and clicking the pill
@@ -290,17 +254,9 @@ function AiSearchBox() {
 
   const hasThread = messages.length > 0;
 
-  const dragHandle = (
-    <span
-      onPointerDown={onDragHandlePointerDown}
-      onPointerMove={onDragHandlePointerMove}
-      onPointerUp={onDragHandlePointerUp}
-      onPointerCancel={onDragHandlePointerUp}
-      onClick={(e) => e.stopPropagation()}
-      title="Drag to move"
-      className="absolute top-1/2 left-1.5 z-10 flex h-6 w-6 -translate-y-1/2 cursor-grab touch-none items-center justify-center text-muted active:cursor-grabbing"
-    >
-      <Bot className="pointer-events-none h-4 w-4" />
+  const botIcon = (
+    <span className="pointer-events-none absolute top-1/2 left-1.5 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-muted">
+      <Bot className="h-4 w-4" />
     </span>
   );
 
@@ -355,8 +311,7 @@ function AiSearchBox() {
     <div
       ref={containerRef}
       data-tour="ask-gemini-box"
-      className={pos ? "fixed z-[999] w-[290px]" : "relative w-full max-w-[290px]"}
-      style={pos ? { left: pos.x, top: pos.y } : undefined}
+      className="relative w-full max-w-[290px]"
     >
       {/* Before a conversation starts, the header pill itself is the input.
           Once there's a thread, it becomes a non-editable trigger — typing
@@ -364,7 +319,7 @@ function AiSearchBox() {
           thread like any chat window, not back up here. */}
       {!hasThread ? (
         <form onSubmit={ask}>
-          {dragHandle}
+          {botIcon}
           <input
             type="text"
             value={question}
@@ -385,7 +340,7 @@ function AiSearchBox() {
           }}
           className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-border bg-input-bg py-2 pr-3 pl-9 text-left text-sm text-muted hover:text-foreground"
         >
-          {dragHandle}
+          {botIcon}
           <span className="truncate">Gemini conversation — click to continue</span>
         </div>
       )}
@@ -525,15 +480,9 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
     <>
       {/* Desktop: search box (left) and utility icon cluster (right) are
           two independently-anchored containers, not two flex children of
-          one "justify-between" row — the search box can go position:fixed
-          once dragged (removing it from flow entirely), and a flex row with
-          only one remaining child collapses "space-between" to flex-start,
-          which was yanking the icon cluster over to the left, right where
-          the search box used to sit, the moment it was dragged away. Each
-          one keeping its own fixed anchor means the icon cluster never
-          moves, no matter what the search box is doing. Commission
-          Calculator just skips the search box entirely — nothing to its
-          left there. */}
+          one "justify-between" row — each keeps its own fixed anchor so
+          neither depends on the other being present. Commission Calculator
+          just skips the search box entirely — nothing to its left there. */}
       {!iconsOnly && (
         <div
           className="absolute top-0 left-4 z-40 hidden items-center sm:left-6 lg:left-10 lg:flex"

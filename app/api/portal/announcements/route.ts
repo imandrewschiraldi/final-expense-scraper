@@ -9,7 +9,7 @@ export async function GET() {
   const items = await db.announcementItem.findMany({
     where: { active: true },
     orderBy: { order: "asc" },
-    select: { id: true, type: true, title: true, url: true },
+    select: { id: true, type: true, title: true, url: true, thumbnailUrl: true },
   });
 
   return NextResponse.json({ items });

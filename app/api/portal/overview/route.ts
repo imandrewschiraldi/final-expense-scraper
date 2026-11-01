@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { visibleChannelRoles } from "@/lib/chat";
 import { rangeSince } from "@/lib/dashboardRange";
 import { getAgencySettings } from "@/lib/agencySettings";
+import { computeAgencyKpis } from "@/lib/agencyDashboard";
+import { resolveOverviewLayout } from "@/lib/overviewWidgets";
 
 const RECENT_MESSAGES = 5;
 const RECENT_LESSONS = 5;
@@ -17,7 +19,7 @@ export async function GET() {
   const lessonSince = new Date(Date.now() - NEW_LESSON_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const yearStart = rangeSince("ytd")!;
 
-  const [visibleChannelIds, lessons, issuedPolicies, settings] = await Promise.all([
+  const [visibleChannelIds, lessons, issuedPolicies, settings, metrics, widgetRows] = await Promise.all([
     db.chatChannel
       .findMany({
         where: {
@@ -41,7 +43,11 @@ export async function GET() {
       select: { annualPremium: true },
     }),
     getAgencySettings(),
+    computeAgencyKpis("monthly"),
+    db.overviewWidget.findMany({ select: { id: true, order: true, enabled: true } }),
   ]);
+
+  const layout = resolveOverviewLayout(new Map(widgetRows.map((w) => [w.id, { order: w.order, enabled: w.enabled }])));
 
   const messages = visibleChannelIds.length
     ? await db.chatMessage.findMany({
@@ -83,5 +89,7 @@ export async function GET() {
       issuedAP,
       targetAP: Number(settings.hallOfFameTargetAP),
     },
+    metrics,
+    layout,
   });
 }

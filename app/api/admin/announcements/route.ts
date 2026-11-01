@@ -4,6 +4,13 @@ import { db } from "@/lib/db";
 
 const MAX_TITLE = 120;
 const YOUTUBE_HOSTS = ["youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"];
+const ANNOUNCEMENT_TYPES = ["VIDEO", "IMAGE", "UPLOADED_VIDEO", "PDF"] as const;
+// UPLOADED_VIDEO/PDF have no built-in thumbnail source (no YouTube API, and
+// the file itself isn't an image), so the client generates one and sends it
+// along as a data URL — too large to validate byte-for-byte here, but a
+// sanity check that it's actually an image data URL and not something else
+// entirely.
+const DATA_IMAGE_URL_PREFIX = "data:image/";
 
 function isYoutubeUrl(value: string) {
   try {
@@ -30,21 +37,32 @@ export async function POST(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json().catch(() => null);
-  const type = body?.type === "VIDEO" || body?.type === "IMAGE" ? body.type : null;
+  const type = ANNOUNCEMENT_TYPES.includes(body?.type) ? body.type : null;
   const title = typeof body?.title === "string" ? body.title.trim().slice(0, MAX_TITLE) : "";
   const url = typeof body?.url === "string" ? body.url.trim() : "";
+  const thumbnailUrl = typeof body?.thumbnailUrl === "string" ? body.thumbnailUrl.trim() : "";
 
-  if (!type) return NextResponse.json({ error: "type must be VIDEO or IMAGE." }, { status: 400 });
+  if (!type) return NextResponse.json({ error: "type must be VIDEO, IMAGE, UPLOADED_VIDEO, or PDF." }, { status: 400 });
   if (!title) return NextResponse.json({ error: "Title is required." }, { status: 400 });
   if (!url) return NextResponse.json({ error: "A URL is required." }, { status: 400 });
   if (type === "VIDEO" && !isYoutubeUrl(url)) {
     return NextResponse.json({ error: "That doesn't look like a YouTube link." }, { status: 400 });
   }
+  if ((type === "UPLOADED_VIDEO" || type === "PDF") && !thumbnailUrl.startsWith(DATA_IMAGE_URL_PREFIX)) {
+    return NextResponse.json({ error: "A generated thumbnail is required for an uploaded video or PDF." }, { status: 400 });
+  }
 
   const last = await db.announcementItem.findFirst({ orderBy: { order: "desc" }, select: { order: true } });
 
   const item = await db.announcementItem.create({
-    data: { type, title, url, order: (last?.order ?? 0) + 1, createdById: guard.session.user.id },
+    data: {
+      type,
+      title,
+      url,
+      thumbnailUrl: thumbnailUrl || null,
+      order: (last?.order ?? 0) + 1,
+      createdById: guard.session.user.id,
+    },
   });
 
   return NextResponse.json({ item });

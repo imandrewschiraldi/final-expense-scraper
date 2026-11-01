@@ -809,18 +809,31 @@ model AgencySettings {
 enum AnnouncementType {
   VIDEO
   IMAGE
+  /// An uploaded video file (not a YouTube link) — Blob-stored, with a
+  /// client-generated thumbnail since there's no YouTube API to pull one
+  /// from.
+  UPLOADED_VIDEO
+  /// A downloadable document (PDF, etc.) — Blob-stored, with a
+  /// client-generated first-page thumbnail.
+  PDF
 }
 
 /// One slide in the Overview page's rotating "Announcements" carousel —
-/// either a YouTube video (training clips, weekly updates) or a downloadable
-/// image (flyers, event graphics). Admin-managed; `order` controls slide
-/// sequence and `active` lets one be hidden without deleting it.
+/// a YouTube video, a downloadable image, an uploaded video file, or a PDF
+/// document. Admin-managed; `order` controls slide sequence and `active`
+/// lets one be hidden without deleting it.
 model AnnouncementItem {
   id          String           @id @default(cuid())
   type        AnnouncementType
   title       String
-  /// VIDEO: a full YouTube watch/share URL. IMAGE: the Blob storage URL.
+  /// VIDEO: a full YouTube watch/share URL. IMAGE/UPLOADED_VIDEO/PDF: the
+  /// Blob storage URL of the uploaded file.
   url         String
+  /// UPLOADED_VIDEO/PDF only — a client-generated thumbnail (data URL),
+  /// since there's no server-side video/PDF rendering here. VIDEO derives
+  /// its thumbnail from the YouTube URL instead, and IMAGE uses the image
+  /// itself, so neither needs this.
+  thumbnailUrl String?
   order       Int              @default(0)
   active      Boolean          @default(true)
   createdById String?
@@ -829,4 +842,18 @@ model AnnouncementItem {
 
   @@index([active, order])
   @@map("announcement_items")
+}
+
+/// Admin-controlled display order/visibility for one tile on the Overview
+/// page's widget grid (Hall of Fame, Team Chat, New Training, and the
+/// pre-built agency metric tiles) — `id` is the widget's registry key (see
+/// lib/overviewWidgets.ts), not a generated id. A widget with no row here
+/// just uses the registry's default order and stays enabled; a row only
+/// exists once an admin has actually moved or hidden it.
+model OverviewWidget {
+  id      String  @id
+  order   Int     @default(0)
+  enabled Boolean @default(true)
+
+  @@map("overview_widgets")
 }

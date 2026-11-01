@@ -2,24 +2,38 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { upload } from "@vercel/blob/client";
 import { useSession } from "next-auth/react";
-import { Download, Pause, Play, Plus, Settings, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, Pause, Play, Plus, Settings, Trash2, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { optimizableImageUrl } from "@/lib/profileImage";
 import { youtubeThumbnailUrl } from "@/lib/youtube";
+import { generateVideoThumbnail, generatePdfThumbnail } from "@/lib/clientThumbnail";
 
-type Item = { id: string; type: "VIDEO" | "IMAGE"; title: string; url: string; active?: boolean };
+type AnnouncementType = "VIDEO" | "IMAGE" | "UPLOADED_VIDEO" | "PDF";
+type Item = { id: string; type: AnnouncementType; title: string; url: string; thumbnailUrl?: string | null; active?: boolean };
 
 const CARD_WIDTH = 236;
 const CARD_GAP = 18;
 const STEP = CARD_WIDTH + CARD_GAP;
 const AUTO_ADVANCE_MS = 4500;
 
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="font-condensed absolute top-2 left-2 rounded px-1.5 py-0.5 text-[9px] font-extrabold tracking-wide text-black uppercase"
+      style={{ background: "var(--copper-metal-hi)" }}
+    >
+      {children}
+    </span>
+  );
+}
+
 function Thumbnail({ item }: { item: Item }) {
-  if (item.type === "VIDEO") {
-    const thumb = youtubeThumbnailUrl(item.url);
+  if (item.type === "VIDEO" || item.type === "UPLOADED_VIDEO") {
+    const thumb = item.type === "VIDEO" ? youtubeThumbnailUrl(item.url) : item.thumbnailUrl;
     return (
       <a
         href={item.url}
@@ -29,8 +43,9 @@ function Thumbnail({ item }: { item: Item }) {
         title={item.title}
       >
         {thumb && (
-          // Fixed-size YouTube thumbnail, not a user upload — no crash risk
-          // from an oversized source, so a plain <img> is fine here.
+          // A fixed-size YouTube thumbnail or a locally-generated video
+          // frame, not a user-controlled remote image — no crash risk from
+          // an oversized source, so a plain <img> is fine here.
           // eslint-disable-next-line @next/next/no-img-element
           <img src={thumb} alt="" className="h-full w-full object-cover" />
         )}
@@ -39,10 +54,34 @@ function Thumbnail({ item }: { item: Item }) {
             <Play className="h-4.5 w-4.5 translate-x-0.5 fill-white text-white" />
           </span>
         </span>
-        <span className="font-condensed absolute top-2 left-2 rounded px-1.5 py-0.5 text-[9px] font-extrabold tracking-wide text-black uppercase" style={{ background: "var(--copper-metal-hi)" }}>
-          Video
-        </span>
+        <Badge>Video</Badge>
       </a>
+    );
+  }
+
+  if (item.type === "PDF") {
+    return (
+      <div className="relative h-[133px] w-full overflow-hidden rounded-[10px] border border-border bg-surface2">
+        {item.thumbnailUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-muted">
+            <FileText className="h-8 w-8" />
+          </div>
+        )}
+        <Badge>PDF</Badge>
+        <a
+          href={item.url}
+          download
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Download ${item.title}`}
+          className="absolute right-2 bottom-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
+        >
+          <Download className="h-3.5 w-3.5" />
+        </a>
+      </div>
     );
   }
 
@@ -68,13 +107,26 @@ function Thumbnail({ item }: { item: Item }) {
   );
 }
 
+/** Uploads one admin-picked file straight to Blob storage (bypassing this
+ *  app's own server entirely) and hands back its public URL. */
+async function uploadAnnouncementFile(file: File, kind: "image" | "video" | "pdf") {
+  const blob = await upload(file.name, file, {
+    access: "public",
+    handleUploadUrl: "/api/admin/announcements/upload",
+    clientPayload: JSON.stringify({ kind }),
+  });
+  return blob.url;
+}
+
 function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChanged: () => void }) {
   const [items, setItems] = useState<(Item & { active: boolean })[]>([]);
   const [loading, setLoading] = useState(true);
-  const [type, setType] = useState<"VIDEO" | "IMAGE">("VIDEO");
+  const [type, setType] = useState<AnnouncementType>("VIDEO");
   const [title, setTitle] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [thumbnailDataUrl, setThumbnailDataUrl] = useState<string | null>(null);
+  const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,35 +141,56 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
     load();
   }, []);
 
+  async function onFilePicked(picked: File | null) {
+    setFile(picked);
+    setThumbnailDataUrl(null);
+    setError(null);
+    if (!picked || (type !== "UPLOADED_VIDEO" && type !== "PDF")) return;
+    setGeneratingThumbnail(true);
+    try {
+      const dataUrl = type === "UPLOADED_VIDEO" ? await generateVideoThumbnail(picked) : await generatePdfThumbnail(picked);
+      setThumbnailDataUrl(dataUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't generate a thumbnail for that file.");
+      setFile(null);
+    } finally {
+      setGeneratingThumbnail(false);
+    }
+  }
+
   async function addItem() {
     setError(null);
     if (!title.trim()) return setError("Give it a title.");
     setSaving(true);
     try {
-      let url = videoUrl.trim();
-      if (type === "IMAGE") {
+      let url = "";
+      let thumbnailUrl: string | null = null;
+
+      if (type === "VIDEO") {
+        url = videoUrl.trim();
+        if (!url) {
+          setError("Paste a YouTube link.");
+          return;
+        }
+      } else if (type === "IMAGE") {
         if (!file) {
           setError("Choose an image.");
           return;
         }
-        const formData = new FormData();
-        formData.append("file", file);
-        const uploadRes = await fetch("/api/admin/announcements/upload", { method: "POST", body: formData });
-        const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) {
-          setError(uploadData.error ?? "Upload failed.");
+        url = await uploadAnnouncementFile(file, "image");
+      } else {
+        if (!file || !thumbnailDataUrl) {
+          setError(type === "UPLOADED_VIDEO" ? "Choose a video." : "Choose a PDF.");
           return;
         }
-        url = uploadData.url;
-      } else if (!url) {
-        setError("Paste a YouTube link.");
-        return;
+        url = await uploadAnnouncementFile(file, type === "UPLOADED_VIDEO" ? "video" : "pdf");
+        thumbnailUrl = thumbnailDataUrl;
       }
 
       const res = await fetch("/api/admin/announcements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, title: title.trim(), url }),
+        body: JSON.stringify({ type, title: title.trim(), url, thumbnailUrl }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -127,8 +200,11 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
       setTitle("");
       setVideoUrl("");
       setFile(null);
+      setThumbnailDataUrl(null);
       load();
       onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setSaving(false);
     }
@@ -154,29 +230,51 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
     onChanged();
   }
 
+  const fileAccept =
+    type === "IMAGE" ? "image/png,image/jpeg,image/gif,image/webp" : type === "UPLOADED_VIDEO" ? "video/mp4,video/webm,video/quicktime" : "application/pdf";
+
   return (
     <Modal open onClose={onClose} title="Manage Announcements" maxWidthClassName="max-w-lg">
       <div className="space-y-5">
         <div className="space-y-3 rounded-lg border border-border p-4">
           <div className="flex gap-2">
-            <Select value={type} onChange={(e) => setType(e.target.value as "VIDEO" | "IMAGE")} className="w-36 shrink-0">
+            <Select
+              value={type}
+              onChange={(e) => {
+                setType(e.target.value as AnnouncementType);
+                setFile(null);
+                setThumbnailDataUrl(null);
+                setError(null);
+              }}
+              className="w-40 shrink-0"
+            >
               <option value="VIDEO">YouTube Video</option>
+              <option value="UPLOADED_VIDEO">Uploaded Video</option>
               <option value="IMAGE">Downloadable Image</option>
+              <option value="PDF">PDF Document</option>
             </Select>
             <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           {type === "VIDEO" ? (
             <Input placeholder="https://youtube.com/watch?v=..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
           ) : (
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/gif,image/webp"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-surface2 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-foreground"
-            />
+            <>
+              <input
+                type="file"
+                accept={fileAccept}
+                onChange={(e) => onFilePicked(e.target.files?.[0] ?? null)}
+                className="w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-surface2 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-foreground"
+              />
+              {type === "UPLOADED_VIDEO" && <p className="text-xs text-muted">Up to 300MB.</p>}
+              {generatingThumbnail && <p className="text-xs text-muted">Generating thumbnail...</p>}
+              {thumbnailDataUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={thumbnailDataUrl} alt="" className="h-20 w-auto rounded border border-border object-cover" />
+              )}
+            </>
           )}
           {error && <p className="text-sm text-red-light">{error}</p>}
-          <Button onClick={addItem} disabled={saving} className="w-full">
+          <Button onClick={addItem} disabled={saving || generatingThumbnail} className="w-full">
             <Plus className="size-4" />
             {saving ? "Adding..." : "Add Slide"}
           </Button>
@@ -191,7 +289,7 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
             items.map((item) => (
               <div key={item.id} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
                 <span className="font-condensed shrink-0 rounded px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-muted uppercase" style={{ border: "1px solid var(--border)" }}>
-                  {item.type}
+                  {item.type.replace("_", " ")}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm text-foreground">{item.title}</span>
                 <button

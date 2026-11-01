@@ -5,7 +5,7 @@ import { Wallet, FileCheck2, FileX2, FileText, DollarSign, Users, ArrowUpRight, 
 import { cn } from "@/lib/cn";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
 import { useCountUp } from "@/lib/useCountUp";
-import { AGENCY_KPI_KEYS, AGENCY_KPI_META, AgencyKpiData, AgencyKpiKey } from "@/lib/agencyDashboardShared";
+import { AGENCY_KPI_KEYS, AGENCY_KPI_META, AgencyKpiData, AgencyKpiKey, formatKpiValue } from "@/lib/agencyDashboardShared";
 
 const KPI_ICONS: Record<AgencyKpiKey, LucideIcon> = {
   totalAnnualPremium: Wallet,
@@ -15,15 +15,6 @@ const KPI_ICONS: Record<AgencyKpiKey, LucideIcon> = {
   avgCaseSize: DollarSign,
   activeAgents: Users,
 };
-
-function formatKpiValue(key: AgencyKpiKey, value: number | undefined) {
-  if (value === undefined) return "—";
-  const format = AGENCY_KPI_META[key].format;
-  if (format === "currency") {
-    return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-  }
-  return Math.round(value).toLocaleString("en-US");
-}
 
 function DeltaBadge({ value, previousValue }: { value: number | undefined; previousValue: number | undefined }) {
   if (value === undefined || previousValue === undefined || previousValue === 0) return null;
