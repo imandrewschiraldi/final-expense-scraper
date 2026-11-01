@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Radar } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { SectionLabel } from "@/components/portal/overview/SectionLabel";
 
 type Summary = {
   counts: Record<string, number>;
@@ -55,7 +56,7 @@ export function RecruitingRadarWidget() {
 
   return (
     <Card data-tour="recruiting-radar-widget" className="flex h-full flex-col p-5">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between border-b border-border pb-4">
         <div className="flex items-center gap-2">
           <Radar className="h-[18px] w-[18px]" style={{ color: "var(--copper-metal-hi)" }} />
           <h3 className="font-condensed text-[15.5px] font-extrabold tracking-wide text-white uppercase">Recruiting Radar</h3>
@@ -71,7 +72,10 @@ export function RecruitingRadarWidget() {
         <p className="text-sm text-muted">No recruiting activity in the last 7 days.</p>
       ) : (
         <>
-          <div className="mb-3.5 grid grid-cols-5 gap-1">
+          <div className="mb-2">
+            <SectionLabel explain="Status changes across all prospects in the last 7 days.">Status Changes (7d)</SectionLabel>
+          </div>
+          <div className="mb-4 grid grid-cols-5 gap-1 border-b border-border pb-4">
             {STATUS_ORDER.map((key) => (
               <div key={key} className="text-center">
                 <div className="font-condensed text-[15px] font-extrabold text-white">{summary.counts[key] ?? 0}</div>
@@ -79,7 +83,8 @@ export function RecruitingRadarWidget() {
               </div>
             ))}
           </div>
-          <div className="flex flex-col gap-2">
+          <SectionLabel explain="The most recent status changes, newest first.">Recent Activity</SectionLabel>
+          <div className="mt-2 flex flex-col gap-2">
             {summary.recent.map((r) => (
               <div key={r.id} className="flex items-center justify-between gap-2">
                 <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-foreground">{r.prospectName}</span>

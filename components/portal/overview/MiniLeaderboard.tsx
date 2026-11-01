@@ -4,14 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Crown } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { formatCurrency } from "@/lib/formatMoney";
 
 type Ranking = { id: string; name: string; issuedAP: number; issuedCount: number };
 
 const TOP_N = 5;
-
-function formatCurrency(value: number) {
-  return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-}
 
 /** Condensed top-5 preview of the full Leaderboard page — its own fetch
  *  against that same endpoint, not a copy of its ranking logic (including
@@ -34,7 +31,7 @@ export function MiniLeaderboard() {
 
   return (
     <Card data-tour="leaderboard-widget" className="flex h-full flex-col p-5">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between border-b border-border pb-4">
         <div className="flex items-center gap-2">
           <Crown className="h-[18px] w-[18px]" style={{ color: "var(--copper-metal-hi)" }} />
           <h3 className="font-condensed text-[15.5px] font-extrabold tracking-wide text-white uppercase">Leaderboard</h3>
@@ -57,7 +54,9 @@ export function MiniLeaderboard() {
                 {r.name.charAt(0).toUpperCase()}
               </div>
               <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-foreground">{r.name}</span>
-              <span className="font-condensed shrink-0 text-[12.5px] font-bold text-white">{formatCurrency(r.issuedAP)}</span>
+              <span className="font-condensed shrink-0 text-[12.5px] font-bold" style={{ color: "var(--green-light)" }}>
+                {formatCurrency(r.issuedAP)}
+              </span>
             </div>
           ))}
         </div>

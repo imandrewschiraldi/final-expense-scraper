@@ -1,31 +1,13 @@
 "use client";
 
-import { Gift, Info } from "lucide-react";
+import { Gift } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { SectionLabel } from "@/components/portal/overview/SectionLabel";
+import { formatCurrency, formatCompact } from "@/lib/formatMoney";
 import { BONUS_TIERS, currentBonusTier, nextBonusTier } from "@/lib/bonusTiers";
-
-function formatCurrency(value: number) {
-  return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-}
-
-function formatCompact(value: number) {
-  return value >= 1000 ? `$${Math.round(value / 1000)}K` : `$${Math.round(value)}`;
-}
 
 function monthLabel() {
   return new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" });
-}
-
-/** Label row with the same native-title tooltip convention the Agency
- *  Dashboard's KPI tiles already use (title={meta.explain}) — an Info icon
- *  for the visual cue, no new tooltip component needed. */
-function SectionLabel({ children, explain }: { children: React.ReactNode; explain: string }) {
-  return (
-    <span className="flex items-center gap-1 text-sm font-semibold text-white" title={explain}>
-      {children}
-      <Info className="h-3.5 w-3.5 text-muted" />
-    </span>
-  );
 }
 
 /** Personal production bonus progress — a monthly schedule, unlike Hall of

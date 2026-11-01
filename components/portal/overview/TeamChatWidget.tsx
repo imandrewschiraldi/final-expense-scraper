@@ -19,7 +19,7 @@ function timeAgo(iso: string) {
 export function TeamChatWidget({ messages }: { messages: Message[] }) {
   return (
     <Card className="flex h-full flex-col p-5">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between border-b border-border pb-4">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-[18px] w-[18px]" style={{ color: "var(--copper-metal-hi)" }} />
           <h3 className="font-condensed text-[15.5px] font-extrabold tracking-wide text-white uppercase">Team Chat</h3>
