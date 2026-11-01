@@ -237,24 +237,21 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
     <Modal open onClose={onClose} title="Manage Announcements" maxWidthClassName="max-w-lg">
       <div className="space-y-5">
         <div className="space-y-3 rounded-lg border border-border p-4">
-          <div className="flex gap-2">
-            <Select
-              value={type}
-              onChange={(e) => {
-                setType(e.target.value as AnnouncementType);
-                setFile(null);
-                setThumbnailDataUrl(null);
-                setError(null);
-              }}
-              className="w-40 shrink-0"
-            >
-              <option value="VIDEO">YouTube Video</option>
-              <option value="UPLOADED_VIDEO">Uploaded Video</option>
-              <option value="IMAGE">Downloadable Image</option>
-              <option value="PDF">PDF Document</option>
-            </Select>
-            <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
+          <Select
+            value={type}
+            onChange={(e) => {
+              setType(e.target.value as AnnouncementType);
+              setFile(null);
+              setThumbnailDataUrl(null);
+              setError(null);
+            }}
+          >
+            <option value="VIDEO">YouTube Video</option>
+            <option value="UPLOADED_VIDEO">Uploaded Video</option>
+            <option value="IMAGE">Downloadable Image</option>
+            <option value="PDF">PDF Document</option>
+          </Select>
+          <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
           {type === "VIDEO" ? (
             <Input placeholder="https://youtube.com/watch?v=..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
           ) : (
