@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { PageHeading } from "@/components/portal/PageHeading";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
 import { TeamChatWidget } from "@/components/portal/overview/TeamChatWidget";
@@ -39,16 +39,7 @@ export function OverviewClient() {
 
   return (
     <div>
-      {/* Centered logo, same role every other page's PageHeading plays —
-          its own height plus margin is what clears the Ask Gemini box and
-          icon cluster (pure position:absolute overlays with no document
-          flow height of their own) at the lg breakpoint and up, where
-          they're actually shown. The copper line right below it is
-          AppShell's own HeaderDivider, already rendered above this
-          component for every page. */}
-      <div className="mt-3 mb-8 flex justify-center lg:mt-20">
-        <Image src="/agent-accelerator-full-logo.jpg" alt="Agent Accelerator" width={1320} height={492} className="h-14 w-auto sm:h-16 lg:h-20" priority />
-      </div>
+      <PageHeading slug="agent-accelerator" alt="Agent Accelerator" />
 
       <div className="mb-7">
         <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.18em] text-muted uppercase">{today}</p>

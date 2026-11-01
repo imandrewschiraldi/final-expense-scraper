@@ -30,6 +30,7 @@ const HEADINGS = {
   "job-applications": { width: 528, height: 43 },
   "underwriting-genie": { width: 776, height: 47 },
   notifications: { width: 553, height: 45 },
+  "agent-accelerator": { width: 764, height: 43 },
 } as const;
 
 // Light-mode counterparts, cropped to the same glyph-to-image-height ratio
@@ -59,6 +60,7 @@ const HEADINGS_LIGHT = {
   "job-applications": { width: 527, height: 41 },
   "underwriting-genie": { width: 768, height: 43 },
   notifications: { width: 548, height: 38 },
+  "agent-accelerator": { width: 764, height: 43 },
 } satisfies Partial<Record<keyof typeof HEADINGS, { width: number; height: number }>>;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;
