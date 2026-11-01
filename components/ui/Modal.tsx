@@ -13,6 +13,7 @@ export function Modal({
   titleContent,
   children,
   maxWidthClassName = "max-w-2xl",
+  panelBorderClassName = "border-copper-dim-gradient",
 }: {
   open: boolean;
   onClose: () => void;
@@ -22,6 +23,11 @@ export function Modal({
   titleContent?: React.ReactNode;
   children: React.ReactNode;
   maxWidthClassName?: string;
+  // One of the border-copper-*-gradient utilities. Dim by default; pass
+  // "border-copper-gradient" for the brighter variant where the content
+  // itself is bold enough (a branded graphic, say) that a dim ring would
+  // visually disconnect from it.
+  panelBorderClassName?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -43,7 +49,7 @@ export function Modal({
           onClick={onClose}
         >
           <motion.div
-            className={`relative max-h-[85vh] w-full ${maxWidthClassName} overflow-y-auto rounded-2xl border-copper-dim-gradient bg-surface shadow-[0_32px_80px_-24px_rgba(0,0,0,0.85)]`}
+            className={`relative max-h-[85vh] w-full ${maxWidthClassName} overflow-y-auto rounded-2xl bg-surface shadow-[0_32px_80px_-24px_rgba(0,0,0,0.85)]`}
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0 }}
@@ -66,6 +72,13 @@ export function Modal({
               </button>
             </div>
             <div className="p-6">{children}</div>
+            {/* The border ring as its own top layer, not applied straight to
+                the panel — that pseudo-element sits below the header's own
+                `z-10` (needed to stay above scrolled content), which hid the
+                ring behind the header's opaque background along the top
+                edge instead of wrapping the whole card, title and close
+                button included. */}
+            <div className={`pointer-events-none absolute inset-0 z-20 rounded-2xl ${panelBorderClassName}`} />
           </motion.div>
         </motion.div>
       )}

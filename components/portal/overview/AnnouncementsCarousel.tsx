@@ -140,7 +140,7 @@ function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
 function Lightbox({ item, onClose }: { item: Item; onClose: () => void }) {
   const src = item.type === "IMAGE" ? (optimizableImageUrl(item.url) ?? item.url) : item.url;
   return (
-    <Modal open onClose={onClose} title={item.title} maxWidthClassName="max-w-4xl">
+    <Modal open onClose={onClose} title={item.title} maxWidthClassName="max-w-4xl" panelBorderClassName="border-copper-gradient">
       <div className="space-y-4">
         {item.type === "PDF" ? (
           <iframe src={item.url} title={item.title} className="h-[75vh] w-full rounded-lg border border-border bg-white" />
