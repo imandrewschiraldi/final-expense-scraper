@@ -354,6 +354,7 @@ function AiSearchBox() {
   return (
     <div
       ref={containerRef}
+      data-tour="ask-gemini-box"
       className={pos ? "fixed z-[999] w-[290px]" : "relative w-full max-w-[290px]"}
       style={pos ? { left: pos.x, top: pos.y } : undefined}
     >

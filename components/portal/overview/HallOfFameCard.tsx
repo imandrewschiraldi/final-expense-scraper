@@ -20,7 +20,7 @@ export function HallOfFameCard({ issuedAP, targetAP }: { issuedAP: number; targe
   const hit = issuedAP >= targetAP;
 
   return (
-    <Card className="p-5">
+    <Card data-tour="hall-of-fame-card" className="p-5">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Trophy className="h-[18px] w-[18px]" style={{ color: "var(--copper-metal-hi)" }} />

@@ -251,7 +251,7 @@ export function AnnouncementsCarousel() {
   if (items.length === 0 && !isAdmin) return null;
 
   return (
-    <div className="mb-9">
+    <div data-tour="announcements-carousel" className="mb-9">
       <div className="mb-3.5 flex items-center justify-between">
         <h2 className="font-condensed text-[17px] font-extrabold tracking-wide text-white uppercase">Announcements</h2>
         <div className="flex items-center gap-1.5">

@@ -265,7 +265,7 @@ function SidebarSearch({
   }
 
   return (
-    <div ref={containerRef} className="relative mb-3 px-0.5">
+    <div ref={containerRef} data-tour="sidebar-search" className="relative mb-3 px-0.5">
       <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
       <input
         ref={inputRef}

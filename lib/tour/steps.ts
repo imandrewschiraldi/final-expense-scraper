@@ -30,16 +30,30 @@ export const TOUR_SECTIONS: TourSection[] = [
     steps: [
       {
         id: "intro",
-        path: "/dashboard",
+        path: "/overview",
         title: "Welcome to Tier 1 Financial",
         body: "This tour walks through every section of the platform. Use Next/Back to step through it in order, or open the menu any time to jump straight to a topic.",
       },
       {
         id: "sidebar-profile-link",
-        path: "/dashboard",
+        path: "/overview",
         selector: '[data-tour="sidebar-profile-link"]',
         title: "Your Profile Menu",
         body: "Click your name/photo here any time to open a menu — My Profile (your picture, contact details, password, and Demo Mode), Interaction Sounds, this tour, and Log Out all live there.",
+      },
+      {
+        id: "sidebar-search",
+        path: "/overview",
+        selector: '[data-tour="sidebar-search"]',
+        title: "Search Everything",
+        body: "One search box for the whole platform — leads/contacts, carriers, training lessons, and lead vendors, plus any page by name. Press ⌘K (Ctrl+K on Windows) to jump to it from anywhere.",
+      },
+      {
+        id: "ask-gemini",
+        path: "/overview",
+        selector: '[data-tour="ask-gemini-box"]',
+        title: "Ask Gemini",
+        body: "Type or dictate a question — underwriting/carrier-eligibility questions pull from the agency's own guidelines, everything else (industry terms, markets, lead vendors, and more) gets a live web search. Drag it anywhere on the page, and resize it from the bottom-right corner once a conversation's open.",
       },
       {
         id: "profile-picture",
@@ -57,10 +71,36 @@ export const TOUR_SECTIONS: TourSection[] = [
       },
       {
         id: "notification-bell",
-        path: "/dashboard",
+        path: "/overview",
         selector: '[data-tour="notification-bell"]',
         title: "In-App Notifications",
         body: "The bell shows your notification history inside the app regardless of whether push is turned on — click it any time to see what you've missed.",
+      },
+    ],
+  },
+  {
+    label: "Overview",
+    steps: [
+      {
+        id: "overview",
+        path: "/overview",
+        selector: 'a[href="/overview"]',
+        title: "Overview",
+        body: "Your home page — this is what you land on first. Recent Team Chat activity and newly added Training show up here automatically, alongside the two sections below.",
+      },
+      {
+        id: "announcements-carousel",
+        path: "/overview",
+        selector: '[data-tour="announcements-carousel"]',
+        title: "Announcements",
+        body: "Training videos and downloadable flyers/graphics, scrolling on their own — pause it or step through manually with the arrows beside it.",
+      },
+      {
+        id: "hall-of-fame",
+        path: "/overview",
+        selector: '[data-tour="hall-of-fame-card"]',
+        title: "Hall of Fame",
+        body: "Your progress toward this calendar year's issued-premium milestone, updated the moment a policy of yours is marked issued.",
       },
     ],
   },
@@ -222,7 +262,7 @@ export const TOUR_SECTIONS: TourSection[] = [
     steps: [
       {
         id: "outro",
-        path: "/dashboard",
+        path: "/overview",
         title: "That's the Platform",
         body: "That covers every section. Come back to this tour any time from your profile menu in the sidebar, or the Platform Tour button on your Profile page — jump straight to any topic from its menu.",
       },
