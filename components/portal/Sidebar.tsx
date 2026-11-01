@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Home,
   LayoutDashboard,
   Building2,
   Trophy,
@@ -67,6 +68,7 @@ type NavItem = {
 // Overview rather than buried near the bottom, so a new agent lands on
 // training/communication tools immediately below their dashboard.
 const NAV_ITEMS: NavItem[] = [
+  { href: "/overview", label: "Overview", icon: Home, roles: ["ADMIN", "MANAGER", "AGENT"], section: "overview" },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "AGENT"], section: "overview" },
   { href: "/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"], requiresAgencyDashboard: true, section: "overview" },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"], section: "overview" },
@@ -509,7 +511,7 @@ export function Sidebar({
         )}
       >
         <div className="flex shrink-0 items-center justify-between px-3" style={{ height: HEADER_HEIGHT }}>
-          <Link href="/dashboard" className="block shrink-0" onClick={onCloseMobile}>
+          <Link href="/overview" className="block shrink-0" onClick={onCloseMobile}>
             <Image src="/tier1-logo-transparent.png" alt="Tier 1 Financial" width={1560} height={558} className="h-9 w-auto" priority />
           </Link>
           <button
@@ -542,7 +544,7 @@ export function Sidebar({
           className={cn("flex shrink-0 items-center px-3", collapsed ? "justify-center" : "justify-between")}
           style={{ height: HEADER_HEIGHT }}
         >
-          <Link href="/dashboard" className="block shrink-0">
+          <Link href="/overview" className="block shrink-0">
             {collapsed ? (
               <Image
                 src="/tier1-mark-collapsed.png"

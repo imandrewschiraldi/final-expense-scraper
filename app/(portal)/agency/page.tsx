@@ -12,7 +12,7 @@ export default async function AgencyDashboardPage() {
     : null;
 
   if (!user?.agencyDashboardEnabled) {
-    redirect("/dashboard");
+    redirect("/overview");
   }
 
   return <AgencyDashboardClient />;

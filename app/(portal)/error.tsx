@@ -17,12 +17,12 @@ export default function PortalError({ error, reset }: { error: Error & { digest?
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center">
       <p className="font-condensed text-lg font-bold text-white">Something went wrong</p>
       <p className="max-w-sm text-sm text-muted">
-        This page hit an error and couldn&apos;t load. Try again, or head back to the dashboard.
+        This page hit an error and couldn&apos;t load. Try again, or head back to the overview.
       </p>
       <div className="flex gap-3">
         <Button onClick={reset}>Try Again</Button>
-        <Button variant="ghost" onClick={() => (window.location.href = "/dashboard")}>
-          Go to Dashboard
+        <Button variant="ghost" onClick={() => (window.location.href = "/overview")}>
+          Go to Overview
         </Button>
       </div>
     </div>

@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   // not a path segment) — these keep old /portal/... bookmarks working.
   async redirects() {
     return [
-      { source: "/portal", destination: "/dashboard", permanent: true },
+      { source: "/portal", destination: "/overview", permanent: true },
       { source: "/portal/:path*", destination: "/:path*", permanent: true },
     ];
   },

@@ -141,6 +141,7 @@ model User {
   chatPins               ChatMessage[]                 @relation("ChatPinnedBy")
   chatChannelMemberships ChatChannelMember[]
   pushSubscriptions      PushSubscription[]
+  announcementItems      AnnouncementItem[]
 
   @@map("users")
 }
@@ -797,6 +798,35 @@ model JobApplicationStatusHistory {
 model AgencySettings {
   id                        String  @id @default("singleton")
   leaderboardAllTimeEnabled Boolean @default(false)
+  /// The Overview page's Hall of Fame card target — personal issued premium
+  /// for the calendar year. Admin-adjustable without a code deploy, same
+  /// reasoning as leaderboardAllTimeEnabled.
+  hallOfFameTargetAP        Decimal @default(400000) @db.Decimal(12, 2)
 
   @@map("agency_settings")
+}
+
+enum AnnouncementType {
+  VIDEO
+  IMAGE
+}
+
+/// One slide in the Overview page's rotating "Announcements" carousel —
+/// either a YouTube video (training clips, weekly updates) or a downloadable
+/// image (flyers, event graphics). Admin-managed; `order` controls slide
+/// sequence and `active` lets one be hidden without deleting it.
+model AnnouncementItem {
+  id          String           @id @default(cuid())
+  type        AnnouncementType
+  title       String
+  /// VIDEO: a full YouTube watch/share URL. IMAGE: the Blob storage URL.
+  url         String
+  order       Int              @default(0)
+  active      Boolean          @default(true)
+  createdById String?
+  createdBy   User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime         @default(now())
+
+  @@index([active, order])
+  @@map("announcement_items")
 }
