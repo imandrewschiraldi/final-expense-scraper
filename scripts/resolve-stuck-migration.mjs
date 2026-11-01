@@ -199,7 +199,15 @@ async function main() {
       console.log(
         `[resolve-stuck-migration] ${stuck} is marked failed; its objects ${outcome === "applied" ? "already exist" : "do not exist"} — resolving as --${outcome}.`,
       );
-      execSync(`npx prisma migrate resolve --${outcome} ${stuck}`, { stdio: "inherit" });
+      try {
+        execSync(`npx prisma migrate resolve --${outcome} ${stuck}`, { stdio: "inherit" });
+      } catch {
+        // A concurrent build (e.g. a branch push and its main fast-forward
+        // deploying at the same time) may have already resolved this one —
+        // `migrate resolve` then fails with P3008 "already recorded as
+        // applied/rolled back". Harmless: re-check the real state below.
+        console.log(`[resolve-stuck-migration] resolve failed — likely a concurrent build already handled ${stuck}, rechecking.`);
+      }
       if (outcome === "rolled-back") retriedAsNew.add(stuck);
     }
 
