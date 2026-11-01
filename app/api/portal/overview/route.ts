@@ -17,8 +17,9 @@ export async function GET() {
 
   const lessonSince = new Date(Date.now() - NEW_LESSON_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const yearStart = rangeSince("ytd")!;
+  const monthStart = rangeSince("monthly")!;
 
-  const [visibleChannelIds, lessons, issuedPolicies, settings, widgetRows, recruitingUser] = await Promise.all([
+  const [visibleChannelIds, lessons, issuedPolicies, monthIssuedPolicies, settings, widgetRows, recruitingUser] = await Promise.all([
     db.chatChannel
       .findMany({
         where: {
@@ -39,6 +40,10 @@ export async function GET() {
     }),
     db.policy.findMany({
       where: { agentId: userId, status: "ISSUED", issuedAt: { gte: yearStart } },
+      select: { annualPremium: true },
+    }),
+    db.policy.findMany({
+      where: { agentId: userId, status: "ISSUED", issuedAt: { gte: monthStart } },
       select: { annualPremium: true },
     }),
     getAgencySettings(),
@@ -73,6 +78,10 @@ export async function GET() {
     : [];
 
   const issuedAP = issuedPolicies.reduce((sum, p) => sum + Number(p.annualPremium), 0);
+  // Bonus Volume is a monthly schedule, not calendar-YTD like Hall of
+  // Fame — it resets at the start of every month, so it reads against its
+  // own monthly-only issued total rather than the year-to-date figure.
+  const monthlyIssuedAP = monthIssuedPolicies.reduce((sum, p) => sum + Number(p.annualPremium), 0);
 
   return NextResponse.json({
     messages: messages.map((m) => ({
@@ -95,6 +104,9 @@ export async function GET() {
     hallOfFame: {
       issuedAP,
       targetAP: Number(settings.hallOfFameTargetAP),
+    },
+    bonusVolume: {
+      issuedAP: monthlyIssuedAP,
     },
     layout,
   });

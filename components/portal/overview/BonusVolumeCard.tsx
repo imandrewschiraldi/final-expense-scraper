@@ -8,9 +8,15 @@ function formatCurrency(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-/** Personal production bonus progress — same issuedAP figure Hall of Fame
- *  already shows, just read against the agency's tiered bonus schedule
- *  instead of a single flat target. */
+function daysLeftInMonth() {
+  const now = new Date();
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return Math.max(0, Math.ceil((monthEnd.getTime() - now.getTime()) / 86_400_000));
+}
+
+/** Personal production bonus progress — a monthly schedule, unlike Hall of
+ *  Fame's calendar-YTD target, so it reads against its own monthly-only
+ *  issued total and resets at the start of every month. */
 export function BonusVolumeCard({ issuedAP }: { issuedAP: number }) {
   const current = currentBonusTier(issuedAP);
   const next = nextBonusTier(issuedAP);
@@ -41,8 +47,9 @@ export function BonusVolumeCard({ issuedAP }: { issuedAP: number }) {
       <p className="mt-1 text-xs text-muted">
         {next
           ? `${formatCurrency(ceiling - issuedAP)} to a ${formatCurrency(next.bonus)} bonus at ${formatCurrency(next.threshold)} issued`
-          : "Top bonus tier reached for the year"}
+          : "Top bonus tier reached for the month"}
       </p>
+      <p className="mt-1 text-xs text-muted">Calendar month &middot; {daysLeftInMonth()} days left</p>
     </Card>
   );
 }

@@ -30,6 +30,7 @@ type OverviewData = {
   messages: { id: string; body: string; authorName: string; createdAt: string; channelName: string }[];
   newLessons: { id: string; title: string; moduleTitle: string }[];
   hallOfFame: { issuedAP: number; targetAP: number };
+  bonusVolume: { issuedAP: number };
   layout: LayoutWidget[];
 };
 
@@ -38,7 +39,7 @@ function WidgetContent({ id, data, trainingHref }: { id: string; data: OverviewD
     case "hallOfFame":
       return <HallOfFameCard issuedAP={data.hallOfFame.issuedAP} targetAP={data.hallOfFame.targetAP} />;
     case "bonusVolume":
-      return <BonusVolumeCard issuedAP={data.hallOfFame.issuedAP} />;
+      return <BonusVolumeCard issuedAP={data.bonusVolume.issuedAP} />;
     case "teamChat":
       return <TeamChatWidget messages={data.messages} />;
     case "leaderboard":
