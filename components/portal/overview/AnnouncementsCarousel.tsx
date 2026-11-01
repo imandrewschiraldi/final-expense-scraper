@@ -46,7 +46,7 @@ function ClickableThumb({ item, onOpen, children }: { item: Item; onOpen: () => 
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onOpen();
       }}
-      className="relative w-full cursor-pointer overflow-hidden rounded-[10px] border border-border bg-surface2"
+      className="relative w-full cursor-pointer overflow-hidden rounded-[10px] bg-surface2"
       style={{ height: CARD_HEIGHT }}
       title={item.title}
     >
