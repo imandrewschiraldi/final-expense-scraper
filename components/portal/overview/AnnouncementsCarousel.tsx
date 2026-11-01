@@ -15,10 +15,13 @@ import { generateVideoThumbnail, generatePdfThumbnail } from "@/lib/clientThumbn
 type AnnouncementType = "VIDEO" | "IMAGE" | "UPLOADED_VIDEO" | "PDF";
 type Item = { id: string; type: AnnouncementType; title: string; url: string; thumbnailUrl?: string | null; active?: boolean };
 
-const CARD_WIDTH = 236;
-const CARD_GAP = 18;
+const CARD_WIDTH = 280;
+const CARD_HEIGHT = 158;
+const CARD_GAP = 9;
 const STEP = CARD_WIDTH + CARD_GAP;
-const AUTO_ADVANCE_MS = 4500;
+// Pixels per second of continuous auto-scroll — tuned to read as a steady
+// drift rather than either a jump or a crawl.
+const SCROLL_SPEED = 40;
 
 function Badge({ children }: { children: React.ReactNode }) {
   return (
@@ -39,7 +42,8 @@ function Thumbnail({ item }: { item: Item }) {
         href={item.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="relative block h-[133px] w-full overflow-hidden rounded-[10px] border border-border bg-surface2"
+        className="relative block w-full overflow-hidden rounded-[10px] border border-border bg-surface2"
+        style={{ height: CARD_HEIGHT }}
         title={item.title}
       >
         {thumb && (
@@ -61,7 +65,7 @@ function Thumbnail({ item }: { item: Item }) {
 
   if (item.type === "PDF") {
     return (
-      <div className="relative h-[133px] w-full overflow-hidden rounded-[10px] border border-border bg-surface2">
+      <div className="relative w-full overflow-hidden rounded-[10px] border border-border bg-surface2" style={{ height: CARD_HEIGHT }}>
         {item.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
@@ -87,9 +91,9 @@ function Thumbnail({ item }: { item: Item }) {
 
   const src = optimizableImageUrl(item.url);
   return (
-    <div className="relative h-[133px] w-full overflow-hidden rounded-[10px] border border-border bg-surface2">
+    <div className="relative w-full overflow-hidden rounded-[10px] border border-border bg-surface2" style={{ height: CARD_HEIGHT }}>
       {src ? (
-        <Image src={src} alt="" fill sizes="236px" className="object-cover" />
+        <Image src={src} alt="" fill sizes="280px" className="object-cover" />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-xs text-muted">Image unavailable</div>
       )}
@@ -314,8 +318,14 @@ export function AnnouncementsCarousel() {
 
   const [items, setItems] = useState<Item[]>([]);
   const [paused, setPaused] = useState(false);
+  const [hovering, setHovering] = useState(false);
   const [managing, setManaging] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  // Last animation-frame timestamp — null whenever the drift isn't actively
+  // running (paused, hovered, or just (re)started), so the first frame
+  // after resuming measures a fresh elapsed time instead of counting the
+  // whole idle gap as a jump.
+  const lastTickRef = useRef<number | null>(null);
 
   function load() {
     fetch("/api/portal/announcements")
@@ -328,19 +338,38 @@ export function AnnouncementsCarousel() {
     load();
   }, []);
 
+  // A continuous right-to-left drift, not periodic jumps — one set of
+  // slides is rendered twice back to back, and once the scroll position
+  // passes the first copy it's snapped back by exactly that copy's width
+  // (identical content on both sides of the snap, so it's imperceptible),
+  // which is what makes it loop forever instead of bouncing at the end.
   useEffect(() => {
-    if (paused || items.length === 0) return;
-    const interval = setInterval(() => {
+    if (items.length === 0) return;
+    let raf = 0;
+    const setWidth = items.length * STEP;
+
+    function tick(ts: number) {
       const el = scrollerRef.current;
-      if (!el) return;
-      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
-      el.scrollTo({ left: atEnd ? 0 : el.scrollLeft + STEP, behavior: "smooth" });
-    }, AUTO_ADVANCE_MS);
-    return () => clearInterval(interval);
-  }, [paused, items.length]);
+      const running = el && !paused && !hovering;
+      if (running) {
+        if (lastTickRef.current !== null) {
+          el.scrollLeft += SCROLL_SPEED * ((ts - lastTickRef.current) / 1000);
+          if (el.scrollLeft >= setWidth) el.scrollLeft -= setWidth;
+        }
+        lastTickRef.current = ts;
+      } else {
+        lastTickRef.current = null;
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [paused, hovering, items.length]);
 
   function step(dir: 1 | -1) {
-    scrollerRef.current?.scrollBy({ left: dir * STEP, behavior: "smooth" });
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollLeft += dir * STEP;
   }
 
   if (items.length === 0 && !isAdmin) return null;
@@ -394,11 +423,16 @@ export function AnnouncementsCarousel() {
       {items.length === 0 ? (
         <p className="text-sm text-muted">No announcements yet — add one from the gear icon above.</p>
       ) : (
-        <div ref={scrollerRef} className="flex gap-[18px] overflow-x-auto scroll-smooth pb-1" style={{ scrollbarWidth: "none" }}>
-          {items.map((item) => (
-            <div key={item.id} className="shrink-0" style={{ width: CARD_WIDTH }}>
+        <div
+          ref={scrollerRef}
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
+          className="flex overflow-x-auto pb-1"
+          style={{ scrollbarWidth: "none", gap: CARD_GAP }}
+        >
+          {[...items, ...items].map((item, i) => (
+            <div key={`${item.id}-${i}`} className="shrink-0" style={{ width: CARD_WIDTH }}>
               <Thumbnail item={item} />
-              <p className="mt-2 line-clamp-1 text-[13px] font-semibold text-foreground">{item.title}</p>
             </div>
           ))}
         </div>

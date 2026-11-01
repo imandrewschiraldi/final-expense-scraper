@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import productsData from "@/data/underwriting/products.json";
 import wlConditions from "@/data/underwriting/conditions-whole-life.json";
 import tmConditions from "@/data/underwriting/conditions-term-ul-iul.json";
@@ -62,6 +63,9 @@ const INCH_OPTIONS = Array.from({ length: 12 }, (_, i) => i);
  * which share the same "tm" state outright.
  */
 export function UnderwritingGenie() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? undefined;
+
   const [view, setView] = useState<View>("FEX");
   const sheet = VIEW_SHEET[view];
 
@@ -172,6 +176,7 @@ export function UnderwritingGenie() {
           onRemove={active.removeCondition}
           onYearsChange={active.updateYears}
           onCurrentChange={active.updateCurrent}
+          initialQuery={initialQuery}
         />
       </div>
 

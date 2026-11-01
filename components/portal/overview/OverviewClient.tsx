@@ -17,11 +17,12 @@ import { GripVertical, Eye, EyeOff, LayoutGrid, Check } from "lucide-react";
 import { PageHeading } from "@/components/portal/PageHeading";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
+import { BonusVolumeCard } from "@/components/portal/overview/BonusVolumeCard";
 import { TeamChatWidget } from "@/components/portal/overview/TeamChatWidget";
+import { MiniLeaderboard } from "@/components/portal/overview/MiniLeaderboard";
 import { NewTrainingWidget } from "@/components/portal/overview/NewTrainingWidget";
-import { MetricTile } from "@/components/portal/overview/MetricTile";
-import { metricKeyFromWidgetId } from "@/lib/overviewWidgets";
-import { AgencyKpiData } from "@/lib/agencyDashboardShared";
+import { RecruitingRadarWidget } from "@/components/portal/overview/RecruitingRadarWidget";
+import { UnderwritingGenieMini } from "@/components/portal/overview/UnderwritingGenieMini";
 
 type LayoutWidget = { id: string; label: string; order: number; enabled: boolean };
 
@@ -29,17 +30,28 @@ type OverviewData = {
   messages: { id: string; body: string; authorName: string; createdAt: string; channelName: string }[];
   newLessons: { id: string; title: string; moduleTitle: string }[];
   hallOfFame: { issuedAP: number; targetAP: number };
-  metrics: AgencyKpiData;
   layout: LayoutWidget[];
 };
 
 function WidgetContent({ id, data, trainingHref }: { id: string; data: OverviewData; trainingHref: string }) {
-  if (id === "hallOfFame") return <HallOfFameCard issuedAP={data.hallOfFame.issuedAP} targetAP={data.hallOfFame.targetAP} />;
-  if (id === "teamChat") return <TeamChatWidget messages={data.messages} />;
-  if (id === "newTraining") return <NewTrainingWidget lessons={data.newLessons} trainingHref={trainingHref} />;
-  const metricKey = metricKeyFromWidgetId(id);
-  if (metricKey) return <MetricTile metricKey={metricKey} data={data.metrics} />;
-  return null;
+  switch (id) {
+    case "hallOfFame":
+      return <HallOfFameCard issuedAP={data.hallOfFame.issuedAP} targetAP={data.hallOfFame.targetAP} />;
+    case "bonusVolume":
+      return <BonusVolumeCard issuedAP={data.hallOfFame.issuedAP} />;
+    case "teamChat":
+      return <TeamChatWidget messages={data.messages} />;
+    case "leaderboard":
+      return <MiniLeaderboard />;
+    case "newTraining":
+      return <NewTrainingWidget lessons={data.newLessons} trainingHref={trainingHref} />;
+    case "recruitingRadar":
+      return <RecruitingRadarWidget />;
+    case "underwritingGenie":
+      return <UnderwritingGenieMini />;
+    default:
+      return null;
+  }
 }
 
 /** Edit-mode wrapper for one grid tile — a drag handle to reorder it and an

@@ -21,6 +21,7 @@ export function ConditionSearch({
   onRemove,
   onYearsChange,
   onCurrentChange,
+  initialQuery,
 }: {
   sheet: Sheet;
   conditions: Condition[];
@@ -31,9 +32,13 @@ export function ConditionSearch({
   onRemove: (idx: number) => void;
   onYearsChange: (idx: number, val: string) => void;
   onCurrentChange: (idx: number, val: boolean) => void;
+  // Arriving from the Overview page's quick-search tile (?q= on this page's
+  // URL) — just seeds the box with the same query already typed there and
+  // opens the results, same as if the agent had typed it here themselves.
+  initialQuery?: string;
 }) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(initialQuery ?? "");
+  const [open, setOpen] = useState(!!initialQuery);
 
   const hits = search(query, conditions, medications, sheet);
 

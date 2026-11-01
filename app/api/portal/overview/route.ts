@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { visibleChannelRoles } from "@/lib/chat";
 import { rangeSince } from "@/lib/dashboardRange";
 import { getAgencySettings } from "@/lib/agencySettings";
-import { computeAgencyKpis } from "@/lib/agencyDashboard";
 import { resolveOverviewLayout } from "@/lib/overviewWidgets";
 
 const RECENT_MESSAGES = 5;
@@ -19,7 +18,7 @@ export async function GET() {
   const lessonSince = new Date(Date.now() - NEW_LESSON_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const yearStart = rangeSince("ytd")!;
 
-  const [visibleChannelIds, lessons, issuedPolicies, settings, metrics, widgetRows] = await Promise.all([
+  const [visibleChannelIds, lessons, issuedPolicies, settings, widgetRows, recruitingUser] = await Promise.all([
     db.chatChannel
       .findMany({
         where: {
@@ -43,11 +42,19 @@ export async function GET() {
       select: { annualPremium: true },
     }),
     getAgencySettings(),
-    computeAgencyKpis("monthly"),
     db.overviewWidget.findMany({ select: { id: true, order: true, enabled: true } }),
+    role === "ADMIN" ? null : db.user.findUnique({ where: { id: userId }, select: { recruitingRadarEnabled: true } }),
   ]);
 
-  const layout = resolveOverviewLayout(new Map(widgetRows.map((w) => [w.id, { order: w.order, enabled: w.enabled }])));
+  // Recruiting Radar is dropped from the layout entirely (not just left
+  // disabled) for a viewer without access, same gate as the full feature —
+  // otherwise it'd leave an empty grid cell rather than just not being
+  // there, since the widget itself only finds out it's forbidden after its
+  // own fetch comes back.
+  const hasRecruitingAccess = role === "ADMIN" || !!recruitingUser?.recruitingRadarEnabled;
+  const layout = resolveOverviewLayout(
+    new Map(widgetRows.map((w) => [w.id, { order: w.order, enabled: w.enabled }])),
+  ).filter((w) => w.id !== "recruitingRadar" || hasRecruitingAccess);
 
   const messages = visibleChannelIds.length
     ? await db.chatMessage.findMany({
@@ -89,7 +96,6 @@ export async function GET() {
       issuedAP,
       targetAP: Number(settings.hallOfFameTargetAP),
     },
-    metrics,
     layout,
   });
 }
