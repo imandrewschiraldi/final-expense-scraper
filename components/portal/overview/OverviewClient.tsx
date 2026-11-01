@@ -38,7 +38,16 @@ export function OverviewClient() {
 
   return (
     <div>
-      <div className="mb-7">
+      {/* The Ask Gemini box and icon cluster float as position:absolute
+          over the top ~74px of this page at the lg breakpoint and up
+          (where they're shown at all — hidden below lg) rather than taking
+          up document flow space, since TopBarActions renders nothing but
+          those two absolutely-positioned layers. Every other page clears
+          them for free because its PageHeading sits centered, away from
+          the left-anchored search box; Overview's own left-aligned header
+          needs this top clearance instead, only at the breakpoint where
+          there's actually something to clear. */}
+      <div className="mb-7 lg:pt-24">
         <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.18em] text-muted uppercase">{today}</p>
         <h1 className="font-condensed text-[28px] font-extrabold tracking-wide text-white uppercase sm:text-[32px]">
           Welcome back, {name}
