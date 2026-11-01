@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { upload } from "@vercel/blob/client";
 import { useSession } from "next-auth/react";
-import { Download, Pause, Play, Plus, Settings, Trash2, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { Download, ExternalLink, Pause, Play, Plus, Settings, Trash2, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { optimizableImageUrl } from "@/lib/profileImage";
-import { youtubeThumbnailUrl } from "@/lib/youtube";
+import { youtubeThumbnailUrl, youtubeEmbedUrl } from "@/lib/youtube";
 import { generateVideoThumbnail, generatePdfThumbnail } from "@/lib/clientThumbnail";
 
 type AnnouncementType = "VIDEO" | "IMAGE" | "UPLOADED_VIDEO" | "PDF";
@@ -34,18 +34,32 @@ function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Every Announcements type now opens the same way — a click anywhere on
+ *  the card opens the Lightbox, which is where any watch/download action
+ *  actually lives. No per-card overlay buttons. */
+function ClickableThumb({ item, onOpen, children }: { item: Item; onOpen: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onOpen();
+      }}
+      className="relative w-full cursor-pointer overflow-hidden rounded-[10px] border border-border bg-surface2"
+      style={{ height: CARD_HEIGHT }}
+      title={item.title}
+    >
+      {children}
+    </div>
+  );
+}
+
 function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
   if (item.type === "VIDEO" || item.type === "UPLOADED_VIDEO") {
     const thumb = item.type === "VIDEO" ? youtubeThumbnailUrl(item.url) : item.thumbnailUrl;
     return (
-      <a
-        href={item.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="relative block w-full overflow-hidden rounded-[10px] border border-border bg-surface2"
-        style={{ height: CARD_HEIGHT }}
-        title={item.title}
-      >
+      <ClickableThumb item={item} onOpen={onOpen}>
         {thumb && (
           // A fixed-size YouTube thumbnail or a locally-generated video
           // frame, not a user-controlled remote image — no crash risk from
@@ -59,23 +73,13 @@ function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
           </span>
         </span>
         <Badge>Video</Badge>
-      </a>
+      </ClickableThumb>
     );
   }
 
   if (item.type === "PDF") {
     return (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={onOpen}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") onOpen();
-        }}
-        className="relative w-full cursor-pointer overflow-hidden rounded-[10px] border border-border bg-surface2"
-        style={{ height: CARD_HEIGHT }}
-        title={item.title}
-      >
+      <ClickableThumb item={item} onOpen={onOpen}>
         {item.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
@@ -85,79 +89,79 @@ function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
           </div>
         )}
         <Badge>PDF</Badge>
-        <a
-          href={item.url}
-          download
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`Download ${item.title}`}
-          onClick={(e) => e.stopPropagation()}
-          className="absolute right-2 bottom-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
-        >
-          <Download className="h-3.5 w-3.5" />
-        </a>
-      </div>
+      </ClickableThumb>
     );
   }
 
   const src = optimizableImageUrl(item.url);
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onOpen();
-      }}
-      className="relative w-full cursor-pointer overflow-hidden rounded-[10px] border border-border bg-surface2"
-      style={{ height: CARD_HEIGHT }}
-      title={item.title}
-    >
+    <ClickableThumb item={item} onOpen={onOpen}>
       {src ? (
         <Image src={src} alt="" fill sizes="280px" className="object-cover" />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-xs text-muted">Image unavailable</div>
       )}
-      <a
-        href={item.url}
-        download
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`Download ${item.title}`}
-        onClick={(e) => e.stopPropagation()}
-        className="absolute right-2 bottom-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
-      >
-        <Download className="h-3.5 w-3.5" />
-      </a>
-    </div>
+    </ClickableThumb>
   );
 }
 
-/** Full-size preview of a downloadable Announcements item — an enlarged
- *  image, or the actual PDF rendered in an iframe (the browser's own PDF
- *  viewer, not just the first-page thumbnail blown up) — with a download
- *  link alongside, not instead of, the small per-card one. */
+/** Full-size preview for any Announcements item, opened by clicking its
+ *  card — an enlarged image, the actual PDF rendered in an iframe (the
+ *  browser's own PDF viewer, not just the first-page thumbnail blown up),
+ *  an uploaded video played inline, or an embedded YouTube player. The
+ *  action below the preview is whatever actually makes sense for that
+ *  type: downloading a file, or opening YouTube itself (nothing to
+ *  download from an embed). */
 function Lightbox({ item, onClose }: { item: Item; onClose: () => void }) {
-  const src = item.type === "IMAGE" ? (optimizableImageUrl(item.url) ?? item.url) : item.url;
+  const embedUrl = item.type === "VIDEO" ? youtubeEmbedUrl(item.url) : null;
+  const imageSrc = item.type === "IMAGE" ? (optimizableImageUrl(item.url) ?? item.url) : null;
+
   return (
     <Modal open onClose={onClose} title={item.title} maxWidthClassName="max-w-4xl" panelBorderClassName="border-copper-gradient">
       <div className="space-y-4">
         {item.type === "PDF" ? (
           <iframe src={item.url} title={item.title} className="h-[75vh] w-full rounded-lg border border-border bg-white" />
+        ) : item.type === "UPLOADED_VIDEO" ? (
+          <video src={item.url} controls autoPlay className="max-h-[75vh] w-full rounded-lg bg-black" />
+        ) : item.type === "VIDEO" ? (
+          embedUrl ? (
+            <iframe
+              src={`${embedUrl}?autoplay=1`}
+              title={item.title}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+              className="aspect-video w-full rounded-lg border border-border"
+            />
+          ) : (
+            <p className="text-sm text-muted">Couldn&apos;t load this video.</p>
+          )
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={item.title} className="max-h-[75vh] w-full rounded-lg object-contain" />
+          <img src={imageSrc ?? item.url} alt={item.title} className="max-h-[75vh] w-full rounded-lg object-contain" />
         )}
-        <a
-          href={item.url}
-          download
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-condensed inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-teal-light uppercase hover:underline"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Download
-        </a>
+
+        {item.type === "VIDEO" ? (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-condensed inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-teal-light uppercase hover:underline"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Open on YouTube
+          </a>
+        ) : (
+          <a
+            href={item.url}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-condensed inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-teal-light uppercase hover:underline"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download
+          </a>
+        )}
       </div>
     </Modal>
   );
@@ -485,12 +489,7 @@ export function AnnouncementsCarousel() {
         >
           {[...items, ...items].map((item, i) => (
             <div key={`${item.id}-${i}`} className="shrink-0" style={{ width: CARD_WIDTH }}>
-              <Thumbnail
-                item={item}
-                onOpen={() => {
-                  if (item.type === "IMAGE" || item.type === "PDF") setLightbox(item);
-                }}
-              />
+              <Thumbnail item={item} onOpen={() => setLightbox(item)} />
             </div>
           ))}
         </div>
