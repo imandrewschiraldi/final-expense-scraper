@@ -452,7 +452,7 @@ export function AnnouncementsCarousel() {
                 type="button"
                 onClick={() => setPaused((p) => !p)}
                 aria-label={paused ? "Resume auto-scroll" : "Pause auto-scroll"}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface2 hover:text-foreground"
               >
                 {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
               </button>
@@ -460,7 +460,7 @@ export function AnnouncementsCarousel() {
                 type="button"
                 onClick={() => step(-1)}
                 aria-label="Previous"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface2 hover:text-foreground"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -468,7 +468,7 @@ export function AnnouncementsCarousel() {
                 type="button"
                 onClick={() => step(1)}
                 aria-label="Next"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface2 hover:text-foreground"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>

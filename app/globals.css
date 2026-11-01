@@ -10,7 +10,10 @@
   --background: #000000;
   --surface: #0d0d0d;
   --surface2: #141414;
-  --border: rgba(255, 255, 255, 0.08);
+  /* Bumped from 0.08 — at that strength, card outlines and dividers barely
+     registered against the near-black background and the whole page read
+     as flat rather than separated into distinct panels. */
+  --border: rgba(255, 255, 255, 0.16);
   --foreground: #d0d0d0;
   --white: #ffffff;
   --muted: #606060;
@@ -128,7 +131,7 @@
   --background: #f5f3ef;
   --surface: #ffffff;
   --surface2: #f2f0ea;
-  --border: rgba(0, 0, 0, 0.1);
+  --border: rgba(0, 0, 0, 0.18);
   --foreground: #2a2622;
   --white: #17140f;
   --muted: #746f67;
