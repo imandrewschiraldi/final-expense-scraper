@@ -5,6 +5,7 @@ import { visibleChannelRoles } from "@/lib/chat";
 import { rangeSince } from "@/lib/dashboardRange";
 import { getAgencySettings } from "@/lib/agencySettings";
 import { resolveOverviewLayout } from "@/lib/overviewWidgets";
+import { getDownlineIds } from "@/lib/hierarchy";
 
 const RECENT_MESSAGES = 5;
 const RECENT_LESSONS = 5;
@@ -18,8 +19,21 @@ export async function GET() {
   const lessonSince = new Date(Date.now() - NEW_LESSON_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const yearStart = rangeSince("ytd")!;
   const monthStart = rangeSince("monthly")!;
+  // Resolved up front (not inside the Promise.all below) since the Agency
+  // track's issued-premium query depends on it.
+  const downlineIds = await getDownlineIds(userId);
 
-  const [visibleChannelIds, lessons, issuedPolicies, monthIssuedPolicies, settings, widgetRows, recruitingUser] = await Promise.all([
+  const [
+    visibleChannelIds,
+    lessons,
+    personalLifeIssued,
+    personalAnnuityIssued,
+    agencyIssued,
+    monthIssuedPolicies,
+    settings,
+    widgetRows,
+    recruitingUser,
+  ] = await Promise.all([
     db.chatChannel
       .findMany({
         where: {
@@ -39,7 +53,15 @@ export async function GET() {
       select: { id: true, title: true, createdAt: true, module: { select: { title: true } } },
     }),
     db.policy.findMany({
-      where: { agentId: userId, status: "ISSUED", issuedAt: { gte: yearStart } },
+      where: { agentId: userId, status: "ISSUED", issuedAt: { gte: yearStart }, line: "LIFE" },
+      select: { annualPremium: true },
+    }),
+    db.policy.findMany({
+      where: { agentId: userId, status: "ISSUED", issuedAt: { gte: yearStart }, line: "ANNUITY" },
+      select: { annualPremium: true },
+    }),
+    db.policy.findMany({
+      where: { agentId: { in: downlineIds }, status: "ISSUED", issuedAt: { gte: yearStart } },
       select: { annualPremium: true },
     }),
     db.policy.findMany({
@@ -77,7 +99,9 @@ export async function GET() {
       })
     : [];
 
-  const issuedAP = issuedPolicies.reduce((sum, p) => sum + Number(p.annualPremium), 0);
+  const personalLifeAP = personalLifeIssued.reduce((sum, p) => sum + Number(p.annualPremium), 0);
+  const personalAnnuityAP = personalAnnuityIssued.reduce((sum, p) => sum + Number(p.annualPremium), 0);
+  const agencyAP = agencyIssued.reduce((sum, p) => sum + Number(p.annualPremium), 0);
   // Bonus Volume is a monthly schedule, not calendar-YTD like Hall of
   // Fame — it resets at the start of every month, so it reads against its
   // own monthly-only issued total rather than the year-to-date figure.
@@ -102,8 +126,9 @@ export async function GET() {
       createdAt: l.createdAt,
     })),
     hallOfFame: {
-      issuedAP,
-      targetAP: Number(settings.hallOfFameTargetAP),
+      personal: { issuedAP: personalLifeAP, targetAP: Number(settings.hallOfFameTargetAP) },
+      agency: { issuedAP: agencyAP, targetAP: Number(settings.hallOfFameAgencyTargetAP) },
+      annuity: { issuedAP: personalAnnuityAP, targetAP: Number(settings.hallOfFameAnnuityTargetAP) },
     },
     bonusVolume: {
       issuedAP: monthlyIssuedAP,

@@ -29,7 +29,11 @@ type LayoutWidget = { id: string; label: string; order: number; enabled: boolean
 type OverviewData = {
   messages: { id: string; body: string; authorName: string; createdAt: string; channelName: string }[];
   newLessons: { id: string; title: string; moduleTitle: string }[];
-  hallOfFame: { issuedAP: number; targetAP: number };
+  hallOfFame: {
+    personal: { issuedAP: number; targetAP: number };
+    agency: { issuedAP: number; targetAP: number };
+    annuity: { issuedAP: number; targetAP: number };
+  };
   bonusVolume: { issuedAP: number };
   layout: LayoutWidget[];
 };
@@ -37,7 +41,7 @@ type OverviewData = {
 function WidgetContent({ id, data, trainingHref }: { id: string; data: OverviewData; trainingHref: string }) {
   switch (id) {
     case "hallOfFame":
-      return <HallOfFameCard issuedAP={data.hallOfFame.issuedAP} targetAP={data.hallOfFame.targetAP} />;
+      return <HallOfFameCard personal={data.hallOfFame.personal} agency={data.hallOfFame.agency} annuity={data.hallOfFame.annuity} />;
     case "bonusVolume":
       return <BonusVolumeCard issuedAP={data.bonusVolume.issuedAP} />;
     case "teamChat":

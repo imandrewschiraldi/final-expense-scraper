@@ -3,7 +3,7 @@ import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { checkAndAwardGoals } from "@/lib/personalDashboard";
 import { resolveCommissionAmount } from "@/lib/commissionServer";
-import { PolicyStatus } from "@prisma/client";
+import { PolicyLine, PolicyStatus } from "@prisma/client";
 
 const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
 
@@ -21,12 +21,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const body = await req.json();
-  const { clientName, clientPhone, state, carrier, product, annualPremium, status, carrierPlanId } = body as {
+  const { clientName, clientPhone, state, carrier, product, line, annualPremium, status, carrierPlanId } = body as {
     clientName?: string;
     clientPhone?: string;
     state?: string;
     carrier?: string;
     product?: string;
+    line?: PolicyLine;
     annualPremium?: number;
     status?: PolicyStatus;
     carrierPlanId?: string | null;
@@ -56,6 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(state !== undefined ? { state: state.trim().toUpperCase() || null } : {}),
       ...(carrier !== undefined ? { carrier: carrier.trim() } : {}),
       ...(product !== undefined ? { product: product.trim() || null } : {}),
+      ...(line !== undefined ? { line } : {}),
       ...(annualPremium !== undefined ? { annualPremium } : {}),
       ...(carrierPlanId !== undefined ? { carrierPlanId } : {}),
       ...(shouldRecomputeCommission ? { commissionAmount } : {}),

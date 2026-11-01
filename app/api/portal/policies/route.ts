@@ -5,7 +5,7 @@ import { checkAndAwardGoals } from "@/lib/personalDashboard";
 import { postDailySaleAnnouncement } from "@/lib/chatBot";
 import { resolveCommissionAmount } from "@/lib/commissionServer";
 import { generateDemoPolicies, demoPoliciesAsApiRows } from "@/lib/demoData";
-import { PolicyStatus } from "@prisma/client";
+import { PolicyLine, PolicyStatus } from "@prisma/client";
 
 const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
 
@@ -44,17 +44,19 @@ export async function POST(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { leadId, clientName, clientPhone, state, carrier, product, annualPremium, status, carrierPlanId } = body as {
+  const { leadId, clientName, clientPhone, state, carrier, product, line, annualPremium, status, carrierPlanId } = body as {
     leadId?: string;
     clientName?: string;
     clientPhone?: string;
     state?: string;
     carrier?: string;
     product?: string;
+    line?: PolicyLine;
     annualPremium?: number;
     status?: PolicyStatus;
     carrierPlanId?: string;
   };
+  const resolvedLine: PolicyLine = line === "ANNUITY" ? "ANNUITY" : "LIFE";
 
   if (!clientName?.trim() || !carrier?.trim() || !annualPremium || annualPremium <= 0) {
     return NextResponse.json(
@@ -88,6 +90,7 @@ export async function POST(req: NextRequest) {
       state: state?.trim().toUpperCase() || lead?.state || null,
       carrier: carrier.trim(),
       product: product?.trim() || null,
+      line: resolvedLine,
       annualPremium,
       status: resolvedStatus,
       issuedAt: resolvedStatus === "ISSUED" ? now : null,

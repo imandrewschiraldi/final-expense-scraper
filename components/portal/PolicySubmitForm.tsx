@@ -14,6 +14,11 @@ const STATUS_LABELS: Record<PolicyStatus, string> = {
   CHARGEBACK: "Chargeback",
 };
 
+const POLICY_LINES = ["LIFE", "ANNUITY"] as const;
+export type PolicyLine = (typeof POLICY_LINES)[number];
+
+const LINE_LABELS: Record<PolicyLine, string> = { LIFE: "Life", ANNUITY: "Annuity" };
+
 export type SubmittedPolicy = {
   id: string;
   clientName: string;
@@ -21,6 +26,7 @@ export type SubmittedPolicy = {
   state: string | null;
   carrier: string;
   product: string | null;
+  line: PolicyLine;
   annualPremium: string;
   status: PolicyStatus;
   submittedAt: string;
@@ -51,6 +57,7 @@ const emptyForm = {
   state: "",
   carrier: "",
   product: "",
+  line: "LIFE" as PolicyLine,
   annualPremium: "",
   status: "SUBMITTED" as PolicyStatus,
   carrierPlanId: "",
@@ -202,7 +209,16 @@ export function PolicySubmitForm({
             </button>
           </div>
         )}
-        <Select value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })}>
+        <Select
+          value={form.product}
+          onChange={(e) => {
+            const product = e.target.value;
+            // Picking the Annuities product defaults Line of Business to
+            // Annuity too — still overridable below, just saves the extra
+            // click on the common case.
+            setForm((f) => ({ ...f, product, line: product === "Annuities" ? "ANNUITY" : f.line }));
+          }}
+        >
           <option value="">— Select Product —</option>
           {PRODUCTS.map((p) => (
             <option key={p} value={p}>
@@ -218,6 +234,18 @@ export function PolicySubmitForm({
           value={form.annualPremium}
           onChange={(e) => setForm({ ...form, annualPremium: e.target.value })}
         />
+      </div>
+      <div>
+        <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+          Line of Business
+        </label>
+        <Select value={form.line} onChange={(e) => setForm({ ...form, line: e.target.value as PolicyLine })}>
+          {POLICY_LINES.map((l) => (
+            <option key={l} value={l}>
+              {LINE_LABELS[l]}
+            </option>
+          ))}
+        </Select>
       </div>
       {form.carrier.trim() && (
         <div>

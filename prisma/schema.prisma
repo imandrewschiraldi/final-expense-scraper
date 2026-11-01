@@ -39,6 +39,11 @@ enum PolicyStatus {
   CHARGEBACK
 }
 
+enum PolicyLine {
+  LIFE
+  ANNUITY
+}
+
 enum RecruitStatus {
   NEW
   DMD
@@ -390,6 +395,11 @@ model Policy {
   state            String?
   carrier          String
   product          String?
+  /// Life vs Annuity — drives which Hall of Fame track (Personal/Annuity)
+  /// a sale counts toward. Defaults to LIFE since that's the vast majority
+  /// of existing and new business; set explicitly on the submit form when
+  /// the product sold is an annuity.
+  line             PolicyLine   @default(LIFE)
   annualPremium    Decimal      @db.Decimal(10, 2)
   status           PolicyStatus @default(SUBMITTED)
   submittedAt      DateTime     @default(now())
@@ -798,10 +808,14 @@ model JobApplicationStatusHistory {
 model AgencySettings {
   id                        String  @id @default("singleton")
   leaderboardAllTimeEnabled Boolean @default(false)
-  /// The Overview page's Hall of Fame card target — personal issued premium
-  /// for the calendar year. Admin-adjustable without a code deploy, same
-  /// reasoning as leaderboardAllTimeEnabled.
+  /// The Overview page's Hall of Fame card targets, one per track —
+  /// Personal (life-only, personally issued), Agency (all lines, you +
+  /// your downline), Annuity (annuity-only, personally issued). Matches
+  /// the org's published Hall of Fame categories. Admin-adjustable without
+  /// a code deploy, same reasoning as leaderboardAllTimeEnabled.
   hallOfFameTargetAP        Decimal @default(400000) @db.Decimal(12, 2)
+  hallOfFameAgencyTargetAP  Decimal @default(10000000) @db.Decimal(12, 2)
+  hallOfFameAnnuityTargetAP Decimal @default(2000000) @db.Decimal(12, 2)
 
   @@map("agency_settings")
 }
