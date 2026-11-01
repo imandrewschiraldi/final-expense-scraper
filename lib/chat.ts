@@ -34,6 +34,12 @@ export const CHAT_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 /** Accepted image types, shared between the file picker and the upload route. */
 export const CHAT_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"] as const;
 
+/** Admin and system (Sales Bot) posts speak for the agency, not a person —
+ *  shown with the company mark instead of whichever personal photo the
+ *  admin account happens to have set, everywhere a chat message's author
+ *  picture is rendered (the full Team Chat page, the Overview widget). */
+export const COMPANY_MARK_URL = "/tier1-mark-collapsed.png";
+
 /**
  * Roles that can read a channel gated at `minRole`.
  *

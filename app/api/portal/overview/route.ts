@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { visibleChannelRoles } from "@/lib/chat";
+import { visibleChannelRoles, COMPANY_MARK_URL } from "@/lib/chat";
 import { rangeSince } from "@/lib/dashboardRange";
 import { getAgencySettings } from "@/lib/agencySettings";
 import { resolveOverviewLayout } from "@/lib/overviewWidgets";
@@ -90,6 +90,7 @@ export async function GET() {
         take: RECENT_MESSAGES,
         select: {
           id: true,
+          authorId: true,
           body: true,
           authorName: true,
           createdAt: true,
@@ -108,18 +109,26 @@ export async function GET() {
   const monthlyIssuedAP = monthIssuedPolicies.reduce((sum, p) => sum + Number(p.annualPremium), 0);
 
   return NextResponse.json({
-    messages: messages.map((m) => ({
-      id: m.id,
-      body: m.body,
+    messages: messages.map((m) => {
       // "Test Agent" is a leftover demo account's denormalised name from
       // before it was cleaned up — relabelled the same way an admin's own
       // name is on the Team Chat page, rather than shown as a real agent.
-      authorName: m.author?.role === "ADMIN" || m.authorName === "Test Agent" ? "Admin" : m.authorName,
-      authorProfileImageUrl: m.author?.profileImageUrl ?? null,
-      createdAt: m.createdAt,
-      channelName: m.channel.name,
-      channelSlug: m.channel.slug,
-    })),
+      const isAdmin = m.author?.role === "ADMIN" || m.authorName === "Test Agent";
+      const isSystem = m.authorId === null;
+      return {
+        id: m.id,
+        body: m.body,
+        authorName: isAdmin ? "Admin" : m.authorName,
+        // Admin and system (Sales Bot) posts speak for the agency, not a
+        // person — the company mark, never whichever personal photo the
+        // admin account happens to have set, same override the full Team
+        // Chat page applies (see COMPANY_MARK_URL in lib/chat.ts).
+        authorProfileImageUrl: isAdmin || isSystem ? COMPANY_MARK_URL : (m.author?.profileImageUrl ?? null),
+        createdAt: m.createdAt,
+        channelName: m.channel.name,
+        channelSlug: m.channel.slug,
+      };
+    }),
     newLessons: lessons.map((l) => ({
       id: l.id,
       title: l.title,

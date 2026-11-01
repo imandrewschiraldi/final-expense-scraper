@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { CHAT_PAGE_SIZE, normaliseMessage } from "@/lib/chat";
+import { CHAT_PAGE_SIZE, COMPANY_MARK_URL, normaliseMessage } from "@/lib/chat";
 import { openChannelFor, channelRecipientIds } from "@/lib/chatAccess";
 import { sendPushToUser } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
-
-// Admin and system (bot) posts speak for the agency, not a person — shown
-// under a role name with the company mark instead of a personal name/photo.
-const COMPANY_MARK_URL = "/tier1-mark-collapsed.png";
 
 /** Everything the client renders for one message. */
 const MESSAGE_SELECT = {

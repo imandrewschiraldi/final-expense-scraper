@@ -53,7 +53,7 @@ export function HallOfFameCard({ personal, agency, annuity }: HallOfFameProps) {
   const data = { personal, agency, annuity };
 
   return (
-    <Card data-tour="hall-of-fame-card" className="flex h-full min-h-[380px] flex-col p-5">
+    <Card data-tour="hall-of-fame-card" className="p-5">
       <div className="mb-4 flex items-center gap-2 border-b border-border pb-4">
         <Trophy className="h-[18px] w-[18px]" style={{ color: "var(--copper-metal-hi)" }} />
         <h3 className="font-condensed text-[15.5px] font-extrabold tracking-wide text-white uppercase">Hall of Fame</h3>

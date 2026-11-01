@@ -37,6 +37,7 @@ import {
   CHAT_POLL_ACTIVE_MS,
   CHAT_POLL_HIDDEN_MS,
   CHAT_REACTIONS,
+  COMPANY_MARK_URL,
 } from "@/lib/chat";
 
 /** The "no category" bucket at the top of the rail — not a real category id. */
@@ -99,12 +100,6 @@ type Message = {
   pinnedAt: string | null;
   reactions: Reaction[];
 };
-
-// Matches the mark path the API hands back for admin/system posts (see
-// COMPANY_MARK_URL in app/api/portal/chat/messages/route.ts) — unlike a
-// personal photo, the full mark needs to stay visible rather than be
-// cropped to fill the circle, so it gets its own inset/contain treatment.
-const COMPANY_MARK_URL = "/tier1-mark-collapsed.png";
 
 function MessageAvatar({ url, name }: { url: string | null; name: string }) {
   if (url === COMPANY_MARK_URL) {

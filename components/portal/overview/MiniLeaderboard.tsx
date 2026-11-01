@@ -31,7 +31,7 @@ export function MiniLeaderboard() {
   const top = (rankings ?? []).slice(0, TOP_N);
 
   return (
-    <Card data-tour="leaderboard-widget" className="flex h-full min-h-[380px] flex-col p-5">
+    <Card data-tour="leaderboard-widget" className="flex h-full flex-col p-5">
       <div className="mb-4 flex items-center justify-between border-b border-border pb-4">
         <div className="flex items-center gap-2">
           <Crown className="h-[18px] w-[18px]" style={{ color: "var(--copper-metal-hi)" }} />

@@ -21,7 +21,7 @@ export function BonusVolumeCard({ issuedAP }: { issuedAP: number }) {
   const pct = next ? Math.min(100, ((issuedAP - floor) / (ceiling - floor)) * 100) : 100;
 
   return (
-    <Card data-tour="bonus-volume-card" className="flex h-full min-h-[380px] flex-col p-5">
+    <Card data-tour="bonus-volume-card" className="flex h-full flex-col p-5">
       <div className="mb-4 flex items-center gap-2 border-b border-border pb-4">
         <Gift className="h-[18px] w-[18px]" style={{ color: "var(--copper-metal-hi)" }} />
         <h3 className="font-condensed text-[15.5px] font-extrabold tracking-wide text-white uppercase">Bonus</h3>
@@ -59,6 +59,12 @@ export function BonusVolumeCard({ issuedAP }: { issuedAP: number }) {
           {current ? `${formatCurrency(current.bonus)} earned at the ${formatCompact(current.threshold)} tier.` : "No bonus tier reached yet this month."}
         </p>
       </div>
+
+      {/* Absorbs whatever extra row height Hall of Fame's taller layout
+          forces onto this card, so the footer below lands at the same
+          vertical position as Hall of Fame's own footer rather than
+          sitting right under "Bonus Earned" with dead space trailing it. */}
+      <div className="flex-1" />
 
       <p className="mt-4 border-t border-border pt-3 text-xs text-muted">
         Month of {monthLabel()} &middot; Estimate
