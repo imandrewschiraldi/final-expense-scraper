@@ -314,6 +314,19 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const imageInput = useRef<HTMLInputElement>(null);
+  const draftInput = useRef<HTMLTextAreaElement>(null);
+
+  // Grows the composer with what's typed instead of scrolling the typed
+  // text out of view inside a fixed-height box — reset to "auto" first so
+  // deleting a line shrinks it back down too, not just growth. CSS's own
+  // max-h-40 on the textarea still caps how tall this can get; past that
+  // the browser's native textarea scrolling takes over, same as before.
+  useEffect(() => {
+    const el = draftInput.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft]);
 
   // Admin actions below use an in-app modal rather than window.prompt/confirm:
   // this app is used as an installed PWA, and native dialogs are unreliable
@@ -1082,7 +1095,12 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
       </DndContext>
 
       {/* Room ---------------------------------------------------------- */}
-      <section className="flex h-[calc(100vh-260px)] min-h-[420px] flex-col rounded-[10px] border-copper-gradient glow-copper-gradient bg-surface">
+      {/* 118px accounts for everything above it (the fixed header, the
+          divider, PageHeading's own margins/image height) — measured via a
+          throwaway scratch route rather than guessed, so the box reaches
+          down to the same ~32px bottom margin every other page's content
+          ends on instead of stopping well short of it. */}
+      <section className="flex h-[calc(100vh-118px)] min-h-[420px] flex-col rounded-[10px] border-copper-gradient glow-copper-gradient bg-surface">
         {active && (
           <header className="shrink-0 border-b-2 border-copper/25 px-5 py-3">
             <div className="flex items-start justify-between gap-4">
@@ -1189,6 +1207,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               <ImagePlus className="h-4 w-4" />
             </button>
             <textarea
+              ref={draftInput}
               data-tour="chat-composer"
               value={draft}
               onChange={(e) => setDraft(e.target.value.slice(0, CHAT_MESSAGE_MAX))}
@@ -1203,7 +1222,7 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               rows={1}
               placeholder={active ? `Message ${active.name}` : "Pick a channel"}
               disabled={!active}
-              className="max-h-40 min-h-[42px] flex-1 resize-y rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2.5 text-[15px] text-foreground placeholder:text-muted focus:outline-none"
+              className="max-h-40 min-h-[42px] flex-1 resize-none overflow-y-auto rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2.5 text-[15px] text-foreground placeholder:text-muted focus:outline-none"
             />
             <button
               type="button"
