@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { DEFAULT_OVERVIEW_SUBTITLE_TEXT } from "@/lib/overviewSubtitle";
 
 export type SubtitleColor = "WHITE" | "GRAY" | "COPPER";
 export type Subtitle = { text: string; color: SubtitleColor; bold: boolean };
@@ -44,15 +45,13 @@ export function SubtitleEditor({ current, onSaved }: { current: Subtitle; onSave
 
   async function save() {
     setError(null);
-    if (!text.trim()) {
-      setError("Give it some text.");
-      return;
-    }
     setSaving(true);
     try {
       const res = await fetch("/api/admin/overview-subtitle", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        // Blank text isn't rejected — the server resets it to the default
+        // "Here's what's new..." message instead.
         body: JSON.stringify({ text: text.trim(), color, bold }),
       });
       const data = await res.json();
@@ -89,7 +88,8 @@ export function SubtitleEditor({ current, onSaved }: { current: Subtitle; onSave
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, 200))}
               rows={2}
-              className="w-full resize-none rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2.5 text-sm text-foreground focus:outline-none"
+              placeholder="Leave blank to use the default message"
+              className="w-full resize-none rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none"
             />
           </div>
 
@@ -122,7 +122,7 @@ export function SubtitleEditor({ current, onSaved }: { current: Subtitle; onSave
           <div className="rounded-lg border border-border bg-surface2/60 p-3">
             <p className="font-condensed mb-1.5 text-[10px] font-bold tracking-[0.12em] text-muted uppercase">Preview</p>
             <p className={cn("text-sm", subtitleClassName(color, bold))} style={subtitleStyle(color)}>
-              {text || "Here's what's new across the agency since you last logged in."}
+              {text.trim() || DEFAULT_OVERVIEW_SUBTITLE_TEXT}
             </p>
           </div>
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/apiAuth";
 import { getAgencySettings, setOverviewSubtitle } from "@/lib/agencySettings";
+import { DEFAULT_OVERVIEW_SUBTITLE_TEXT } from "@/lib/overviewSubtitle";
 import { OverviewSubtitleColor } from "@prisma/client";
 
 const COLORS: OverviewSubtitleColor[] = ["WHITE", "GRAY", "COPPER"];
@@ -28,8 +29,8 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const { text, color, bold } = (body ?? {}) as { text?: string; color?: string; bold?: boolean };
 
-  if (typeof text !== "string" || !text.trim()) {
-    return NextResponse.json({ error: "Subtitle text can't be empty." }, { status: 400 });
+  if (typeof text !== "string") {
+    return NextResponse.json({ error: "Invalid text." }, { status: 400 });
   }
   if (text.length > TEXT_MAX) {
     return NextResponse.json({ error: `Keep it under ${TEXT_MAX} characters.` }, { status: 400 });
@@ -41,6 +42,10 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid bold value." }, { status: 400 });
   }
 
-  const settings = await setOverviewSubtitle({ text: text.trim(), color: color as OverviewSubtitleColor, bold });
+  // Clearing the text resets to the default message rather than being
+  // rejected — admin posts a training reminder or a daily competition
+  // message for a while, then empties it to go back to normal.
+  const resolvedText = text.trim() || DEFAULT_OVERVIEW_SUBTITLE_TEXT;
+  const settings = await setOverviewSubtitle({ text: resolvedText, color: color as OverviewSubtitleColor, bold });
   return NextResponse.json(shape(settings));
 }

@@ -25,11 +25,12 @@ import { NewTrainingWidget } from "@/components/portal/overview/NewTrainingWidge
 import { RecruitingRadarWidget } from "@/components/portal/overview/RecruitingRadarWidget";
 import { UnderwritingGenieMini } from "@/components/portal/overview/UnderwritingGenieMini";
 import { SubtitleEditor, subtitleClassName, subtitleStyle, type Subtitle } from "@/components/portal/overview/SubtitleEditor";
+import { DEFAULT_OVERVIEW_SUBTITLE_TEXT } from "@/lib/overviewSubtitle";
 
 type LayoutWidget = { id: string; label: string; order: number; enabled: boolean };
 
 const DEFAULT_SUBTITLE: Subtitle = {
-  text: "Here's what's new across the agency since you last logged in.",
+  text: DEFAULT_OVERVIEW_SUBTITLE_TEXT,
   color: "GRAY",
   bold: false,
 };
