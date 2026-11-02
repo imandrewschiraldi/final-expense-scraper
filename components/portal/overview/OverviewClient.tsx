@@ -24,12 +24,20 @@ import { MiniLeaderboard } from "@/components/portal/overview/MiniLeaderboard";
 import { NewTrainingWidget } from "@/components/portal/overview/NewTrainingWidget";
 import { RecruitingRadarWidget } from "@/components/portal/overview/RecruitingRadarWidget";
 import { UnderwritingGenieMini } from "@/components/portal/overview/UnderwritingGenieMini";
+import { SubtitleEditor, subtitleClassName, subtitleStyle, type Subtitle } from "@/components/portal/overview/SubtitleEditor";
 
 type LayoutWidget = { id: string; label: string; order: number; enabled: boolean };
+
+const DEFAULT_SUBTITLE: Subtitle = {
+  text: "Here's what's new across the agency since you last logged in.",
+  color: "GRAY",
+  bold: false,
+};
 
 type OverviewData = {
   messages: { id: string; body: string; authorName: string; authorProfileImageUrl: string | null; createdAt: string; channelName: string }[];
   newLessons: { id: string; title: string; moduleTitle: string }[];
+  overviewSubtitle: Subtitle;
   hallOfFame: {
     personal: { issuedAP: number; targetAP: number };
     agency: { issuedAP: number; targetAP: number };
@@ -119,6 +127,7 @@ export function OverviewClient() {
   const name = session?.user.name?.split(" ")[0] ?? "there";
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const trainingHref = session?.user.role === "ADMIN" ? "/admin/training" : "/agent/training";
+  const subtitle = data?.overviewSubtitle ?? DEFAULT_SUBTITLE;
 
   async function toggleWidget(id: string, enabled: boolean) {
     setData((d) => (d ? { ...d, layout: d.layout.map((w) => (w.id === id ? { ...w, enabled } : w)) } : d));
@@ -157,7 +166,14 @@ export function OverviewClient() {
           <h1 className="font-condensed text-[28px] font-extrabold tracking-wide text-white uppercase sm:text-[32px]">
             Welcome back, {name}
           </h1>
-          <p className="mt-1.5 text-sm text-muted">Here&apos;s what&apos;s new across the agency since you last logged in.</p>
+          <div className="mt-1.5 flex items-start gap-1.5">
+            <p className={`text-sm ${subtitleClassName(subtitle.color, subtitle.bold)}`} style={subtitleStyle(subtitle.color)}>
+              {subtitle.text}
+            </p>
+            {isAdmin && data && (
+              <SubtitleEditor current={subtitle} onSaved={(next) => setData((d) => (d ? { ...d, overviewSubtitle: next } : d))} />
+            )}
+          </div>
         </div>
         {isAdmin && data && (
           <button

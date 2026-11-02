@@ -170,6 +170,11 @@ export async function GET() {
       moduleTitle: l.module.title,
       createdAt: l.createdAt,
     })),
+    overviewSubtitle: {
+      text: settings.overviewSubtitleText,
+      color: settings.overviewSubtitleColor,
+      bold: settings.overviewSubtitleBold,
+    },
     hallOfFame: {
       personal: { issuedAP: personalLifeAP, targetAP: Number(settings.hallOfFameTargetAP) },
       agency: { issuedAP: agencyAP, targetAP: Number(settings.hallOfFameAgencyTargetAP) },

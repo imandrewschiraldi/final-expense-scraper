@@ -816,8 +816,20 @@ model AgencySettings {
   hallOfFameTargetAP        Decimal @default(400000) @db.Decimal(12, 2)
   hallOfFameAgencyTargetAP  Decimal @default(10000000) @db.Decimal(12, 2)
   hallOfFameAnnuityTargetAP Decimal @default(2000000) @db.Decimal(12, 2)
+  /// The Overview page's "Here's what's new..." subtitle, under the
+  /// welcome heading — admin-editable copy and styling instead of fixed
+  /// text, same reasoning as the Hall of Fame targets above.
+  overviewSubtitleText      String                 @default("Here's what's new across the agency since you last logged in.")
+  overviewSubtitleColor     OverviewSubtitleColor  @default(GRAY)
+  overviewSubtitleBold      Boolean                @default(false)
 
   @@map("agency_settings")
+}
+
+enum OverviewSubtitleColor {
+  WHITE
+  GRAY
+  COPPER
 }
 
 enum AnnouncementType {

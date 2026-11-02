@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { OverviewSubtitleColor } from "@prisma/client";
 
 const SINGLETON_ID = "singleton";
 
@@ -19,5 +20,14 @@ export async function setLeaderboardAllTimeEnabled(enabled: boolean) {
     where: { id: SINGLETON_ID },
     update: { leaderboardAllTimeEnabled: enabled },
     create: { id: SINGLETON_ID, leaderboardAllTimeEnabled: enabled },
+  });
+}
+
+export async function setOverviewSubtitle(data: { text: string; color: OverviewSubtitleColor; bold: boolean }) {
+  const fields = { overviewSubtitleText: data.text, overviewSubtitleColor: data.color, overviewSubtitleBold: data.bold };
+  return db.agencySettings.upsert({
+    where: { id: SINGLETON_ID },
+    update: fields,
+    create: { id: SINGLETON_ID, ...fields },
   });
 }
