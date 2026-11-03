@@ -3,27 +3,11 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
-import { useSession } from "next-auth/react";
 import { cn } from "@/lib/cn";
 import { optimizableImageUrl } from "@/lib/profileImage";
 import { useCountUp } from "@/lib/useCountUp";
 
 const POLL_MS = 20000;
-
-const PERIODS = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "all", label: "All Time" },
-] as const;
-type Period = (typeof PERIODS)[number]["value"];
-
-const PERIOD_SUBTITLE: Record<Period, string> = {
-  daily: "Today",
-  weekly: "This Week",
-  monthly: "This Month",
-  all: "All Time",
-};
 
 type Ranking = { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number };
 type PodiumSlot = Ranking | { id: string; placeholder: true };
@@ -53,7 +37,7 @@ const TEXT = "#F3EEFF";
 const RANK_THEME = [
   {
     rank: 1,
-    order: "md:order-2",
+    order: "order-2",
     elevated: true,
     color: "#FFD23F",
     glow: "rgba(255,210,63,0.65)",
@@ -65,7 +49,7 @@ const RANK_THEME = [
   },
   {
     rank: 2,
-    order: "md:order-1",
+    order: "order-1",
     elevated: false,
     color: "#3AD6FF",
     glow: "rgba(58,214,255,0.6)",
@@ -77,7 +61,7 @@ const RANK_THEME = [
   },
   {
     rank: 3,
-    order: "md:order-3",
+    order: "order-3",
     elevated: false,
     color: "#FF3BA0",
     glow: "rgba(255,59,160,0.6)",
@@ -157,19 +141,17 @@ function CornerBrackets({ color }: { color: string }) {
   );
 }
 
-export function LeaderboardPanel() {
-  const { data: session } = useSession();
-  const isAdmin = session?.user.role === "ADMIN";
+// Dynamic "live" subtitle — always the current month, since this board no
+// longer offers a day/week/month/all-time switcher (just whatever's live
+// right now).
+function currentMonthYear() {
+  return new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
 
-  const [period, setPeriod] = useState<Period>("monthly");
+export function LeaderboardPanel() {
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  // Agency-wide, not per-viewer — whatever the admin last set it to,
-  // read fresh off every leaderboard fetch rather than its own endpoint so
-  // one poll keeps both the rankings and this flag in sync.
-  const [allTimeEnabled, setAllTimeEnabled] = useState(false);
-  const [togglingAllTime, setTogglingAllTime] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -180,7 +162,9 @@ export function LeaderboardPanel() {
         setLoading(true);
         first = false;
       }
-      fetch(`/api/portal/leaderboard?period=${period}`)
+      // No `period` param — this board is always "live" (the server
+      // defaults an absent/invalid period to the current month).
+      fetch("/api/portal/leaderboard")
         .then(async (res) => {
           if (!res.ok) {
             const body = await res.json().catch(() => null);
@@ -191,13 +175,6 @@ export function LeaderboardPanel() {
         .then((data) => {
           if (cancelled) return;
           setRankings(data.rankings ?? []);
-          setAllTimeEnabled(!!data.allTimeEnabled);
-          // The server falls an "all" request back to "monthly" when the
-          // toggle is off — e.g. this tab was still open when an admin
-          // turned it off elsewhere. Syncing here keeps the active tab
-          // honest instead of showing "All Time" highlighted over monthly
-          // data.
-          if (data.period && data.period !== period) setPeriod(data.period);
           setLoading(false);
           setLoadError(null);
         })
@@ -214,24 +191,7 @@ export function LeaderboardPanel() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [period]);
-
-  async function toggleAllTime() {
-    setTogglingAllTime(true);
-    try {
-      const res = await fetch("/api/admin/leaderboard-settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leaderboardAllTimeEnabled: !allTimeEnabled }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAllTimeEnabled(!!data.leaderboardAllTimeEnabled);
-      }
-    } finally {
-      setTogglingAllTime(false);
-    }
-  }
+  }, []);
 
   const top3: PodiumSlot[] = Array.from({ length: 3 }, (_, i) => rankings[i] ?? { id: `empty-${i}`, placeholder: true });
   const rest = rankings.slice(3);
@@ -241,17 +201,18 @@ export function LeaderboardPanel() {
       <div>
         {/* The "stage" — a deep-space violet-to-black vignette instead of
             the earlier copper radial, covering the WHOLE leaderboard
-            (title, period tabs, podium, and the Hall of Elites list below
-            it), always rendered regardless of load state so the title and
-            floor are never hidden behind a bare loading line. */}
+            (title, podium, and the Hall of Elites list below it), always
+            rendered regardless of load state so the title and floor are
+            never hidden behind a bare loading line. */}
         <div
           className="relative overflow-hidden rounded-2xl px-3 pt-10 pb-8 sm:px-10"
           style={{ background: "radial-gradient(ellipse 90% 70% at 50% 0%, #241036 0%, #120a1e 42%, #050308 100%)" }}
         >
-          {/* Faint circuit-board texture across the whole stage — a tiled
-              line grid plus scattered dots, standing in for the reference's
+          {/* Dense cyberpunk motherboard texture across the whole stage —
+              layered microgrid + bus-line grid + diagonal trace accents +
+              multi-color solder-point dots, standing in for the reference's
               PCB-trace background without a hand-drawn image asset. */}
-          <div className="arena-circuit pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
+          <div className="arena-circuit pointer-events-none absolute inset-0" aria-hidden="true" />
 
           {/* Perspective grid floor, confined to roughly where the podium
               sits so it reads as the stage's own ground rather than
@@ -260,8 +221,9 @@ export function LeaderboardPanel() {
 
           {/* Title block — "THE ARENA" as a cyan-to-white-to-magenta
               gradient fill (bg-clip-text) rather than flat white, matching
-              the Arena reference's holographic lettering, plus the live
-              period filter. */}
+              the Arena reference's holographic lettering. Always live — no
+              day/week/month/all-time switcher, just a small "LIVE" pulse
+              and the current month for context. */}
           <div className="relative flex flex-col items-center gap-2 pb-8 text-center sm:gap-3">
             <h1
               className="font-bungee bg-clip-text text-4xl tracking-tight text-transparent sm:text-6xl md:text-7xl"
@@ -272,49 +234,16 @@ export function LeaderboardPanel() {
             >
               THE ARENA
             </h1>
-            <p className="text-[11px] font-bold tracking-[0.35em] uppercase sm:text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
-              [ Standings &mdash; {PERIOD_SUBTITLE[period]} ]
-            </p>
-
-            <div
-              role="tablist"
-              aria-label="Leaderboard period"
-              className="mt-3 flex gap-1.5 rounded-full p-1.5 sm:gap-2 sm:p-2"
-              style={{ background: "rgba(10,12,22,0.75)", border: "1px solid rgba(61,214,255,0.3)" }}
+            <p
+              className="flex items-center gap-2 text-[11px] font-bold tracking-[0.35em] uppercase sm:text-sm"
+              style={{ color: "rgba(255,255,255,0.5)" }}
             >
-              {PERIODS.filter((p) => p.value !== "all" || allTimeEnabled).map((p) => {
-                const active = period === p.value;
-                return (
-                  <button
-                    key={p.value}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => setPeriod(p.value)}
-                    className="rounded-full px-4 py-2 text-xs font-bold tracking-wide uppercase transition-colors sm:px-6 sm:py-2.5 sm:text-sm"
-                    style={
-                      active
-                        ? { background: "linear-gradient(180deg, #6EEFF2, #2DB8D8)", color: "#04141A", boxShadow: "0 0 16px rgba(61,214,255,0.6)" }
-                        : { color: "rgba(255,255,255,0.5)" }
-                    }
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={toggleAllTime}
-                disabled={togglingAllTime}
-                className="text-[11px] font-bold tracking-wide uppercase transition-colors disabled:opacity-50"
-                style={{ color: allTimeEnabled ? "#3AD6FF" : "rgba(255,255,255,0.35)" }}
-              >
-                {togglingAllTime ? "Saving..." : `All Time Tab: ${allTimeEnabled ? "On" : "Off"} for Everyone`}
-              </button>
-            )}
+              <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+                <span className="absolute inset-0 animate-ping rounded-full" style={{ background: "#3AD6FF", opacity: 0.6 }} />
+                <span className="relative h-2 w-2 rounded-full" style={{ background: "#3AD6FF", boxShadow: "0 0 8px #3AD6FF" }} />
+              </span>
+              [ Live Standings &mdash; {currentMonthYear()} ]
+            </p>
           </div>
 
           {loading ? (
