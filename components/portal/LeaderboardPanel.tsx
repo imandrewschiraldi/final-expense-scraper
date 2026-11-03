@@ -130,13 +130,16 @@ function Avatar({ url, name, sizeClassName, pixels = 96 }: { url: string | null;
  *  hexagonal card shape (which would fight the card's own rounded-rect
  *  content layout). */
 function CornerBrackets({ color }: { color: string }) {
+  // Offset just outside the card's own border (rather than flush at 0,0)
+  // so the two don't stack into one doubled/thickened line at each
+  // corner — they read as a separate accent frame floating over the edge.
   const common = "pointer-events-none absolute h-4 w-4 sm:h-5 sm:w-5";
   return (
     <>
-      <span className={cn(common, "top-0 left-0 border-t-2 border-l-2")} style={{ borderColor: color }} aria-hidden="true" />
-      <span className={cn(common, "top-0 right-0 border-t-2 border-r-2")} style={{ borderColor: color }} aria-hidden="true" />
-      <span className={cn(common, "bottom-0 left-0 border-b-2 border-l-2")} style={{ borderColor: color }} aria-hidden="true" />
-      <span className={cn(common, "bottom-0 right-0 border-b-2 border-r-2")} style={{ borderColor: color }} aria-hidden="true" />
+      <span className={cn(common, "-top-1.5 -left-1.5 border-t-2 border-l-2")} style={{ borderColor: color }} aria-hidden="true" />
+      <span className={cn(common, "-top-1.5 -right-1.5 border-t-2 border-r-2")} style={{ borderColor: color }} aria-hidden="true" />
+      <span className={cn(common, "-bottom-1.5 -left-1.5 border-b-2 border-l-2")} style={{ borderColor: color }} aria-hidden="true" />
+      <span className={cn(common, "-bottom-1.5 -right-1.5 border-b-2 border-r-2")} style={{ borderColor: color }} aria-hidden="true" />
     </>
   );
 }
@@ -326,14 +329,6 @@ export function LeaderboardPanel() {
                             className={cn("relative mx-auto flex items-center justify-center rounded-full", theme.avatarSize)}
                             style={{ border: `2.5px solid ${theme.color}`, boxShadow: `0 0 20px ${theme.glow}` }}
                           >
-                            {/* Second, dashed ring inset inside the solid one — the
-                                Arena reference frames each avatar with a double
-                                ring rather than a single border. */}
-                            <div
-                              className="pointer-events-none absolute inset-[3px] rounded-full border border-dashed"
-                              style={{ borderColor: theme.color, opacity: 0.45 }}
-                              aria-hidden="true"
-                            />
                             {isPlaceholder ? (
                               <div
                                 className="flex h-[calc(100%-5px)] w-[calc(100%-5px)] items-center justify-center rounded-full border-2 border-dashed text-sm"
