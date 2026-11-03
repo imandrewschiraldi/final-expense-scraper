@@ -232,32 +232,20 @@ export function LeaderboardPanel() {
               bleeding behind the Hall of Elites list too. */}
           <div className="arena-floor pointer-events-none absolute inset-x-0 bottom-0 h-[48%]" aria-hidden="true" />
 
-          {/* Title block — "THE ARENA" with a cyan/magenta chromatic-offset
-              glow (two tinted copies behind the solid white text) instead
-              of a flat heading, plus the live period filter. */}
+          {/* Title block — "THE ARENA" as a cyan-to-white-to-magenta
+              gradient fill (bg-clip-text) rather than flat white, matching
+              the Arena reference's holographic lettering, plus the live
+              period filter. */}
           <div className="relative flex flex-col items-center gap-2 pb-8 text-center sm:gap-3">
-            <div className="relative inline-block">
-              <h1
-                aria-hidden="true"
-                className="font-bungee pointer-events-none absolute inset-0 z-0 text-4xl tracking-tight sm:text-6xl md:text-7xl"
-                style={{ color: "#3AD6FF", transform: "translate(-3px,2px)", opacity: 0.75 }}
-              >
-                THE ARENA
-              </h1>
-              <h1
-                aria-hidden="true"
-                className="font-bungee pointer-events-none absolute inset-0 z-0 text-4xl tracking-tight sm:text-6xl md:text-7xl"
-                style={{ color: "#FF3BA0", transform: "translate(3px,-2px)", opacity: 0.75 }}
-              >
-                THE ARENA
-              </h1>
-              <h1
-                className="font-bungee relative z-10 text-4xl tracking-tight text-white sm:text-6xl md:text-7xl"
-                style={{ textShadow: "0 0 24px rgba(255,255,255,0.5)" }}
-              >
-                THE ARENA
-              </h1>
-            </div>
+            <h1
+              className="font-bungee bg-clip-text text-4xl tracking-tight text-transparent sm:text-6xl md:text-7xl"
+              style={{
+                backgroundImage: "linear-gradient(90deg, #3AD6FF 0%, #FFFFFF 50%, #FF3BA0 100%)",
+                filter: "drop-shadow(0 0 20px rgba(255,255,255,0.4))",
+              }}
+            >
+              THE ARENA
+            </h1>
             <p className="text-[11px] font-bold tracking-[0.35em] uppercase sm:text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
               [ Standings &mdash; {PERIOD_SUBTITLE[period]} ]
             </p>
@@ -331,11 +319,20 @@ export function LeaderboardPanel() {
                       )}
                     >
                       {theme.rank === 1 && !isPlaceholder && (
-                        <div
-                          className="mb-2 h-2.5 w-14 rounded-full sm:h-3 sm:w-20"
-                          style={{ border: `1px solid ${theme.color}`, boxShadow: `0 0 18px ${theme.glow}` }}
-                          aria-hidden="true"
-                        />
+                        <div className="relative mb-1 h-10 w-28 sm:h-14 sm:w-40" aria-hidden="true">
+                          <div
+                            className="arena-rays absolute inset-0"
+                            style={{
+                              background: `repeating-conic-gradient(${theme.color}66 0deg 4deg, transparent 4deg 18deg)`,
+                              maskImage: "radial-gradient(circle, transparent 38%, black 46%, black 62%, transparent 72%)",
+                              WebkitMaskImage: "radial-gradient(circle, transparent 38%, black 46%, black 62%, transparent 72%)",
+                            }}
+                          />
+                          <div
+                            className="absolute inset-0 m-auto h-8 w-20 rounded-full sm:h-10 sm:w-28"
+                            style={{ border: `1.5px solid ${theme.color}`, boxShadow: `0 0 24px ${theme.glow}, inset 0 0 16px ${theme.glow}` }}
+                          />
+                        </div>
                       )}
 
                       <div
@@ -354,6 +351,14 @@ export function LeaderboardPanel() {
                             className={cn("relative mx-auto flex items-center justify-center rounded-full", theme.avatarSize)}
                             style={{ border: `2.5px solid ${theme.color}`, boxShadow: `0 0 20px ${theme.glow}` }}
                           >
+                            {/* Second, dashed ring inset inside the solid one — the
+                                Arena reference frames each avatar with a double
+                                ring rather than a single border. */}
+                            <div
+                              className="pointer-events-none absolute inset-[3px] rounded-full border border-dashed"
+                              style={{ borderColor: theme.color, opacity: 0.45 }}
+                              aria-hidden="true"
+                            />
                             {isPlaceholder ? (
                               <div
                                 className="flex h-[calc(100%-5px)] w-[calc(100%-5px)] items-center justify-center rounded-full border-2 border-dashed text-sm"
@@ -386,23 +391,35 @@ export function LeaderboardPanel() {
                             <p className={cn("mt-1 font-extrabold tracking-tight", theme.apSize)} style={{ color: theme.color, textShadow: `0 0 16px ${theme.glow}` }}>
                               <AnimatedAP value={agent.issuedAP} />
                             </p>
-                            <p className="mt-1 text-[10px] tracking-widest uppercase sm:text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-                              {agent.issuedCount} {agent.issuedCount === 1 ? "Policy" : "Policies"} &mdash;
+                            <div className="mx-auto mt-2 w-10 border-t border-dashed" style={{ borderColor: theme.color, opacity: 0.4 }} aria-hidden="true" />
+                            <p className="mt-2 text-[10px] tracking-widest uppercase sm:text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                              {agent.issuedCount} {agent.issuedCount === 1 ? "Policy" : "Policies"}
                             </p>
                           </>
                         )}
                       </div>
 
+                      {/* Light-beam cone (a clipped trapezoid, not a thin line)
+                          narrowing up toward the card and widening down onto
+                          the hex pad below it. */}
                       <div
-                        className="arena-beam h-10 w-px sm:h-16"
-                        style={{ background: `linear-gradient(to bottom, ${theme.color}, transparent)`, boxShadow: `0 0 10px ${theme.glow}` }}
+                        className="arena-beam h-10 w-8 sm:h-16 sm:w-12"
+                        style={{
+                          background: `linear-gradient(to bottom, ${theme.color}, transparent)`,
+                          clipPath: "polygon(42% 0%, 58% 0%, 100% 100%, 0% 100%)",
+                          opacity: 0.55,
+                        }}
                         aria-hidden="true"
                       />
-                      <div
-                        className="h-2.5 w-16 rounded-full sm:h-3 sm:w-24"
-                        style={{ border: `1px solid ${theme.color}`, boxShadow: `0 0 22px ${theme.glow}`, opacity: 0.75 }}
-                        aria-hidden="true"
-                      />
+                      {/* Hexagonal landing pad with an inset ring, standing in
+                          for the Arena reference's hex floor pads. */}
+                      <div className="relative h-5 w-16 sm:h-7 sm:w-24" aria-hidden="true">
+                        <div
+                          className="arena-hex absolute inset-0"
+                          style={{ background: `${theme.color}1a`, border: `1px solid ${theme.color}`, boxShadow: `0 0 22px ${theme.glow}` }}
+                        />
+                        <div className="absolute inset-[22%] rounded-full border" style={{ borderColor: theme.color, opacity: 0.6 }} />
+                      </div>
                     </motion.div>
                   );
                 })}
@@ -427,8 +444,8 @@ export function LeaderboardPanel() {
                         initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.3, delay: 0.3 + i * 0.04 }}
-                        className="flex items-center gap-3 border-b py-3 sm:gap-4"
-                        style={{ borderColor: "rgba(255,255,255,0.08)" }}
+                        className="flex items-center gap-3 border-b border-l-2 py-3 pl-3 sm:gap-4"
+                        style={{ borderBottomColor: "rgba(255,255,255,0.08)", borderLeftColor: i % 2 === 0 ? "#3AD6FF" : "#FF3BA0" }}
                       >
                         <span className="w-8 shrink-0 text-center text-sm font-bold" style={{ color: "rgba(255,255,255,0.3)" }}>
                           {String(i + 4).padStart(2, "0")}
@@ -439,7 +456,7 @@ export function LeaderboardPanel() {
                             {agent.name}
                           </p>
                           <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-                            {agent.issuedCount} {agent.issuedCount === 1 ? "policy" : "policies"}
+                            {agent.issuedCount} {agent.issuedCount === 1 ? "policy" : "policies"} {"//"}
                           </p>
                         </div>
                         <div className="shrink-0 text-right">

@@ -851,6 +851,29 @@ h4,
   animation: arena-beam-pulse 2.8s ease-in-out infinite;
 }
 
+/* Slow-spinning radial burst behind the #1 card's halo ring — a
+   repeating-conic-gradient masked down to thin spokes, rotated in place
+   (no translate in the keyframe, since the element already fills its
+   positioned parent via inset-0). */
+@keyframes arena-ray-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.arena-rays {
+  animation: arena-ray-spin 20s linear infinite;
+  transform-origin: center;
+}
+
+/* Hexagonal landing-pad shape under each podium beam, standing in for the
+   Arena reference's hex floor pads. */
+.arena-hex {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+
 .animate-lead-card-next {
   animation: lead-card-slide-from-right 0.16s ease-out;
 }
