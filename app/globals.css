@@ -806,236 +806,49 @@ h4,
   }
 }
 
-/* Leaderboard podium (LeaderboardPanel) — 1st place's pillar pulse and the
-   small twinkling stars around it. Values copied from the reference
-   template's own lbGlow/lbTwinkle keyframes. Applied via class, not inline
-   style, since an inline boxShadow/transform would override these and
-   freeze the animation on every re-render. */
-@keyframes leaderboard-pillar-glow {
+/* Leaderboard podium (LeaderboardPanel) — "The Arena" theme: a cyberpunk
+   HUD look (neon podium cards over a perspective grid floor) rather than
+   the earlier casino/party theme. --arena-glow is set per-card via inline
+   style (one keyframe serving all three rank colors instead of one per
+   rank) — an inline boxShadow would override this and freeze the pulse. */
+@keyframes arena-pulse-glow {
   0%,
   100% {
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.15), 0 0 30px rgba(255, 140, 60, 0.35);
+    box-shadow: 0 0 28px var(--arena-glow), inset 0 0 24px rgba(0, 0, 0, 0.5);
   }
   50% {
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.15), 0 0 70px rgba(255, 190, 60, 0.85);
+    box-shadow: 0 0 56px var(--arena-glow), inset 0 0 24px rgba(0, 0, 0, 0.5);
   }
 }
-.leaderboard-pillar-glow {
-  animation: leaderboard-pillar-glow 2.2s ease-in-out infinite;
+.arena-pulse {
+  animation: arena-pulse-glow 2.6s ease-in-out infinite;
 }
 
-@keyframes leaderboard-twinkle {
+/* Perspective grid floor behind the podium — a tiled line grid tilted back
+   via rotateX and faded out toward the top with a mask, rather than a flat
+   background, for the "standing on a holographic stage" look. */
+.arena-floor {
+  background-image:
+    linear-gradient(rgba(61, 214, 255, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61, 214, 255, 0.22) 1px, transparent 1px);
+  background-size: 46px 46px;
+  transform: perspective(260px) rotateX(58deg);
+  transform-origin: bottom center;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 88%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 88%);
+}
+
+@keyframes arena-beam-pulse {
   0%,
   100% {
-    transform: scale(0.3) rotate(0deg);
-    opacity: 0.2;
+    opacity: 0.55;
   }
   50% {
-    transform: scale(1) rotate(45deg);
     opacity: 1;
   }
 }
-.leaderboard-twinkle {
-  animation: leaderboard-twinkle 1.8s ease-in-out infinite;
-}
-
-/* Leaderboard ambient effects — coins bobbing in place, $100 bills raining,
-   confetti streaming, and corner fireworks. `top`/`left` (not transform) are
-   animated for the fall/drift since percentage values in transform resolve
-   against the moving element's own box, not its container, which would
-   collapse the fall distance to nothing on an element only a few px tall. */
-@keyframes leaderboard-coin-float {
-  0%,
-  100% {
-    transform: translateY(0) rotateY(0deg);
-  }
-  50% {
-    transform: translateY(-14px) rotateY(180deg);
-  }
-}
-.leaderboard-coin-float {
-  animation: leaderboard-coin-float 6s ease-in-out infinite;
-}
-
-@keyframes leaderboard-bill-fall {
-  0% {
-    top: -12%;
-    transform: rotate(0deg);
-    opacity: 0;
-  }
-  6% {
-    opacity: 1;
-  }
-  94% {
-    opacity: 1;
-  }
-  100% {
-    top: 112%;
-    transform: rotate(340deg);
-    opacity: 0;
-  }
-}
-.leaderboard-bill {
-  top: -12%;
-  animation-name: leaderboard-bill-fall;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-@keyframes leaderboard-confetti-fall {
-  0% {
-    top: -5%;
-    transform: rotate(0deg);
-    opacity: 0;
-  }
-  6% {
-    opacity: 1;
-  }
-  94% {
-    opacity: 1;
-  }
-  100% {
-    top: 105%;
-    transform: rotate(540deg);
-    opacity: 0;
-  }
-}
-.leaderboard-confetti {
-  top: -5%;
-  border-radius: 2px;
-  animation-name: leaderboard-confetti-fall;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-@keyframes leaderboard-firework-flash {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  6% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  30% {
-    transform: scale(1.6);
-    opacity: 0;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes leaderboard-firework-burst {
-  0% {
-    transform: rotate(var(--lb-fw-angle)) translateY(0) scaleY(0.2);
-    opacity: 0;
-  }
-  8% {
-    opacity: 1;
-  }
-  55% {
-    transform: rotate(var(--lb-fw-angle)) translateY(-95px) scaleY(1);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(var(--lb-fw-angle)) translateY(-130px) scaleY(0.2);
-    opacity: 0;
-  }
-}
-.leaderboard-firework {
-  width: 0;
-  height: 0;
-}
-.leaderboard-firework::before {
-  content: "";
-  position: absolute;
-  left: -20px;
-  top: -20px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: currentColor;
-  filter: blur(8px);
-  animation: leaderboard-firework-flash 3.2s ease-out infinite;
-  animation-delay: inherit;
-}
-.leaderboard-firework i {
-  position: absolute;
-  left: -2px;
-  top: -2px;
-  width: 4px;
-  height: 26px;
-  border-radius: 2px;
-  background: currentColor;
-  box-shadow: 0 0 12px currentColor;
-  transform-origin: 2px 2px;
-  animation: leaderboard-firework-burst 3.2s ease-out infinite;
-  animation-delay: inherit;
-}
-/* 16 sparks, 22.5deg apart, for a fuller jackpot-style burst. */
-.leaderboard-firework i:nth-child(1) {
-  --lb-fw-angle: 0deg;
-}
-.leaderboard-firework i:nth-child(2) {
-  --lb-fw-angle: 22.5deg;
-}
-.leaderboard-firework i:nth-child(3) {
-  --lb-fw-angle: 45deg;
-}
-.leaderboard-firework i:nth-child(4) {
-  --lb-fw-angle: 67.5deg;
-}
-.leaderboard-firework i:nth-child(5) {
-  --lb-fw-angle: 90deg;
-}
-.leaderboard-firework i:nth-child(6) {
-  --lb-fw-angle: 112.5deg;
-}
-.leaderboard-firework i:nth-child(7) {
-  --lb-fw-angle: 135deg;
-}
-.leaderboard-firework i:nth-child(8) {
-  --lb-fw-angle: 157.5deg;
-}
-.leaderboard-firework i:nth-child(9) {
-  --lb-fw-angle: 180deg;
-}
-.leaderboard-firework i:nth-child(10) {
-  --lb-fw-angle: 202.5deg;
-}
-.leaderboard-firework i:nth-child(11) {
-  --lb-fw-angle: 225deg;
-}
-.leaderboard-firework i:nth-child(12) {
-  --lb-fw-angle: 247.5deg;
-}
-.leaderboard-firework i:nth-child(13) {
-  --lb-fw-angle: 270deg;
-}
-.leaderboard-firework i:nth-child(14) {
-  --lb-fw-angle: 292.5deg;
-}
-.leaderboard-firework i:nth-child(15) {
-  --lb-fw-angle: 315deg;
-}
-.leaderboard-firework i:nth-child(16) {
-  --lb-fw-angle: 337.5deg;
-}
-
-/* Marquee chase-light strip above/below the "LIVE LEADERBOARD" title. */
-@keyframes leaderboard-bulb-chase {
-  from {
-    background-position: 0 0;
-  }
-  to {
-    background-position: 28px 0;
-  }
-}
-.leaderboard-bulbs {
-  background-image: radial-gradient(circle, #ffe27a 0 3px, transparent 4px);
-  background-size: 28px 10px;
-  background-repeat: repeat-x;
-  animation: leaderboard-bulb-chase 1.2s linear infinite;
+.arena-beam {
+  animation: arena-beam-pulse 2.8s ease-in-out infinite;
 }
 
 .animate-lead-card-next {
