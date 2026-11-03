@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
 import { useSession } from "next-auth/react";
@@ -88,6 +88,27 @@ const RANK_THEME = [
     delay: 0.09,
   },
 ] as const;
+
+// A faint per-rank textured background standing in for the reference's
+// illustrated card faces (a cyan X-lattice, a gold circuit-plate grid, a
+// magenta faceted-crystal fan) — CSS gradients only, no image asset, so
+// the card reads as a textured panel rather than a flat bordered box.
+function cardPattern(rank: 1 | 2 | 3, color: string): CSSProperties {
+  const base = "linear-gradient(180deg, rgba(14,16,30,0.9), rgba(6,7,14,0.92))";
+  if (rank === 2) {
+    return {
+      backgroundImage: `repeating-linear-gradient(45deg, ${color}33 0px, ${color}33 1px, transparent 1px, transparent 13px), repeating-linear-gradient(-45deg, ${color}33 0px, ${color}33 1px, transparent 1px, transparent 13px), ${base}`,
+    };
+  }
+  if (rank === 3) {
+    return {
+      backgroundImage: `repeating-conic-gradient(from 0deg at 50% 40%, ${color}26 0deg 14deg, transparent 14deg 28deg), ${base}`,
+    };
+  }
+  return {
+    backgroundImage: `radial-gradient(circle at 50% 36%, ${color}2e 0%, transparent 48%), repeating-linear-gradient(0deg, ${color}1f 0px, ${color}1f 1px, transparent 1px, transparent 15px), repeating-linear-gradient(90deg, ${color}1f 0px, ${color}1f 1px, transparent 1px, transparent 15px), ${base}`,
+  };
+}
 
 // Two-letter initials (first + last name) rather than just one — matches
 // the Arena reference's avatar badges ("WB", "CC", "JF").
@@ -227,10 +248,15 @@ export function LeaderboardPanel() {
           className="relative overflow-hidden rounded-2xl px-3 pt-10 pb-8 sm:px-10"
           style={{ background: "radial-gradient(ellipse 90% 70% at 50% 0%, #241036 0%, #120a1e 42%, #050308 100%)" }}
         >
+          {/* Faint circuit-board texture across the whole stage — a tiled
+              line grid plus scattered dots, standing in for the reference's
+              PCB-trace background without a hand-drawn image asset. */}
+          <div className="arena-circuit pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
+
           {/* Perspective grid floor, confined to roughly where the podium
               sits so it reads as the stage's own ground rather than
               bleeding behind the Hall of Elites list too. */}
-          <div className="arena-floor pointer-events-none absolute inset-x-0 bottom-0 h-[48%]" aria-hidden="true" />
+          <div className="arena-floor pointer-events-none absolute inset-x-0 bottom-0 h-[58%]" aria-hidden="true" />
 
           {/* Title block — "THE ARENA" as a cyan-to-white-to-magenta
               gradient fill (bg-clip-text) rather than flat white, matching
@@ -314,31 +340,51 @@ export function LeaderboardPanel() {
                       className={cn(
                         "relative flex min-w-0 flex-1 flex-col items-center",
                         theme.order,
-                        theme.elevated && "md:-mt-8",
+                        theme.elevated && "-mt-5 sm:-mt-8",
                         isPlaceholder && "opacity-40",
                       )}
                     >
+                      {/* #1's halo — a flat elliptical ring fed by an upward
+                          spotlight cone from the card, with a slow-spinning
+                          radial burst behind it, rather than a small pill of
+                          light — matches the reference's "portal" above the
+                          gold card. */}
                       {theme.rank === 1 && !isPlaceholder && (
-                        <div className="relative mb-1 h-10 w-28 sm:h-14 sm:w-40" aria-hidden="true">
+                        <div className="relative mb-0.5 flex flex-col items-center" aria-hidden="true">
                           <div
-                            className="arena-rays absolute inset-0"
+                            className="h-7 w-10 sm:h-10 sm:w-14"
                             style={{
-                              background: `repeating-conic-gradient(${theme.color}66 0deg 4deg, transparent 4deg 18deg)`,
-                              maskImage: "radial-gradient(circle, transparent 38%, black 46%, black 62%, transparent 72%)",
-                              WebkitMaskImage: "radial-gradient(circle, transparent 38%, black 46%, black 62%, transparent 72%)",
+                              background: `linear-gradient(to top, ${theme.color}, transparent)`,
+                              clipPath: "polygon(38% 100%, 62% 100%, 100% 0%, 0% 0%)",
+                              opacity: 0.6,
                             }}
                           />
-                          <div
-                            className="absolute inset-0 m-auto h-8 w-20 rounded-full sm:h-10 sm:w-28"
-                            style={{ border: `1.5px solid ${theme.color}`, boxShadow: `0 0 24px ${theme.glow}, inset 0 0 16px ${theme.glow}` }}
-                          />
+                          <div className="relative -mt-1 h-7 w-32 sm:h-9 sm:w-44">
+                            <div
+                              className="arena-rays absolute inset-0"
+                              style={{
+                                background: `repeating-conic-gradient(${theme.color}66 0deg 4deg, transparent 4deg 18deg)`,
+                                maskImage: "radial-gradient(ellipse, transparent 30%, black 40%, black 58%, transparent 68%)",
+                                WebkitMaskImage: "radial-gradient(ellipse, transparent 30%, black 40%, black 58%, transparent 68%)",
+                              }}
+                            />
+                            <div
+                              className="absolute inset-0 m-auto h-5 w-24 rounded-full sm:h-7 sm:w-32"
+                              style={{ border: `1.5px solid ${theme.color}`, boxShadow: `0 0 24px ${theme.glow}, inset 0 0 16px ${theme.glow}` }}
+                            />
+                          </div>
                         </div>
                       )}
 
+                      {/* The card itself is just the illustrated "plate" —
+                          texture, frame, avatar socket and rank badge. Name,
+                          value and the policy count sit OUTSIDE it, in the
+                          open space below, matching the reference (the
+                          bordered card never contains that text). */}
                       <div
-                        className={cn("relative w-full max-w-[200px] rounded-2xl p-4 pt-9 text-center sm:p-5 sm:pt-11", theme.rank === 1 && "arena-pulse")}
+                        className={cn("relative w-full max-w-[200px] rounded-2xl p-4 pt-9 pb-7 text-center sm:p-5 sm:pt-11 sm:pb-9", theme.rank === 1 && "arena-pulse")}
                         style={{
-                          background: "linear-gradient(180deg, rgba(14,16,30,0.9), rgba(6,7,14,0.92))",
+                          ...cardPattern(theme.rank, theme.color),
                           border: `1.5px solid ${theme.color}`,
                           boxShadow: `0 0 28px ${theme.glow}, inset 0 0 24px rgba(0,0,0,0.5)`,
                           ["--arena-glow" as string]: theme.glow,
@@ -384,20 +430,20 @@ export function LeaderboardPanel() {
                             </div>
                           )}
                         </div>
-
-                        {!isPlaceholder && (
-                          <>
-                            <p className={cn("mt-2 truncate font-bold text-white", theme.nameSize)}>{agent.name}</p>
-                            <p className={cn("mt-1 font-extrabold tracking-tight", theme.apSize)} style={{ color: theme.color, textShadow: `0 0 16px ${theme.glow}` }}>
-                              <AnimatedAP value={agent.issuedAP} />
-                            </p>
-                            <div className="mx-auto mt-2 w-10 border-t border-dashed" style={{ borderColor: theme.color, opacity: 0.4 }} aria-hidden="true" />
-                            <p className="mt-2 text-[10px] tracking-widest uppercase sm:text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-                              {agent.issuedCount} {agent.issuedCount === 1 ? "Policy" : "Policies"}
-                            </p>
-                          </>
-                        )}
                       </div>
+
+                      {!isPlaceholder && (
+                        <div className="mt-2.5 w-full max-w-[200px] text-center">
+                          <p className={cn("truncate font-bold text-white", theme.nameSize)}>{agent.name}</p>
+                          <p className={cn("mt-1 font-extrabold tracking-tight", theme.apSize)} style={{ color: theme.color, textShadow: `0 0 16px ${theme.glow}` }}>
+                            <AnimatedAP value={agent.issuedAP} />
+                          </p>
+                          <div className="mx-auto mt-1.5 w-10 border-t border-dashed" style={{ borderColor: theme.color, opacity: 0.4 }} aria-hidden="true" />
+                          <p className="mt-1.5 text-[10px] tracking-widest uppercase sm:text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                            {agent.issuedCount} {agent.issuedCount === 1 ? "Policy" : "Policies"}
+                          </p>
+                        </div>
+                      )}
 
                       {/* Light-beam cone (a clipped trapezoid, not a thin line)
                           narrowing up toward the card and widening down onto
@@ -411,14 +457,19 @@ export function LeaderboardPanel() {
                         }}
                         aria-hidden="true"
                       />
-                      {/* Hexagonal landing pad with an inset ring, standing in
-                          for the Arena reference's hex floor pads. */}
-                      <div className="relative h-5 w-16 sm:h-7 sm:w-24" aria-hidden="true">
+                      {/* Hexagonal landing pad with a dashed inner hex and a
+                          glowing elliptical "pool" inset, standing in for
+                          the Arena reference's hex floor pads. */}
+                      <div className="relative h-6 w-20 sm:h-8 sm:w-28" aria-hidden="true">
                         <div
                           className="arena-hex absolute inset-0"
-                          style={{ background: `${theme.color}1a`, border: `1px solid ${theme.color}`, boxShadow: `0 0 22px ${theme.glow}` }}
+                          style={{ background: `${theme.color}1a`, border: `1.5px solid ${theme.color}`, boxShadow: `0 0 24px ${theme.glow}` }}
                         />
-                        <div className="absolute inset-[22%] rounded-full border" style={{ borderColor: theme.color, opacity: 0.6 }} />
+                        <div className="arena-hex absolute inset-[14%] border border-dashed" style={{ borderColor: theme.color, opacity: 0.55 }} />
+                        <div
+                          className="absolute inset-[32%] rounded-full"
+                          style={{ background: `radial-gradient(ellipse, ${theme.color}66, transparent 70%)`, border: `1px solid ${theme.color}`, opacity: 0.85 }}
+                        />
                       </div>
                     </motion.div>
                   );
