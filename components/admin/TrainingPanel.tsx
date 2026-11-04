@@ -18,7 +18,12 @@ type Lesson = {
   order: number;
 };
 
-type LessonInput = { title: string; description: string; videoUrl: string; images: string[] };
+type LessonInput = {
+  title: string;
+  description: string;
+  videoUrl: string;
+  images: string[];
+};
 
 type Module = {
   id: string;
@@ -52,7 +57,13 @@ function TextArea({
  *  storage); the parent only holds the resulting URLs, same as a plain text
  *  field — an uploaded-but-never-saved image just sits unused, same
  *  tradeoff the chat image upload already makes. */
-function ImagePicker({ images, onChange }: { images: string[]; onChange: (urls: string[]) => void }) {
+function ImagePicker({
+  images,
+  onChange,
+}: {
+  images: string[];
+  onChange: (urls: string[]) => void;
+}) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,8 +71,14 @@ function ImagePicker({ images, onChange }: { images: string[]; onChange: (urls: 
     if (!fileList || fileList.length === 0) return;
     const files = Array.from(fileList);
     for (const file of files) {
-      if (!TRAINING_IMAGE_TYPES.includes(file.type as (typeof TRAINING_IMAGE_TYPES)[number])) {
-        setError(`${file.name} isn't a supported image type (PNG, JPEG, GIF, or WebP).`);
+      if (
+        !TRAINING_IMAGE_TYPES.includes(
+          file.type as (typeof TRAINING_IMAGE_TYPES)[number],
+        )
+      ) {
+        setError(
+          `${file.name} isn't a supported image type (PNG, JPEG, GIF, or WebP).`,
+        );
         return;
       }
       if (file.size > TRAINING_IMAGE_MAX_BYTES) {
@@ -77,7 +94,10 @@ function ImagePicker({ images, onChange }: { images: string[]; onChange: (urls: 
         files.map(async (file) => {
           const form = new FormData();
           form.append("file", file);
-          const res = await fetch("/api/admin/training/images", { method: "POST", body: form });
+          const res = await fetch("/api/admin/training/images", {
+            method: "POST",
+            body: form,
+          });
           if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             throw new Error(data.error ?? "That image didn't upload.");
@@ -88,7 +108,9 @@ function ImagePicker({ images, onChange }: { images: string[]; onChange: (urls: 
       );
       onChange([...images, ...uploaded]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "That image didn't upload.");
+      setError(
+        err instanceof Error ? err.message : "That image didn't upload.",
+      );
     } finally {
       setUploading(false);
     }
@@ -98,7 +120,10 @@ function ImagePicker({ images, onChange }: { images: string[]; onChange: (urls: 
     <div className="space-y-1.5">
       <div className="flex flex-wrap gap-2">
         {images.map((url, i) => (
-          <div key={`${url}-${i}`} className="group relative h-16 w-16 overflow-hidden rounded-lg border border-border">
+          <div
+            key={`${url}-${i}`}
+            className="group relative h-16 w-16 overflow-hidden rounded-lg border border-border"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={url} alt="" className="h-full w-full object-cover" />
             <button
@@ -123,7 +148,11 @@ function ImagePicker({ images, onChange }: { images: string[]; onChange: (urls: 
               e.target.value = "";
             }}
           />
-          {uploading ? <span className="text-xs">...</span> : <ImagePlus className="h-5 w-5" />}
+          {uploading ? (
+            <span className="text-xs">...</span>
+          ) : (
+            <ImagePlus className="h-5 w-5" />
+          )}
         </label>
       </div>
       {error && <p className="text-xs text-red-light">{error}</p>}
@@ -144,17 +173,26 @@ function LessonForm({
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
+  const canSubmit =
+    title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
 
   return (
     <div className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
-      <Input placeholder="Lesson title" value={title} onChange={(e) => setTitle(e.target.value)} />
       <Input
-        placeholder="Video URL (YouTube, Vimeo, or Loom) — optional if you add photos"
+        placeholder="Lesson title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+      <Input
+        placeholder="Video URL (YouTube, Vimeo, Loom, or a direct video file link) — optional if you add photos"
         value={videoUrl}
         onChange={(e) => setVideoUrl(e.target.value)}
       />
-      <TextArea placeholder="Description (optional)" value={description} onChange={setDescription} />
+      <TextArea
+        placeholder="Description (optional)"
+        value={description}
+        onChange={setDescription}
+      />
       <div>
         <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
           Photos
@@ -218,14 +256,15 @@ function LessonRow({
     setRemovingKey(null);
   }
 
-  const canSubmit = title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
+  const canSubmit =
+    title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
 
   if (editing) {
     return (
       <div className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         <Input
-          placeholder="Video URL (YouTube, Vimeo, or Loom) — optional if you add photos"
+          placeholder="Video URL (YouTube, Vimeo, Loom, or a direct video file link) — optional if you add photos"
           value={videoUrl}
           onChange={(e) => setVideoUrl(e.target.value)}
         />
@@ -242,7 +281,12 @@ function LessonRow({
             disabled={saving || !canSubmit}
             onClick={async () => {
               setSaving(true);
-              await onUpdate(lesson.id, { title, description, videoUrl, images });
+              await onUpdate(lesson.id, {
+                title,
+                description,
+                videoUrl,
+                images,
+              });
               setSaving(false);
               setEditing(false);
             }}
@@ -261,10 +305,14 @@ function LessonRow({
     <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface2 p-3">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-white">{lesson.title}</p>
-        {lesson.description && <p className="mt-1 text-xs text-muted">{lesson.description}</p>}
+        {lesson.description && (
+          <p className="mt-1 text-xs text-muted">{lesson.description}</p>
+        )}
         {lesson.videoUrl && (
           <div className="mt-1 flex items-center gap-1.5">
-            <p className="truncate text-xs text-teal-light">{lesson.videoUrl}</p>
+            <p className="truncate text-xs text-teal-light">
+              {lesson.videoUrl}
+            </p>
             <button
               type="button"
               onClick={handleRemoveVideo}
@@ -280,9 +328,16 @@ function LessonRow({
         {lesson.images.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {lesson.images.map((img) => (
-              <div key={img.id} className="group relative h-10 w-10 overflow-hidden rounded border border-border">
+              <div
+                key={img.id}
+                className="group relative h-10 w-10 overflow-hidden rounded border border-border"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.url} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={img.url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(img.id)}
@@ -316,7 +371,11 @@ function LessonRow({
   );
 }
 
-export function TrainingPanel({ initialModules }: { initialModules: Module[] }) {
+export function TrainingPanel({
+  initialModules,
+}: {
+  initialModules: Module[];
+}) {
   const [modules, setModules] = useState(initialModules);
   const [showModuleForm, setShowModuleForm] = useState(false);
   const [moduleTitle, setModuleTitle] = useState("");
@@ -336,7 +395,10 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
     const res = await fetch("/api/admin/training/modules", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: moduleTitle, description: moduleDescription }),
+      body: JSON.stringify({
+        title: moduleTitle,
+        description: moduleDescription,
+      }),
     });
     if (res.ok) {
       setModuleTitle("");
@@ -346,7 +408,10 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
     }
   }
 
-  async function updateModule(id: string, data: { title: string; description: string }) {
+  async function updateModule(
+    id: string,
+    data: { title: string; description: string },
+  ) {
     await fetch(`/api/admin/training/modules/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -402,7 +467,9 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
   }
 
   async function removeLessonImage(lesson: Lesson, imageId: string) {
-    const images = lesson.images.filter((img) => img.id !== imageId).map((img) => img.url);
+    const images = lesson.images
+      .filter((img) => img.id !== imageId)
+      .map((img) => img.url);
     await fetch(`/api/admin/training/lessons/${lesson.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -431,18 +498,28 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
       <Card>
         <CardHeader>
           <CardTitle>Course Modules</CardTitle>
-          <Button onClick={() => setShowModuleForm((s) => !s)}>{showModuleForm ? "Cancel" : "Add Module"}</Button>
+          <Button onClick={() => setShowModuleForm((s) => !s)}>
+            {showModuleForm ? "Cancel" : "Add Module"}
+          </Button>
         </CardHeader>
 
         {showModuleForm && (
           <div className="mb-4 space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
-            <Input placeholder="Module title" value={moduleTitle} onChange={(e) => setModuleTitle(e.target.value)} />
+            <Input
+              placeholder="Module title"
+              value={moduleTitle}
+              onChange={(e) => setModuleTitle(e.target.value)}
+            />
             <TextArea
               placeholder="Description (optional)"
               value={moduleDescription}
               onChange={setModuleDescription}
             />
-            <Button variant="secondary" disabled={!moduleTitle} onClick={createModule}>
+            <Button
+              variant="secondary"
+              disabled={!moduleTitle}
+              onClick={createModule}
+            >
               Create Module
             </Button>
           </div>
@@ -460,19 +537,31 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
           <CardHeader>
             {editingModuleId === module_.id ? (
               <div className="w-full space-y-2">
-                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                <TextArea value={editDescription} onChange={setEditDescription} />
+                <Input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                />
+                <TextArea
+                  value={editDescription}
+                  onChange={setEditDescription}
+                />
                 <div className="flex gap-2">
                   <Button
                     variant="secondary"
                     onClick={async () => {
-                      await updateModule(module_.id, { title: editTitle, description: editDescription });
+                      await updateModule(module_.id, {
+                        title: editTitle,
+                        description: editDescription,
+                      });
                       setEditingModuleId(null);
                     }}
                   >
                     Save
                   </Button>
-                  <Button variant="ghost" onClick={() => setEditingModuleId(null)}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setEditingModuleId(null)}
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -481,13 +570,23 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
               <>
                 <div>
                   <CardTitle>{module_.title}</CardTitle>
-                  {module_.description && <p className="mt-1 text-sm text-muted">{module_.description}</p>}
+                  {module_.description && (
+                    <p className="mt-1 text-sm text-muted">
+                      {module_.description}
+                    </p>
+                  )}
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <Button variant="ghost" onClick={() => moveModule(module_.id, "up")}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => moveModule(module_.id, "up")}
+                  >
                     ↑
                   </Button>
-                  <Button variant="ghost" onClick={() => moveModule(module_.id, "down")}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => moveModule(module_.id, "down")}
+                  >
                     ↓
                   </Button>
                   <Button
@@ -500,7 +599,10 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
                   >
                     Edit
                   </Button>
-                  <Button variant="danger" onClick={() => deleteModule(module_.id)}>
+                  <Button
+                    variant="danger"
+                    onClick={() => deleteModule(module_.id)}
+                  >
                     Delete
                   </Button>
                 </div>
@@ -520,7 +622,11 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
                 onRemoveImage={(imageId) => removeLessonImage(lesson, imageId)}
               />
             ))}
-            {module_.lessons.length === 0 && <p className="text-sm text-muted">No lessons in this module yet.</p>}
+            {module_.lessons.length === 0 && (
+              <p className="text-sm text-muted">
+                No lessons in this module yet.
+              </p>
+            )}
           </div>
 
           <div className="mt-3">
@@ -530,7 +636,10 @@ export function TrainingPanel({ initialModules }: { initialModules: Module[] }) 
                 onCancel={() => setAddingLessonTo(null)}
               />
             ) : (
-              <Button variant="secondary" onClick={() => setAddingLessonTo(module_.id)}>
+              <Button
+                variant="secondary"
+                onClick={() => setAddingLessonTo(module_.id)}
+              >
                 Add Lesson
               </Button>
             )}

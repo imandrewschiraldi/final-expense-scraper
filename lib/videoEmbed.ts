@@ -1,3 +1,29 @@
+const DIRECT_VIDEO_EXTENSIONS = [
+  ".mp4",
+  ".webm",
+  ".mov",
+  ".m4v",
+  ".ogv",
+  ".ogg",
+];
+
+/** True for a link that points straight at a video file — an upload to
+ *  Blob storage or any other plain file host — rather than a page on a
+ *  platform like YouTube. Those render with a native `<video>` element
+ *  instead of an iframe embed; getEmbedUrl returns null for these since
+ *  there's no provider page to build an embed URL from. */
+export function isDirectVideoUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:")
+      return false;
+    const path = parsed.pathname.toLowerCase();
+    return DIRECT_VIDEO_EXTENSIONS.some((ext) => path.endsWith(ext));
+  } catch {
+    return false;
+  }
+}
+
 export function getEmbedUrl(url: string): string | null {
   try {
     const parsed = new URL(url);

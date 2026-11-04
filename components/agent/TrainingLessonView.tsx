@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getEmbedUrl } from "@/lib/videoEmbed";
+import { getEmbedUrl, isDirectVideoUrl } from "@/lib/videoEmbed";
 import { blobDownloadUrl } from "@/lib/training";
 
 type Lesson = {
@@ -39,9 +39,17 @@ export function TrainingLessonView({
   const [saving, setSaving] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
-  const prevHref = navigation.prevId ? `/agent/training/lessons/${navigation.prevId}` : null;
-  const nextHref = navigation.nextId ? `/agent/training/lessons/${navigation.nextId}` : null;
+  const prevHref = navigation.prevId
+    ? `/agent/training/lessons/${navigation.prevId}`
+    : null;
+  const nextHref = navigation.nextId
+    ? `/agent/training/lessons/${navigation.nextId}`
+    : null;
   const embedUrl = lesson.videoUrl ? getEmbedUrl(lesson.videoUrl) : null;
+  const directVideo =
+    !embedUrl && lesson.videoUrl && isDirectVideoUrl(lesson.videoUrl)
+      ? lesson.videoUrl
+      : null;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -87,7 +95,10 @@ export function TrainingLessonView({
   return (
     <div className="space-y-6 pt-2 lg:pt-[70px]">
       <div className="flex items-center justify-between">
-        <Link href="/agent/training" className="text-sm text-muted hover:text-foreground">
+        <Link
+          href="/agent/training"
+          className="text-sm text-muted hover:text-foreground"
+        >
           &larr; Back to Training
         </Link>
         <div className="flex items-center gap-3">
@@ -97,10 +108,18 @@ export function TrainingLessonView({
             </span>
           )}
           <div className="flex gap-2">
-            <Button variant="ghost" disabled={!prevHref} onClick={() => prevHref && router.push(prevHref)}>
+            <Button
+              variant="ghost"
+              disabled={!prevHref}
+              onClick={() => prevHref && router.push(prevHref)}
+            >
               &larr; Prev
             </Button>
-            <Button variant="ghost" disabled={!nextHref} onClick={() => nextHref && router.push(nextHref)}>
+            <Button
+              variant="ghost"
+              disabled={!nextHref}
+              onClick={() => nextHref && router.push(nextHref)}
+            >
               Next &rarr;
             </Button>
           </div>
@@ -119,7 +138,9 @@ export function TrainingLessonView({
             {lesson.images.length > 0 && (
               <Button variant="ghost" onClick={downloadImages}>
                 <Download className="h-4 w-4" />
-                {lesson.images.length > 1 ? "Download Photos" : "Download Photo"}
+                {lesson.images.length > 1
+                  ? "Download Photos"
+                  : "Download Photo"}
               </Button>
             )}
             <Button
@@ -132,7 +153,9 @@ export function TrainingLessonView({
           </div>
         </CardHeader>
 
-        {lesson.description && <p className="mb-4 text-sm text-muted">{lesson.description}</p>}
+        {lesson.description && (
+          <p className="mb-4 text-sm text-muted">{lesson.description}</p>
+        )}
 
         {embedUrl && (
           <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
@@ -146,9 +169,30 @@ export function TrainingLessonView({
           </div>
         )}
 
-        {!embedUrl && lesson.videoUrl && (
+        {directVideo && (
+          <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-black">
+            {/* A link to a video file, rather than a page on a platform
+                like YouTube — a real <video> element plays it directly,
+                no provider embed URL to build. */}
+            <video
+              src={directVideo}
+              controls
+              className="h-full w-full"
+              title={lesson.title}
+            >
+              Your browser can&apos;t play this video.{" "}
+              <a href={directVideo} target="_blank" rel="noopener noreferrer">
+                Download it instead.
+              </a>
+            </video>
+          </div>
+        )}
+
+        {!embedUrl && !directVideo && lesson.videoUrl && (
           <div className="rounded-lg border border-border bg-surface2 p-6 text-center">
-            <p className="mb-3 text-sm text-muted">This video can&apos;t be embedded automatically.</p>
+            <p className="mb-3 text-sm text-muted">
+              This video can&apos;t be embedded automatically.
+            </p>
             <a href={lesson.videoUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="secondary">Open Training</Button>
             </a>
@@ -156,7 +200,12 @@ export function TrainingLessonView({
         )}
 
         {lesson.images.length > 0 && (
-          <div className={(embedUrl || lesson.videoUrl ? "mt-4 " : "") + "grid grid-cols-2 gap-2 sm:grid-cols-3"}>
+          <div
+            className={
+              (embedUrl || lesson.videoUrl ? "mt-4 " : "") +
+              "grid grid-cols-2 gap-2 sm:grid-cols-3"
+            }
+          >
             {lesson.images.map((img) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -171,11 +220,15 @@ export function TrainingLessonView({
         )}
 
         {!embedUrl && !lesson.videoUrl && lesson.images.length === 0 && (
-          <p className="text-sm text-muted">No content has been added to this lesson yet.</p>
+          <p className="text-sm text-muted">
+            No content has been added to this lesson yet.
+          </p>
         )}
       </Card>
 
-      <p className="text-center text-xs text-muted">Tip: use the &larr; and &rarr; arrow keys to move between lessons.</p>
+      <p className="text-center text-xs text-muted">
+        Tip: use the &larr; and &rarr; arrow keys to move between lessons.
+      </p>
 
       {lightbox && (
         <div
@@ -183,7 +236,11 @@ export function TrainingLessonView({
           onClick={() => setLightbox(null)}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={lightbox} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+          <img
+            src={lightbox}
+            alt=""
+            className="max-h-full max-w-full rounded-lg object-contain"
+          />
           <button
             type="button"
             onClick={() => setLightbox(null)}
