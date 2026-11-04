@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { TrainingLessonView } from "@/components/agent/TrainingLessonView";
+import { getEmbedInfo, isDirectVideoUrl } from "@/lib/videoEmbed";
+import { getYoutubeChannelInfo } from "@/lib/youtubeChannel";
 
 export const dynamic = "force-dynamic";
 
@@ -48,17 +50,30 @@ export default async function AgentTrainingLessonPage({
   const nextId =
     index >= 0 && index < lessonIds.length - 1 ? lessonIds[index + 1] : null;
 
+  // Only a link that isn't a single embeddable/playable video is ever a
+  // whole channel to look up — a trackable video never needs this.
+  const videos = await Promise.all(
+    lesson.videos.map(async (v) => {
+      const isLinkOnly = !getEmbedInfo(v.url) && !isDirectVideoUrl(v.url);
+      const channelInfo = isLinkOnly
+        ? await getYoutubeChannelInfo(v.url)
+        : null;
+      return {
+        id: v.id,
+        url: v.url,
+        thumbnailUrl: v.thumbnailUrl,
+        channelInfo,
+      };
+    }),
+  );
+
   return (
     <TrainingLessonView
       lesson={{
         id: lesson.id,
         title: lesson.title,
         description: lesson.description,
-        videos: lesson.videos.map((v) => ({
-          id: v.id,
-          url: v.url,
-          thumbnailUrl: v.thumbnailUrl,
-        })),
+        videos,
         images: lesson.images.map((img) => ({ id: img.id, url: img.url })),
         moduleTitle: lesson.module.title,
       }}

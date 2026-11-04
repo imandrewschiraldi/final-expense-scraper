@@ -10,13 +10,22 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getEmbedInfo, isDirectVideoUrl } from "@/lib/videoEmbed";
 import { loadYoutubeIframeApi, type YTPlayer } from "@/lib/youtubeIframeApi";
+import {
+  formatCompactCount,
+  type YoutubeChannelInfo,
+} from "@/lib/youtubeChannel";
 import { blobDownloadUrl } from "@/lib/training";
 
 type Lesson = {
   id: string;
   title: string;
   description: string | null;
-  videos: { id: string; url: string; thumbnailUrl: string | null }[];
+  videos: {
+    id: string;
+    url: string;
+    thumbnailUrl: string | null;
+    channelInfo: YoutubeChannelInfo | null;
+  }[];
   images: { id: string; url: string }[];
   moduleTitle: string;
 };
@@ -262,9 +271,89 @@ function LoomPlayer({
   );
 }
 
+/** A whole YouTube channel link rendered as its real channel header —
+ *  banner, avatar, name, handle, subscriber/video counts — instead of a
+ *  bare hostname, using live data from the YouTube Data API (see
+ *  lib/youtubeChannel.ts). The whole card is the link, so the decorative
+ *  "Subscribe" button opens the real channel the same as anywhere else
+ *  on it — there's no way to actually subscribe without YouTube's own
+ *  OAuth, so this hands that off to YouTube itself rather than faking it. */
+function YoutubeChannelCard({
+  info,
+  onOpened,
+}: {
+  info: YoutubeChannelInfo;
+  onOpened: () => void;
+}) {
+  const stats = [
+    info.subscriberCount != null
+      ? `${formatCompactCount(info.subscriberCount)} subscribers`
+      : null,
+    info.videoCount != null
+      ? `${formatCompactCount(info.videoCount)} videos`
+      : null,
+  ].filter(Boolean);
+
+  return (
+    <a
+      href={info.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onOpened}
+      className="block overflow-hidden rounded-lg border border-border bg-surface2 transition-colors hover:border-copper-dim-gradient"
+    >
+      <div className="h-16 w-full sm:h-20">
+        {info.bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={info.bannerUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div
+            className="h-full w-full"
+            style={{
+              backgroundImage:
+                "linear-gradient(135deg, rgb(202 126 64 / 0.3) 0%, rgb(172 90 42 / 0.2) 45%, rgb(20 10 5 / 0.95) 100%)",
+            }}
+          />
+        )}
+      </div>
+      <div className="flex items-start gap-3 p-3">
+        <div className="-mt-8 h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-surface2 bg-surface">
+          {info.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={info.avatarUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-white/30">
+              <Link2 className="h-6 w-6" />
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1 pt-1">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {info.title}
+          </p>
+          <p className="truncate text-xs text-muted">
+            {[info.handle, ...stats].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+        <Button variant="secondary" className="mt-1 shrink-0">
+          Subscribe
+        </Button>
+      </div>
+    </a>
+  );
+}
+
 /** Resolves one of a lesson's video links to whatever can actually be
- *  done with it — a tracked embed, a native file player, or (a whole
- *  YouTube channel, a playlist, anything that isn't a single playable
+ *  done with it — a tracked embed, a native file player, a live YouTube
+ *  channel header, or (anything else that isn't a single playable
  *  video) a plain "Open Link" card. `onFinished`/`onOpened` only ever
  *  fires for the one that actually applies; the lesson view decides
  *  which of those this link needs satisfied before it counts. */
@@ -272,12 +361,14 @@ function VideoEntry({
   url,
   title,
   thumbnailUrl,
+  channelInfo,
   onFinished,
   onOpened,
 }: {
   url: string;
   title: string;
   thumbnailUrl: string | null;
+  channelInfo: YoutubeChannelInfo | null;
   onFinished: () => void;
   onOpened: () => void;
 }) {
@@ -330,6 +421,10 @@ function VideoEntry({
         />
       </div>
     );
+  }
+
+  if (channelInfo) {
+    return <YoutubeChannelCard info={channelInfo} onOpened={onOpened} />;
   }
 
   // Not a single playable video — a whole YouTube channel to follow, a
@@ -581,6 +676,7 @@ export function TrainingLessonView({
                 url={v.url}
                 title={lesson.title}
                 thumbnailUrl={v.thumbnailUrl}
+                channelInfo={v.channelInfo}
                 onFinished={() => markVideoFinished(v.id)}
                 onOpened={() => markLinkOpened(v.id)}
               />
