@@ -4,16 +4,53 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { upload } from "@vercel/blob/client";
 import { useSession } from "next-auth/react";
-import { Download, ExternalLink, Pause, Play, Plus, Settings, Trash2, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import {
+  Download,
+  ExternalLink,
+  GripVertical,
+  Pause,
+  Play,
+  Plus,
+  Settings,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+} from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { optimizableImageUrl } from "@/lib/profileImage";
 import { youtubeThumbnailUrl, youtubeEmbedUrl } from "@/lib/youtube";
-import { generateVideoThumbnail, generatePdfThumbnail } from "@/lib/clientThumbnail";
+import {
+  generateVideoThumbnail,
+  generatePdfThumbnail,
+} from "@/lib/clientThumbnail";
 
 type AnnouncementType = "VIDEO" | "IMAGE" | "UPLOADED_VIDEO" | "PDF";
-type Item = { id: string; type: AnnouncementType; title: string; url: string; thumbnailUrl?: string | null; active?: boolean };
+type Item = {
+  id: string;
+  type: AnnouncementType;
+  title: string;
+  url: string;
+  thumbnailUrl?: string | null;
+  active?: boolean;
+};
 
 const CARD_WIDTH = 280;
 const CARD_HEIGHT = 158;
@@ -37,7 +74,15 @@ function Badge({ children }: { children: React.ReactNode }) {
 /** Every Announcements type now opens the same way — a click anywhere on
  *  the card opens the Lightbox, which is where any watch/download action
  *  actually lives. No per-card overlay buttons. */
-function ClickableThumb({ item, onOpen, children }: { item: Item; onOpen: () => void; children: React.ReactNode }) {
+function ClickableThumb({
+  item,
+  onOpen,
+  children,
+}: {
+  item: Item;
+  onOpen: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div
       role="button"
@@ -57,7 +102,8 @@ function ClickableThumb({ item, onOpen, children }: { item: Item; onOpen: () => 
 
 function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
   if (item.type === "VIDEO" || item.type === "UPLOADED_VIDEO") {
-    const thumb = item.type === "VIDEO" ? youtubeThumbnailUrl(item.url) : item.thumbnailUrl;
+    const thumb =
+      item.type === "VIDEO" ? youtubeThumbnailUrl(item.url) : item.thumbnailUrl;
     return (
       <ClickableThumb item={item} onOpen={onOpen}>
         {thumb && (
@@ -72,7 +118,6 @@ function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
             <Play className="h-4.5 w-4.5 translate-x-0.5 fill-white text-white" />
           </span>
         </span>
-        <Badge>Video</Badge>
       </ClickableThumb>
     );
   }
@@ -82,7 +127,11 @@ function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
       <ClickableThumb item={item} onOpen={onOpen}>
         {item.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+          <img
+            src={item.thumbnailUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-muted">
             <FileText className="h-8 w-8" />
@@ -99,7 +148,9 @@ function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
       {src ? (
         <Image src={src} alt="" fill sizes="280px" className="object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-xs text-muted">Image unavailable</div>
+        <div className="flex h-full w-full items-center justify-center text-xs text-muted">
+          Image unavailable
+        </div>
       )}
     </ClickableThumb>
   );
@@ -114,15 +165,31 @@ function Thumbnail({ item, onOpen }: { item: Item; onOpen: () => void }) {
  *  download from an embed). */
 function Lightbox({ item, onClose }: { item: Item; onClose: () => void }) {
   const embedUrl = item.type === "VIDEO" ? youtubeEmbedUrl(item.url) : null;
-  const imageSrc = item.type === "IMAGE" ? (optimizableImageUrl(item.url) ?? item.url) : null;
+  const imageSrc =
+    item.type === "IMAGE" ? (optimizableImageUrl(item.url) ?? item.url) : null;
 
   return (
-    <Modal open onClose={onClose} title={item.title} maxWidthClassName="max-w-4xl" panelBorderClassName="border-copper-gradient">
+    <Modal
+      open
+      onClose={onClose}
+      title={item.title}
+      maxWidthClassName="max-w-4xl"
+      panelBorderClassName="border-copper-gradient"
+    >
       <div className="space-y-4">
         {item.type === "PDF" ? (
-          <iframe src={item.url} title={item.title} className="h-[75vh] w-full rounded-lg border border-border bg-white" />
+          <iframe
+            src={item.url}
+            title={item.title}
+            className="h-[75vh] w-full rounded-lg border border-border bg-white"
+          />
         ) : item.type === "UPLOADED_VIDEO" ? (
-          <video src={item.url} controls autoPlay className="max-h-[75vh] w-full rounded-lg bg-black" />
+          <video
+            src={item.url}
+            controls
+            autoPlay
+            className="max-h-[75vh] w-full rounded-lg bg-black"
+          />
         ) : item.type === "VIDEO" ? (
           embedUrl ? (
             <iframe
@@ -137,7 +204,11 @@ function Lightbox({ item, onClose }: { item: Item; onClose: () => void }) {
           )
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={imageSrc ?? item.url} alt={item.title} className="max-h-[75vh] w-full rounded-lg object-contain" />
+          <img
+            src={imageSrc ?? item.url}
+            alt={item.title}
+            className="max-h-[75vh] w-full rounded-lg object-contain"
+          />
         )}
 
         {item.type === "VIDEO" ? (
@@ -169,7 +240,10 @@ function Lightbox({ item, onClose }: { item: Item; onClose: () => void }) {
 
 /** Uploads one admin-picked file straight to Blob storage (bypassing this
  *  app's own server entirely) and hands back its public URL. */
-async function uploadAnnouncementFile(file: File, kind: "image" | "video" | "pdf") {
+async function uploadAnnouncementFile(
+  file: File,
+  kind: "image" | "video" | "pdf",
+) {
   const blob = await upload(file.name, file, {
     access: "public",
     handleUploadUrl: "/api/admin/announcements/upload",
@@ -178,7 +252,82 @@ async function uploadAnnouncementFile(file: File, kind: "image" | "video" | "pdf
   return blob.url;
 }
 
-function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChanged: () => void }) {
+/** One row in the manage-list, draggable by its handle. The row's own
+ *  content (type badge, title, show/hide, delete) is unchanged — this
+ *  just wraps it with the drag affordance, same pattern as the Overview
+ *  layout editor's EditableTile. */
+function SortableAnnouncementRow({
+  item,
+  onToggleActive,
+  onRemove,
+}: {
+  item: Item & { active: boolean };
+  onToggleActive: () => void;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 rounded-lg border border-border p-2.5"
+    >
+      <span
+        {...attributes}
+        {...listeners}
+        title="Drag to reorder"
+        className="flex h-6 w-6 shrink-0 cursor-grab touch-none items-center justify-center text-muted active:cursor-grabbing"
+      >
+        <GripVertical className="h-4 w-4" />
+      </span>
+      <span
+        className="font-condensed shrink-0 rounded px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-muted uppercase"
+        style={{ border: "1px solid var(--border)" }}
+      >
+        {item.type.replace("_", " ")}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+        {item.title}
+      </span>
+      <button
+        type="button"
+        onClick={onToggleActive}
+        className="font-condensed shrink-0 text-[11px] font-bold tracking-wide uppercase text-teal-light hover:underline"
+      >
+        {item.active ? "Hide" : "Show"}
+      </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label="Delete"
+        className="shrink-0 text-muted hover:text-red-light"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function AdminManageModal({
+  onClose,
+  onChanged,
+}: {
+  onClose: () => void;
+  onChanged: () => void;
+}) {
   const [items, setItems] = useState<(Item & { active: boolean })[]>([]);
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState<AnnouncementType>("VIDEO");
@@ -189,6 +338,10 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
   const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor),
+  );
 
   function load() {
     fetch("/api/admin/announcements")
@@ -208,10 +361,17 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
     if (!picked || (type !== "UPLOADED_VIDEO" && type !== "PDF")) return;
     setGeneratingThumbnail(true);
     try {
-      const dataUrl = type === "UPLOADED_VIDEO" ? await generateVideoThumbnail(picked) : await generatePdfThumbnail(picked);
+      const dataUrl =
+        type === "UPLOADED_VIDEO"
+          ? await generateVideoThumbnail(picked)
+          : await generatePdfThumbnail(picked);
       setThumbnailDataUrl(dataUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't generate a thumbnail for that file.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Couldn't generate a thumbnail for that file.",
+      );
       setFile(null);
     } finally {
       setGeneratingThumbnail(false);
@@ -240,10 +400,15 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
         url = await uploadAnnouncementFile(file, "image");
       } else {
         if (!file || !thumbnailDataUrl) {
-          setError(type === "UPLOADED_VIDEO" ? "Choose a video." : "Choose a PDF.");
+          setError(
+            type === "UPLOADED_VIDEO" ? "Choose a video." : "Choose a PDF.",
+          );
           return;
         }
-        url = await uploadAnnouncementFile(file, type === "UPLOADED_VIDEO" ? "video" : "pdf");
+        url = await uploadAnnouncementFile(
+          file,
+          type === "UPLOADED_VIDEO" ? "video" : "pdf",
+        );
         thumbnailUrl = thumbnailDataUrl;
       }
 
@@ -290,11 +455,42 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
     onChanged();
   }
 
+  // Reorders optimistically (so the drop feels instant) and persists via
+  // the same PATCH the reorder endpoint already supported — no new API
+  // needed, this was just never wired up to a drag UI before.
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = items.map((i) => i.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = [...items];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+    setItems(reordered);
+    await fetch("/api/admin/announcements", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reorder: reordered.map((i) => i.id) }),
+    });
+    onChanged();
+  }
+
   const fileAccept =
-    type === "IMAGE" ? "image/png,image/jpeg,image/gif,image/webp" : type === "UPLOADED_VIDEO" ? "video/mp4,video/webm,video/quicktime" : "application/pdf";
+    type === "IMAGE"
+      ? "image/png,image/jpeg,image/gif,image/webp"
+      : type === "UPLOADED_VIDEO"
+        ? "video/mp4,video/webm,video/quicktime"
+        : "application/pdf";
 
   return (
-    <Modal open onClose={onClose} title="Manage Announcements" maxWidthClassName="max-w-lg">
+    <Modal
+      open
+      onClose={onClose}
+      title="Manage Announcements"
+      maxWidthClassName="max-w-lg"
+    >
       <div className="space-y-5">
         <div className="space-y-3 rounded-lg border border-border p-4">
           <Select
@@ -311,9 +507,17 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
             <option value="IMAGE">Downloadable Image</option>
             <option value="PDF">PDF Document</option>
           </Select>
-          <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Input
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
           {type === "VIDEO" ? (
-            <Input placeholder="https://youtube.com/watch?v=..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+            <Input
+              placeholder="https://youtube.com/watch?v=..."
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+            />
           ) : (
             <>
               <input
@@ -322,16 +526,28 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
                 onChange={(e) => onFilePicked(e.target.files?.[0] ?? null)}
                 className="w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-surface2 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-foreground"
               />
-              {type === "UPLOADED_VIDEO" && <p className="text-xs text-muted">Up to 300MB.</p>}
-              {generatingThumbnail && <p className="text-xs text-muted">Generating thumbnail...</p>}
+              {type === "UPLOADED_VIDEO" && (
+                <p className="text-xs text-muted">Up to 300MB.</p>
+              )}
+              {generatingThumbnail && (
+                <p className="text-xs text-muted">Generating thumbnail...</p>
+              )}
               {thumbnailDataUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={thumbnailDataUrl} alt="" className="h-20 w-auto rounded border border-border object-cover" />
+                <img
+                  src={thumbnailDataUrl}
+                  alt=""
+                  className="h-20 w-auto rounded border border-border object-cover"
+                />
               )}
             </>
           )}
           {error && <p className="text-sm text-red-light">{error}</p>}
-          <Button onClick={addItem} disabled={saving || generatingThumbnail} className="w-full">
+          <Button
+            onClick={addItem}
+            disabled={saving || generatingThumbnail}
+            className="w-full"
+          >
             <Plus className="size-4" />
             {saving ? "Adding..." : "Add Slide"}
           </Button>
@@ -343,24 +559,25 @@ function AdminManageModal({ onClose, onChanged }: { onClose: () => void; onChang
           ) : items.length === 0 ? (
             <p className="text-sm text-muted">No slides yet.</p>
           ) : (
-            items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
-                <span className="font-condensed shrink-0 rounded px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide text-muted uppercase" style={{ border: "1px solid var(--border)" }}>
-                  {item.type.replace("_", " ")}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm text-foreground">{item.title}</span>
-                <button
-                  type="button"
-                  onClick={() => toggleActive(item.id, !item.active)}
-                  className="font-condensed shrink-0 text-[11px] font-bold tracking-wide uppercase text-teal-light hover:underline"
-                >
-                  {item.active ? "Hide" : "Show"}
-                </button>
-                <button type="button" onClick={() => removeItem(item.id)} aria-label="Delete" className="shrink-0 text-muted hover:text-red-light">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={items.map((i) => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {items.map((item) => (
+                  <SortableAnnouncementRow
+                    key={item.id}
+                    item={item}
+                    onToggleActive={() => toggleActive(item.id, !item.active)}
+                    onRemove={() => removeItem(item.id)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </div>
@@ -434,7 +651,9 @@ export function AnnouncementsCarousel() {
   return (
     <div data-tour="announcements-carousel" className="mb-9">
       <div className="mb-3.5 flex items-center justify-between">
-        <h2 className="font-condensed text-[17px] font-extrabold tracking-wide text-white uppercase">Announcements</h2>
+        <h2 className="font-condensed text-[17px] font-extrabold tracking-wide text-white uppercase">
+          Announcements
+        </h2>
         <div className="flex items-center gap-1.5">
           {isAdmin && (
             <button
@@ -454,7 +673,11 @@ export function AnnouncementsCarousel() {
                 aria-label={paused ? "Resume auto-scroll" : "Pause auto-scroll"}
                 className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface2 hover:text-foreground"
               >
-                {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+                {paused ? (
+                  <Play className="h-3.5 w-3.5" />
+                ) : (
+                  <Pause className="h-3.5 w-3.5" />
+                )}
               </button>
               <button
                 type="button"
@@ -478,7 +701,9 @@ export function AnnouncementsCarousel() {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted">No announcements yet — add one from the gear icon above.</p>
+        <p className="text-sm text-muted">
+          No announcements yet — add one from the gear icon above.
+        </p>
       ) : (
         <div
           ref={scrollerRef}
@@ -488,15 +713,23 @@ export function AnnouncementsCarousel() {
           style={{ scrollbarWidth: "none", gap: CARD_GAP }}
         >
           {[...items, ...items].map((item, i) => (
-            <div key={`${item.id}-${i}`} className="shrink-0" style={{ width: CARD_WIDTH }}>
+            <div
+              key={`${item.id}-${i}`}
+              className="shrink-0"
+              style={{ width: CARD_WIDTH }}
+            >
               <Thumbnail item={item} onOpen={() => setLightbox(item)} />
             </div>
           ))}
         </div>
       )}
 
-      {managing && <AdminManageModal onClose={() => setManaging(false)} onChanged={load} />}
-      {lightbox && <Lightbox item={lightbox} onClose={() => setLightbox(null)} />}
+      {managing && (
+        <AdminManageModal onClose={() => setManaging(false)} onChanged={load} />
+      )}
+      {lightbox && (
+        <Lightbox item={lightbox} onClose={() => setLightbox(null)} />
+      )}
     </div>
   );
 }
