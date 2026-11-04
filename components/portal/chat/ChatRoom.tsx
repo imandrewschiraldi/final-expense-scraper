@@ -53,6 +53,11 @@ const LOOSE = "loose";
  *  to fully expanded every time the page reloads. */
 const COLLAPSED_CATEGORIES_KEY = "chat-collapsed-categories";
 
+/** Persists which channel was last open, so a reload (or just coming back
+ *  to /chat) picks up where the viewer left off instead of always landing
+ *  on whichever channel happens to be first in the rail. */
+const LAST_CHANNEL_KEY = "chat-last-channel";
+
 /**
  * The team room.
  *
@@ -369,6 +374,13 @@ export function ChatRoom({
   const [categories, setCategories] = useState<Category[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  // Every real selection (not the delete-flow's reset-to-null, which should
+  // let loadRail's own restore-or-first logic run again) goes through this
+  // so "last channel" always reflects where the viewer actually is.
+  const selectChannel = useCallback((id: string) => {
+    setActiveId(id);
+    localStorage.setItem(LAST_CHANNEL_KEY, id);
+  }, []);
   const [messages, setMessages] = useState<Message[]>([]);
   const [pins, setPins] = useState<Message[]>([]);
   const [showPins, setShowPins] = useState(false);
@@ -593,7 +605,12 @@ export function ChatRoom({
     };
     setCategories(data.categories);
     setChannels(data.channels);
-    setActiveId((current) => current ?? data.channels[0]?.id ?? null);
+    setActiveId((current) => {
+      if (current) return current;
+      const last = localStorage.getItem(LAST_CHANNEL_KEY);
+      if (last && data.channels.some((c) => c.id === last)) return last;
+      return data.channels[0]?.id ?? null;
+    });
   }, []);
 
   const loadPins = useCallback(async (channelId: string) => {
@@ -947,7 +964,7 @@ export function ChatRoom({
       }
       const { channel } = (await res.json()) as { channel: Channel };
       await loadRail();
-      setActiveId(channel.id);
+      selectChannel(channel.id);
       closeModal();
       return;
     }
@@ -1217,7 +1234,7 @@ export function ChatRoom({
                     channel={channel}
                     active={channel.id === activeId}
                     canManage={canManage}
-                    onSelect={() => setActiveId(channel.id)}
+                    onSelect={() => selectChannel(channel.id)}
                     onRename={() => openRenameModal(channel)}
                     onArchive={() => openArchiveModal(channel)}
                   />
@@ -1260,7 +1277,7 @@ export function ChatRoom({
                             channel={channel}
                             active={channel.id === activeId}
                             canManage={canManage}
-                            onSelect={() => setActiveId(channel.id)}
+                            onSelect={() => selectChannel(channel.id)}
                             onRename={() => openRenameModal(channel)}
                             onArchive={() => openArchiveModal(channel)}
                           />
