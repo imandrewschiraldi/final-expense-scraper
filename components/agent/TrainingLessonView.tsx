@@ -16,7 +16,7 @@ type Lesson = {
   id: string;
   title: string;
   description: string | null;
-  videoUrl: string | null;
+  videos: { id: string; url: string }[];
   images: { id: string; url: string }[];
   moduleTitle: string;
 };
@@ -262,6 +262,100 @@ function LoomPlayer({
   );
 }
 
+/** Resolves one of a lesson's video links to whatever can actually be
+ *  done with it — a tracked embed, a native file player, or (a whole
+ *  YouTube channel, a playlist, anything that isn't a single playable
+ *  video) a plain "Open Link" card. `onFinished`/`onOpened` only ever
+ *  fires for the one that actually applies; the lesson view decides
+ *  which of those this link needs satisfied before it counts. */
+function VideoEntry({
+  url,
+  title,
+  onFinished,
+  onOpened,
+}: {
+  url: string;
+  title: string;
+  onFinished: () => void;
+  onOpened: () => void;
+}) {
+  const embedInfo = getEmbedInfo(url);
+  const directVideo = !embedInfo && isDirectVideoUrl(url) ? url : null;
+
+  if (directVideo) {
+    return (
+      <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-black">
+        <DirectVideoPlayer
+          src={directVideo}
+          title={title}
+          onEnded={onFinished}
+        />
+      </div>
+    );
+  }
+
+  if (embedInfo?.platform === "youtube") {
+    return (
+      <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-black">
+        <YoutubePlayer
+          videoId={embedInfo.videoId}
+          title={title}
+          onEnded={onFinished}
+        />
+      </div>
+    );
+  }
+
+  if (embedInfo?.platform === "vimeo") {
+    return (
+      <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
+        <VimeoPlayer
+          embedUrl={embedInfo.embedUrl}
+          title={title}
+          onEnded={onFinished}
+        />
+      </div>
+    );
+  }
+
+  if (embedInfo?.platform === "loom") {
+    return (
+      <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
+        <LoomPlayer
+          embedUrl={embedInfo.embedUrl}
+          title={title}
+          onEnded={onFinished}
+        />
+      </div>
+    );
+  }
+
+  // Not a single playable video — a whole YouTube channel to follow, a
+  // playlist, or any other link that can't be embedded automatically.
+  // There's no "finished" for something with no end, so this only ever
+  // needs to have been opened once, same as a photo.
+  let label = url;
+  try {
+    label = new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    // Keep the raw url as the label if it somehow doesn't parse.
+  }
+  return (
+    <div className="rounded-lg border border-border bg-surface2 p-4">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onOpened}
+        className="flex items-center justify-between gap-3 text-sm"
+      >
+        <span className="truncate text-teal-light">{label}</span>
+        <Button variant="secondary">Open Link</Button>
+      </a>
+    </div>
+  );
+}
+
 export function TrainingLessonView({
   lesson,
   isCompleted: initialCompleted,
@@ -273,7 +367,10 @@ export function TrainingLessonView({
 }) {
   const router = useRouter();
   const [completed, setCompleted] = useState(initialCompleted);
-  const [videoEnded, setVideoEnded] = useState(false);
+  const [finishedVideoIds, setFinishedVideoIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [openedLinkIds, setOpenedLinkIds] = useState<Set<string>>(new Set());
   const [openedImageIds, setOpenedImageIds] = useState<Set<string>>(new Set());
   const completing = useRef(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -284,23 +381,29 @@ export function TrainingLessonView({
   const nextHref = navigation.nextId
     ? `/agent/training/lessons/${navigation.nextId}`
     : null;
-  const embedInfo = lesson.videoUrl ? getEmbedInfo(lesson.videoUrl) : null;
-  const directVideo =
-    !embedInfo && lesson.videoUrl && isDirectVideoUrl(lesson.videoUrl)
-      ? lesson.videoUrl
-      : null;
-  const hasVideo = Boolean(embedInfo || directVideo);
-  const hasContent = hasVideo || lesson.images.length > 0;
 
-  // A lesson can carry a video, photos, or both — completion requires
-  // actually engaging with everything it has, not just one of several
-  // pieces. A video must finish (or, for Loom, stay open long enough —
-  // see LoomPlayer); every photo must have been opened at least once.
-  const videoSatisfied = !hasVideo || videoEnded;
+  // A video resolves either to something trackable (a single playable
+  // video — must finish) or, for a link with no single end to reach — a
+  // whole YouTube channel to follow, say — just something that must have
+  // been opened at least once, same as a photo.
+  const trackableVideoIds = lesson.videos
+    .filter((v) => Boolean(getEmbedInfo(v.url) || isDirectVideoUrl(v.url)))
+    .map((v) => v.id);
+  const linkOnlyVideoIds = lesson.videos
+    .filter((v) => !trackableVideoIds.includes(v.id))
+    .map((v) => v.id);
+  const hasContent = lesson.videos.length > 0 || lesson.images.length > 0;
+
+  // A lesson can carry several videos, photos, or both — completion
+  // requires actually engaging with everything it has, not just one
+  // piece of it.
+  const videosSatisfied =
+    trackableVideoIds.every((id) => finishedVideoIds.has(id)) &&
+    linkOnlyVideoIds.every((id) => openedLinkIds.has(id));
   const photosSatisfied =
     lesson.images.length === 0 ||
     lesson.images.every((img) => openedImageIds.has(img.id));
-  const earned = hasContent && videoSatisfied && photosSatisfied;
+  const earned = hasContent && videosSatisfied && photosSatisfied;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -339,6 +442,16 @@ export function TrainingLessonView({
     setOpenedImageIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   }
 
+  function markVideoFinished(id: string) {
+    setFinishedVideoIds((prev) =>
+      prev.has(id) ? prev : new Set(prev).add(id),
+    );
+  }
+
+  function markLinkOpened(id: string) {
+    setOpenedLinkIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+  }
+
   // Triggers a download per photo via throwaway <a download> elements
   // (Blob's downloadUrl form sets Content-Disposition: attachment, so this
   // downloads rather than opening a new tab). Staggered slightly since
@@ -359,11 +472,13 @@ export function TrainingLessonView({
 
   const statusLabel = completed
     ? "Completed ✓"
-    : hasVideo && !videoSatisfied
-      ? "Finish the video to complete"
-      : !photosSatisfied
-        ? "Open every photo to complete"
-        : "Not completed";
+    : trackableVideoIds.some((id) => !finishedVideoIds.has(id))
+      ? "Finish every video to complete"
+      : linkOnlyVideoIds.some((id) => !openedLinkIds.has(id))
+        ? "Open every link to complete"
+        : !photosSatisfied
+          ? "Open every photo to complete"
+          : "Not completed";
 
   return (
     <div className="space-y-6 pt-2 lg:pt-[70px]">
@@ -433,61 +548,24 @@ export function TrainingLessonView({
           <p className="mb-4 text-sm text-muted">{lesson.description}</p>
         )}
 
-        {directVideo && (
-          <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-black">
-            <DirectVideoPlayer
-              src={directVideo}
-              title={lesson.title}
-              onEnded={() => setVideoEnded(true)}
-            />
-          </div>
-        )}
-
-        {embedInfo?.platform === "youtube" && (
-          <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-black">
-            <YoutubePlayer
-              videoId={embedInfo.videoId}
-              title={lesson.title}
-              onEnded={() => setVideoEnded(true)}
-            />
-          </div>
-        )}
-
-        {embedInfo?.platform === "vimeo" && (
-          <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
-            <VimeoPlayer
-              embedUrl={embedInfo.embedUrl}
-              title={lesson.title}
-              onEnded={() => setVideoEnded(true)}
-            />
-          </div>
-        )}
-
-        {embedInfo?.platform === "loom" && (
-          <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
-            <LoomPlayer
-              embedUrl={embedInfo.embedUrl}
-              title={lesson.title}
-              onEnded={() => setVideoEnded(true)}
-            />
-          </div>
-        )}
-
-        {!embedInfo && !directVideo && lesson.videoUrl && (
-          <div className="rounded-lg border border-border bg-surface2 p-6 text-center">
-            <p className="mb-3 text-sm text-muted">
-              This video can&apos;t be embedded automatically.
-            </p>
-            <a href={lesson.videoUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="secondary">Open Training</Button>
-            </a>
+        {lesson.videos.length > 0 && (
+          <div className="space-y-3">
+            {lesson.videos.map((v) => (
+              <VideoEntry
+                key={v.id}
+                url={v.url}
+                title={lesson.title}
+                onFinished={() => markVideoFinished(v.id)}
+                onOpened={() => markLinkOpened(v.id)}
+              />
+            ))}
           </div>
         )}
 
         {lesson.images.length > 0 && (
           <div
             className={cn(
-              hasVideo && "mt-4",
+              lesson.videos.length > 0 && "mt-4",
               "grid grid-cols-2 gap-2 sm:grid-cols-3",
             )}
           >

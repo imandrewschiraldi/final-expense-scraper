@@ -9,7 +9,13 @@ export async function GET() {
   const modules = await db.trainingModule.findMany({
     orderBy: { order: "asc" },
     include: {
-      lessons: { orderBy: { order: "asc" }, include: { images: { orderBy: { order: "asc" } } } },
+      lessons: {
+        orderBy: { order: "asc" },
+        include: {
+          images: { orderBy: { order: "asc" } },
+          videos: { orderBy: { order: "asc" } },
+        },
+      },
     },
   });
 
@@ -21,7 +27,10 @@ export async function POST(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { title, description } = body as { title?: string; description?: string };
+  const { title, description } = body as {
+    title?: string;
+    description?: string;
+  };
 
   if (!title) {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });

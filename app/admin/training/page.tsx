@@ -8,7 +8,13 @@ export default async function AdminTrainingPage() {
   const modules = await db.trainingModule.findMany({
     orderBy: { order: "asc" },
     include: {
-      lessons: { orderBy: { order: "asc" }, include: { images: { orderBy: { order: "asc" } } } },
+      lessons: {
+        orderBy: { order: "asc" },
+        include: {
+          images: { orderBy: { order: "asc" } },
+          videos: { orderBy: { order: "asc" } },
+        },
+      },
     },
   });
 

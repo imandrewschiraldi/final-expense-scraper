@@ -5,14 +5,22 @@ import { TrainingLessonView } from "@/components/agent/TrainingLessonView";
 
 export const dynamic = "force-dynamic";
 
-export default async function AgentTrainingLessonPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AgentTrainingLessonPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const session = await auth();
   const agentId = session!.user.id;
 
   const lesson = await db.trainingLesson.findUnique({
     where: { id },
-    include: { module: true, images: { orderBy: { order: "asc" } } },
+    include: {
+      module: true,
+      images: { orderBy: { order: "asc" } },
+      videos: { orderBy: { order: "asc" } },
+    },
   });
 
   if (!lesson) {
@@ -32,7 +40,10 @@ export default async function AgentTrainingLessonPage({ params }: { params: Prom
   const flatLessonIds = allModules.flatMap((m) => m.lessons.map((l) => l.id));
   const index = flatLessonIds.indexOf(id);
   const prevId = index > 0 ? flatLessonIds[index - 1] : null;
-  const nextId = index >= 0 && index < flatLessonIds.length - 1 ? flatLessonIds[index + 1] : null;
+  const nextId =
+    index >= 0 && index < flatLessonIds.length - 1
+      ? flatLessonIds[index + 1]
+      : null;
 
   return (
     <TrainingLessonView
@@ -40,7 +51,7 @@ export default async function AgentTrainingLessonPage({ params }: { params: Prom
         id: lesson.id,
         title: lesson.title,
         description: lesson.description,
-        videoUrl: lesson.videoUrl,
+        videos: lesson.videos.map((v) => ({ id: v.id, url: v.url })),
         images: lesson.images.map((img) => ({ id: img.id, url: img.url })),
         moduleTitle: lesson.module.title,
       }}

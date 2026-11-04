@@ -338,22 +338,20 @@ model TrainingLesson {
   module      TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   title       String
   description String?
-  /// Optional now that a lesson can instead (or also) carry photos — see
-  /// `images`. Still the primary content for video-based lessons.
-  videoUrl    String?
   order       Int            @default(0)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
   progress TrainingProgress[]
   images   TrainingLessonImage[]
+  videos   TrainingLessonVideo[]
 
   @@index([moduleId, order])
   @@map("training_lessons")
 }
 
 /// One photo attached to a training lesson — a lesson can carry several,
-/// shown as a gallery alongside (or instead of) its video.
+/// shown as a gallery alongside (or instead of) its videos.
 model TrainingLessonImage {
   id        String         @id @default(cuid())
   lessonId  String
@@ -364,6 +362,23 @@ model TrainingLessonImage {
 
   @@index([lessonId, order])
   @@map("training_lesson_images")
+}
+
+/// One video link attached to a training lesson — a lesson can carry
+/// several: a primary training video plus reference links (e.g. whole
+/// YouTube channels for ongoing/endless browsing, not a single video
+/// with an end). Replaces the single `videoUrl` column every lesson used
+/// to be limited to.
+model TrainingLessonVideo {
+  id        String         @id @default(cuid())
+  lessonId  String
+  lesson    TrainingLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  url       String
+  order     Int            @default(0)
+  createdAt DateTime       @default(now())
+
+  @@index([lessonId, order])
+  @@map("training_lesson_videos")
 }
 
 model TrainingProgress {
@@ -606,27 +621,27 @@ model ChatChannel {
 }
 
 model ChatMessage {
-  id         String      @id @default(cuid())
-  channelId  String
-  channel    ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  authorId   String?
-  author     User?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  id                String      @id @default(cuid())
+  channelId         String
+  channel           ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  authorId          String?
+  author            User?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
   /// Denormalised so a deleted agent's history still reads sensibly.
-  authorName String
-  body       String
+  authorName        String
+  body              String
   /// A message may be image-only (body empty) or text-only (this null) —
   /// never both empty.
-  imageUrl   String?
-  editedAt   DateTime?
-  deletedAt  DateTime?
-  pinnedAt   DateTime?
-  pinnedById String?
-  pinnedBy   User?       @relation("ChatPinnedBy", fields: [pinnedById], references: [id], onDelete: SetNull)
-  createdAt  DateTime    @default(now())
+  imageUrl          String?
+  editedAt          DateTime?
+  deletedAt         DateTime?
+  pinnedAt          DateTime?
+  pinnedById        String?
+  pinnedBy          User?       @relation("ChatPinnedBy", fields: [pinnedById], references: [id], onDelete: SetNull)
+  createdAt         DateTime    @default(now())
   /// Set only for messages relayed in from an external bridge (currently
   /// just GroupMe) — the sending platform's own message id, so a retried
   /// webhook delivery doesn't get inserted twice.
-  externalId String?
+  externalId        String?
   /// The bridged sender's own avatar URL, shown instead of the generic
   /// system-post mark when present — distinct from authorId being null for
   /// an in-app system post (Sales Bot), which has no avatar of its own to
@@ -635,14 +650,14 @@ model ChatMessage {
 
   reactions ChatReaction[]
 
-  /// The paging index: "everything in this channel after this id".
-  @@index([channelId, createdAt])
-  /// Pinned messages are read as their own short list, newest pin first.
-  @@index([channelId, pinnedAt])
   /// Idempotency for bridged webhook deliveries — null externalId (the
   /// overwhelming majority of rows, every normal in-app message) never
   /// collides since Postgres treats NULLs as distinct in a unique index.
   @@unique([channelId, externalId])
+  /// The paging index: "everything in this channel after this id".
+  @@index([channelId, createdAt])
+  /// Pinned messages are read as their own short list, newest pin first.
+  @@index([channelId, pinnedAt])
   @@map("chat_messages")
 }
 
@@ -660,26 +675,26 @@ enum ChatGroupMeBridgeMode {
 /// GroupMe posts land here as chat messages, nothing from this app is ever
 /// posted back.
 model ChatGroupMeBridge {
-  id           String                @id @default(cuid())
-  channelId    String                @unique
-  channel      ChatChannel           @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  mode         ChatGroupMeBridgeMode @default(WEBHOOK)
+  id                  String                @id @default(cuid())
+  channelId           String                @unique
+  channel             ChatChannel           @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  mode                ChatGroupMeBridgeMode @default(WEBHOOK)
   /// WEBHOOK mode only. GroupMe's own "bot" callback carries no signature,
   /// so this unguessable URL segment is the entire auth check — the
   /// endpoint from accepting forged posts from anyone who finds it.
-  webhookToken String                @unique @default(cuid())
+  webhookToken        String                @unique @default(cuid())
   /// WEBHOOK mode: learned from the first inbound delivery, purely for
   /// display ("connected to group X") — routing never depends on it, the
   /// token in the URL already identifies the channel.
   /// POLL mode: required up front — the admin picks it from their own
   /// group list when connecting, since there's no bot callback to learn
   /// it from.
-  groupMeGroupId String?
+  groupMeGroupId      String?
   /// POLL mode only — a member's personal GroupMe access token, used
   /// purely to read (GET .../groups/:id/messages), never to post. Never
   /// returned by the admin API once set; a bridge's own page only ever
   /// reports whether one is present.
-  accessToken String?
+  accessToken         String?
   /// POLL mode only — the newest GroupMe message id already relayed, so
   /// the next poll asks for `after_id=<this>` instead of re-walking the
   /// whole history.
@@ -689,11 +704,11 @@ model ChatGroupMeBridge {
   /// channel's own messages are polled by open clients (GroupMe publishes
   /// no rate limit for this endpoint, so this is a deliberately
   /// conservative floor rather than a documented requirement).
-  lastPolledAt  DateTime?
-  lastMessageAt DateTime?
-  createdAt     DateTime    @default(now())
-  createdById   String?
-  createdBy     User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  lastPolledAt        DateTime?
+  lastMessageAt       DateTime?
+  createdAt           DateTime              @default(now())
+  createdById         String?
+  createdBy           User?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("chat_groupme_bridges")
 }
@@ -873,22 +888,22 @@ model JobApplicationStatusHistory {
 /// User's own per-agent flags like demoModeEnabled. Add new global switches
 /// here as fields rather than new tables.
 model AgencySettings {
-  id                        String  @id @default("singleton")
-  leaderboardAllTimeEnabled Boolean @default(false)
+  id                        String                @id @default("singleton")
+  leaderboardAllTimeEnabled Boolean               @default(false)
   /// The Overview page's Hall of Fame card targets, one per track —
   /// Personal (life-only, personally issued), Agency (all lines, you +
   /// your downline), Annuity (annuity-only, personally issued). Matches
   /// the org's published Hall of Fame categories. Admin-adjustable without
   /// a code deploy, same reasoning as leaderboardAllTimeEnabled.
-  hallOfFameTargetAP        Decimal @default(400000) @db.Decimal(12, 2)
-  hallOfFameAgencyTargetAP  Decimal @default(10000000) @db.Decimal(12, 2)
-  hallOfFameAnnuityTargetAP Decimal @default(2000000) @db.Decimal(12, 2)
+  hallOfFameTargetAP        Decimal               @default(400000) @db.Decimal(12, 2)
+  hallOfFameAgencyTargetAP  Decimal               @default(10000000) @db.Decimal(12, 2)
+  hallOfFameAnnuityTargetAP Decimal               @default(2000000) @db.Decimal(12, 2)
   /// The Overview page's "Here's what's new..." subtitle, under the
   /// welcome heading — admin-editable copy and styling instead of fixed
   /// text, same reasoning as the Hall of Fame targets above.
-  overviewSubtitleText      String                 @default("Here's what's new across the agency since you last logged in.")
-  overviewSubtitleColor     OverviewSubtitleColor  @default(GRAY)
-  overviewSubtitleBold      Boolean                @default(false)
+  overviewSubtitleText      String                @default("Here's what's new across the agency since you last logged in.")
+  overviewSubtitleColor     OverviewSubtitleColor @default(GRAY)
+  overviewSubtitleBold      Boolean               @default(false)
 
   @@map("agency_settings")
 }
@@ -916,22 +931,22 @@ enum AnnouncementType {
 /// document. Admin-managed; `order` controls slide sequence and `active`
 /// lets one be hidden without deleting it.
 model AnnouncementItem {
-  id          String           @id @default(cuid())
-  type        AnnouncementType
-  title       String
+  id           String           @id @default(cuid())
+  type         AnnouncementType
+  title        String
   /// VIDEO: a full YouTube watch/share URL. IMAGE/UPLOADED_VIDEO/PDF: the
   /// Blob storage URL of the uploaded file.
-  url         String
+  url          String
   /// UPLOADED_VIDEO/PDF only — a client-generated thumbnail (data URL),
   /// since there's no server-side video/PDF rendering here. VIDEO derives
   /// its thumbnail from the YouTube URL instead, and IMAGE uses the image
   /// itself, so neither needs this.
   thumbnailUrl String?
-  order       Int              @default(0)
-  active      Boolean          @default(true)
-  createdById String?
-  createdBy   User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime         @default(now())
+  order        Int              @default(0)
+  active       Boolean          @default(true)
+  createdById  String?
+  createdBy    User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime         @default(now())
 
   @@index([active, order])
   @@map("announcement_items")

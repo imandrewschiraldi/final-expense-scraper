@@ -15,12 +15,13 @@ import {
 } from "@/lib/training";
 
 type LessonImage = { id: string; url: string };
+type LessonVideo = { id: string; url: string };
 
 type Lesson = {
   id: string;
   title: string;
   description: string | null;
-  videoUrl: string | null;
+  videos: LessonVideo[];
   images: LessonImage[];
   order: number;
 };
@@ -28,7 +29,7 @@ type Lesson = {
 type LessonInput = {
   title: string;
   description: string;
-  videoUrl: string;
+  videos: string[];
   images: string[];
 };
 
@@ -167,19 +168,22 @@ function ImagePicker({
   );
 }
 
-/** The lesson video field — paste a link (YouTube/Vimeo/Loom/a direct
- *  video file link), or upload a file straight from this device when
- *  there's no hosted link at all. An upload goes directly from the
- *  browser to Blob storage (see app/api/admin/training/video/route.ts)
- *  and simply fills in the same field with the resulting URL, so the
- *  lesson still only ever stores one videoUrl regardless of which path
- *  was used. */
+/** One video link — paste one (YouTube/Vimeo/Loom/a direct video file
+ *  link), or upload a file straight from this device when there's no
+ *  hosted link at all. An upload goes directly from the browser to Blob
+ *  storage (see app/api/admin/training/video/route.ts) and simply fills
+ *  in this same field with the resulting URL. A lesson can hold several
+ *  of these — see VideoUrlList below. */
 function VideoUrlField({
   value,
   onChange,
+  onRemove,
+  placeholder,
 }: {
   value: string;
   onChange: (url: string) => void;
+  onRemove: () => void;
+  placeholder: string;
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -243,7 +247,7 @@ function VideoUrlField({
       <div className="flex gap-2">
         <div className="flex-1">
           <Input
-            placeholder="Video URL (YouTube, Vimeo, Loom, or a direct video file link) — optional if you add photos"
+            placeholder={placeholder}
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
@@ -265,11 +269,55 @@ function VideoUrlField({
           <Upload className="h-3.5 w-3.5" />
           {uploading ? "Uploading..." : "Upload"}
         </label>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="Remove this link"
+          title="Remove this link"
+          className="shrink-0 rounded-lg border border-transparent px-2 text-muted transition-colors hover:border-border hover:text-red-light"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
       <p className="text-[11px] text-muted">
         Or drag and drop a video file here.
       </p>
       {error && <p className="text-xs text-red-light">{error}</p>}
+    </div>
+  );
+}
+
+/** A lesson's video links — a primary training video plus optional
+ *  reference links (e.g. whole YouTube channels for agents to follow on
+ *  their own, not a single video with an end). Always at least one
+ *  (possibly blank) field is shown so there's somewhere to type the
+ *  first link. */
+function VideoUrlList({
+  videos,
+  onChange,
+}: {
+  videos: string[];
+  onChange: (urls: string[]) => void;
+}) {
+  const rows = videos.length > 0 ? videos : [""];
+  return (
+    <div className="space-y-2">
+      {rows.map((url, i) => (
+        <VideoUrlField
+          key={i}
+          value={url}
+          placeholder={
+            i === 0
+              ? "Video URL (YouTube, Vimeo, Loom, or a direct video file link) — optional if you add photos"
+              : "Another link (e.g. a YouTube channel to follow) — optional"
+          }
+          onChange={(v) => onChange(rows.map((u, idx) => (idx === i ? v : u)))}
+          onRemove={() => onChange(rows.filter((_, idx) => idx !== i))}
+        />
+      ))}
+      <Button variant="ghost" onClick={() => onChange([...rows, ""])}>
+        + Add another link
+      </Button>
     </div>
   );
 }
@@ -283,12 +331,13 @@ function LessonForm({
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
+  const [videos, setVideos] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const canSubmit =
-    title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
+    title.trim() !== "" &&
+    (videos.some((v) => v.trim() !== "") || images.length > 0);
 
   return (
     <div className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
@@ -297,7 +346,7 @@ function LessonForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-      <VideoUrlField value={videoUrl} onChange={setVideoUrl} />
+      <VideoUrlList videos={videos} onChange={setVideos} />
       <TextArea
         placeholder="Description (optional)"
         value={description}
@@ -315,7 +364,7 @@ function LessonForm({
           disabled={loading || !canSubmit}
           onClick={async () => {
             setLoading(true);
-            await onSubmit({ title, description, videoUrl, images });
+            await onSubmit({ title, description, videos, images });
             setLoading(false);
           }}
         >
@@ -341,22 +390,22 @@ function LessonRow({
   onUpdate: (id: string, data: LessonInput) => Promise<void>;
   onDelete: (id: string) => void;
   onMove: (id: string, direction: "up" | "down") => void;
-  onRemoveVideo: () => Promise<void>;
+  onRemoveVideo: (videoId: string) => Promise<void>;
   onRemoveImage: (imageId: string) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(lesson.title);
   const [description, setDescription] = useState(lesson.description ?? "");
-  const [videoUrl, setVideoUrl] = useState(lesson.videoUrl ?? "");
+  const [videos, setVideos] = useState(lesson.videos.map((v) => v.url));
   const [images, setImages] = useState(lesson.images.map((img) => img.url));
   const [saving, setSaving] = useState(false);
-  // Tracks which single item (the video, or one image id) is mid-removal,
-  // so only that control shows busy and the rest of the row stays clickable.
+  // Tracks which single item (a video or image id) is mid-removal, so
+  // only that control shows busy and the rest of the row stays clickable.
   const [removingKey, setRemovingKey] = useState<string | null>(null);
 
-  async function handleRemoveVideo() {
-    setRemovingKey("video");
-    await onRemoveVideo();
+  async function handleRemoveVideo(videoId: string) {
+    setRemovingKey(videoId);
+    await onRemoveVideo(videoId);
     setRemovingKey(null);
   }
 
@@ -367,13 +416,14 @@ function LessonRow({
   }
 
   const canSubmit =
-    title.trim() !== "" && (videoUrl.trim() !== "" || images.length > 0);
+    title.trim() !== "" &&
+    (videos.some((v) => v.trim() !== "") || images.length > 0);
 
   if (editing) {
     return (
       <div className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-        <VideoUrlField value={videoUrl} onChange={setVideoUrl} />
+        <VideoUrlList videos={videos} onChange={setVideos} />
         <TextArea value={description} onChange={setDescription} />
         <div>
           <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
@@ -390,7 +440,7 @@ function LessonRow({
               await onUpdate(lesson.id, {
                 title,
                 description,
-                videoUrl,
+                videos,
                 images,
               });
               setSaving(false);
@@ -414,23 +464,21 @@ function LessonRow({
         {lesson.description && (
           <p className="mt-1 text-xs text-muted">{lesson.description}</p>
         )}
-        {lesson.videoUrl && (
-          <div className="mt-1 flex items-center gap-1.5">
-            <p className="truncate text-xs text-teal-light">
-              {lesson.videoUrl}
-            </p>
+        {lesson.videos.map((v) => (
+          <div key={v.id} className="mt-1 flex items-center gap-1.5">
+            <p className="truncate text-xs text-teal-light">{v.url}</p>
             <button
               type="button"
-              onClick={handleRemoveVideo}
-              disabled={removingKey === "video"}
-              aria-label="Remove video URL"
-              title="Remove video URL"
+              onClick={() => handleRemoveVideo(v.id)}
+              disabled={removingKey === v.id}
+              aria-label="Remove this link"
+              title="Remove this link"
               className="shrink-0 text-muted transition-colors hover:text-red-light disabled:opacity-40"
             >
               <X className="h-3 w-3" />
             </button>
           </div>
-        )}
+        ))}
         {lesson.images.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {lesson.images.map((img) => (
@@ -560,14 +608,17 @@ export function TrainingPanel({
     await refresh();
   }
 
-  // Removes just the one video URL or image — sends only that field, so the
-  // rest of the lesson (title, description, other photos) is left untouched
-  // server-side, without going through the full edit form.
-  async function removeLessonVideo(id: string) {
-    await fetch(`/api/admin/training/lessons/${id}`, {
+  // Removes just the one video link or image — sends only that field, so
+  // the rest of the lesson (title, description, other videos/photos) is
+  // left untouched server-side, without going through the full edit form.
+  async function removeLessonVideo(lesson: Lesson, videoId: string) {
+    const videos = lesson.videos
+      .filter((v) => v.id !== videoId)
+      .map((v) => v.url);
+    await fetch(`/api/admin/training/lessons/${lesson.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ videoUrl: "" }),
+      body: JSON.stringify({ videos }),
     });
     await refresh();
   }
@@ -724,7 +775,7 @@ export function TrainingPanel({
                 onUpdate={updateLesson}
                 onDelete={deleteLesson}
                 onMove={moveLesson}
-                onRemoveVideo={() => removeLessonVideo(lesson.id)}
+                onRemoveVideo={(videoId) => removeLessonVideo(lesson, videoId)}
                 onRemoveImage={(imageId) => removeLessonImage(lesson, imageId)}
               />
             ))}
