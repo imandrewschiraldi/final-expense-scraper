@@ -373,12 +373,20 @@ model TrainingLessonImage {
 /// with an end). Replaces the single `videoUrl` column every lesson used
 /// to be limited to.
 model TrainingLessonVideo {
-  id        String         @id @default(cuid())
-  lessonId  String
-  lesson    TrainingLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  url       String
-  order     Int            @default(0)
-  createdAt DateTime       @default(now())
+  id           String         @id @default(cuid())
+  lessonId     String
+  lesson       TrainingLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  url          String
+  /// A custom image for this link's card — a channel's logo, a brand
+  /// mark, anything that makes it recognizable at a glance instead of
+  /// every link reading as the same bare hostname. Only meaningful for a
+  /// link that renders as an "Open Link" card (a channel, a playlist,
+  /// anything that isn't a single embeddable video) — a trackable video
+  /// already has its own real thumbnail (YouTube's, Vimeo's, the video
+  /// frame itself) and ignores this.
+  thumbnailUrl String?
+  order        Int            @default(0)
+  createdAt    DateTime       @default(now())
 
   @@index([lessonId, order])
   @@map("training_lesson_videos")

@@ -54,7 +54,11 @@ export default async function AgentTrainingLessonPage({
         id: lesson.id,
         title: lesson.title,
         description: lesson.description,
-        videos: lesson.videos.map((v) => ({ id: v.id, url: v.url })),
+        videos: lesson.videos.map((v) => ({
+          id: v.id,
+          url: v.url,
+          thumbnailUrl: v.thumbnailUrl,
+        })),
         images: lesson.images.map((img) => ({ id: img.id, url: img.url })),
         moduleTitle: lesson.module.title,
       }}

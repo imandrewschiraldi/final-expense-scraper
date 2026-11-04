@@ -14,12 +14,14 @@ export async function POST(
   const { title, description, videos, images } = body as {
     title?: string;
     description?: string;
-    videos?: string[];
+    videos?: { url: string; thumbnailUrl?: string | null }[];
     images?: string[];
   };
-  const videoUrls = (videos ?? []).map((v) => v.trim()).filter(Boolean);
+  const lessonVideos = (videos ?? [])
+    .map((v) => ({ url: v.url.trim(), thumbnailUrl: v.thumbnailUrl ?? null }))
+    .filter((v) => v.url.length > 0);
 
-  if (!title || (videoUrls.length === 0 && !images?.length)) {
+  if (!title || (lessonVideos.length === 0 && !images?.length)) {
     return NextResponse.json(
       {
         error:
@@ -41,7 +43,9 @@ export async function POST(
       description: description ?? null,
       order: (maxOrder._max.order ?? 0) + 1,
       images: { create: (images ?? []).map((url, i) => ({ url, order: i })) },
-      videos: { create: videoUrls.map((url, i) => ({ url, order: i })) },
+      videos: {
+        create: lessonVideos.map((v, i) => ({ ...v, order: i })),
+      },
     },
     include: {
       images: { orderBy: { order: "asc" } },

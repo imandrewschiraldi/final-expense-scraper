@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Download, X } from "lucide-react";
+import { Download, Link2, X } from "lucide-react";
 import VimeoPlayerSdk from "@vimeo/player";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +16,7 @@ type Lesson = {
   id: string;
   title: string;
   description: string | null;
-  videos: { id: string; url: string }[];
+  videos: { id: string; url: string; thumbnailUrl: string | null }[];
   images: { id: string; url: string }[];
   moduleTitle: string;
 };
@@ -271,11 +271,13 @@ function LoomPlayer({
 function VideoEntry({
   url,
   title,
+  thumbnailUrl,
   onFinished,
   onOpened,
 }: {
   url: string;
   title: string;
+  thumbnailUrl: string | null;
   onFinished: () => void;
   onOpened: () => void;
 }) {
@@ -341,18 +343,40 @@ function VideoEntry({
     // Keep the raw url as the label if it somehow doesn't parse.
   }
   return (
-    <div className="rounded-lg border border-border bg-surface2 p-4">
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={onOpened}
-        className="flex items-center justify-between gap-3 text-sm"
-      >
-        <span className="truncate text-teal-light">{label}</span>
-        <Button variant="secondary">Open Link</Button>
-      </a>
-    </div>
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onOpened}
+      className="flex items-center gap-3 rounded-lg border border-border bg-surface2 p-3 transition-colors hover:border-copper-dim-gradient"
+    >
+      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+        {thumbnailUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={thumbnailUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{
+              backgroundImage:
+                "linear-gradient(135deg, rgb(202 126 64 / 0.22) 0%, rgb(172 90 42 / 0.16) 45%, rgb(20 10 5 / 0.9) 100%)",
+            }}
+          >
+            <Link2 className="h-5 w-5 text-white/25" strokeWidth={1.5} />
+          </div>
+        )}
+      </div>
+      <span className="min-w-0 flex-1 truncate text-sm text-teal-light">
+        {label}
+      </span>
+      <Button variant="secondary" className="shrink-0">
+        Open Link
+      </Button>
+    </a>
   );
 }
 
@@ -556,6 +580,7 @@ export function TrainingLessonView({
                 key={v.id}
                 url={v.url}
                 title={lesson.title}
+                thumbnailUrl={v.thumbnailUrl}
                 onFinished={() => markVideoFinished(v.id)}
                 onOpened={() => markLinkOpened(v.id)}
               />

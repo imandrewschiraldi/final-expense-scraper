@@ -15,7 +15,8 @@ import {
 } from "@/lib/training";
 
 type LessonImage = { id: string; url: string };
-type LessonVideo = { id: string; url: string };
+type LessonVideo = { id: string; url: string; thumbnailUrl: string | null };
+type LessonVideoInput = { url: string; thumbnailUrl: string | null };
 
 type Lesson = {
   id: string;
@@ -29,7 +30,7 @@ type Lesson = {
 type LessonInput = {
   title: string;
   description: string;
-  videos: string[];
+  videos: LessonVideoInput[];
   images: string[];
 };
 
@@ -265,6 +266,100 @@ function ThumbnailPicker({
   );
 }
 
+/** A small square thumbnail picker for one video/link row — a channel's
+ *  logo, a brand mark, anything that makes that row recognizable at a
+ *  glance instead of every link reading as the same bare hostname. Only
+ *  matters for a link that falls back to an "Open Link" card; a trackable
+ *  video already has its own real thumbnail and ignores this, but it's
+ *  offered on every row since admins can't predict that from a URL alone. */
+function LinkThumbnailField({
+  url,
+  onChange,
+  onError,
+}: {
+  url: string | null;
+  onChange: (url: string | null) => void;
+  onError: (message: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return;
+    if (
+      !TRAINING_IMAGE_TYPES.includes(
+        file.type as (typeof TRAINING_IMAGE_TYPES)[number],
+      )
+    ) {
+      onError(
+        `${file.name} isn't a supported image type (PNG, JPEG, GIF, or WebP).`,
+      );
+      return;
+    }
+    if (file.size > TRAINING_IMAGE_MAX_BYTES) {
+      onError(`${file.name} is too large (8MB max).`);
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/training/images", {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "That thumbnail didn't upload.");
+      }
+      const data = (await res.json()) as { url: string };
+      onChange(data.url);
+    } catch (err) {
+      onError(
+        err instanceof Error ? err.message : "That thumbnail didn't upload.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div
+      className="group relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-dashed border-border"
+      title="Custom thumbnail for this link (e.g. a channel's profile picture)"
+    >
+      {url ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt="" className="h-full w-full object-cover" />
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            aria-label="Remove thumbnail"
+            className="absolute inset-0 flex items-center justify-center bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </>
+      ) : (
+        <label className="flex h-full w-full cursor-pointer items-center justify-center text-muted transition-colors hover:border-copper-dim-gradient hover:text-foreground">
+          <input
+            type="file"
+            accept={TRAINING_IMAGE_TYPES.join(",")}
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              handleFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          <ImagePlus className="h-4 w-4" />
+        </label>
+      )}
+    </div>
+  );
+}
+
 /** One video link — paste one (YouTube/Vimeo/Loom/a direct video file
  *  link), or upload a file straight from this device when there's no
  *  hosted link at all. An upload goes directly from the browser to Blob
@@ -272,13 +367,13 @@ function ThumbnailPicker({
  *  in this same field with the resulting URL. A lesson can hold several
  *  of these — see VideoUrlList below. */
 function VideoUrlField({
-  value,
+  video,
   onChange,
   onRemove,
   placeholder,
 }: {
-  value: string;
-  onChange: (url: string) => void;
+  video: LessonVideoInput;
+  onChange: (video: LessonVideoInput) => void;
   onRemove: () => void;
   placeholder: string;
 }) {
@@ -310,7 +405,7 @@ function VideoUrlField({
         access: "public",
         handleUploadUrl: "/api/admin/training/video",
       });
-      onChange(blob.url);
+      onChange({ ...video, url: blob.url });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "That video didn't upload.",
@@ -342,11 +437,16 @@ function VideoUrlField({
       }}
     >
       <div className="flex gap-2">
+        <LinkThumbnailField
+          url={video.thumbnailUrl}
+          onChange={(thumbnailUrl) => onChange({ ...video, thumbnailUrl })}
+          onError={setError}
+        />
         <div className="flex-1">
           <Input
             placeholder={placeholder}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
+            value={video.url}
+            onChange={(e) => onChange({ ...video, url: e.target.value })}
           />
         </div>
         <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-border px-3 text-xs text-muted transition-colors hover:border-copper-dim-gradient hover:text-foreground">
@@ -377,7 +477,8 @@ function VideoUrlField({
         </button>
       </div>
       <p className="text-[11px] text-muted">
-        Or drag and drop a video file here.
+        Or drag and drop a video file here. Add a thumbnail (left) to make this
+        link&rsquo;s card stand out — e.g. a channel&rsquo;s profile picture.
       </p>
       {error && <p className="text-xs text-red-light">{error}</p>}
     </div>
@@ -393,26 +494,29 @@ function VideoUrlList({
   videos,
   onChange,
 }: {
-  videos: string[];
-  onChange: (urls: string[]) => void;
+  videos: LessonVideoInput[];
+  onChange: (videos: LessonVideoInput[]) => void;
 }) {
-  const rows = videos.length > 0 ? videos : [""];
+  const rows = videos.length > 0 ? videos : [{ url: "", thumbnailUrl: null }];
   return (
     <div className="space-y-2">
-      {rows.map((url, i) => (
+      {rows.map((video, i) => (
         <VideoUrlField
           key={i}
-          value={url}
+          video={video}
           placeholder={
             i === 0
               ? "Video URL (YouTube, Vimeo, Loom, or a direct video file link) — optional if you add photos"
               : "Another link (e.g. a YouTube channel to follow) — optional"
           }
-          onChange={(v) => onChange(rows.map((u, idx) => (idx === i ? v : u)))}
+          onChange={(v) => onChange(rows.map((r, idx) => (idx === i ? v : r)))}
           onRemove={() => onChange(rows.filter((_, idx) => idx !== i))}
         />
       ))}
-      <Button variant="ghost" onClick={() => onChange([...rows, ""])}>
+      <Button
+        variant="ghost"
+        onClick={() => onChange([...rows, { url: "", thumbnailUrl: null }])}
+      >
         + Add another link
       </Button>
     </div>
@@ -428,13 +532,13 @@ function LessonForm({
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [videos, setVideos] = useState<string[]>([]);
+  const [videos, setVideos] = useState<LessonVideoInput[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const canSubmit =
     title.trim() !== "" &&
-    (videos.some((v) => v.trim() !== "") || images.length > 0);
+    (videos.some((v) => v.url.trim() !== "") || images.length > 0);
 
   return (
     <div className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
@@ -493,7 +597,9 @@ function LessonRow({
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(lesson.title);
   const [description, setDescription] = useState(lesson.description ?? "");
-  const [videos, setVideos] = useState(lesson.videos.map((v) => v.url));
+  const [videos, setVideos] = useState<LessonVideoInput[]>(
+    lesson.videos.map((v) => ({ url: v.url, thumbnailUrl: v.thumbnailUrl })),
+  );
   const [images, setImages] = useState(lesson.images.map((img) => img.url));
   const [saving, setSaving] = useState(false);
   // Tracks which single item (a video or image id) is mid-removal, so
@@ -514,7 +620,7 @@ function LessonRow({
 
   const canSubmit =
     title.trim() !== "" &&
-    (videos.some((v) => v.trim() !== "") || images.length > 0);
+    (videos.some((v) => v.url.trim() !== "") || images.length > 0);
 
   if (editing) {
     return (
@@ -563,6 +669,14 @@ function LessonRow({
         )}
         {lesson.videos.map((v) => (
           <div key={v.id} className="mt-1 flex items-center gap-1.5">
+            {v.thumbnailUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={v.thumbnailUrl}
+                alt=""
+                className="h-5 w-5 shrink-0 rounded object-cover"
+              />
+            )}
             <p className="truncate text-xs text-teal-light">{v.url}</p>
             <button
               type="button"
@@ -717,7 +831,7 @@ export function TrainingPanel({
   async function removeLessonVideo(lesson: Lesson, videoId: string) {
     const videos = lesson.videos
       .filter((v) => v.id !== videoId)
-      .map((v) => v.url);
+      .map((v) => ({ url: v.url, thumbnailUrl: v.thumbnailUrl }));
     await fetch(`/api/admin/training/lessons/${lesson.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

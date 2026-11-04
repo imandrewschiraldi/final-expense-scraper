@@ -14,7 +14,7 @@ export async function PATCH(
   const { title, description, videos, images } = body as {
     title?: string;
     description?: string;
-    videos?: string[];
+    videos?: { url: string; thumbnailUrl?: string | null }[];
     images?: string[];
   };
 
@@ -31,9 +31,12 @@ export async function PATCH(
             videos: {
               deleteMany: {},
               create: videos
-                .map((v) => v.trim())
-                .filter(Boolean)
-                .map((url, i) => ({ url, order: i })),
+                .map((v) => ({
+                  url: v.url.trim(),
+                  thumbnailUrl: v.thumbnailUrl ?? null,
+                }))
+                .filter((v) => v.url.length > 0)
+                .map((v, i) => ({ ...v, order: i })),
             },
           }
         : {}),
