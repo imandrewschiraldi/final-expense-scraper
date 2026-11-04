@@ -12,18 +12,16 @@ const POLL_MS = 20000;
 type Ranking = { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number };
 type PodiumSlot = Ranking | { id: string; placeholder: true };
 
-// Compact one-decimal style ("$80.3K") rather than full currency — matches
-// the Arena reference everywhere a dollar figure shows, podium and list
-// alike.
-function formatCompactAP(value: number) {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-  return `$${Math.round(value)}`;
+// Full dollar figure with thousands separators ("$11,453") rather than a
+// rounded "$11.5K" — the agent wants to see their exact annual premium,
+// not a compacted approximation.
+function formatAP(value: number) {
+  return `$${Math.round(value).toLocaleString("en-US")}`;
 }
 
 function AnimatedAP({ value, className }: { value: number; className?: string }) {
   const animated = useCountUp(value);
-  return <span className={className}>{formatCompactAP(animated ?? 0)}</span>;
+  return <span className={className}>{formatAP(animated ?? 0)}</span>;
 }
 
 // This whole stage is a fixed dark "arena" by design, regardless of the
@@ -44,7 +42,7 @@ const RANK_THEME = [
     avatarSize: "h-20 w-20 sm:h-28 sm:w-28",
     avatarPixels: 224,
     nameSize: "text-base sm:text-xl",
-    apSize: "text-2xl sm:text-4xl",
+    apSize: "text-xl sm:text-3xl",
     delay: 0.18,
   },
   {
@@ -56,7 +54,7 @@ const RANK_THEME = [
     avatarSize: "h-16 w-16 sm:h-24 sm:w-24",
     avatarPixels: 192,
     nameSize: "text-sm sm:text-lg",
-    apSize: "text-xl sm:text-3xl",
+    apSize: "text-lg sm:text-2xl",
     delay: 0,
   },
   {
@@ -68,7 +66,7 @@ const RANK_THEME = [
     avatarSize: "h-16 w-16 sm:h-24 sm:w-24",
     avatarPixels: 192,
     nameSize: "text-sm sm:text-lg",
-    apSize: "text-xl sm:text-3xl",
+    apSize: "text-lg sm:text-2xl",
     delay: 0.09,
   },
 ] as const;
@@ -380,21 +378,25 @@ export function LeaderboardPanel() {
                               </div>
                             )}
                           </div>
+
+                          {/* Name, AP and policy count now live INSIDE the
+                              card (below the avatar/badge), not in the open
+                              space underneath it — the card is taller/more
+                              rectangular to fit all three comfortably. */}
+                          {!isPlaceholder && (
+                            <div className="mt-3">
+                              <p className={cn("truncate font-bold text-white", theme.nameSize)}>{agent.name}</p>
+                              <p className={cn("mt-1 font-extrabold tracking-tight", theme.apSize)} style={{ color: theme.color, textShadow: `0 0 16px ${theme.glow}` }}>
+                                <AnimatedAP value={agent.issuedAP} />
+                              </p>
+                              <div className="mx-auto mt-1.5 w-10 border-t border-dashed" style={{ borderColor: theme.color, opacity: 0.4 }} aria-hidden="true" />
+                              <p className="mt-1.5 text-[10px] tracking-widest uppercase sm:text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                                {agent.issuedCount} {agent.issuedCount === 1 ? "Policy" : "Policies"}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
-
-                      {!isPlaceholder && (
-                        <div className="mt-2.5 w-full max-w-[200px] text-center">
-                          <p className={cn("truncate font-bold text-white", theme.nameSize)}>{agent.name}</p>
-                          <p className={cn("mt-1 font-extrabold tracking-tight", theme.apSize)} style={{ color: theme.color, textShadow: `0 0 16px ${theme.glow}` }}>
-                            <AnimatedAP value={agent.issuedAP} />
-                          </p>
-                          <div className="mx-auto mt-1.5 w-10 border-t border-dashed" style={{ borderColor: theme.color, opacity: 0.4 }} aria-hidden="true" />
-                          <p className="mt-1.5 text-[10px] tracking-widest uppercase sm:text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-                            {agent.issuedCount} {agent.issuedCount === 1 ? "Policy" : "Policies"}
-                          </p>
-                        </div>
-                      )}
 
                       {/* Light-beam cone (a clipped trapezoid, not a thin line)
                           narrowing up toward the card and widening down onto
