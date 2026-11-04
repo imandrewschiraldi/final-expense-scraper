@@ -811,13 +811,16 @@ h4,
    the earlier casino/party theme. --arena-glow is set per-card via inline
    style (one keyframe serving all three rank colors instead of one per
    rank) — an inline boxShadow would override this and freeze the pulse. */
+/* Applied to the card's outer chamfered frame div now (a solid color
+   fill, not a border) — so this only needs to pulse the outer glow, not
+   an inset shadow (that lives on the separate inner "face" div). */
 @keyframes arena-pulse-glow {
   0%,
   100% {
-    box-shadow: 0 0 28px var(--arena-glow), inset 0 0 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 28px var(--arena-glow);
   }
   50% {
-    box-shadow: 0 0 56px var(--arena-glow), inset 0 0 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 56px var(--arena-glow);
   }
 }
 .arena-pulse {

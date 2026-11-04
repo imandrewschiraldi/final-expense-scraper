@@ -125,24 +125,36 @@ function Avatar({ url, name, sizeClassName, pixels = 96 }: { url: string | null;
   );
 }
 
-/** Four small L-shaped corner marks over a podium card — a common sci-fi
- *  HUD framing device, cheaper and more distinctive than an actual
- *  hexagonal card shape (which would fight the card's own rounded-rect
- *  content layout). */
+/** Two small L-shaped corner marks over a podium card's square corners —
+ *  only top-right and bottom-left get one, since top-left and
+ *  bottom-right are chamfered (see CARD_CHAMFER) and a 90° bracket has
+ *  nothing square to sit on there. */
 function CornerBrackets({ color }: { color: string }) {
-  // Offset just outside the card's own border (rather than flush at 0,0)
+  // Offset just outside the card's own edge (rather than flush at 0,0)
   // so the two don't stack into one doubled/thickened line at each
   // corner — they read as a separate accent frame floating over the edge.
   const common = "pointer-events-none absolute h-4 w-4 sm:h-5 sm:w-5";
   return (
     <>
-      <span className={cn(common, "-top-1.5 -left-1.5 border-t-2 border-l-2")} style={{ borderColor: color }} aria-hidden="true" />
       <span className={cn(common, "-top-1.5 -right-1.5 border-t-2 border-r-2")} style={{ borderColor: color }} aria-hidden="true" />
       <span className={cn(common, "-bottom-1.5 -left-1.5 border-b-2 border-l-2")} style={{ borderColor: color }} aria-hidden="true" />
-      <span className={cn(common, "-bottom-1.5 -right-1.5 border-b-2 border-r-2")} style={{ borderColor: color }} aria-hidden="true" />
     </>
   );
 }
+
+// Podium cards are chamfered, not rounded: square corners at top-right
+// and bottom-left, with top-left and bottom-right cut diagonally flat.
+// `inset` is in pixels so a thin colored "frame" div (full chamfer) can
+// sit behind a slightly inset "face" div (a couple px less chamfer) and
+// read as a border that actually follows the cut corners — a plain CSS
+// `border` is drawn on the box's rectangular edges and would just get
+// sliced off wherever clip-path cuts across it, leaving those two edges
+// with no border line at all.
+function chamferClip(size: number) {
+  return `polygon(0 ${size}px, ${size}px 0, 100% 0, 100% calc(100% - ${size}px), calc(100% - ${size}px) 100%, 0 100%)`;
+}
+const CARD_CHAMFER = 16;
+const CARD_CHAMFER_INNER = 14.5;
 
 // Dynamic "live" subtitle — always the current month, since this board no
 // longer offers a day/week/month/all-time switcher (just whatever's live
@@ -308,51 +320,66 @@ export function LeaderboardPanel() {
                         </div>
                       )}
 
-                      {/* The card itself is just the illustrated "plate" —
-                          texture, frame, avatar socket and rank badge. Name,
-                          value and the policy count sit OUTSIDE it, in the
-                          open space below, matching the reference (the
-                          bordered card never contains that text). */}
+                      {/* The card is a chamfered plate, not a rounded-rect
+                          box — square corners top-right/bottom-left, cut
+                          diagonally flat top-left/bottom-right. Two nested
+                          divs stand in for a border that actually follows
+                          those cut corners: the outer is solid theme.color
+                          clipped to the full chamfer, the inner is the real
+                          texture/content inset by 1.5px and clipped to a
+                          slightly smaller chamfer, so a 1.5px ring of the
+                          outer color shows through as the "border" — a
+                          plain CSS border would just get sliced off across
+                          the two cut corners instead of following them. */}
                       <div
-                        className={cn("relative w-full max-w-[200px] rounded-2xl p-4 pt-9 pb-7 text-center sm:p-5 sm:pt-11 sm:pb-9", theme.rank === 1 && "arena-pulse")}
+                        className={cn("relative w-full max-w-[200px] p-[1.5px]", theme.rank === 1 && "arena-pulse")}
                         style={{
-                          ...cardPattern(theme.rank, theme.color),
-                          border: `1.5px solid ${theme.color}`,
-                          boxShadow: `0 0 28px ${theme.glow}, inset 0 0 24px rgba(0,0,0,0.5)`,
+                          background: theme.color,
+                          clipPath: chamferClip(CARD_CHAMFER),
+                          boxShadow: `0 0 28px ${theme.glow}`,
                           ["--arena-glow" as string]: theme.glow,
                         }}
                       >
                         <CornerBrackets color={theme.color} />
 
-                        <div className="mx-auto w-fit">
-                          <div
-                            className={cn("relative mx-auto flex items-center justify-center rounded-full", theme.avatarSize)}
-                            style={{ border: `2.5px solid ${theme.color}`, boxShadow: `0 0 20px ${theme.glow}` }}
-                          >
-                            {isPlaceholder ? (
+                        <div
+                          className="p-4 pt-9 pb-7 text-center sm:p-5 sm:pt-11 sm:pb-9"
+                          style={{
+                            ...cardPattern(theme.rank, theme.color),
+                            clipPath: chamferClip(CARD_CHAMFER_INNER),
+                            boxShadow: "inset 0 0 24px rgba(0,0,0,0.5)",
+                          }}
+                        >
+                          <div className="mx-auto w-fit">
+                            <div
+                              className={cn("relative mx-auto flex items-center justify-center rounded-full", theme.avatarSize)}
+                              style={{ border: `2.5px solid ${theme.color}`, boxShadow: `0 0 20px ${theme.glow}` }}
+                            >
+                              {isPlaceholder ? (
+                                <div
+                                  className="flex h-[calc(100%-5px)] w-[calc(100%-5px)] items-center justify-center rounded-full border-2 border-dashed text-sm"
+                                  style={{ borderColor: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.35)" }}
+                                >
+                                  &mdash;
+                                </div>
+                              ) : (
+                                <Avatar url={agent.profileImageUrl} name={agent.name} sizeClassName="h-full w-full" pixels={theme.avatarPixels} />
+                              )}
+                            </div>
+                            {!isPlaceholder && (
                               <div
-                                className="flex h-[calc(100%-5px)] w-[calc(100%-5px)] items-center justify-center rounded-full border-2 border-dashed text-sm"
-                                style={{ borderColor: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.35)" }}
+                                className="relative z-10 mx-auto -mt-3 flex h-6 w-6 items-center justify-center text-[11px] font-extrabold sm:h-7 sm:w-7 sm:text-xs"
+                                style={{
+                                  background: theme.color,
+                                  color: "#07070C",
+                                  clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
+                                  boxShadow: `0 0 12px ${theme.glow}`,
+                                }}
                               >
-                                &mdash;
+                                {theme.rank}
                               </div>
-                            ) : (
-                              <Avatar url={agent.profileImageUrl} name={agent.name} sizeClassName="h-full w-full" pixels={theme.avatarPixels} />
                             )}
                           </div>
-                          {!isPlaceholder && (
-                            <div
-                              className="relative z-10 mx-auto -mt-3 flex h-6 w-6 items-center justify-center text-[11px] font-extrabold sm:h-7 sm:w-7 sm:text-xs"
-                              style={{
-                                background: theme.color,
-                                color: "#07070C",
-                                clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-                                boxShadow: `0 0 12px ${theme.glow}`,
-                              }}
-                            >
-                              {theme.rank}
-                            </div>
-                          )}
                         </div>
                       </div>
 
