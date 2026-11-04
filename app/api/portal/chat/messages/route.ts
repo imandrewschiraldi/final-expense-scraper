@@ -9,6 +9,7 @@ import {
 } from "@/lib/chat";
 import { openChannelFor, channelRecipientIds } from "@/lib/chatAccess";
 import { sendPushToUser } from "@/lib/push";
+import { syncGroupMePollBridge } from "@/lib/groupmePoll";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,18 @@ export async function GET(req: NextRequest) {
   );
   if (!channel)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // A POLL-mode GroupMe bridge has no bot callback to push new messages
+  // in — this channel's own normal poll cadence (every open tab already
+  // calls this route every few seconds) is what drives the sync instead,
+  // throttled inside syncGroupMePollBridge so it doesn't actually hit
+  // GroupMe on every single call.
+  const bridge = await db.chatGroupMeBridge.findUnique({
+    where: { channelId: channel.id },
+  });
+  if (bridge?.mode === "POLL") {
+    await syncGroupMePollBridge(bridge);
+  }
 
   if (req.nextUrl.searchParams.get("pinned")) {
     const pins = await db.chatMessage.findMany({

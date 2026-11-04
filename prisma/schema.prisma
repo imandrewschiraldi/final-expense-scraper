@@ -646,24 +646,54 @@ model ChatMessage {
   @@map("chat_messages")
 }
 
+/// Which GroupMe API this bridge reads from. WEBHOOK needs someone with
+/// rights to create a bot on the GroupMe group (dev.groupme.com/bots/new,
+/// limited to one callback URL per group); POLL needs only an ordinary
+/// member's own personal access token, for when nobody with bot-creation
+/// rights is available — same one-way result either way.
+enum ChatGroupMeBridgeMode {
+  WEBHOOK
+  POLL
+}
+
 /// Connects one chat channel to a GroupMe group as a one-way bridge:
 /// GroupMe posts land here as chat messages, nothing from this app is ever
-/// posted back. GroupMe's own "bot" callback carries no signature, so
-/// `webhookToken` standing in as an unguessable URL segment is what keeps
-/// the endpoint from accepting forged posts from anyone who finds it.
+/// posted back.
 model ChatGroupMeBridge {
-  id             String      @id @default(cuid())
-  channelId      String      @unique
-  channel        ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  webhookToken   String      @unique @default(cuid())
-  /// Learned from the first inbound webhook delivery, purely for display in
-  /// the admin UI ("connected to group X") — routing never depends on it,
-  /// the token in the URL already identifies the channel.
+  id           String                @id @default(cuid())
+  channelId    String                @unique
+  channel      ChatChannel           @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  mode         ChatGroupMeBridgeMode @default(WEBHOOK)
+  /// WEBHOOK mode only. GroupMe's own "bot" callback carries no signature,
+  /// so this unguessable URL segment is the entire auth check — the
+  /// endpoint from accepting forged posts from anyone who finds it.
+  webhookToken String                @unique @default(cuid())
+  /// WEBHOOK mode: learned from the first inbound delivery, purely for
+  /// display ("connected to group X") — routing never depends on it, the
+  /// token in the URL already identifies the channel.
+  /// POLL mode: required up front — the admin picks it from their own
+  /// group list when connecting, since there's no bot callback to learn
+  /// it from.
   groupMeGroupId String?
-  lastMessageAt  DateTime?
-  createdAt      DateTime    @default(now())
-  createdById    String?
-  createdBy      User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  /// POLL mode only — a member's personal GroupMe access token, used
+  /// purely to read (GET .../groups/:id/messages), never to post. Never
+  /// returned by the admin API once set; a bridge's own page only ever
+  /// reports whether one is present.
+  accessToken String?
+  /// POLL mode only — the newest GroupMe message id already relayed, so
+  /// the next poll asks for `after_id=<this>` instead of re-walking the
+  /// whole history.
+  lastSyncedMessageId String?
+  /// POLL mode only — throttles actual GroupMe API calls to roughly once
+  /// per CHAT_GROUPME_POLL_MIN_INTERVAL_MS regardless of how often a
+  /// channel's own messages are polled by open clients (GroupMe publishes
+  /// no rate limit for this endpoint, so this is a deliberately
+  /// conservative floor rather than a documented requirement).
+  lastPolledAt  DateTime?
+  lastMessageAt DateTime?
+  createdAt     DateTime    @default(now())
+  createdById   String?
+  createdBy     User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("chat_groupme_bridges")
 }
