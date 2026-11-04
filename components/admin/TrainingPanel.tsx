@@ -1,11 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { ImagePlus, X } from "lucide-react";
+import { upload } from "@vercel/blob/client";
+import { ImagePlus, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { TRAINING_IMAGE_MAX_BYTES, TRAINING_IMAGE_TYPES } from "@/lib/training";
+import {
+  TRAINING_IMAGE_MAX_BYTES,
+  TRAINING_IMAGE_TYPES,
+  TRAINING_VIDEO_MAX_BYTES,
+  TRAINING_VIDEO_TYPES,
+} from "@/lib/training";
 
 type LessonImage = { id: string; url: string };
 
@@ -160,6 +166,87 @@ function ImagePicker({
   );
 }
 
+/** The lesson video field — paste a link (YouTube/Vimeo/Loom/a direct
+ *  video file link), or upload a file straight from this device when
+ *  there's no hosted link at all. An upload goes directly from the
+ *  browser to Blob storage (see app/api/admin/training/video/route.ts)
+ *  and simply fills in the same field with the resulting URL, so the
+ *  lesson still only ever stores one videoUrl regardless of which path
+ *  was used. */
+function VideoUrlField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return;
+    if (
+      !TRAINING_VIDEO_TYPES.includes(
+        file.type as (typeof TRAINING_VIDEO_TYPES)[number],
+      )
+    ) {
+      setError(
+        `${file.name} isn't a supported video type (MP4, WebM, or MOV).`,
+      );
+      return;
+    }
+    if (file.size > TRAINING_VIDEO_MAX_BYTES) {
+      setError(`${file.name} is too large (300MB max).`);
+      return;
+    }
+
+    setError(null);
+    setUploading(true);
+    try {
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/admin/training/video",
+      });
+      onChange(blob.url);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "That video didn't upload.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <Input
+            placeholder="Video URL (YouTube, Vimeo, Loom, or a direct video file link) — optional if you add photos"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        </div>
+        <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-border px-3 text-xs text-muted transition-colors hover:border-copper-dim-gradient hover:text-foreground">
+          <input
+            type="file"
+            accept={TRAINING_VIDEO_TYPES.join(",")}
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              handleFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          <Upload className="h-3.5 w-3.5" />
+          {uploading ? "Uploading..." : "Upload"}
+        </label>
+      </div>
+      {error && <p className="text-xs text-red-light">{error}</p>}
+    </div>
+  );
+}
+
 function LessonForm({
   onSubmit,
   onCancel,
@@ -183,11 +270,7 @@ function LessonForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-      <Input
-        placeholder="Video URL (YouTube, Vimeo, Loom, or a direct video file link) — optional if you add photos"
-        value={videoUrl}
-        onChange={(e) => setVideoUrl(e.target.value)}
-      />
+      <VideoUrlField value={videoUrl} onChange={setVideoUrl} />
       <TextArea
         placeholder="Description (optional)"
         value={description}
@@ -263,11 +346,7 @@ function LessonRow({
     return (
       <div className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-        <Input
-          placeholder="Video URL (YouTube, Vimeo, Loom, or a direct video file link) — optional if you add photos"
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-        />
+        <VideoUrlField value={videoUrl} onChange={setVideoUrl} />
         <TextArea value={description} onChange={setDescription} />
         <div>
           <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
