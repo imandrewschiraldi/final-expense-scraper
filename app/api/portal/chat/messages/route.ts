@@ -24,6 +24,7 @@ const MESSAGE_SELECT = {
   editedAt: true,
   pinnedAt: true,
   externalAvatarUrl: true,
+  externalId: true,
   reactions: { select: { emoji: true, userId: true } },
   // Live-joined rather than denormalised like authorName — an avatar should
   // follow an agent's current photo everywhere, including their old
@@ -35,6 +36,7 @@ type Row = {
   authorId: string | null;
   authorName: string;
   externalAvatarUrl: string | null;
+  externalId: string | null;
   reactions: { emoji: string; userId: string }[];
   author: { profileImageUrl: string | null; role: string } | null;
 } & Record<string, unknown>;
@@ -58,6 +60,7 @@ function shape(rows: Row[], me: string) {
       authorId,
       authorName,
       externalAvatarUrl,
+      externalId,
       ...rest
     }) => {
       const byEmoji = new Map<
@@ -78,14 +81,20 @@ function shape(rows: Row[], me: string) {
       // messages sent before it was cleaned up — relabelled the same way an
       // admin's own name is, rather than shown as if a real agent sent it.
       const isAdmin = author?.role === "ADMIN" || authorName === "Test Agent";
-      const isSystem = authorId === null;
+      // A bridged post (GroupMe) is authorId-null too, but it's a real
+      // person, not the in-app Sales Bot — externalId is only ever set on
+      // a bridged row, so it's what tells the two apart. A bridged post
+      // with no avatar of its own (the GroupMe member never set a photo)
+      // gets null here, same as any other photo-less sender — the client
+      // already falls back to initials for that, which is what GroupMe's
+      // own UI shows them as too. The Sales Bot mark is reserved for an
+      // actual in-app system post (externalId null).
+      const isBridged = externalId !== null;
+      const isSystem = authorId === null && !isBridged;
       return {
         ...rest,
         authorId,
         authorName: isAdmin ? "Admin" : authorName,
-        // A bridged post (GroupMe) carries its own avatar and takes priority
-        // over the generic Sales Bot mark that any other authorId-null
-        // (in-app system) post falls back to.
         authorProfileImageUrl: isAdmin
           ? ADMIN_MARK_URL
           : externalAvatarUrl

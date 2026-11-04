@@ -18,10 +18,15 @@ import { sendPushToUser } from "@/lib/push";
 const GROUPME_API = "https://api.groupme.com/v3";
 
 /** Don't actually hit GroupMe more than once per this many ms, no matter
- *  how often an open Team Chat tab polls our own messages endpoint —
- *  GroupMe publishes no rate limit for this endpoint, so this is a
- *  deliberately conservative floor, not a documented requirement. */
-export const CHAT_GROUPME_POLL_MIN_INTERVAL_MS = 15_000;
+ *  how often an open Team Chat tab polls our own messages endpoint, or how
+ *  often the groupme-sync cron fires — GroupMe publishes no rate limit for
+ *  this endpoint, so this is a deliberately conservative floor, not a
+ *  documented requirement. Kept short (rather than matching the cron's own
+ *  1-minute floor) so a channel someone actually has open stays close to
+ *  real-time — this throttle is what caps the on-read trigger in
+ *  messages/route.ts, not the cron, which already only runs once a
+ *  minute. */
+export const CHAT_GROUPME_POLL_MIN_INTERVAL_MS = 5_000;
 
 export type GroupMeGroupOption = { id: string; name: string };
 
@@ -74,13 +79,23 @@ export async function verifyGroupMeAccess(
   }
 }
 
-/** New messages since `afterId` (ascending — GroupMe's documented-safe
- *  pagination direction for polling; `since_id` can skip messages if more
- *  than 20 landed between polls, `after_id` cannot). A 304 means nothing
- *  new, not an error. `afterId` null means "first sync" — GroupMe treats
- *  an absent cursor as "most recent page," so this intentionally starts a
- *  newly connected bridge from whatever's current rather than relaying a
- *  group's entire history. */
+/** New messages since `afterId`, always returned oldest-first — the order
+ *  both the relay loop (so messages land with ascending createdAt, same
+ *  order they were actually sent in) and the lastSyncedMessageId cursor
+ *  (so it ends up pointing at the actual newest id, not whichever one
+ *  happened to be processed last) depend on.
+ *
+ *  With `after_id` set, GroupMe already returns ascending order (its
+ *  documented-safe pagination direction for polling — `since_id` can skip
+ *  messages if more than 20 landed between polls, `after_id` cannot).
+ *  Without it — `afterId` null means "first sync," GroupMe treats an
+ *  absent cursor as "most recent page" rather than a newly connected
+ *  bridge relaying a group's entire history — GroupMe's default listing
+ *  is newest-first (the same convention this app's own non-incremental
+ *  message poll follows, see messages/route.ts's own `rows.reverse()`),
+ *  so that case is reversed here before returning.
+ *
+ *  A 304 means nothing new, not an error. */
 async function fetchNewGroupMeMessages(
   accessToken: string,
   groupId: string,
@@ -94,9 +109,10 @@ async function fetchNewGroupMeMessages(
   if (res.status === 304) return [];
   if (!res.ok) throw new Error(`GroupMe returned ${res.status}.`);
   const data = (await res.json()) as { response?: { messages?: unknown[] } };
-  return Array.isArray(data.response?.messages)
+  const messages = Array.isArray(data.response?.messages)
     ? (data.response.messages as GroupMeCallback[])
     : [];
+  return afterId ? messages : messages.reverse();
 }
 
 type PollBridge = {
@@ -213,4 +229,25 @@ export async function syncGroupMePollBridge(bridge: PollBridge): Promise<void> {
       ...(relayedAny ? { lastMessageAt: new Date() } : {}),
     },
   });
+}
+
+/** Every POLL-mode bridge, synced in turn — called from the groupme-sync
+ *  cron (app/api/cron/groupme-sync) so messages keep arriving (at the
+ *  cron's own 1-minute floor, the fastest Vercel Cron supports) even when
+ *  nobody has the channel open to trigger the faster on-read sync in
+ *  messages/route.ts. Sequential rather than Promise.all — there's no
+ *  reason to burst multiple bridges' requests at GroupMe at once, and
+ *  this agency-scale deployment typically has only one or two bridges
+ *  anyway. */
+export async function syncAllGroupMePollBridges(): Promise<void> {
+  const bridges = await db.chatGroupMeBridge.findMany({
+    where: {
+      mode: "POLL",
+      accessToken: { not: null },
+      groupMeGroupId: { not: null },
+    },
+  });
+  for (const bridge of bridges) {
+    await syncGroupMePollBridge(bridge);
+  }
 }
