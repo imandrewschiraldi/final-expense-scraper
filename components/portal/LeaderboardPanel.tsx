@@ -9,7 +9,13 @@ import { useCountUp } from "@/lib/useCountUp";
 
 const POLL_MS = 20000;
 
-type Ranking = { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number };
+type Ranking = {
+  id: string;
+  name: string;
+  profileImageUrl: string | null;
+  issuedAP: number;
+  issuedCount: number;
+};
 type PodiumSlot = Ranking | { id: string; placeholder: true };
 
 // Full dollar figure with thousands separators ("$11,453") rather than a
@@ -19,7 +25,13 @@ function formatAP(value: number) {
   return `$${Math.round(value).toLocaleString("en-US")}`;
 }
 
-function AnimatedAP({ value, className }: { value: number; className?: string }) {
+function AnimatedAP({
+  value,
+  className,
+}: {
+  value: number;
+  className?: string;
+}) {
   const animated = useCountUp(value);
   return <span className={className}>{formatAP(animated ?? 0)}</span>;
 }
@@ -105,17 +117,37 @@ function initials(name: string) {
 // would just hand the browser whatever resolution was originally uploaded
 // and let it naively scale that, which is what was reading as blurry at
 // the podium's larger avatar sizes.
-function Avatar({ url, name, sizeClassName, pixels = 96 }: { url: string | null; name: string; sizeClassName: string; pixels?: number }) {
+function Avatar({
+  url,
+  name,
+  sizeClassName,
+  pixels = 96,
+}: {
+  url: string | null;
+  name: string;
+  sizeClassName: string;
+  pixels?: number;
+}) {
   // Only for a URL next/image is actually configured to optimize (see
   // lib/profileImage.ts) — anything else throws at render, and this is a
   // shared page everyone views, so one entrant's bad URL would otherwise
   // crash it for the whole agency, not just that one account.
   const src = optimizableImageUrl(url);
   return src ? (
-    <Image src={src} alt="" width={pixels} height={pixels} quality={90} className={cn("shrink-0 rounded-full object-cover", sizeClassName)} />
+    <Image
+      src={src}
+      alt=""
+      width={pixels}
+      height={pixels}
+      quality={90}
+      className={cn("shrink-0 rounded-full object-cover", sizeClassName)}
+    />
   ) : (
     <div
-      className={cn("flex shrink-0 items-center justify-center rounded-full text-base font-bold sm:text-xl", sizeClassName)}
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full text-base font-bold sm:text-xl",
+        sizeClassName,
+      )}
       style={{ backgroundColor: "#11131D", color: TEXT }}
     >
       {initials(name)}
@@ -132,10 +164,43 @@ function CornerBrackets({ color }: { color: string }) {
   // so the two don't stack into one doubled/thickened line at each
   // corner — they read as a separate accent frame floating over the edge.
   const common = "pointer-events-none absolute h-4 w-4 sm:h-5 sm:w-5";
+  // The chamfered corners (top-left, bottom-right) get a short diagonal
+  // tick parallel to the cut instead of a 90° bracket — there's no right
+  // angle there for an L-shape to sit on.
+  const tick = "pointer-events-none absolute h-[2px] w-5 sm:w-6";
+  const tickStyle = { background: color, boxShadow: `0 0 6px ${color}` };
   return (
     <>
-      <span className={cn(common, "-top-1.5 -right-1.5 border-t-2 border-r-2")} style={{ borderColor: color }} aria-hidden="true" />
-      <span className={cn(common, "-bottom-1.5 -left-1.5 border-b-2 border-l-2")} style={{ borderColor: color }} aria-hidden="true" />
+      <span
+        className={cn(common, "-top-1.5 -right-1.5 border-t-2 border-r-2")}
+        style={{ borderColor: color }}
+        aria-hidden="true"
+      />
+      <span
+        className={cn(common, "-bottom-1.5 -left-1.5 border-b-2 border-l-2")}
+        style={{ borderColor: color }}
+        aria-hidden="true"
+      />
+      <span
+        className={tick}
+        style={{
+          ...tickStyle,
+          top: -2,
+          left: -2,
+          transform: "translate(-50%, -50%) rotate(-45deg)",
+        }}
+        aria-hidden="true"
+      />
+      <span
+        className={tick}
+        style={{
+          ...tickStyle,
+          bottom: -2,
+          right: -2,
+          transform: "translate(50%, 50%) rotate(-45deg)",
+        }}
+        aria-hidden="true"
+      />
     </>
   );
 }
@@ -158,7 +223,10 @@ const CARD_CHAMFER_INNER = 14.5;
 // longer offers a day/week/month/all-time switcher (just whatever's live
 // right now).
 function currentMonthYear() {
-  return new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  return new Date().toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function LeaderboardPanel() {
@@ -181,7 +249,9 @@ export function LeaderboardPanel() {
         .then(async (res) => {
           if (!res.ok) {
             const body = await res.json().catch(() => null);
-            throw new Error(body?.error ?? `Failed to load leaderboard (${res.status})`);
+            throw new Error(
+              body?.error ?? `Failed to load leaderboard (${res.status})`,
+            );
           }
           return res.json();
         })
@@ -193,7 +263,9 @@ export function LeaderboardPanel() {
         })
         .catch((err) => {
           if (cancelled) return;
-          setLoadError(err instanceof Error ? err.message : "Failed to load leaderboard.");
+          setLoadError(
+            err instanceof Error ? err.message : "Failed to load leaderboard.",
+          );
           setLoading(false);
         });
     }
@@ -206,7 +278,10 @@ export function LeaderboardPanel() {
     };
   }, []);
 
-  const top3: PodiumSlot[] = Array.from({ length: 3 }, (_, i) => rankings[i] ?? { id: `empty-${i}`, placeholder: true });
+  const top3: PodiumSlot[] = Array.from(
+    { length: 3 },
+    (_, i) => rankings[i] ?? { id: `empty-${i}`, placeholder: true },
+  );
   const rest = rankings.slice(3);
 
   return (
@@ -219,18 +294,27 @@ export function LeaderboardPanel() {
             never hidden behind a bare loading line. */}
         <div
           className="relative overflow-hidden rounded-2xl px-3 pt-10 pb-8 sm:px-10"
-          style={{ background: "radial-gradient(ellipse 90% 70% at 50% 0%, #241036 0%, #120a1e 42%, #050308 100%)" }}
+          style={{
+            background:
+              "radial-gradient(ellipse 90% 70% at 50% 0%, #241036 0%, #120a1e 42%, #050308 100%)",
+          }}
         >
           {/* Dense cyberpunk motherboard texture across the whole stage —
               layered microgrid + bus-line grid + diagonal trace accents +
               multi-color solder-point dots, standing in for the reference's
               PCB-trace background without a hand-drawn image asset. */}
-          <div className="arena-circuit pointer-events-none absolute inset-0" aria-hidden="true" />
+          <div
+            className="arena-circuit pointer-events-none absolute inset-0"
+            aria-hidden="true"
+          />
 
           {/* Perspective grid floor, confined to roughly where the podium
               sits so it reads as the stage's own ground rather than
               bleeding behind the Hall of Elites list too. */}
-          <div className="arena-floor pointer-events-none absolute inset-x-0 bottom-0 h-[58%]" aria-hidden="true" />
+          <div
+            className="arena-floor pointer-events-none absolute inset-x-0 bottom-0 h-[58%]"
+            aria-hidden="true"
+          />
 
           {/* Title block — "THE ARENA" as a cyan-to-white-to-magenta
               gradient fill (bg-clip-text) rather than flat white, matching
@@ -241,7 +325,8 @@ export function LeaderboardPanel() {
             <h1
               className="font-bungee bg-clip-text text-4xl tracking-tight text-transparent sm:text-6xl md:text-7xl"
               style={{
-                backgroundImage: "linear-gradient(90deg, #3AD6FF 0%, #FFFFFF 50%, #FF3BA0 100%)",
+                backgroundImage:
+                  "linear-gradient(90deg, #3AD6FF 0%, #FFFFFF 50%, #FF3BA0 100%)",
                 filter: "drop-shadow(0 0 20px rgba(255,255,255,0.4))",
               }}
             >
@@ -251,20 +336,38 @@ export function LeaderboardPanel() {
               className="flex items-center gap-2 text-[11px] font-bold tracking-[0.35em] uppercase sm:text-sm"
               style={{ color: "rgba(255,255,255,0.5)" }}
             >
-              <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
-                <span className="absolute inset-0 animate-ping rounded-full" style={{ background: "#3AD6FF", opacity: 0.6 }} />
-                <span className="relative h-2 w-2 rounded-full" style={{ background: "#3AD6FF", boxShadow: "0 0 8px #3AD6FF" }} />
+              <span
+                className="relative flex h-2 w-2 shrink-0"
+                aria-hidden="true"
+              >
+                <span
+                  className="absolute inset-0 animate-ping rounded-full"
+                  style={{ background: "#3AD6FF", opacity: 0.6 }}
+                />
+                <span
+                  className="relative h-2 w-2 rounded-full"
+                  style={{
+                    background: "#3AD6FF",
+                    boxShadow: "0 0 8px #3AD6FF",
+                  }}
+                />
               </span>
               [ Live Standings &mdash; {currentMonthYear()} ]
             </p>
           </div>
 
           {loading ? (
-            <p className="relative py-10 text-center text-sm" style={{ color: TEXT }}>
+            <p
+              className="relative py-10 text-center text-sm"
+              style={{ color: TEXT }}
+            >
               Loading...
             </p>
           ) : loadError ? (
-            <p className="relative py-10 text-center text-sm" style={{ color: "#FF8A8A" }}>
+            <p
+              className="relative py-10 text-center text-sm"
+              style={{ color: "#FF8A8A" }}
+            >
               {loadError}
             </p>
           ) : (
@@ -278,7 +381,11 @@ export function LeaderboardPanel() {
                       key={agent.id}
                       initial={{ opacity: 0, y: 24 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.45, delay: theme.delay, ease: "easeOut" }}
+                      transition={{
+                        duration: 0.45,
+                        delay: theme.delay,
+                        ease: "easeOut",
+                      }}
                       className={cn(
                         "relative flex min-w-0 flex-1 flex-col items-center",
                         theme.order,
@@ -292,12 +399,16 @@ export function LeaderboardPanel() {
                           light — matches the reference's "portal" above the
                           gold card. */}
                       {theme.rank === 1 && !isPlaceholder && (
-                        <div className="relative mb-0.5 flex flex-col items-center" aria-hidden="true">
+                        <div
+                          className="relative mb-0.5 flex flex-col items-center"
+                          aria-hidden="true"
+                        >
                           <div
                             className="h-7 w-10 sm:h-10 sm:w-14"
                             style={{
                               background: `linear-gradient(to top, ${theme.color}, transparent)`,
-                              clipPath: "polygon(38% 100%, 62% 100%, 100% 0%, 0% 0%)",
+                              clipPath:
+                                "polygon(38% 100%, 62% 100%, 100% 0%, 0% 0%)",
                               opacity: 0.6,
                             }}
                           />
@@ -306,13 +417,18 @@ export function LeaderboardPanel() {
                               className="arena-rays absolute inset-0"
                               style={{
                                 background: `repeating-conic-gradient(${theme.color}66 0deg 4deg, transparent 4deg 18deg)`,
-                                maskImage: "radial-gradient(ellipse, transparent 30%, black 40%, black 58%, transparent 68%)",
-                                WebkitMaskImage: "radial-gradient(ellipse, transparent 30%, black 40%, black 58%, transparent 68%)",
+                                maskImage:
+                                  "radial-gradient(ellipse, transparent 30%, black 40%, black 58%, transparent 68%)",
+                                WebkitMaskImage:
+                                  "radial-gradient(ellipse, transparent 30%, black 40%, black 58%, transparent 68%)",
                               }}
                             />
                             <div
                               className="absolute inset-0 m-auto h-5 w-24 rounded-full sm:h-7 sm:w-32"
-                              style={{ border: `1.5px solid ${theme.color}`, boxShadow: `0 0 24px ${theme.glow}, inset 0 0 16px ${theme.glow}` }}
+                              style={{
+                                border: `1.5px solid ${theme.color}`,
+                                boxShadow: `0 0 24px ${theme.glow}, inset 0 0 16px ${theme.glow}`,
+                              }}
                             />
                           </div>
                         </div>
@@ -328,73 +444,127 @@ export function LeaderboardPanel() {
                           slightly smaller chamfer, so a 1.5px ring of the
                           outer color shows through as the "border" — a
                           plain CSS border would just get sliced off across
-                          the two cut corners instead of following them. */}
-                      <div
-                        className={cn("relative w-full max-w-[200px] p-[1.5px]", theme.rank === 1 && "arena-pulse")}
-                        style={{
-                          background: theme.color,
-                          clipPath: chamferClip(CARD_CHAMFER),
-                          boxShadow: `0 0 28px ${theme.glow}`,
-                          ["--arena-glow" as string]: theme.glow,
-                        }}
-                      >
+                          the two cut corners instead of following them.
+                          CornerBrackets live in THIS outer (unclipped)
+                          wrapper, not inside the chamfered frame div below —
+                          clip-path clips its whole subtree, so brackets
+                          offset outside the frame via negative insets would
+                          otherwise just get cut away along with everything
+                          else past the chamfer edge. */}
+                      <div className="relative w-full max-w-[200px]">
                         <CornerBrackets color={theme.color} />
-
                         <div
-                          className="p-4 pt-9 pb-7 text-center sm:p-5 sm:pt-11 sm:pb-9"
+                          className={cn(
+                            "p-[1.5px]",
+                            theme.rank === 1 && "arena-pulse",
+                          )}
                           style={{
-                            ...cardPattern(theme.rank, theme.color),
-                            clipPath: chamferClip(CARD_CHAMFER_INNER),
-                            boxShadow: "inset 0 0 24px rgba(0,0,0,0.5)",
+                            background: theme.color,
+                            clipPath: chamferClip(CARD_CHAMFER),
+                            boxShadow: `0 0 28px ${theme.glow}`,
+                            ["--arena-glow" as string]: theme.glow,
                           }}
                         >
-                          <div className="mx-auto w-fit">
-                            <div
-                              className={cn("relative mx-auto flex items-center justify-center rounded-full", theme.avatarSize)}
-                              style={{ border: `2.5px solid ${theme.color}`, boxShadow: `0 0 20px ${theme.glow}` }}
-                            >
-                              {isPlaceholder ? (
-                                <div
-                                  className="flex h-[calc(100%-5px)] w-[calc(100%-5px)] items-center justify-center rounded-full border-2 border-dashed text-sm"
-                                  style={{ borderColor: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.35)" }}
-                                >
-                                  &mdash;
-                                </div>
-                              ) : (
-                                <Avatar url={agent.profileImageUrl} name={agent.name} sizeClassName="h-full w-full" pixels={theme.avatarPixels} />
-                              )}
-                            </div>
-                            {!isPlaceholder && (
+                          <div
+                            className="p-4 pt-9 pb-7 text-center sm:p-5 sm:pt-11 sm:pb-9"
+                            style={{
+                              ...cardPattern(theme.rank, theme.color),
+                              clipPath: chamferClip(CARD_CHAMFER_INNER),
+                              boxShadow: "inset 0 0 24px rgba(0,0,0,0.5)",
+                            }}
+                          >
+                            <div className="mx-auto w-fit">
                               <div
-                                className="relative z-10 mx-auto -mt-3 flex h-6 w-6 items-center justify-center text-[11px] font-extrabold sm:h-7 sm:w-7 sm:text-xs"
+                                className={cn(
+                                  "relative mx-auto flex items-center justify-center rounded-full",
+                                  theme.avatarSize,
+                                )}
                                 style={{
-                                  background: theme.color,
-                                  color: "#07070C",
-                                  clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-                                  boxShadow: `0 0 12px ${theme.glow}`,
+                                  border: `2.5px solid ${theme.color}`,
+                                  boxShadow: `0 0 20px ${theme.glow}`,
                                 }}
                               >
-                                {theme.rank}
+                                {isPlaceholder ? (
+                                  <div
+                                    className="flex h-[calc(100%-5px)] w-[calc(100%-5px)] items-center justify-center rounded-full border-2 border-dashed text-sm"
+                                    style={{
+                                      borderColor: "rgba(255,255,255,0.2)",
+                                      color: "rgba(255,255,255,0.35)",
+                                    }}
+                                  >
+                                    &mdash;
+                                  </div>
+                                ) : (
+                                  <Avatar
+                                    url={agent.profileImageUrl}
+                                    name={agent.name}
+                                    sizeClassName="h-full w-full"
+                                    pixels={theme.avatarPixels}
+                                  />
+                                )}
                               </div>
-                            )}
-                          </div>
+                              {!isPlaceholder && (
+                                <div
+                                  className="relative z-10 mx-auto -mt-3 flex h-6 w-6 items-center justify-center text-[11px] font-extrabold sm:h-7 sm:w-7 sm:text-xs"
+                                  style={{
+                                    background: theme.color,
+                                    color: "#07070C",
+                                    clipPath:
+                                      "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
+                                    boxShadow: `0 0 12px ${theme.glow}`,
+                                  }}
+                                >
+                                  {theme.rank}
+                                </div>
+                              )}
+                            </div>
 
-                          {/* Name, AP and policy count now live INSIDE the
+                            {/* Name, AP and policy count now live INSIDE the
                               card (below the avatar/badge), not in the open
                               space underneath it — the card is taller/more
                               rectangular to fit all three comfortably. */}
-                          {!isPlaceholder && (
-                            <div className="mt-3">
-                              <p className={cn("truncate font-bold text-white", theme.nameSize)}>{agent.name}</p>
-                              <p className={cn("mt-1 font-extrabold tracking-tight", theme.apSize)} style={{ color: theme.color, textShadow: `0 0 16px ${theme.glow}` }}>
-                                <AnimatedAP value={agent.issuedAP} />
-                              </p>
-                              <div className="mx-auto mt-1.5 w-10 border-t border-dashed" style={{ borderColor: theme.color, opacity: 0.4 }} aria-hidden="true" />
-                              <p className="mt-1.5 text-[10px] tracking-widest uppercase sm:text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-                                {agent.issuedCount} {agent.issuedCount === 1 ? "Policy" : "Policies"}
-                              </p>
-                            </div>
-                          )}
+                            {!isPlaceholder && (
+                              <div className="mt-3">
+                                <p
+                                  className={cn(
+                                    "truncate font-bold text-white",
+                                    theme.nameSize,
+                                  )}
+                                >
+                                  {agent.name}
+                                </p>
+                                <p
+                                  className={cn(
+                                    "mt-1 font-extrabold tracking-tight",
+                                    theme.apSize,
+                                  )}
+                                  style={{
+                                    color: theme.color,
+                                    textShadow: `0 0 16px ${theme.glow}`,
+                                  }}
+                                >
+                                  <AnimatedAP value={agent.issuedAP} />
+                                </p>
+                                <div
+                                  className="mx-auto mt-1.5 w-10 border-t border-dashed"
+                                  style={{
+                                    borderColor: theme.color,
+                                    opacity: 0.4,
+                                  }}
+                                  aria-hidden="true"
+                                />
+                                <p
+                                  className="mt-1.5 text-[10px] tracking-widest uppercase sm:text-xs"
+                                  style={{ color: "rgba(255,255,255,0.45)" }}
+                                >
+                                  {agent.issuedCount}{" "}
+                                  {agent.issuedCount === 1
+                                    ? "Policy"
+                                    : "Policies"}
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -405,7 +575,8 @@ export function LeaderboardPanel() {
                         className="arena-beam h-10 w-8 sm:h-16 sm:w-12"
                         style={{
                           background: `linear-gradient(to bottom, ${theme.color}, transparent)`,
-                          clipPath: "polygon(42% 0%, 58% 0%, 100% 100%, 0% 100%)",
+                          clipPath:
+                            "polygon(42% 0%, 58% 0%, 100% 100%, 0% 100%)",
                           opacity: 0.55,
                         }}
                         aria-hidden="true"
@@ -413,15 +584,29 @@ export function LeaderboardPanel() {
                       {/* Hexagonal landing pad with a dashed inner hex and a
                           glowing elliptical "pool" inset, standing in for
                           the Arena reference's hex floor pads. */}
-                      <div className="relative h-6 w-20 sm:h-8 sm:w-28" aria-hidden="true">
+                      <div
+                        className="relative h-6 w-20 sm:h-8 sm:w-28"
+                        aria-hidden="true"
+                      >
                         <div
                           className="arena-hex absolute inset-0"
-                          style={{ background: `${theme.color}1a`, border: `1.5px solid ${theme.color}`, boxShadow: `0 0 24px ${theme.glow}` }}
+                          style={{
+                            background: `${theme.color}1a`,
+                            border: `1.5px solid ${theme.color}`,
+                            boxShadow: `0 0 24px ${theme.glow}`,
+                          }}
                         />
-                        <div className="arena-hex absolute inset-[14%] border border-dashed" style={{ borderColor: theme.color, opacity: 0.55 }} />
+                        <div
+                          className="arena-hex absolute inset-[14%] border border-dashed"
+                          style={{ borderColor: theme.color, opacity: 0.55 }}
+                        />
                         <div
                           className="absolute inset-[32%] rounded-full"
-                          style={{ background: `radial-gradient(ellipse, ${theme.color}66, transparent 70%)`, border: `1px solid ${theme.color}`, opacity: 0.85 }}
+                          style={{
+                            background: `radial-gradient(ellipse, ${theme.color}66, transparent 70%)`,
+                            border: `1px solid ${theme.color}`,
+                            opacity: 0.85,
+                          }}
                         />
                       </div>
                     </motion.div>
@@ -432,13 +617,25 @@ export function LeaderboardPanel() {
               {rest.length > 0 && (
                 <div className="relative mt-10">
                   <div className="mb-4 flex items-center gap-3">
-                    <span className="text-xs font-extrabold tracking-[0.2em]" style={{ color: "#3AD6FF" }}>
+                    <span
+                      className="text-xs font-extrabold tracking-[0.2em]"
+                      style={{ color: "#3AD6FF" }}
+                    >
                       02
                     </span>
-                    <span className="text-xs font-extrabold tracking-[0.3em] uppercase" style={{ color: "#3AD6FF" }}>
+                    <span
+                      className="text-xs font-extrabold tracking-[0.3em] uppercase"
+                      style={{ color: "#3AD6FF" }}
+                    >
                       {"// Hall of Elites"}
                     </span>
-                    <div className="h-px flex-1" style={{ background: "linear-gradient(to right, rgba(61,214,255,0.5), transparent)" }} />
+                    <div
+                      className="h-px flex-1"
+                      style={{
+                        background:
+                          "linear-gradient(to right, rgba(61,214,255,0.5), transparent)",
+                      }}
+                    />
                   </div>
 
                   <div className="max-h-[560px] overflow-y-auto">
@@ -449,25 +646,50 @@ export function LeaderboardPanel() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.3, delay: 0.3 + i * 0.04 }}
                         className="flex items-center gap-3 border-b border-l-2 py-3 pl-3 sm:gap-4"
-                        style={{ borderBottomColor: "rgba(255,255,255,0.08)", borderLeftColor: i % 2 === 0 ? "#3AD6FF" : "#FF3BA0" }}
+                        style={{
+                          borderBottomColor: "rgba(255,255,255,0.08)",
+                          borderLeftColor: i % 2 === 0 ? "#3AD6FF" : "#FF3BA0",
+                        }}
                       >
-                        <span className="w-8 shrink-0 text-center text-sm font-bold" style={{ color: "rgba(255,255,255,0.3)" }}>
+                        <span
+                          className="w-8 shrink-0 text-center text-sm font-bold"
+                          style={{ color: "rgba(255,255,255,0.3)" }}
+                        >
                           {String(i + 4).padStart(2, "0")}
                         </span>
-                        <Avatar url={agent.profileImageUrl} name={agent.name} sizeClassName="h-9 w-9 shrink-0" pixels={72} />
+                        <Avatar
+                          url={agent.profileImageUrl}
+                          name={agent.name}
+                          sizeClassName="h-9 w-9 shrink-0"
+                          pixels={72}
+                        />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold sm:text-base" style={{ color: TEXT }}>
+                          <p
+                            className="truncate text-sm font-semibold sm:text-base"
+                            style={{ color: TEXT }}
+                          >
                             {agent.name}
                           </p>
-                          <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-                            {agent.issuedCount} {agent.issuedCount === 1 ? "policy" : "policies"} {"//"}
+                          <p
+                            className="text-xs"
+                            style={{ color: "rgba(255,255,255,0.45)" }}
+                          >
+                            {agent.issuedCount}{" "}
+                            {agent.issuedCount === 1 ? "policy" : "policies"}{" "}
+                            {"//"}
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="text-sm font-bold sm:text-base" style={{ color: "#3AD6FF" }}>
+                          <p
+                            className="text-sm font-bold sm:text-base"
+                            style={{ color: "#3AD6FF" }}
+                          >
                             <AnimatedAP value={agent.issuedAP} />
                           </p>
-                          <p className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.35)" }}>
+                          <p
+                            className="text-[9px] font-bold tracking-widest uppercase"
+                            style={{ color: "rgba(255,255,255,0.35)" }}
+                          >
                             Premium Written
                           </p>
                         </div>
