@@ -27,9 +27,10 @@ export async function POST(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { title, description } = body as {
+  const { title, description, thumbnailUrl } = body as {
     title?: string;
     description?: string;
+    thumbnailUrl?: string;
   };
 
   if (!title) {
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
     data: {
       title,
       description: description ?? null,
+      thumbnailUrl: thumbnailUrl || null,
       order: (maxOrder._max.order ?? 0) + 1,
     },
     include: { lessons: true },

@@ -37,6 +37,7 @@ type Module = {
   id: string;
   title: string;
   description: string | null;
+  thumbnailUrl: string | null;
   order: number;
   lessons: Lesson[];
 };
@@ -163,6 +164,102 @@ function ImagePicker({
           )}
         </label>
       </div>
+      {error && <p className="text-xs text-red-light">{error}</p>}
+    </div>
+  );
+}
+
+/** A module's cover image — the thumbnail its card shows on the agent
+ *  course list. Single image, unlike ImagePicker's gallery, so this is a
+ *  bigger preview tile with the file picker built into clicking the tile
+ *  itself rather than a separate "add" square next to a grid. */
+function ThumbnailPicker({
+  url,
+  onChange,
+}: {
+  url: string | null;
+  onChange: (url: string | null) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return;
+    if (
+      !TRAINING_IMAGE_TYPES.includes(
+        file.type as (typeof TRAINING_IMAGE_TYPES)[number],
+      )
+    ) {
+      setError(
+        `${file.name} isn't a supported image type (PNG, JPEG, GIF, or WebP).`,
+      );
+      return;
+    }
+    if (file.size > TRAINING_IMAGE_MAX_BYTES) {
+      setError(`${file.name} is too large (8MB max).`);
+      return;
+    }
+
+    setError(null);
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/training/images", {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "That image didn't upload.");
+      }
+      const data = (await res.json()) as { url: string };
+      onChange(data.url);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "That image didn't upload.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <label className="font-condensed block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+        Cover image
+      </label>
+      {url ? (
+        <div className="group relative aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-border">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt="" className="h-full w-full object-cover" />
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            aria-label="Remove cover image"
+            className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        <label className="flex aspect-video w-full max-w-xs cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-muted transition-colors hover:border-copper-dim-gradient hover:text-foreground">
+          <input
+            type="file"
+            accept={TRAINING_IMAGE_TYPES.join(",")}
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              handleFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          <ImagePlus className="h-5 w-5" />
+          <span className="text-xs">
+            {uploading ? "Uploading..." : "Add a cover image"}
+          </span>
+        </label>
+      )}
       {error && <p className="text-xs text-red-light">{error}</p>}
     </div>
   );
@@ -534,10 +631,14 @@ export function TrainingPanel({
   const [showModuleForm, setShowModuleForm] = useState(false);
   const [moduleTitle, setModuleTitle] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
+  const [moduleThumbnailUrl, setModuleThumbnailUrl] = useState<string | null>(
+    null,
+  );
   const [addingLessonTo, setAddingLessonTo] = useState<string | null>(null);
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editThumbnailUrl, setEditThumbnailUrl] = useState<string | null>(null);
 
   async function refresh() {
     const res = await fetch("/api/admin/training/modules");
@@ -552,11 +653,13 @@ export function TrainingPanel({
       body: JSON.stringify({
         title: moduleTitle,
         description: moduleDescription,
+        thumbnailUrl: moduleThumbnailUrl,
       }),
     });
     if (res.ok) {
       setModuleTitle("");
       setModuleDescription("");
+      setModuleThumbnailUrl(null);
       setShowModuleForm(false);
       await refresh();
     }
@@ -564,7 +667,7 @@ export function TrainingPanel({
 
   async function updateModule(
     id: string,
-    data: { title: string; description: string },
+    data: { title: string; description: string; thumbnailUrl: string | null },
   ) {
     await fetch(`/api/admin/training/modules/${id}`, {
       method: "PATCH",
@@ -672,6 +775,10 @@ export function TrainingPanel({
               value={moduleDescription}
               onChange={setModuleDescription}
             />
+            <ThumbnailPicker
+              url={moduleThumbnailUrl}
+              onChange={setModuleThumbnailUrl}
+            />
             <Button
               variant="secondary"
               disabled={!moduleTitle}
@@ -702,6 +809,10 @@ export function TrainingPanel({
                   value={editDescription}
                   onChange={setEditDescription}
                 />
+                <ThumbnailPicker
+                  url={editThumbnailUrl}
+                  onChange={setEditThumbnailUrl}
+                />
                 <div className="flex gap-2">
                   <Button
                     variant="secondary"
@@ -709,6 +820,7 @@ export function TrainingPanel({
                       await updateModule(module_.id, {
                         title: editTitle,
                         description: editDescription,
+                        thumbnailUrl: editThumbnailUrl,
                       });
                       setEditingModuleId(null);
                     }}
@@ -725,13 +837,23 @@ export function TrainingPanel({
               </div>
             ) : (
               <>
-                <div>
-                  <CardTitle>{module_.title}</CardTitle>
-                  {module_.description && (
-                    <p className="mt-1 text-sm text-muted">
-                      {module_.description}
-                    </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  {module_.thumbnailUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={module_.thumbnailUrl}
+                      alt=""
+                      className="h-12 w-20 shrink-0 rounded-md border border-border object-cover"
+                    />
                   )}
+                  <div className="min-w-0">
+                    <CardTitle>{module_.title}</CardTitle>
+                    {module_.description && (
+                      <p className="mt-1 text-sm text-muted">
+                        {module_.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex shrink-0 gap-1">
                   <Button
@@ -752,6 +874,7 @@ export function TrainingPanel({
                       setEditingModuleId(module_.id);
                       setEditTitle(module_.title);
                       setEditDescription(module_.description ?? "");
+                      setEditThumbnailUrl(module_.thumbnailUrl);
                     }}
                   >
                     Edit
