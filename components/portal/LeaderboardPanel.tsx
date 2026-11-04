@@ -360,7 +360,7 @@ export function LeaderboardPanel() {
             </p>
           ) : (
             <>
-              <div className="relative flex flex-row items-end justify-center gap-2 sm:gap-8">
+              <div className="relative mx-auto flex max-w-[640px] flex-row items-end justify-center gap-1 sm:gap-3">
                 {top3.map((agent, i) => {
                   const isPlaceholder = "placeholder" in agent;
                   const theme = RANK_THEME[i];
@@ -569,31 +569,33 @@ export function LeaderboardPanel() {
                         }}
                         aria-hidden="true"
                       />
-                      {/* Hexagonal landing pad with a dashed inner hex and a
-                          glowing elliptical "pool" inset, standing in for
-                          the Arena reference's hex floor pads. */}
+                      {/* Hexagonal landing pad: solid outer hex, a dashed
+                          inner hex ring, and a glossy center "lens" (a
+                          bright off-center highlight fading into the rank
+                          color, not a flat glow) — matches the reference's
+                          polished-orb pad look. */}
                       <div
-                        className="relative h-6 w-20 sm:h-8 sm:w-28"
+                        className="relative h-7 w-24 sm:h-9 sm:w-32"
                         aria-hidden="true"
                       >
                         <div
                           className="arena-hex absolute inset-0"
                           style={{
-                            background: `${theme.color}1a`,
+                            background: `${theme.color}14`,
                             border: `1.5px solid ${theme.color}`,
                             boxShadow: `0 0 24px ${theme.glow}`,
                           }}
                         />
                         <div
-                          className="arena-hex absolute inset-[14%] border border-dashed"
-                          style={{ borderColor: theme.color, opacity: 0.55 }}
+                          className="arena-hex absolute inset-[16%] border border-dashed"
+                          style={{ borderColor: theme.color, opacity: 0.6 }}
                         />
                         <div
-                          className="absolute inset-[32%] rounded-full"
+                          className="absolute inset-[30%] rounded-full"
                           style={{
-                            background: `radial-gradient(ellipse, ${theme.color}66, transparent 70%)`,
-                            border: `1px solid ${theme.color}`,
-                            opacity: 0.85,
+                            background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.55), ${theme.color}99 45%, ${theme.color}33 80%)`,
+                            border: `1.5px solid ${theme.color}`,
+                            boxShadow: `0 0 10px ${theme.glow}, inset 0 1px 2px rgba(255,255,255,0.4)`,
                           }}
                         />
                       </div>
