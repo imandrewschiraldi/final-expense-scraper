@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { ImagePlus, Upload, X } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -182,6 +183,7 @@ function VideoUrlField({
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
@@ -218,7 +220,26 @@ function VideoUrlField({
   }
 
   return (
-    <div className="space-y-1.5">
+    <div
+      className={cn(
+        "space-y-1.5 rounded-lg transition-colors",
+        dragOver && "outline-2 outline-dashed outline-copper",
+      )}
+      // A file dragged from the desktop (not just picked via the button)
+      // drops anywhere on this field, not just on the Upload button itself.
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        if (uploading) return;
+        handleFile(e.dataTransfer.files[0]);
+      }}
+    >
       <div className="flex gap-2">
         <div className="flex-1">
           <Input
@@ -230,6 +251,9 @@ function VideoUrlField({
         <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-border px-3 text-xs text-muted transition-colors hover:border-copper-dim-gradient hover:text-foreground">
           <input
             type="file"
+            // No `capture` attribute — leaving the source unrestricted is
+            // what makes a phone's picker offer Camera Roll/Photo Library
+            // (as well as Take Video) alongside Files, not just one of them.
             accept={TRAINING_VIDEO_TYPES.join(",")}
             className="hidden"
             disabled={uploading}
@@ -242,6 +266,9 @@ function VideoUrlField({
           {uploading ? "Uploading..." : "Upload"}
         </label>
       </div>
+      <p className="text-[11px] text-muted">
+        Or drag and drop a video file here.
+      </p>
       {error && <p className="text-xs text-red-light">{error}</p>}
     </div>
   );
