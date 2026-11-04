@@ -82,6 +82,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/book-of-business", label: "Book of Business", icon: BookOpen, roles: ["MANAGER", "AGENT"], section: "leads" },
   { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"], section: "leads" },
   { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"], section: "leads" },
+  { href: "/admin/lead-shop", label: "Lead Shop", icon: ShoppingCart, roles: ["ADMIN"], section: "leads" },
 
   { href: "/scripts", label: "Scripts", icon: FileText, roles: ["MANAGER", "AGENT"], section: "sell" },
   { href: "/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"], section: "sell" },

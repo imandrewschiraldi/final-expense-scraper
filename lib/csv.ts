@@ -86,7 +86,7 @@ function twoDigitYearToFour(yy: number): number {
  * before falling back to native Date parsing. Returns null if nothing
  * works.
  */
-function parseFlexibleDate(raw: string): Date | null {
+export function parseFlexibleDate(raw: string): Date | null {
   const value = raw.trim();
   if (!value) return null;
 

@@ -883,3 +883,113 @@ model OverviewWidget {
 
   @@map("overview_widgets")
 }
+
+// ---------------------------------------------------------------------------
+// Lead Shop — a public storefront where outside buyers purchase veteran final
+// expense leads. Deliberately separate from the agency's own Lead/User tables:
+// shop buyers sign up themselves and must never get a portal login, and shop
+// inventory is its own pool so selling leads can't touch agents' books.
+// ---------------------------------------------------------------------------
+
+/// Age group a shop lead is sold under. Assigned at random on upload (an even
+/// three-way split) and re-rolled at random whenever a lead comes off hold.
+enum ShopLeadTier {
+  SIX_PLUS
+  NINE_PLUS
+  TWELVE_PLUS
+}
+
+enum ShopLeadStatus {
+  /// In stock — can be added to an order.
+  AVAILABLE
+  /// Pulled into an order whose payment hasn't finished yet.
+  RESERVED
+  /// Sold — out of inventory until holdUntil passes.
+  HELD
+}
+
+enum ShopOrderStatus {
+  PENDING_PAYMENT
+  /// Paid; leads are on hold for the buyer but the CSV email hasn't gone
+  /// out yet (or failed — the buyer can resend it from My Orders).
+  PAID
+  /// Paid and the CSV was emailed.
+  FULFILLED
+  /// Checkout abandoned or timed out; its leads went back into stock.
+  EXPIRED
+}
+
+model ShopBuyer {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime    @default(now())
+  orders       ShopOrder[]
+
+  @@map("shop_buyers")
+}
+
+model ShopLead {
+  id              String         @id @default(cuid())
+  firstName       String
+  lastName        String
+  phone           String         @unique
+  state           String
+  dateOfBirth     DateTime?
+  email           String?
+  address         String?
+  zip             String?
+  county          String?
+  gender          String?
+  militaryBranch  String?
+  tier            ShopLeadTier
+  status          ShopLeadStatus @default(AVAILABLE)
+  reservedOrderId String?
+  holdUntil       DateTime?
+  timesSold       Int            @default(0)
+  lastSoldAt      DateTime?
+  createdAt       DateTime       @default(now())
+  orderLeads      ShopOrderLead[]
+
+  @@index([status, tier, state])
+  @@index([status, holdUntil])
+  @@index([reservedOrderId])
+  @@map("shop_leads")
+}
+
+model ShopOrder {
+  id              String          @id @default(cuid())
+  buyerId         String
+  buyer           ShopBuyer       @relation(fields: [buyerId], references: [id])
+  status          ShopOrderStatus @default(PENDING_PAYMENT)
+  tier            ShopLeadTier
+  /// { "FL": 100, "TX": 50 } — what the buyer asked for, per state.
+  items           Json
+  leadCount       Int
+  unitPriceCents  Int
+  totalCents      Int
+  deliverToEmail  String
+  stripeSessionId String?         @unique
+  paidAt          DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime        @default(now())
+  leads           ShopOrderLead[]
+
+  @@index([buyerId, createdAt])
+  @@index([status, createdAt])
+  @@map("shop_orders")
+}
+
+/// Which leads went out in which order — kept after the hold ends so a buyer
+/// can always re-download exactly what they paid for.
+model ShopOrderLead {
+  orderId String
+  order   ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  leadId  String
+  lead    ShopLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@id([orderId, leadId])
+  @@index([leadId])
+  @@map("shop_order_leads")
+}

@@ -46,6 +46,9 @@ See `.env.example`. Summary:
 - `CRON_SECRET` — shared secret Vercel Cron sends as a bearer token to protect `/api/cron/vault-revert` and `/api/cron/recycle-leads`.
 - `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` — used once by `npm run db:seed` to create the first admin.
 - `RESEND_API_KEY` / `RESEND_FROM_EMAIL` — sends the agent invite email (see below).
+- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` — card checkout for the public Lead Shop (see below). Checkout stays off until both are set.
+- `SHOP_FROM_EMAIL` (optional) — sender for Lead Shop CSV emails; falls back to `RESEND_FROM_EMAIL`.
+- `SHOP_BASE_URL` (optional) — public URL Stripe sends buyers back to, e.g. `https://leads.example.com`; defaults to the request's own origin.
 
 ## Supabase setup
 
@@ -88,6 +91,18 @@ viewing that lead, so people aren't spam-calling someone who was already worked.
 
 - **Manual admin assignment** (`/admin/leads/assign`, `lib/assignment.ts`): still available for occasional direct hand-offs — filter the shared pool by state, then either check off specific leads or use "Quick Assign" to grab the oldest N unassigned leads in a state for a given agent. CSV import can also send leads straight to a specific agent instead of the vault.
 - **Status lifecycle**: `New → Contacted / No Answer / Not Interested` stay in the active pool and are reworkable. `Appointment Booking` claims a vault lead but is still reworkable. `Sold` is the only terminal status — it archives the lead and locks it from further agent edits.
+
+## Lead Shop
+
+A public storefront at `/shop` where anyone can create a buyer account and buy veteran final expense leads by state. Buyers are stored separately from agency users (`shop_buyers`) and never get a portal login.
+
+- **Inventory**: admins upload a CSV at **Admin → Lead Shop**. Each upload is shuffled and split evenly at random into 6+, 9+, and 12+ month groups. Phones already in the shop are skipped.
+- **Prices and limits** live in `lib/shop/config.ts`: 6+ $3.00, 9+ $1.50, 12+ $0.50 per lead, $300 minimum order, 30-day hold.
+- **Buying**: the buyer picks an age group and quantities per state. Checkout reserves random leads (no two orders get the same leads), then sends the buyer to Stripe. Unpaid checkouts release their leads when Stripe expires the session (30 minutes) or the buyer cancels.
+- **Delivery**: when Stripe confirms payment, the leads go on a 30-day hold and the CSV is emailed through Resend. Buyers can re-download or re-send it from **My orders**.
+- **Back on sale**: `/api/cron/shop-release` runs daily, puts leads whose hold has ended back in stock, and assigns each one a new random age group.
+
+Stripe setup: in the Stripe dashboard, add a webhook endpoint at `https://<your-domain>/api/shop/webhook` for the events `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`, then copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
 
 ## Project structure
 
