@@ -74,6 +74,9 @@ type Channel = {
   categoryId: string | null;
   unread: boolean;
   unreadCount: number;
+  // Relays messages in from a connected GroupMe group — read-only for
+  // everyone but admins, since posting here would never reach GroupMe.
+  groupMeLinked: boolean;
 };
 
 type Member = { id: string; name: string; role: "ADMIN" | "MANAGER" | "AGENT" };
@@ -995,6 +998,9 @@ export function ChatRoom({
   }
 
   const active = channels.find((c) => c.id === activeId) ?? null;
+  // A channel relaying GroupMe messages in — view-only for everyone but
+  // admins, since nothing typed here would ever reach GroupMe anyway.
+  const readOnly = Boolean(active?.groupMeLinked) && !canManage;
 
   function messageRow(
     message: Message,
@@ -1347,83 +1353,98 @@ export function ChatRoom({
         >
           {messages.length === 0 && (
             <p className="text-sm text-muted">
-              Nothing here yet. Say something and it shows up for the whole
-              team.
+              {readOnly
+                ? "Nothing here yet. Messages posted in the linked GroupMe group will show up here automatically."
+                : "Nothing here yet. Say something and it shows up for the whole team."}
             </p>
           )}
           {messages.map((m, i) => messageRow(m, messages[i - 1], false))}
         </div>
 
         <div className="shrink-0 border-t-2 border-copper/25 p-3">
-          {error && <p className="mb-2 px-1 text-sm text-red-light">{error}</p>}
-          {pendingImage && (
-            <div className="relative mb-2 inline-block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={pendingImage.previewUrl}
-                alt=""
-                className="max-h-28 rounded-lg border border-border object-contain"
-              />
-              <button
-                type="button"
-                onClick={clearPendingImage}
-                aria-label="Remove image"
-                className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-black text-white hover:bg-red-light"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
+          {readOnly ? (
+            <p className="font-condensed px-1 py-2.5 text-center text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
+              View only — this channel relays messages from GroupMe
+            </p>
+          ) : (
+            <>
+              {error && (
+                <p className="mb-2 px-1 text-sm text-red-light">{error}</p>
+              )}
+              {pendingImage && (
+                <div className="relative mb-2 inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={pendingImage.previewUrl}
+                    alt=""
+                    className="max-h-28 rounded-lg border border-border object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearPendingImage}
+                    aria-label="Remove image"
+                    className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-black text-white hover:bg-red-light"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-end gap-2">
+                <input
+                  ref={imageInput}
+                  type="file"
+                  accept={CHAT_IMAGE_TYPES.join(",")}
+                  onChange={(e) => {
+                    pickImage(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => imageInput.current?.click()}
+                  disabled={!active}
+                  aria-label="Attach image"
+                  className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-copper-gradient hover:text-[var(--copper-metal)] disabled:opacity-40"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                </button>
+                <textarea
+                  ref={draftInput}
+                  data-tour="chat-composer"
+                  value={draft}
+                  onChange={(e) =>
+                    setDraft(e.target.value.slice(0, CHAT_MESSAGE_MAX))
+                  }
+                  onKeyDown={(e) => {
+                    // Enter sends, Shift+Enter is a new line — the same as every
+                    // chat anyone on the team has already used.
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      send();
+                    }
+                  }}
+                  rows={1}
+                  placeholder={
+                    active ? `Message ${active.name}` : "Pick a channel"
+                  }
+                  disabled={!active}
+                  className="max-h-40 min-h-[42px] flex-1 resize-none overflow-y-auto rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2.5 text-[15px] text-foreground placeholder:text-muted focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={send}
+                  disabled={
+                    (!draft.trim() && !pendingImage) || sending || !active
+                  }
+                  aria-label="Send"
+                  className="btn-metal-copper flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-40"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+            </>
           )}
-          <div className="flex items-end gap-2">
-            <input
-              ref={imageInput}
-              type="file"
-              accept={CHAT_IMAGE_TYPES.join(",")}
-              onChange={(e) => {
-                pickImage(e.target.files?.[0]);
-                e.target.value = "";
-              }}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => imageInput.current?.click()}
-              disabled={!active}
-              aria-label="Attach image"
-              className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-copper-gradient hover:text-[var(--copper-metal)] disabled:opacity-40"
-            >
-              <ImagePlus className="h-4 w-4" />
-            </button>
-            <textarea
-              ref={draftInput}
-              data-tour="chat-composer"
-              value={draft}
-              onChange={(e) =>
-                setDraft(e.target.value.slice(0, CHAT_MESSAGE_MAX))
-              }
-              onKeyDown={(e) => {
-                // Enter sends, Shift+Enter is a new line — the same as every
-                // chat anyone on the team has already used.
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              rows={1}
-              placeholder={active ? `Message ${active.name}` : "Pick a channel"}
-              disabled={!active}
-              className="max-h-40 min-h-[42px] flex-1 resize-none overflow-y-auto rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2.5 text-[15px] text-foreground placeholder:text-muted focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={send}
-              disabled={(!draft.trim() && !pendingImage) || sending || !active}
-              aria-label="Send"
-              className="btn-metal-copper flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-40"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          </div>
         </div>
       </section>
 

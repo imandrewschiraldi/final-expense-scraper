@@ -19,7 +19,8 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const manage = canManageChannels(session.user.role);
 
@@ -31,13 +32,22 @@ export async function GET() {
         : {
             archived: false,
             OR: [
-              { restricted: false, minRole: { in: visibleChannelRoles(session.user.role) } },
-              { restricted: true, members: { some: { userId: session.user.id } } },
+              {
+                restricted: false,
+                minRole: { in: visibleChannelRoles(session.user.role) },
+              },
+              {
+                restricted: true,
+                members: { some: { userId: session.user.id } },
+              },
             ],
           },
       orderBy: [{ order: "asc" }, { name: "asc" }],
       include: {
-        reads: { where: { userId: session.user.id }, select: { lastReadAt: true } },
+        reads: {
+          where: { userId: session.user.id },
+          select: { lastReadAt: true },
+        },
         messages: {
           where: { deletedAt: null },
           orderBy: { createdAt: "desc" },
@@ -48,6 +58,10 @@ export async function GET() {
         // that's their editing UI. Small join either way, but no reason to
         // ship membership lists to clients that won't use them.
         members: manage ? { select: { userId: true } } : false,
+        // A channel bridged to GroupMe is read-only for everyone but
+        // admins — see POST below. Just the existence of the row, not any
+        // of its fields (webhookToken/accessToken never leave the server).
+        groupMeBridge: { select: { id: true } },
       },
     }),
   ]);
@@ -55,13 +69,23 @@ export async function GET() {
   // Only channels actually flagged unread need a real count — reading
   // channels stay at 0 with no extra query.
   const unreadChannels = channels
-    .map((c) => ({ id: c.id, lastRead: c.reads[0]?.lastReadAt ?? null, latest: c.messages[0]?.createdAt ?? null }))
+    .map((c) => ({
+      id: c.id,
+      lastRead: c.reads[0]?.lastReadAt ?? null,
+      latest: c.messages[0]?.createdAt ?? null,
+    }))
     .filter((c) => c.latest && (!c.lastRead || c.latest > c.lastRead));
 
   const unreadCounts = await Promise.all(
     unreadChannels.map((c) =>
       db.chatMessage
-        .count({ where: { channelId: c.id, deletedAt: null, ...(c.lastRead ? { createdAt: { gt: c.lastRead } } : {}) } })
+        .count({
+          where: {
+            channelId: c.id,
+            deletedAt: null,
+            ...(c.lastRead ? { createdAt: { gt: c.lastRead } } : {}),
+          },
+        })
         .then((count) => [c.id, count] as const),
     ),
   );
@@ -82,6 +106,7 @@ export async function GET() {
         restricted: c.restricted,
         memberIds: manage ? (c.members ?? []).map((m) => m.userId) : undefined,
         categoryId: c.categoryId,
+        groupMeLinked: Boolean(c.groupMeBridge),
         unread: Boolean(latest && (!lastRead || latest > lastRead)),
         unreadCount: unreadCountById.get(c.id) ?? 0,
       };
@@ -91,7 +116,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canManageChannels(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -106,32 +132,57 @@ export async function POST(req: NextRequest) {
   };
 
   const name = cleanName(body.name);
-  if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  if (!name)
+    return NextResponse.json({ error: "Name is required" }, { status: 400 });
 
   const slug = channelSlug(name);
-  if (!slug) return NextResponse.json({ error: "Name needs a letter or number" }, { status: 400 });
+  if (!slug)
+    return NextResponse.json(
+      { error: "Name needs a letter or number" },
+      { status: 400 },
+    );
   if (await db.chatChannel.findUnique({ where: { slug } })) {
-    return NextResponse.json({ error: "A channel with that name already exists" }, { status: 409 });
+    return NextResponse.json(
+      { error: "A channel with that name already exists" },
+      { status: 409 },
+    );
   }
 
   const restricted = body.restricted === true;
-  const memberIds = [...new Set((body.memberIds ?? []).filter((id): id is string => typeof id === "string"))];
+  const memberIds = [
+    ...new Set(
+      (body.memberIds ?? []).filter(
+        (id): id is string => typeof id === "string",
+      ),
+    ),
+  ];
   if (restricted && memberIds.length === 0) {
-    return NextResponse.json({ error: "Select at least one person" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Select at least one person" },
+      { status: 400 },
+    );
   }
 
-  const last = await db.chatChannel.findFirst({ orderBy: { order: "desc" }, select: { order: true } });
+  const last = await db.chatChannel.findFirst({
+    orderBy: { order: "desc" },
+    select: { order: true },
+  });
 
   const channel = await db.chatChannel.create({
     data: {
       slug,
       name,
       topic: cleanName(body.topic, CHAT_TOPIC_MAX),
-      minRole: body.minRole === "MANAGER" || body.minRole === "ADMIN" ? body.minRole : "AGENT",
+      minRole:
+        body.minRole === "MANAGER" || body.minRole === "ADMIN"
+          ? body.minRole
+          : "AGENT",
       categoryId: body.categoryId || null,
       order: (last?.order ?? 0) + 1,
       restricted,
-      members: restricted ? { create: memberIds.map((userId) => ({ userId })) } : undefined,
+      members: restricted
+        ? { create: memberIds.map((userId) => ({ userId })) }
+        : undefined,
     },
   });
 

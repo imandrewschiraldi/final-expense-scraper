@@ -236,6 +236,27 @@ export async function POST(req: NextRequest) {
   if (!channel)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // A channel bridged to GroupMe only relays messages in — posting from
+  // here would never reach GroupMe, so letting anyone but an admin type
+  // into it would be misleading, not just redundant. Checked here (not
+  // folded into openChannelFor) since read access and post access are
+  // genuinely different questions for this one channel type.
+  if (session.user.role !== "ADMIN") {
+    const bridge = await db.chatGroupMeBridge.findUnique({
+      where: { channelId: channel.id },
+      select: { id: true },
+    });
+    if (bridge) {
+      return NextResponse.json(
+        {
+          error:
+            "This channel only relays messages from GroupMe — you can't post here.",
+        },
+        { status: 403 },
+      );
+    }
+  }
+
   // An image-only message is valid (body ends up ""); text-only is the
   // common case; empty-and-imageless is the only thing rejected.
   const text = normaliseMessage(body.body) ?? "";
