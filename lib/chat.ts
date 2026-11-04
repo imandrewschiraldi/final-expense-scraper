@@ -32,7 +32,12 @@ export const CHAT_PAGE_SIZE = 60;
 export const CHAT_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 
 /** Accepted image types, shared between the file picker and the upload route. */
-export const CHAT_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"] as const;
+export const CHAT_IMAGE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+] as const;
 
 /**
  * Admin and system (Sales Bot) posts speak for the agency, not a person —
@@ -79,7 +84,6 @@ export function canManageChannels(role: Role): boolean {
   return role === "ADMIN";
 }
 
-
 /**
  * Normalise a submitted message.
  *
@@ -89,7 +93,10 @@ export function canManageChannels(role: Role): boolean {
  */
 export function normaliseMessage(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
-  const body = raw.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  const body = raw
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   if (!body) return null;
   return body.slice(0, CHAT_MESSAGE_MAX);
 }
@@ -111,13 +118,25 @@ export function channelSlug(name: string): string {
  * without thinking beats a picker they have to search. Any of these is one
  * tap; nothing else is offered.
  */
-export const CHAT_REACTIONS = ["👍", "🔥", "🎉", "💰", "👀", "✅", "😂", "❤️"] as const;
+export const CHAT_REACTIONS = [
+  "👍",
+  "🔥",
+  "🎉",
+  "💰",
+  "👀",
+  "✅",
+  "😂",
+  "❤️",
+] as const;
 
 export type ChatReactionEmoji = (typeof CHAT_REACTIONS)[number];
 
 /** Server-side guard: only emoji from the palette are ever stored. */
 export function isReaction(value: unknown): value is ChatReactionEmoji {
-  return typeof value === "string" && (CHAT_REACTIONS as readonly string[]).includes(value);
+  return (
+    typeof value === "string" &&
+    (CHAT_REACTIONS as readonly string[]).includes(value)
+  );
 }
 
 /** Longest a channel or category name may be. */
@@ -129,4 +148,79 @@ export function cleanName(raw: unknown, max = CHAT_NAME_MAX): string | null {
   if (typeof raw !== "string") return null;
   const name = raw.replace(/\s+/g, " ").trim().slice(0, max);
   return name || null;
+}
+
+/**
+ * GroupMe bridge — one-way only (GroupMe → this channel). GroupMe's bot
+ * callback payload, reduced to what a relayed message actually needs.
+ * https://dev.groupme.com/tutorials/bots
+ */
+export type GroupMeCallback = {
+  id?: unknown;
+  group_id?: unknown;
+  name?: unknown;
+  text?: unknown;
+  avatar_url?: unknown;
+  sender_type?: unknown;
+  system?: unknown;
+  attachments?: unknown;
+};
+
+export type GroupMeParsed = {
+  externalId: string;
+  groupId: string | null;
+  authorName: string;
+  body: string;
+  imageUrl: string | null;
+  avatarUrl: string | null;
+};
+
+/**
+ * Shapes one GroupMe callback into a chat message, or null to skip it.
+ *
+ * Skipped: anything without a real GroupMe message id (nothing to key
+ * idempotency on), GroupMe's own join/leave/name-change system posts
+ * (`sender_type: "system"` or the `system: true` flag), and posts from
+ * another bot in the same group (`sender_type: "bot"`) — only real people
+ * talking gets relayed in.
+ */
+export function parseGroupMeCallback(
+  payload: GroupMeCallback,
+): GroupMeParsed | null {
+  if (typeof payload.id !== "string" || !payload.id) return null;
+  if (payload.system === true) return null;
+  if (payload.sender_type === "system" || payload.sender_type === "bot")
+    return null;
+
+  const text =
+    typeof payload.text === "string"
+      ? payload.text.trim().slice(0, CHAT_MESSAGE_MAX)
+      : "";
+
+  let imageUrl: string | null = null;
+  if (Array.isArray(payload.attachments)) {
+    const image = payload.attachments.find(
+      (a): a is { type: string; url: string } =>
+        typeof a === "object" &&
+        a !== null &&
+        (a as { type?: unknown }).type === "image" &&
+        typeof (a as { url?: unknown }).url === "string",
+    );
+    if (image) imageUrl = image.url;
+  }
+
+  if (!text && !imageUrl) return null;
+
+  return {
+    externalId: payload.id,
+    groupId: typeof payload.group_id === "string" ? payload.group_id : null,
+    authorName:
+      typeof payload.name === "string" && payload.name.trim()
+        ? payload.name.trim().slice(0, 120)
+        : "GroupMe",
+    body: text,
+    imageUrl,
+    avatarUrl:
+      typeof payload.avatar_url === "string" ? payload.avatar_url : null,
+  };
 }

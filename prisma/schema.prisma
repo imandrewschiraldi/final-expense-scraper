@@ -145,6 +145,7 @@ model User {
   chatReactions          ChatReaction[]
   chatPins               ChatMessage[]                 @relation("ChatPinnedBy")
   chatChannelMemberships ChatChannelMember[]
+  chatGroupMeBridgesMade ChatGroupMeBridge[]
   pushSubscriptions      PushSubscription[]
   announcementItems      AnnouncementItem[]
 
@@ -594,9 +595,10 @@ model ChatChannel {
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
 
-  messages ChatMessage[]
-  reads    ChatRead[]
-  members  ChatChannelMember[]
+  messages      ChatMessage[]
+  reads         ChatRead[]
+  members       ChatChannelMember[]
+  groupMeBridge ChatGroupMeBridge?
 
   @@index([archived, order])
   @@index([categoryId])
@@ -621,6 +623,15 @@ model ChatMessage {
   pinnedById String?
   pinnedBy   User?       @relation("ChatPinnedBy", fields: [pinnedById], references: [id], onDelete: SetNull)
   createdAt  DateTime    @default(now())
+  /// Set only for messages relayed in from an external bridge (currently
+  /// just GroupMe) — the sending platform's own message id, so a retried
+  /// webhook delivery doesn't get inserted twice.
+  externalId String?
+  /// The bridged sender's own avatar URL, shown instead of the generic
+  /// system-post mark when present — distinct from authorId being null for
+  /// an in-app system post (Sales Bot), which has no avatar of its own to
+  /// show.
+  externalAvatarUrl String?
 
   reactions ChatReaction[]
 
@@ -628,7 +639,33 @@ model ChatMessage {
   @@index([channelId, createdAt])
   /// Pinned messages are read as their own short list, newest pin first.
   @@index([channelId, pinnedAt])
+  /// Idempotency for bridged webhook deliveries — null externalId (the
+  /// overwhelming majority of rows, every normal in-app message) never
+  /// collides since Postgres treats NULLs as distinct in a unique index.
+  @@unique([channelId, externalId])
   @@map("chat_messages")
+}
+
+/// Connects one chat channel to a GroupMe group as a one-way bridge:
+/// GroupMe posts land here as chat messages, nothing from this app is ever
+/// posted back. GroupMe's own "bot" callback carries no signature, so
+/// `webhookToken` standing in as an unguessable URL segment is what keeps
+/// the endpoint from accepting forged posts from anyone who finds it.
+model ChatGroupMeBridge {
+  id             String      @id @default(cuid())
+  channelId      String      @unique
+  channel        ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  webhookToken   String      @unique @default(cuid())
+  /// Learned from the first inbound webhook delivery, purely for display in
+  /// the admin UI ("connected to group X") — routing never depends on it,
+  /// the token in the URL already identifies the channel.
+  groupMeGroupId String?
+  lastMessageAt  DateTime?
+  createdAt      DateTime    @default(now())
+  createdById    String?
+  createdBy      User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("chat_groupme_bridges")
 }
 
 model ChatRead {

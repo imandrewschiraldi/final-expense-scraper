@@ -26,9 +26,14 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/cn";
+import { GroupMeBridgeButton } from "@/components/portal/chat/GroupMeBridgeButton";
 import { linkifyText } from "@/lib/linkify";
 import {
   CHAT_IMAGE_MAX_BYTES,
@@ -116,7 +121,11 @@ function MessageAvatar({ url, name }: { url: string | null; name: string }) {
   }
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" className="h-8 w-8 shrink-0 rounded-full border-copper-dim-gradient object-cover" />
+    <img
+      src={url}
+      alt=""
+      className="h-8 w-8 shrink-0 rounded-full border-copper-dim-gradient object-cover"
+    />
   ) : (
     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-copper-dim-gradient bg-surface2 text-sm font-bold text-muted">
       {name.charAt(0).toUpperCase()}
@@ -134,7 +143,10 @@ function dayLabel(iso: string) {
 }
 
 const timeLabel = (iso: string) =>
-  new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  new Date(iso).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
 // A response without a JSON {error} body (a raw 500/404 page, a network
 // hiccup) previously collapsed into one indistinguishable generic string.
@@ -149,7 +161,15 @@ async function errorFrom(res: Response, fallback: string): Promise<string> {
  *  the empty space below an existing list (or the whole area when there are
  *  no channels in it yet, since an empty SortableContext has no item to be
  *  "over"). */
-function DroppableContainer({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
+function DroppableContainer({
+  id,
+  children,
+  className,
+}: {
+  id: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   const { setNodeRef } = useDroppable({ id });
   return (
     <div ref={setNodeRef} className={className}>
@@ -173,10 +193,21 @@ function SortableChannel({
   onRename: () => void;
   onArchive: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: `chan:${channel.id}`,
   });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
 
   return (
     <div ref={setNodeRef} style={style} className="group/chan relative">
@@ -185,7 +216,9 @@ function SortableChannel({
         onClick={onSelect}
         className={cn(
           "font-condensed flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-bold tracking-[0.04em] uppercase transition-colors",
-          active ? "toggle-pill-active" : "text-muted hover:bg-surface2 hover:text-foreground",
+          active
+            ? "toggle-pill-active"
+            : "text-muted hover:bg-surface2 hover:text-foreground",
         )}
       >
         {canManage && (
@@ -217,12 +250,16 @@ function SortableChannel({
         )}
       </button>
       {canManage && (
-        <div className="absolute top-1/2 right-2 hidden -translate-y-1/2 gap-1 group-hover/chan:flex">
+        <div className="absolute top-1/2 right-2 hidden -translate-y-1/2 items-center gap-1.5 group-hover/chan:flex">
+          <GroupMeBridgeButton channel={channel} />
           <button
             type="button"
             onClick={onRename}
             aria-label={`Rename ${channel.name}`}
-            className={cn("text-xs", active ? "text-black/70" : "text-muted hover:text-foreground")}
+            className={cn(
+              "text-xs",
+              active ? "text-black/70" : "text-muted hover:text-foreground",
+            )}
           >
             Edit
           </button>
@@ -230,7 +267,9 @@ function SortableChannel({
             type="button"
             onClick={onArchive}
             aria-label={`Remove ${channel.name}`}
-            className={cn(active ? "text-black/70" : "text-muted hover:text-red-light")}
+            className={cn(
+              active ? "text-black/70" : "text-muted hover:text-red-light",
+            )}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -255,10 +294,21 @@ function SortableCategoryGroup({
   onAddChannel: () => void;
   children: React.ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: `cat:${category.id}`,
   });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   return (
     <div ref={setNodeRef} style={style} className="mt-4">
@@ -279,7 +329,12 @@ function SortableCategoryGroup({
           aria-expanded={!collapsed}
           className="flex flex-1 items-center gap-1 text-left text-muted hover:text-foreground"
         >
-          <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform", collapsed && "-rotate-90")} />
+          <ChevronDown
+            className={cn(
+              "h-3 w-3 shrink-0 transition-transform",
+              collapsed && "-rotate-90",
+            )}
+          />
           <p className="font-condensed flex-1 text-[10px] font-extrabold tracking-[0.18em] uppercase">
             {category.name}
           </p>
@@ -300,7 +355,13 @@ function SortableCategoryGroup({
   );
 }
 
-export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) {
+export function ChatRoom({
+  me,
+  canManage,
+}: {
+  me: string;
+  canManage: boolean;
+}) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -311,7 +372,10 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
+  const [pendingImage, setPendingImage] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const draftInput = useRef<HTMLTextAreaElement>(null);
@@ -342,7 +406,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   // Which category groups are collapsed — starts empty (matching SSR) and
   // syncs from localStorage right after mount, same pattern as the sidebar's
   // own collapse state.
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
+    new Set(),
+  );
 
   useEffect(() => {
     const raw = localStorage.getItem(COLLAPSED_CATEGORIES_KEY);
@@ -373,7 +439,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   // sync effects below keep them following the server's data whenever a
   // drag isn't actually in progress; `dragging` guards against a poll
   // landing mid-drag and clobbering the gesture the admin is mid-way through.
-  const [containers, setContainers] = useState<Record<string, string[]>>({ [LOOSE]: [] });
+  const [containers, setContainers] = useState<Record<string, string[]>>({
+    [LOOSE]: [],
+  });
   const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
   const dragging = useRef(false);
 
@@ -393,13 +461,18 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     setCategoryOrder(categories.map((c) => c.id));
   }, [categories]);
 
-  const channelById = useMemo(() => new Map(channels.map((c) => [c.id, c])), [channels]);
+  const channelById = useMemo(
+    () => new Map(channels.map((c) => [c.id, c])),
+    [channels],
+  );
 
   const sensors = useSensors(
     // A small activation distance so a plain click/tap still selects a
     // channel instead of every tap being interpreted as a drag start.
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 5 },
+    }),
   );
 
   function containerOf(channelId: string): string | null {
@@ -425,12 +498,16 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
     const activeChannelId = activeId.slice(5);
     const fromContainer = containerOf(activeChannelId);
-    const toContainer = overId.startsWith("chan:") ? containerOf(overId.slice(5)) : overId;
+    const toContainer = overId.startsWith("chan:")
+      ? containerOf(overId.slice(5))
+      : overId;
     if (!fromContainer || !toContainer || fromContainer === toContainer) return;
 
     setContainers((prev) => {
       const from = prev[fromContainer].filter((id) => id !== activeChannelId);
-      const overIndex = overId.startsWith("chan:") ? prev[toContainer].indexOf(overId.slice(5)) : prev[toContainer].length;
+      const overIndex = overId.startsWith("chan:")
+        ? prev[toContainer].indexOf(overId.slice(5))
+        : prev[toContainer].length;
       const to = [...prev[toContainer]];
       to.splice(overIndex === -1 ? to.length : overIndex, 0, activeChannelId);
       return { ...prev, [fromContainer]: from, [toContainer]: to };
@@ -446,7 +523,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
     if (activeId.startsWith("cat:")) {
       const from = categoryOrder.indexOf(activeId.slice(4));
-      const to = overId.startsWith("cat:") ? categoryOrder.indexOf(overId.slice(4)) : -1;
+      const to = overId.startsWith("cat:")
+        ? categoryOrder.indexOf(overId.slice(4))
+        : -1;
       if (from === -1 || to === -1 || from === to) return;
       const next = [...categoryOrder];
       const [moved] = next.splice(from, 1);
@@ -484,7 +563,11 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     }
 
     const payload = Object.entries(finalContainers).flatMap(([key, ids]) =>
-      ids.map((id, order) => ({ id, categoryId: key === LOOSE ? null : key, order })),
+      ids.map((id, order) => ({
+        id,
+        categoryId: key === LOOSE ? null : key,
+        order,
+      })),
     );
     await fetch("/api/portal/chat/channels/reorder", {
       method: "PATCH",
@@ -500,41 +583,56 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   const loadRail = useCallback(async () => {
     const res = await fetch("/api/portal/chat/channels");
     if (!res.ok) return;
-    const data = (await res.json()) as { categories: Category[]; channels: Channel[] };
+    const data = (await res.json()) as {
+      categories: Category[];
+      channels: Channel[];
+    };
     setCategories(data.categories);
     setChannels(data.channels);
     setActiveId((current) => current ?? data.channels[0]?.id ?? null);
   }, []);
 
   const loadPins = useCallback(async (channelId: string) => {
-    const res = await fetch(`/api/portal/chat/messages?pinned=1&channelId=${channelId}`);
-    if (res.ok) setPins(((await res.json()) as { messages: Message[] }).messages);
+    const res = await fetch(
+      `/api/portal/chat/messages?pinned=1&channelId=${channelId}`,
+    );
+    if (res.ok)
+      setPins(((await res.json()) as { messages: Message[] }).messages);
   }, []);
 
-  const loadMessages = useCallback(async (channelId: string, incremental: boolean) => {
-    const url = new URL("/api/portal/chat/messages", window.location.origin);
-    url.searchParams.set("channelId", channelId);
-    if (incremental && cursor.current) url.searchParams.set("after", cursor.current);
+  const loadMessages = useCallback(
+    async (channelId: string, incremental: boolean) => {
+      const url = new URL("/api/portal/chat/messages", window.location.origin);
+      url.searchParams.set("channelId", channelId);
+      if (incremental && cursor.current)
+        url.searchParams.set("after", cursor.current);
 
-    const res = await fetch(url);
-    if (!res.ok) return;
-    const data = (await res.json()) as { messages: Message[]; touched?: Message[] };
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        messages: Message[];
+        touched?: Message[];
+      };
 
-    setMessages((prev) => {
-      if (!incremental) return data.messages;
-      // Reactions and pins do not move createdAt, so `touched` re-states the
-      // visible window; new arrivals are appended after it.
-      const patched = data.touched?.length
-        ? prev.map((m) => data.touched!.find((t) => t.id === m.id) ?? m)
-        : prev;
-      if (data.messages.length === 0) return patched;
-      const seen = new Set(patched.map((m) => m.id));
-      return [...patched, ...data.messages.filter((m) => !seen.has(m.id))];
-    });
+      setMessages((prev) => {
+        if (!incremental) return data.messages;
+        // Reactions and pins do not move createdAt, so `touched` re-states the
+        // visible window; new arrivals are appended after it.
+        const patched = data.touched?.length
+          ? prev.map((m) => data.touched!.find((t) => t.id === m.id) ?? m)
+          : prev;
+        if (data.messages.length === 0) return patched;
+        const seen = new Set(patched.map((m) => m.id));
+        return [...patched, ...data.messages.filter((m) => !seen.has(m.id))];
+      });
 
-    if (data.messages.length > 0) cursor.current = data.messages.at(-1)!.createdAt;
-    else if (!incremental) cursor.current = data.messages.at(-1)?.createdAt ?? cursor.current;
-  }, []);
+      if (data.messages.length > 0)
+        cursor.current = data.messages.at(-1)!.createdAt;
+      else if (!incremental)
+        cursor.current = data.messages.at(-1)?.createdAt ?? cursor.current;
+    },
+    [],
+  );
 
   useEffect(() => {
     loadRail();
@@ -548,7 +646,11 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     atBottom.current = true;
     loadMessages(activeId, false);
     loadPins(activeId);
-    setChannels((prev) => prev.map((c) => (c.id === activeId ? { ...c, unread: false, unreadCount: 0 } : c)));
+    setChannels((prev) =>
+      prev.map((c) =>
+        c.id === activeId ? { ...c, unread: false, unreadCount: 0 } : c,
+      ),
+    );
   }, [activeId, loadMessages, loadPins]);
 
   useEffect(() => {
@@ -556,7 +658,10 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     let timer: ReturnType<typeof setTimeout>;
 
     const tick = () => {
-      const wait = document.visibilityState === "visible" ? CHAT_POLL_ACTIVE_MS : CHAT_POLL_HIDDEN_MS;
+      const wait =
+        document.visibilityState === "visible"
+          ? CHAT_POLL_ACTIVE_MS
+          : CHAT_POLL_HIDDEN_MS;
       timer = setTimeout(async () => {
         await loadMessages(activeId, true);
         await loadRail();
@@ -584,13 +689,16 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   // Follow new messages only if you were already at the bottom — yanking the
   // view while somebody reads back is the classic chat annoyance.
   useEffect(() => {
-    if (atBottom.current) scroller.current?.scrollTo({ top: scroller.current.scrollHeight });
+    if (atBottom.current)
+      scroller.current?.scrollTo({ top: scroller.current.scrollHeight });
   }, [messages]);
 
   function pickImage(file: File | undefined) {
     if (!file) return;
     setError(null);
-    if (!CHAT_IMAGE_TYPES.includes(file.type as (typeof CHAT_IMAGE_TYPES)[number])) {
+    if (
+      !CHAT_IMAGE_TYPES.includes(file.type as (typeof CHAT_IMAGE_TYPES)[number])
+    ) {
       setError("Only PNG, JPEG, GIF, or WebP images are allowed.");
       return;
     }
@@ -627,7 +735,10 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     if (image) {
       const form = new FormData();
       form.append("file", image.file);
-      const uploadRes = await fetch("/api/portal/chat/upload", { method: "POST", body: form });
+      const uploadRes = await fetch("/api/portal/chat/upload", {
+        method: "POST",
+        body: form,
+      });
       if (!uploadRes.ok) {
         setDraft(body);
         setPendingImage(image);
@@ -665,12 +776,18 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
       list.map((m) => {
         if (m.id !== messageId) return m;
         const existing = m.reactions.find((r) => r.emoji === emoji);
-        if (!existing) return { ...m, reactions: [...m.reactions, { emoji, count: 1, mine: true }] };
+        if (!existing)
+          return {
+            ...m,
+            reactions: [...m.reactions, { emoji, count: 1, mine: true }],
+          };
         const count = existing.count + (existing.mine ? -1 : 1);
         const reactions =
           count === 0
             ? m.reactions.filter((r) => r.emoji !== emoji)
-            : m.reactions.map((r) => (r.emoji === emoji ? { ...r, count, mine: !r.mine } : r));
+            : m.reactions.map((r) =>
+                r.emoji === emoji ? { ...r, count, mine: !r.mine } : r,
+              );
         return { ...m, reactions };
       });
 
@@ -689,7 +806,11 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
       method: pinned ? "DELETE" : "POST",
     });
     setMessages((prev) =>
-      prev.map((m) => (m.id === message.id ? { ...m, pinnedAt: pinned ? null : new Date().toISOString() } : m)),
+      prev.map((m) =>
+        m.id === message.id
+          ? { ...m, pinnedAt: pinned ? null : new Date().toISOString() }
+          : m,
+      ),
     );
     if (activeId) loadPins(activeId);
   }
@@ -735,7 +856,13 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
   function openRenameModal(channel: Channel) {
     setModal({ kind: "renameChannel", channel });
     setModalInput(channel.name);
-    setModalAudience(channel.restricted ? "SPECIFIC" : channel.minRole === "MANAGER" ? "MANAGER" : "AGENT");
+    setModalAudience(
+      channel.restricted
+        ? "SPECIFIC"
+        : channel.minRole === "MANAGER"
+          ? "MANAGER"
+          : "AGENT",
+    );
     setModalMemberIds(channel.memberIds ?? []);
     setModalError(null);
     ensureMembersLoaded();
@@ -752,7 +879,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     setModalError(null);
 
     if (modal.kind === "deleteMessage") {
-      const res = await fetch(`/api/portal/chat/messages?id=${modal.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/portal/chat/messages?id=${modal.id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         setModalError(await errorFrom(res, "Could not delete that message."));
         setModalBusy(false);
@@ -851,7 +980,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
     }
 
     if (modal.kind === "archiveChannel") {
-      const res = await fetch(`/api/portal/chat/channels/${modal.channel.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/portal/chat/channels/${modal.channel.id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         setModalError(await errorFrom(res, "Could not remove that channel."));
         setModalBusy(false);
@@ -865,8 +996,14 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
   const active = channels.find((c) => c.id === activeId) ?? null;
 
-  function messageRow(message: Message, prev: Message | undefined, inPinList: boolean) {
-    const newDay = !inPinList && (!prev || dayLabel(prev.createdAt) !== dayLabel(message.createdAt));
+  function messageRow(
+    message: Message,
+    prev: Message | undefined,
+    inPinList: boolean,
+  ) {
+    const newDay =
+      !inPinList &&
+      (!prev || dayLabel(prev.createdAt) !== dayLabel(message.createdAt));
     // Consecutive messages from one person in a short window read as one turn,
     // so only the first carries a name and a timestamp. Compares authorId
     // too, not just the displayed name — every admin shows as "Admin", so
@@ -876,7 +1013,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
       !newDay &&
       prev?.authorId === message.authorId &&
       prev?.authorName === message.authorName &&
-      new Date(message.createdAt).getTime() - new Date(prev.createdAt).getTime() < 300_000;
+      new Date(message.createdAt).getTime() -
+        new Date(prev.createdAt).getTime() <
+        300_000;
 
     return (
       <div key={message.id}>
@@ -889,9 +1028,19 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             <div className="h-px flex-1 bg-border" />
           </div>
         )}
-        <div className={cn("group relative flex items-start gap-2.5", isGrouped ? "mt-0.5" : "mt-3")}>
+        <div
+          className={cn(
+            "group relative flex items-start gap-2.5",
+            isGrouped ? "mt-0.5" : "mt-3",
+          )}
+        >
           <div className="w-8 shrink-0">
-            {!isGrouped && <MessageAvatar url={message.authorProfileImageUrl} name={message.authorName} />}
+            {!isGrouped && (
+              <MessageAvatar
+                url={message.authorProfileImageUrl}
+                name={message.authorName}
+              />
+            )}
           </div>
           <div className="min-w-0 flex-1">
             {!isGrouped && (
@@ -899,8 +1048,12 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                 <span className="font-condensed metal-copper-text text-sm font-extrabold tracking-wide uppercase">
                   {message.authorName}
                 </span>
-                <span className="text-xs text-muted">{timeLabel(message.createdAt)}</span>
-                {message.pinnedAt && !inPinList && <Pin className="h-3 w-3 text-[var(--copper-metal)]" />}
+                <span className="text-xs text-muted">
+                  {timeLabel(message.createdAt)}
+                </span>
+                {message.pinnedAt && !inPinList && (
+                  <Pin className="h-3 w-3 text-[var(--copper-metal)]" />
+                )}
               </div>
             )}
 
@@ -946,7 +1099,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
           <div className="absolute -top-2 right-0 hidden items-center gap-1 rounded-md border border-border bg-surface2 px-1.5 py-1 group-hover:flex">
             <button
               type="button"
-              onClick={() => setPicker(picker === message.id ? null : message.id)}
+              onClick={() =>
+                setPicker(picker === message.id ? null : message.id)
+              }
               aria-label="Add reaction"
               className="text-muted hover:text-[var(--copper-metal)]"
             >
@@ -957,9 +1112,18 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                 type="button"
                 onClick={() => togglePin(message)}
                 aria-label={message.pinnedAt ? "Unpin" : "Pin"}
-                className={cn("hover:text-[var(--copper-metal)]", message.pinnedAt ? "text-[var(--copper-metal)]" : "text-muted")}
+                className={cn(
+                  "hover:text-[var(--copper-metal)]",
+                  message.pinnedAt
+                    ? "text-[var(--copper-metal)]"
+                    : "text-muted",
+                )}
               >
-                {message.pinnedAt ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                {message.pinnedAt ? (
+                  <PinOff className="h-3.5 w-3.5" />
+                ) : (
+                  <Pin className="h-3.5 w-3.5" />
+                )}
               </button>
             )}
             {(message.authorId === me || canManage) && (
@@ -1033,7 +1197,10 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
           </div>
 
           <DroppableContainer id={LOOSE} className="min-h-[8px] space-y-1">
-            <SortableContext items={containers[LOOSE].map((id) => `chan:${id}`)} strategy={verticalListSortingStrategy}>
+            <SortableContext
+              items={containers[LOOSE].map((id) => `chan:${id}`)}
+              strategy={verticalListSortingStrategy}
+            >
               {containers[LOOSE].map((id) => {
                 const channel = channelById.get(id);
                 if (!channel) return null;
@@ -1052,7 +1219,10 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             </SortableContext>
           </DroppableContainer>
 
-          <SortableContext items={categoryOrder.map((id) => `cat:${id}`)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={categoryOrder.map((id) => `cat:${id}`)}
+            strategy={verticalListSortingStrategy}
+          >
             {categoryOrder.map((catId) => {
               const category = categories.find((c) => c.id === catId);
               if (!category) return null;
@@ -1066,8 +1236,14 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                   onToggleCollapsed={() => toggleCategoryCollapsed(catId)}
                   onAddChannel={() => openChannelModal(catId)}
                 >
-                  <DroppableContainer id={catId} className="min-h-[8px] space-y-1">
-                    <SortableContext items={ids.map((id) => `chan:${id}`)} strategy={verticalListSortingStrategy}>
+                  <DroppableContainer
+                    id={catId}
+                    className="min-h-[8px] space-y-1"
+                  >
+                    <SortableContext
+                      items={ids.map((id) => `chan:${id}`)}
+                      strategy={verticalListSortingStrategy}
+                    >
                       {ids.map((id) => {
                         const channel = channelById.get(id);
                         if (!channel) return null;
@@ -1090,7 +1266,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             })}
           </SortableContext>
 
-          {channels.length === 0 && <p className="px-1 py-2 text-sm text-muted">No channels yet.</p>}
+          {channels.length === 0 && (
+            <p className="px-1 py-2 text-sm text-muted">No channels yet.</p>
+          )}
         </aside>
       </DndContext>
 
@@ -1106,10 +1284,14 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="font-condensed text-lg font-extrabold tracking-wide text-white uppercase">
-                  {active.restricted || active.minRole !== "AGENT" ? "🔒 " : "#"}
+                  {active.restricted || active.minRole !== "AGENT"
+                    ? "🔒 "
+                    : "#"}
                   {active.name}
                 </h2>
-                {active.topic && <p className="mt-0.5 text-sm text-muted">{active.topic}</p>}
+                {active.topic && (
+                  <p className="mt-0.5 text-sm text-muted">{active.topic}</p>
+                )}
                 {active.restricted ? (
                   <p className="mt-0.5 text-xs text-muted">
                     {active.memberIds
@@ -1119,7 +1301,11 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                 ) : (
                   active.minRole !== "AGENT" && (
                     <p className="mt-0.5 text-xs text-muted">
-                      Visible to {active.minRole === "MANAGER" ? "managers and admins" : "admins"} only.
+                      Visible to{" "}
+                      {active.minRole === "MANAGER"
+                        ? "managers and admins"
+                        : "admins"}{" "}
+                      only.
                     </p>
                   )
                 )}
@@ -1154,13 +1340,15 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
           ref={scroller}
           onScroll={(e) => {
             const el = e.currentTarget;
-            atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+            atBottom.current =
+              el.scrollHeight - el.scrollTop - el.clientHeight < 80;
           }}
           className="flex-1 space-y-1 overflow-y-auto px-5 py-4"
         >
           {messages.length === 0 && (
             <p className="text-sm text-muted">
-              Nothing here yet. Say something and it shows up for the whole team.
+              Nothing here yet. Say something and it shows up for the whole
+              team.
             </p>
           )}
           {messages.map((m, i) => messageRow(m, messages[i - 1], false))}
@@ -1210,7 +1398,9 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
               ref={draftInput}
               data-tour="chat-composer"
               value={draft}
-              onChange={(e) => setDraft(e.target.value.slice(0, CHAT_MESSAGE_MAX))}
+              onChange={(e) =>
+                setDraft(e.target.value.slice(0, CHAT_MESSAGE_MAX))
+              }
               onKeyDown={(e) => {
                 // Enter sends, Shift+Enter is a new line — the same as every
                 // chat anyone on the team has already used.
@@ -1243,7 +1433,11 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
           onClick={() => setLightbox(null)}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={lightbox} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+          <img
+            src={lightbox}
+            alt=""
+            className="max-h-full max-w-full rounded-lg object-contain"
+          />
           <button
             type="button"
             onClick={() => setLightbox(null)}
@@ -1328,8 +1522,16 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
                 {modalAudience === "SPECIFIC" && (
                   <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-surface2 p-2">
-                    {members === null && <p className="px-1 py-1 text-sm text-muted">Loading people…</p>}
-                    {members?.length === 0 && <p className="px-1 py-1 text-sm text-muted">No one to pick from.</p>}
+                    {members === null && (
+                      <p className="px-1 py-1 text-sm text-muted">
+                        Loading people…
+                      </p>
+                    )}
+                    {members?.length === 0 && (
+                      <p className="px-1 py-1 text-sm text-muted">
+                        No one to pick from.
+                      </p>
+                    )}
                     {members?.map((person) => (
                       <label
                         key={person.id}
@@ -1340,12 +1542,16 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                           checked={modalMemberIds.includes(person.id)}
                           onChange={() =>
                             setModalMemberIds((prev) =>
-                              prev.includes(person.id) ? prev.filter((id) => id !== person.id) : [...prev, person.id],
+                              prev.includes(person.id)
+                                ? prev.filter((id) => id !== person.id)
+                                : [...prev, person.id],
                             )
                           }
                         />
                         <span className="truncate">{person.name}</span>
-                        <span className="ml-auto text-xs text-muted">{person.role}</span>
+                        <span className="ml-auto text-xs text-muted">
+                          {person.role}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -1355,16 +1561,23 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
 
             {modal.kind === "archiveChannel" && (
               <p className="text-sm text-foreground">
-                Remove <span className="font-bold metal-copper-text">#{modal.channel.name}</span> from the rail? Its
-                messages are kept.
+                Remove{" "}
+                <span className="font-bold metal-copper-text">
+                  #{modal.channel.name}
+                </span>{" "}
+                from the rail? Its messages are kept.
               </p>
             )}
 
             {modal.kind === "deleteMessage" && (
-              <p className="text-sm text-foreground">Delete this message for everyone?</p>
+              <p className="text-sm text-foreground">
+                Delete this message for everyone?
+              </p>
             )}
 
-            {modalError && <p className="mt-2 text-sm text-red-light">{modalError}</p>}
+            {modalError && (
+              <p className="mt-2 text-sm text-red-light">{modalError}</p>
+            )}
 
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -1379,14 +1592,21 @@ export function ChatRoom({ me, canManage }: { me: string; canManage: boolean }) 
                 onClick={submitModal}
                 disabled={
                   modalBusy ||
-                  (["category", "channel", "renameChannel"].includes(modal.kind) && !modalInput.trim()) ||
-                  ((modal.kind === "channel" || modal.kind === "renameChannel") &&
+                  (["category", "channel", "renameChannel"].includes(
+                    modal.kind,
+                  ) &&
+                    !modalInput.trim()) ||
+                  ((modal.kind === "channel" ||
+                    modal.kind === "renameChannel") &&
                     modalAudience === "SPECIFIC" &&
                     modalMemberIds.length === 0)
                 }
                 className="btn-metal-copper font-condensed rounded-md px-3 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors disabled:opacity-40"
               >
-                {modal.kind === "archiveChannel" || modal.kind === "deleteMessage" ? "Delete" : "Save"}
+                {modal.kind === "archiveChannel" ||
+                modal.kind === "deleteMessage"
+                  ? "Delete"
+                  : "Save"}
               </button>
             </div>
           </div>

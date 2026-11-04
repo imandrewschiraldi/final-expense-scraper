@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { CHAT_PAGE_SIZE, ADMIN_MARK_URL, BOT_MARK_URL, normaliseMessage } from "@/lib/chat";
+import {
+  CHAT_PAGE_SIZE,
+  ADMIN_MARK_URL,
+  BOT_MARK_URL,
+  normaliseMessage,
+} from "@/lib/chat";
 import { openChannelFor, channelRecipientIds } from "@/lib/chatAccess";
 import { sendPushToUser } from "@/lib/push";
 
@@ -17,6 +22,7 @@ const MESSAGE_SELECT = {
   createdAt: true,
   editedAt: true,
   pinnedAt: true,
+  externalAvatarUrl: true,
   reactions: { select: { emoji: true, userId: true } },
   // Live-joined rather than denormalised like authorName — an avatar should
   // follow an agent's current photo everywhere, including their old
@@ -27,6 +33,7 @@ const MESSAGE_SELECT = {
 type Row = {
   authorId: string | null;
   authorName: string;
+  externalAvatarUrl: string | null;
   reactions: { emoji: string; userId: string }[];
   author: { profileImageUrl: string | null; role: string } | null;
 } & Record<string, unknown>;
@@ -43,27 +50,52 @@ type Row = {
  * also applies to messages sent before this existed.
  */
 function shape(rows: Row[], me: string) {
-  return rows.map(({ reactions, author, authorId, authorName, ...rest }) => {
-    const byEmoji = new Map<string, { emoji: string; count: number; mine: boolean }>();
-    for (const r of reactions) {
-      const entry = byEmoji.get(r.emoji) ?? { emoji: r.emoji, count: 0, mine: false };
-      entry.count += 1;
-      entry.mine ||= r.userId === me;
-      byEmoji.set(r.emoji, entry);
-    }
-    // "Test Agent" is a leftover demo account's denormalised name from
-    // messages sent before it was cleaned up — relabelled the same way an
-    // admin's own name is, rather than shown as if a real agent sent it.
-    const isAdmin = author?.role === "ADMIN" || authorName === "Test Agent";
-    const isSystem = authorId === null;
-    return {
-      ...rest,
+  return rows.map(
+    ({
+      reactions,
+      author,
       authorId,
-      authorName: isAdmin ? "Admin" : authorName,
-      authorProfileImageUrl: isAdmin ? ADMIN_MARK_URL : isSystem ? BOT_MARK_URL : (author?.profileImageUrl ?? null),
-      reactions: [...byEmoji.values()],
-    };
-  });
+      authorName,
+      externalAvatarUrl,
+      ...rest
+    }) => {
+      const byEmoji = new Map<
+        string,
+        { emoji: string; count: number; mine: boolean }
+      >();
+      for (const r of reactions) {
+        const entry = byEmoji.get(r.emoji) ?? {
+          emoji: r.emoji,
+          count: 0,
+          mine: false,
+        };
+        entry.count += 1;
+        entry.mine ||= r.userId === me;
+        byEmoji.set(r.emoji, entry);
+      }
+      // "Test Agent" is a leftover demo account's denormalised name from
+      // messages sent before it was cleaned up — relabelled the same way an
+      // admin's own name is, rather than shown as if a real agent sent it.
+      const isAdmin = author?.role === "ADMIN" || authorName === "Test Agent";
+      const isSystem = authorId === null;
+      return {
+        ...rest,
+        authorId,
+        authorName: isAdmin ? "Admin" : authorName,
+        // A bridged post (GroupMe) carries its own avatar and takes priority
+        // over the generic Sales Bot mark that any other authorId-null
+        // (in-app system) post falls back to.
+        authorProfileImageUrl: isAdmin
+          ? ADMIN_MARK_URL
+          : externalAvatarUrl
+            ? externalAvatarUrl
+            : isSystem
+              ? BOT_MARK_URL
+              : (author?.profileImageUrl ?? null),
+        reactions: [...byEmoji.values()],
+      };
+    },
+  );
 }
 
 /**
@@ -81,19 +113,31 @@ function shape(rows: Row[], me: string) {
  */
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const channel = await openChannelFor(req.nextUrl.searchParams.get("channelId"), session.user.id, session.user.role);
-  if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const channel = await openChannelFor(
+    req.nextUrl.searchParams.get("channelId"),
+    session.user.id,
+    session.user.role,
+  );
+  if (!channel)
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (req.nextUrl.searchParams.get("pinned")) {
     const pins = await db.chatMessage.findMany({
-      where: { channelId: channel.id, deletedAt: null, pinnedAt: { not: null } },
+      where: {
+        channelId: channel.id,
+        deletedAt: null,
+        pinnedAt: { not: null },
+      },
       orderBy: { pinnedAt: "desc" },
       take: 50,
       select: MESSAGE_SELECT,
     });
-    return NextResponse.json({ messages: shape(pins as unknown as Row[], session.user.id) });
+    return NextResponse.json({
+      messages: shape(pins as unknown as Row[], session.user.id),
+    });
   }
 
   const after = req.nextUrl.searchParams.get("after");
@@ -118,7 +162,11 @@ export async function GET(req: NextRequest) {
   let touched: unknown[] = [];
   if (incremental) {
     const recent = await db.chatMessage.findMany({
-      where: { channelId: channel.id, deletedAt: null, createdAt: { lte: afterDate! } },
+      where: {
+        channelId: channel.id,
+        deletedAt: null,
+        createdAt: { lte: afterDate! },
+      },
       orderBy: { createdAt: "desc" },
       take: CHAT_PAGE_SIZE,
       select: MESSAGE_SELECT,
@@ -129,9 +177,15 @@ export async function GET(req: NextRequest) {
   if (!incremental || ordered.length > 0) {
     const at = ordered.at(-1)?.createdAt ?? new Date();
     await db.chatRead.upsert({
-      where: { channelId_userId: { channelId: channel.id, userId: session.user.id } },
+      where: {
+        channelId_userId: { channelId: channel.id, userId: session.user.id },
+      },
       update: { lastReadAt: at },
-      create: { channelId: channel.id, userId: session.user.id, lastReadAt: at },
+      create: {
+        channelId: channel.id,
+        userId: session.user.id,
+        lastReadAt: at,
+      },
     });
   }
 
@@ -144,17 +198,31 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = (await req.json()) as { channelId?: string; body?: string; imageUrl?: string };
-  const channel = await openChannelFor(body.channelId ?? null, session.user.id, session.user.role);
-  if (!channel) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const body = (await req.json()) as {
+    channelId?: string;
+    body?: string;
+    imageUrl?: string;
+  };
+  const channel = await openChannelFor(
+    body.channelId ?? null,
+    session.user.id,
+    session.user.role,
+  );
+  if (!channel)
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // An image-only message is valid (body ends up ""); text-only is the
   // common case; empty-and-imageless is the only thing rejected.
   const text = normaliseMessage(body.body) ?? "";
-  const imageUrl = typeof body.imageUrl === "string" && body.imageUrl.startsWith("https://") ? body.imageUrl : null;
-  if (!text && !imageUrl) return NextResponse.json({ error: "Message is empty" }, { status: 400 });
+  const imageUrl =
+    typeof body.imageUrl === "string" && body.imageUrl.startsWith("https://")
+      ? body.imageUrl
+      : null;
+  if (!text && !imageUrl)
+    return NextResponse.json({ error: "Message is empty" }, { status: 400 });
 
   const message = await db.chatMessage.create({
     data: {
@@ -168,13 +236,25 @@ export async function POST(req: NextRequest) {
   });
 
   await db.chatRead.upsert({
-    where: { channelId_userId: { channelId: channel.id, userId: session.user.id } },
+    where: {
+      channelId_userId: { channelId: channel.id, userId: session.user.id },
+    },
     update: { lastReadAt: message.createdAt },
-    create: { channelId: channel.id, userId: session.user.id, lastReadAt: message.createdAt },
+    create: {
+      channelId: channel.id,
+      userId: session.user.id,
+      lastReadAt: message.createdAt,
+    },
   });
 
-  const recipients = (await channelRecipientIds(channel)).filter((id) => id !== session.user.id);
-  const preview = text ? (text.length > 120 ? `${text.slice(0, 117)}...` : text) : "Sent a photo";
+  const recipients = (await channelRecipientIds(channel)).filter(
+    (id) => id !== session.user.id,
+  );
+  const preview = text
+    ? text.length > 120
+      ? `${text.slice(0, 117)}...`
+      : text
+    : "Sent a photo";
   await Promise.all(
     recipients.map((userId) =>
       sendPushToUser(userId, {
@@ -185,19 +265,27 @@ export async function POST(req: NextRequest) {
     ),
   );
 
-  return NextResponse.json({ message: shape([message as unknown as Row], session.user.id)[0] });
+  return NextResponse.json({
+    message: shape([message as unknown as Row], session.user.id)[0],
+  });
 }
 
 /** Authors retract their own; admins can retract anyone's. */
 export async function DELETE(req: NextRequest) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const id = req.nextUrl.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+  if (!id)
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-  const message = await db.chatMessage.findUnique({ where: { id }, select: { authorId: true } });
-  if (!message) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const message = await db.chatMessage.findUnique({
+    where: { id },
+    select: { authorId: true },
+  });
+  if (!message)
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (message.authorId !== session.user.id && session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
