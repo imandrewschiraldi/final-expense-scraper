@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   GripVertical,
@@ -371,6 +372,12 @@ export function ChatRoom({
   me: string;
   canManage: boolean;
 }) {
+  // The Overview Team Chat widget's "View All" links here with the slug of
+  // whichever channel most recently had a message — read once up front so
+  // loadRail's first resolution can give it priority over the ordinary
+  // "last channel you had open" restore.
+  const linkedChannelSlug = useSearchParams().get("channel");
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -607,11 +614,18 @@ export function ChatRoom({
     setChannels(data.channels);
     setActiveId((current) => {
       if (current) return current;
+      const linked = linkedChannelSlug
+        ? data.channels.find((c) => c.slug === linkedChannelSlug)?.id
+        : undefined;
+      if (linked) {
+        localStorage.setItem(LAST_CHANNEL_KEY, linked);
+        return linked;
+      }
       const last = localStorage.getItem(LAST_CHANNEL_KEY);
       if (last && data.channels.some((c) => c.id === last)) return last;
       return data.channels[0]?.id ?? null;
     });
-  }, []);
+  }, [linkedChannelSlug]);
 
   const loadPins = useCallback(async (channelId: string) => {
     const res = await fetch(

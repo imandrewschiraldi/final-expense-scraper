@@ -11,10 +11,21 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { SortableContext, useSortable, rectSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { GripVertical, Eye, EyeOff, LayoutGrid, Check, FilePlus2 } from "lucide-react";
+import {
+  GripVertical,
+  Eye,
+  EyeOff,
+  LayoutGrid,
+  Check,
+  FilePlus2,
+} from "lucide-react";
 import { PageHeading } from "@/components/portal/PageHeading";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
@@ -24,10 +35,20 @@ import { MiniLeaderboard } from "@/components/portal/overview/MiniLeaderboard";
 import { NewTrainingWidget } from "@/components/portal/overview/NewTrainingWidget";
 import { RecruitingRadarWidget } from "@/components/portal/overview/RecruitingRadarWidget";
 import { UnderwritingGenieMini } from "@/components/portal/overview/UnderwritingGenieMini";
-import { SubtitleEditor, subtitleClassName, subtitleStyle, type Subtitle } from "@/components/portal/overview/SubtitleEditor";
+import {
+  SubtitleEditor,
+  subtitleClassName,
+  subtitleStyle,
+  type Subtitle,
+} from "@/components/portal/overview/SubtitleEditor";
 import { DEFAULT_OVERVIEW_SUBTITLE_TEXT } from "@/lib/overviewSubtitle";
 
-type LayoutWidget = { id: string; label: string; order: number; enabled: boolean };
+type LayoutWidget = {
+  id: string;
+  label: string;
+  order: number;
+  enabled: boolean;
+};
 
 const DEFAULT_SUBTITLE: Subtitle = {
   text: DEFAULT_OVERVIEW_SUBTITLE_TEXT,
@@ -36,7 +57,15 @@ const DEFAULT_SUBTITLE: Subtitle = {
 };
 
 type OverviewData = {
-  messages: { id: string; body: string; authorName: string; authorProfileImageUrl: string | null; createdAt: string; channelName: string }[];
+  messages: {
+    id: string;
+    body: string;
+    authorName: string;
+    authorProfileImageUrl: string | null;
+    createdAt: string;
+    channelName: string;
+    channelSlug: string;
+  }[];
   newLessons: { id: string; title: string; moduleTitle: string }[];
   overviewSubtitle: Subtitle;
   hallOfFame: {
@@ -48,10 +77,24 @@ type OverviewData = {
   layout: LayoutWidget[];
 };
 
-function WidgetContent({ id, data, trainingHref }: { id: string; data: OverviewData; trainingHref: string }) {
+function WidgetContent({
+  id,
+  data,
+  trainingHref,
+}: {
+  id: string;
+  data: OverviewData;
+  trainingHref: string;
+}) {
   switch (id) {
     case "hallOfFame":
-      return <HallOfFameCard personal={data.hallOfFame.personal} agency={data.hallOfFame.agency} annuity={data.hallOfFame.annuity} />;
+      return (
+        <HallOfFameCard
+          personal={data.hallOfFame.personal}
+          agency={data.hallOfFame.agency}
+          annuity={data.hallOfFame.annuity}
+        />
+      );
     case "bonusVolume":
       return <BonusVolumeCard issuedAP={data.bonusVolume.issuedAP} />;
     case "teamChat":
@@ -59,7 +102,12 @@ function WidgetContent({ id, data, trainingHref }: { id: string; data: OverviewD
     case "leaderboard":
       return <MiniLeaderboard />;
     case "newTraining":
-      return <NewTrainingWidget lessons={data.newLessons} trainingHref={trainingHref} />;
+      return (
+        <NewTrainingWidget
+          lessons={data.newLessons}
+          trainingHref={trainingHref}
+        />
+      );
     case "recruitingRadar":
       return <RecruitingRadarWidget />;
     case "underwritingGenie":
@@ -73,9 +121,28 @@ function WidgetContent({ id, data, trainingHref }: { id: string; data: OverviewD
  *  eye toggle to show/hide it, overlaid on the real widget underneath
  *  (dimmed while hidden) rather than replacing it with some abstracted
  *  settings-list row, so the admin is reordering the actual page. */
-function EditableTile({ widget, onToggle, children }: { widget: LayoutWidget; onToggle: () => void; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: widget.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+function EditableTile({
+  widget,
+  onToggle,
+  children,
+}: {
+  widget: LayoutWidget;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: widget.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   return (
     <div ref={setNodeRef} style={style} className="relative">
@@ -84,11 +151,17 @@ function EditableTile({ widget, onToggle, children }: { widget: LayoutWidget; on
         <button
           type="button"
           onClick={onToggle}
-          aria-label={widget.enabled ? `Hide ${widget.label}` : `Show ${widget.label}`}
+          aria-label={
+            widget.enabled ? `Hide ${widget.label}` : `Show ${widget.label}`
+          }
           title={widget.enabled ? "Hide" : "Show"}
           className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
         >
-          {widget.enabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+          {widget.enabled ? (
+            <Eye className="h-3.5 w-3.5" />
+          ) : (
+            <EyeOff className="h-3.5 w-3.5" />
+          )}
         </button>
         <span
           {...attributes}
@@ -108,7 +181,10 @@ export function OverviewClient() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(TouchSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -118,7 +194,11 @@ export function OverviewClient() {
         return res.json();
       })
       .then((d) => !cancelled && setData(d))
-      .catch((err) => !cancelled && setError(err instanceof Error ? err.message : "Failed to load."));
+      .catch(
+        (err) =>
+          !cancelled &&
+          setError(err instanceof Error ? err.message : "Failed to load."),
+      );
     return () => {
       cancelled = true;
     };
@@ -126,12 +206,24 @@ export function OverviewClient() {
 
   const isAdmin = session?.user.role === "ADMIN";
   const name = session?.user.name?.split(" ")[0] ?? "there";
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-  const trainingHref = session?.user.role === "ADMIN" ? "/admin/training" : "/agent/training";
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+  const trainingHref =
+    session?.user.role === "ADMIN" ? "/admin/training" : "/agent/training";
   const subtitle = data?.overviewSubtitle ?? DEFAULT_SUBTITLE;
 
   async function toggleWidget(id: string, enabled: boolean) {
-    setData((d) => (d ? { ...d, layout: d.layout.map((w) => (w.id === id ? { ...w, enabled } : w)) } : d));
+    setData((d) =>
+      d
+        ? {
+            ...d,
+            layout: d.layout.map((w) => (w.id === id ? { ...w, enabled } : w)),
+          }
+        : d,
+    );
     await fetch("/api/admin/overview-layout", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -163,16 +255,26 @@ export function OverviewClient() {
 
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.18em] text-muted uppercase">{today}</p>
+          <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.18em] text-muted uppercase">
+            {today}
+          </p>
           <h1 className="font-condensed text-[28px] font-extrabold tracking-wide text-white uppercase sm:text-[32px]">
             Welcome back, {name}
           </h1>
           <div className="mt-1.5 flex items-start gap-1.5">
-            <p className={`text-sm ${subtitleClassName(subtitle.color, subtitle.bold)}`} style={subtitleStyle(subtitle.color)}>
+            <p
+              className={`text-sm ${subtitleClassName(subtitle.color, subtitle.bold)}`}
+              style={subtitleStyle(subtitle.color)}
+            >
               {subtitle.text}
             </p>
             {isAdmin && data && (
-              <SubtitleEditor current={subtitle} onSaved={(next) => setData((d) => (d ? { ...d, overviewSubtitle: next } : d))} />
+              <SubtitleEditor
+                current={subtitle}
+                onSaved={(next) =>
+                  setData((d) => (d ? { ...d, overviewSubtitle: next } : d))
+                }
+              />
             )}
           </div>
         </div>
@@ -181,10 +283,16 @@ export function OverviewClient() {
             type="button"
             onClick={() => setEditing((e) => !e)}
             className={`font-condensed flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] font-bold tracking-wide uppercase transition-colors ${
-              editing ? "border-copper-dim-gradient bg-surface2 text-white" : "border-border text-muted hover:text-foreground"
+              editing
+                ? "border-copper-dim-gradient bg-surface2 text-white"
+                : "border-border text-muted hover:text-foreground"
             }`}
           >
-            {editing ? <Check className="h-3.5 w-3.5" /> : <LayoutGrid className="h-3.5 w-3.5" />}
+            {editing ? (
+              <Check className="h-3.5 w-3.5" />
+            ) : (
+              <LayoutGrid className="h-3.5 w-3.5" />
+            )}
             {editing ? "Done" : "Edit Layout"}
           </button>
         )}
@@ -219,12 +327,27 @@ export function OverviewClient() {
       ) : !data ? (
         <p className="text-sm text-muted">Loading...</p>
       ) : editing ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={data.layout.map((w) => w.id)} strategy={rectSortingStrategy}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={data.layout.map((w) => w.id)}
+            strategy={rectSortingStrategy}
+          >
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {data.layout.map((widget) => (
-                <EditableTile key={widget.id} widget={widget} onToggle={() => toggleWidget(widget.id, !widget.enabled)}>
-                  <WidgetContent id={widget.id} data={data} trainingHref={trainingHref} />
+                <EditableTile
+                  key={widget.id}
+                  widget={widget}
+                  onToggle={() => toggleWidget(widget.id, !widget.enabled)}
+                >
+                  <WidgetContent
+                    id={widget.id}
+                    data={data}
+                    trainingHref={trainingHref}
+                  />
                 </EditableTile>
               ))}
             </div>
@@ -236,7 +359,11 @@ export function OverviewClient() {
             .filter((w) => w.enabled)
             .map((widget) => (
               <div key={widget.id}>
-                <WidgetContent id={widget.id} data={data} trainingHref={trainingHref} />
+                <WidgetContent
+                  id={widget.id}
+                  data={data}
+                  trainingHref={trainingHref}
+                />
               </div>
             ))}
         </div>
