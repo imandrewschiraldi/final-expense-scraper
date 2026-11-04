@@ -2,7 +2,22 @@
 
 import { useState } from "react";
 import { upload } from "@vercel/blob/client";
-import { ImagePlus, Upload, X } from "lucide-react";
+import { GripVertical, ImagePlus, Upload, X } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -583,17 +598,28 @@ function LessonRow({
   lesson,
   onUpdate,
   onDelete,
-  onMove,
   onRemoveVideo,
   onRemoveImage,
 }: {
   lesson: Lesson;
   onUpdate: (id: string, data: LessonInput) => Promise<void>;
   onDelete: (id: string) => void;
-  onMove: (id: string, direction: "up" | "down") => void;
   onRemoveVideo: (videoId: string) => Promise<void>;
   onRemoveImage: (imageId: string) => Promise<void>;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: lesson.id });
+  const dragStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(lesson.title);
   const [description, setDescription] = useState(lesson.description ?? "");
@@ -624,7 +650,11 @@ function LessonRow({
 
   if (editing) {
     return (
-      <div className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
+      <div
+        ref={setNodeRef}
+        style={dragStyle}
+        className="space-y-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3"
+      >
         <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         <VideoUrlList videos={videos} onChange={setVideos} />
         <TextArea value={description} onChange={setDescription} />
@@ -661,8 +691,20 @@ function LessonRow({
   }
 
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface2 p-3">
-      <div className="min-w-0">
+    <div
+      ref={setNodeRef}
+      style={dragStyle}
+      className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface2 p-3"
+    >
+      <span
+        {...attributes}
+        {...listeners}
+        title="Drag to reorder"
+        className="flex h-6 w-6 shrink-0 cursor-grab touch-none items-center justify-center text-muted active:cursor-grabbing"
+      >
+        <GripVertical className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-white">{lesson.title}</p>
         {lesson.description && (
           <p className="mt-1 text-xs text-muted">{lesson.description}</p>
@@ -719,12 +761,6 @@ function LessonRow({
         )}
       </div>
       <div className="flex shrink-0 gap-1">
-        <Button variant="ghost" onClick={() => onMove(lesson.id, "up")}>
-          ↑
-        </Button>
-        <Button variant="ghost" onClick={() => onMove(lesson.id, "down")}>
-          ↓
-        </Button>
         <Button variant="ghost" onClick={() => setEditing(true)}>
           Edit
         </Button>
@@ -753,6 +789,10 @@ export function TrainingPanel({
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editThumbnailUrl, setEditThumbnailUrl] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor),
+  );
 
   async function refresh() {
     const res = await fetch("/api/admin/training/modules");
@@ -858,13 +898,29 @@ export function TrainingPanel({
     await refresh();
   }
 
-  async function moveLesson(id: string, direction: "up" | "down") {
-    await fetch(`/api/admin/training/lessons/${id}/move`, {
-      method: "POST",
+  // Reorders optimistically (so the drop feels instant) and persists via
+  // the module's lessons PATCH reorder endpoint — same pattern as the
+  // Announcements drag-to-reorder list.
+  async function handleLessonDragEnd(moduleId: string, event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const module_ = modules.find((m) => m.id === moduleId);
+    if (!module_) return;
+    const ids = module_.lessons.map((l) => l.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = [...module_.lessons];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+    setModules((prev) =>
+      prev.map((m) => (m.id === moduleId ? { ...m, lessons: reordered } : m)),
+    );
+    await fetch(`/api/admin/training/modules/${moduleId}/lessons`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ direction }),
+      body: JSON.stringify({ reorder: reordered.map((l) => l.id) }),
     });
-    await refresh();
   }
 
   return (
@@ -1005,17 +1061,31 @@ export function TrainingPanel({
           </CardHeader>
 
           <div className="space-y-2">
-            {module_.lessons.map((lesson) => (
-              <LessonRow
-                key={lesson.id}
-                lesson={lesson}
-                onUpdate={updateLesson}
-                onDelete={deleteLesson}
-                onMove={moveLesson}
-                onRemoveVideo={(videoId) => removeLessonVideo(lesson, videoId)}
-                onRemoveImage={(imageId) => removeLessonImage(lesson, imageId)}
-              />
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event) => handleLessonDragEnd(module_.id, event)}
+            >
+              <SortableContext
+                items={module_.lessons.map((l) => l.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {module_.lessons.map((lesson) => (
+                  <LessonRow
+                    key={lesson.id}
+                    lesson={lesson}
+                    onUpdate={updateLesson}
+                    onDelete={deleteLesson}
+                    onRemoveVideo={(videoId) =>
+                      removeLessonVideo(lesson, videoId)
+                    }
+                    onRemoveImage={(imageId) =>
+                      removeLessonImage(lesson, imageId)
+                    }
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
             {module_.lessons.length === 0 && (
               <p className="text-sm text-muted">
                 No lessons in this module yet.

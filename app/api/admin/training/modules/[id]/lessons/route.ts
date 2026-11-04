@@ -55,3 +55,42 @@ export async function POST(
 
   return NextResponse.json({ lesson }, { status: 201 });
 }
+
+/** Drag-to-reorder for a module's lesson list — mirrors the Announcements
+ *  reorder endpoint's shape: the full ordered id list, applied as a
+ *  single transaction. Only ever touches lessons that actually belong to
+ *  this module, so a stale client can't reorder (or silently drop) a
+ *  lesson that's since moved elsewhere. */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard.error;
+
+  const { id: moduleId } = await params;
+  const body = await req.json();
+  const { reorder } = body as { reorder?: unknown };
+
+  if (!Array.isArray(reorder) || !reorder.every((v) => typeof v === "string")) {
+    return NextResponse.json(
+      { error: "reorder must be an array of lesson ids" },
+      { status: 400 },
+    );
+  }
+
+  const lessons = await db.trainingLesson.findMany({
+    where: { moduleId },
+    select: { id: true },
+  });
+  const validIds = new Set(lessons.map((l) => l.id));
+  const ids = reorder.filter((id) => validIds.has(id));
+
+  await db.$transaction(
+    ids.map((id, index) =>
+      db.trainingLesson.update({ where: { id }, data: { order: index } }),
+    ),
+  );
+
+  return NextResponse.json({ ok: true });
+}
