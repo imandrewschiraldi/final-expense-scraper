@@ -84,8 +84,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"], section: "leads" },
 
   { href: "/scripts", label: "Scripts", icon: FileText, roles: ["MANAGER", "AGENT"], section: "sell" },
-  { href: "/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"], section: "sell" },
   { href: "/underwriting-genie", label: "Underwriting Genie", icon: Stethoscope, roles: ["ADMIN", "MANAGER", "AGENT"], section: "sell" },
+  { href: "/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"], section: "sell" },
   { href: "/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["MANAGER", "AGENT"], section: "sell" },
   { href: "/ask-integrity", label: "Ask Integrity", icon: Bot, roles: ["ADMIN", "MANAGER", "AGENT"], section: "sell" },
   { href: "/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["MANAGER", "AGENT"], section: "sell" },
