@@ -1,11 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 
 /** Generic overlay dialog — backdrop blur + spring-in panel, matching the
- *  weight of CelebrationOverlay. Closes on Escape or a backdrop click. */
+ *  weight of CelebrationOverlay. Closes on Escape or a backdrop click.
+ *
+ *  Portals to document.body rather than rendering in place: a trigger
+ *  button nested inside a hover-only wrapper (e.g. a row of icons shown
+ *  via `hidden group-hover:flex`, as in a channel list's row actions)
+ *  would otherwise collapse the whole modal to nothing the instant the
+ *  pointer leaves that row — `display: none` on any ancestor hides a
+ *  `position: fixed` descendant too, since it never escapes the render
+ *  tree in the first place. Portaling escapes that (and any other
+ *  ancestor overflow/stacking quirk) once, for every caller, instead of
+ *  each one needing to route around it. */
 export function Modal({
   open,
   onClose,
@@ -29,6 +40,14 @@ export function Modal({
   // visually disconnect from it.
   panelBorderClassName?: string;
 }) {
+  // document.body isn't available during SSR/the first client render —
+  // the portal target only exists once mounted.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -38,7 +57,9 @@ export function Modal({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -82,6 +103,7 @@ export function Modal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
