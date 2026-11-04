@@ -155,22 +155,25 @@ function Avatar({
   );
 }
 
-/** Two small L-shaped corner marks over a podium card's square corners —
- *  only top-right and bottom-left get one, since top-left and
- *  bottom-right are chamfered (see CARD_CHAMFER) and a 90° bracket has
- *  nothing square to sit on there. */
+/** Four small L-shaped corner marks over a podium card, one per corner —
+ *  including the two that are chamfered flat (see CARD_CHAMFER), where
+ *  the bracket floats just past the diagonal cut at the card's original
+ *  square-corner position instead of bending to follow it. */
 function CornerBrackets({ color }: { color: string }) {
-  // Offset just outside the card's own edge (rather than flush at 0,0)
-  // so the two don't stack into one doubled/thickened line at each
-  // corner — they read as a separate accent frame floating over the edge.
+  // All four corners get the same L-bracket, positioned at the card's
+  // original (un-chamfered) corner point — floating just outside the
+  // card's own edge (rather than flush at 0,0, so the two don't stack
+  // into one doubled/thickened line). At the two chamfered corners this
+  // sits past the diagonal cut, at the same spot a square corner would
+  // have been, rather than trying to bend the bracket to follow the cut.
   const common = "pointer-events-none absolute h-4 w-4 sm:h-5 sm:w-5";
-  // The chamfered corners (top-left, bottom-right) get a short diagonal
-  // tick parallel to the cut instead of a 90° bracket — there's no right
-  // angle there for an L-shape to sit on.
-  const tick = "pointer-events-none absolute h-[2px] w-5 sm:w-6";
-  const tickStyle = { background: color, boxShadow: `0 0 6px ${color}` };
   return (
     <>
+      <span
+        className={cn(common, "-top-1.5 -left-1.5 border-t-2 border-l-2")}
+        style={{ borderColor: color }}
+        aria-hidden="true"
+      />
       <span
         className={cn(common, "-top-1.5 -right-1.5 border-t-2 border-r-2")}
         style={{ borderColor: color }}
@@ -182,23 +185,8 @@ function CornerBrackets({ color }: { color: string }) {
         aria-hidden="true"
       />
       <span
-        className={tick}
-        style={{
-          ...tickStyle,
-          top: -2,
-          left: -2,
-          transform: "translate(-50%, -50%) rotate(-45deg)",
-        }}
-        aria-hidden="true"
-      />
-      <span
-        className={tick}
-        style={{
-          ...tickStyle,
-          bottom: -2,
-          right: -2,
-          transform: "translate(50%, 50%) rotate(-45deg)",
-        }}
+        className={cn(common, "-bottom-1.5 -right-1.5 border-b-2 border-r-2")}
+        style={{ borderColor: color }}
         aria-hidden="true"
       />
     </>
