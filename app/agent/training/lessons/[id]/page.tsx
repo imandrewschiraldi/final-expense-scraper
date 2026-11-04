@@ -27,23 +27,26 @@ export default async function AgentTrainingLessonPage({
     notFound();
   }
 
-  const [allModules, progress] = await Promise.all([
-    db.trainingModule.findMany({
+  const [moduleLessons, progress] = await Promise.all([
+    // Scoped to this lesson's own module, not every lesson in the whole
+    // course — Prev/Next only ever move within a module; reaching the end
+    // of one hands off to the training overview (see nextId below)
+    // instead of sliding straight into the next module unannounced.
+    db.trainingLesson.findMany({
+      where: { moduleId: lesson.moduleId },
       orderBy: { order: "asc" },
-      include: { lessons: { orderBy: { order: "asc" }, select: { id: true } } },
+      select: { id: true },
     }),
     db.trainingProgress.findUnique({
       where: { agentId_lessonId: { agentId, lessonId: id } },
     }),
   ]);
 
-  const flatLessonIds = allModules.flatMap((m) => m.lessons.map((l) => l.id));
-  const index = flatLessonIds.indexOf(id);
-  const prevId = index > 0 ? flatLessonIds[index - 1] : null;
+  const lessonIds = moduleLessons.map((l) => l.id);
+  const index = lessonIds.indexOf(id);
+  const prevId = index > 0 ? lessonIds[index - 1] : null;
   const nextId =
-    index >= 0 && index < flatLessonIds.length - 1
-      ? flatLessonIds[index + 1]
-      : null;
+    index >= 0 && index < lessonIds.length - 1 ? lessonIds[index + 1] : null;
 
   return (
     <TrainingLessonView
@@ -60,7 +63,7 @@ export default async function AgentTrainingLessonPage({
         prevId,
         nextId,
         position: index >= 0 ? index + 1 : null,
-        total: flatLessonIds.length,
+        total: lessonIds.length,
       }}
     />
   );

@@ -378,9 +378,14 @@ export function TrainingLessonView({
   const prevHref = navigation.prevId
     ? `/agent/training/lessons/${navigation.prevId}`
     : null;
+  // navigation.nextId only ever points at the next lesson in this same
+  // module (see app/agent/training/lessons/[id]/page.tsx) — the last
+  // lesson in a module has none, and "Next" from there goes back to the
+  // training overview instead of sliding into the next module.
+  const isLastInModule = !navigation.nextId;
   const nextHref = navigation.nextId
     ? `/agent/training/lessons/${navigation.nextId}`
-    : null;
+    : "/agent/training";
 
   // A video resolves either to something trackable (a single playable
   // video — must finish) or, for a link with no single end to reach — a
@@ -503,12 +508,8 @@ export function TrainingLessonView({
             >
               &larr; Prev
             </Button>
-            <Button
-              variant="ghost"
-              disabled={!nextHref}
-              onClick={() => nextHref && router.push(nextHref)}
-            >
-              Next &rarr;
+            <Button variant="ghost" onClick={() => router.push(nextHref)}>
+              {isLastInModule ? "Finish Module →" : "Next →"}
             </Button>
           </div>
         </div>
