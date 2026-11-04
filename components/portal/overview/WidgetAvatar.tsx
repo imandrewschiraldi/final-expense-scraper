@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { optimizableImageUrl } from "@/lib/profileImage";
-import { markBackground } from "@/lib/chat";
+import { chatInitials, markBackground } from "@/lib/chat";
 
 /** Shared avatar for Overview's mini widgets (Team Chat, Leaderboard) —
  *  profile picture when there is one (and it's a Blob URL next/image can
@@ -12,12 +12,23 @@ import { markBackground } from "@/lib/chat";
  *  rather than Blob URLs, and need to stay fully visible rather than be
  *  cropped to fill the circle, so they get their own case — same
  *  treatment as the full Team Chat page's MessageAvatar. */
-export function WidgetAvatar({ url, name, sizeClassName }: { url: string | null; name: string; sizeClassName: string }) {
+export function WidgetAvatar({
+  url,
+  name,
+  sizeClassName,
+}: {
+  url: string | null;
+  name: string;
+  sizeClassName: string;
+}) {
   const markBg = markBackground(url);
   if (markBg) {
     return (
       <div
-        className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border", sizeClassName)}
+        className={cn(
+          "flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border",
+          sizeClassName,
+        )}
         style={{ background: markBg }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -27,7 +38,17 @@ export function WidgetAvatar({ url, name, sizeClassName }: { url: string | null;
   }
   const src = optimizableImageUrl(url);
   return src ? (
-    <Image src={src} alt="" width={30} height={30} quality={90} className={cn("shrink-0 rounded-full border border-border object-cover", sizeClassName)} />
+    <Image
+      src={src}
+      alt=""
+      width={30}
+      height={30}
+      quality={90}
+      className={cn(
+        "shrink-0 rounded-full border border-border object-cover",
+        sizeClassName,
+      )}
+    />
   ) : (
     <div
       className={cn(
@@ -35,7 +56,7 @@ export function WidgetAvatar({ url, name, sizeClassName }: { url: string | null;
         sizeClassName,
       )}
     >
-      {name.charAt(0).toUpperCase()}
+      {chatInitials(name)}
     </div>
   );
 }

@@ -42,6 +42,7 @@ import {
   CHAT_POLL_ACTIVE_MS,
   CHAT_POLL_HIDDEN_MS,
   CHAT_REACTIONS,
+  chatInitials,
   markBackground,
 } from "@/lib/chat";
 
@@ -131,7 +132,7 @@ function MessageAvatar({ url, name }: { url: string | null; name: string }) {
     />
   ) : (
     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-copper-dim-gradient bg-surface2 text-sm font-bold text-muted">
-      {name.charAt(0).toUpperCase()}
+      {chatInitials(name)}
     </div>
   );
 }

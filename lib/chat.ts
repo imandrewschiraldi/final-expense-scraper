@@ -61,6 +61,17 @@ export function markBackground(url: string | null): string | null {
   return null;
 }
 
+/** Two-letter initials (first + last name) for a photo-less sender's
+ *  avatar circle — in both the full Team Chat page and the Overview
+ *  widget, same as the Arena leaderboard's own avatar badges. A one-word
+ *  name (just "Miles", a GroupMe member who never set a last name) falls
+ *  back to its single initial rather than repeating or erroring. */
+export function chatInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
 /**
  * Roles that can read a channel gated at `minRole`.
  *
