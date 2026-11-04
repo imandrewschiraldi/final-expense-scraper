@@ -8,10 +8,11 @@ export const TRAINING_IMAGE_TYPES = [
   "image/webp",
 ] as const;
 
-// Mirrors the video limits the Announcements upload route already uses
-// (app/api/admin/announcements/upload/route.ts) — a lesson video an admin
-// uploads directly, rather than linking to YouTube/Vimeo/Loom/elsewhere.
-export const TRAINING_VIDEO_MAX_BYTES = 300 * 1024 * 1024;
+// A lesson video an admin uploads directly, rather than linking to
+// YouTube/Vimeo/Loom/elsewhere. Not a platform ceiling — just comfortably
+// above what a normal screen recording or phone video runs, since the
+// upload itself goes straight from the browser to Blob storage either way.
+export const TRAINING_VIDEO_MAX_BYTES = 1024 * 1024 * 1024;
 export const TRAINING_VIDEO_TYPES = [
   "video/mp4",
   "video/webm",
