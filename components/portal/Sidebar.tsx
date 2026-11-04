@@ -72,9 +72,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"], requiresAgencyDashboard: true, section: "overview" },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"], section: "overview" },
 
-  { href: "/chat", label: "Team Chat", icon: MessagesSquare, roles: ["ADMIN", "MANAGER", "AGENT"], section: "team" },
   { href: "/agent/training", label: "Training", icon: GraduationCap, roles: ["MANAGER", "AGENT"], section: "team" },
   { href: "/admin/training", label: "Training", icon: GraduationCap, roles: ["ADMIN"], section: "team" },
+  { href: "/chat", label: "Team Chat", icon: MessagesSquare, roles: ["ADMIN", "MANAGER", "AGENT"], section: "team" },
 
   { href: "/agent/dashboard", label: "My Leads", icon: Users, roles: ["MANAGER", "AGENT"], section: "leads" },
   { href: "/agent/vault", label: "Vault", icon: Archive, roles: ["MANAGER", "AGENT"], requiresVault: true, section: "leads" },
