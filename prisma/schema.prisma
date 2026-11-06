@@ -900,6 +900,10 @@ model JobApplicationStatusHistory {
 /// here as fields rather than new tables.
 model AgencySettings {
   id                        String                @id @default("singleton")
+  /// Master on/off for the whole Leaderboard feature — the sidebar link,
+  /// the /leaderboard page itself, and its API. Off hides it from every
+  /// non-admin; an admin can always still reach and re-enable it.
+  leaderboardEnabled        Boolean               @default(true)
   leaderboardAllTimeEnabled Boolean               @default(false)
   /// The Overview page's Hall of Fame card targets, one per track —
   /// Personal (life-only, personally issued), Agency (all lines, you +

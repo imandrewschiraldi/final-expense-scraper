@@ -15,6 +15,14 @@ export async function getAgencySettings() {
   });
 }
 
+export async function setLeaderboardEnabled(enabled: boolean) {
+  return db.agencySettings.upsert({
+    where: { id: SINGLETON_ID },
+    update: { leaderboardEnabled: enabled },
+    create: { id: SINGLETON_ID, leaderboardEnabled: enabled },
+  });
+}
+
 export async function setLeaderboardAllTimeEnabled(enabled: boolean) {
   return db.agencySettings.upsert({
     where: { id: SINGLETON_ID },
@@ -23,8 +31,16 @@ export async function setLeaderboardAllTimeEnabled(enabled: boolean) {
   });
 }
 
-export async function setOverviewSubtitle(data: { text: string; color: OverviewSubtitleColor; bold: boolean }) {
-  const fields = { overviewSubtitleText: data.text, overviewSubtitleColor: data.color, overviewSubtitleBold: data.bold };
+export async function setOverviewSubtitle(data: {
+  text: string;
+  color: OverviewSubtitleColor;
+  bold: boolean;
+}) {
+  const fields = {
+    overviewSubtitleText: data.text,
+    overviewSubtitleColor: data.color,
+    overviewSubtitleBold: data.bold,
+  };
   return db.agencySettings.upsert({
     where: { id: SINGLETON_ID },
     update: fields,

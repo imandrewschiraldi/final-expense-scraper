@@ -12,7 +12,7 @@ export const TRAINING_IMAGE_TYPES = [
 // YouTube/Vimeo/Loom/elsewhere. Not a platform ceiling — just comfortably
 // above what a normal screen recording or phone video runs, since the
 // upload itself goes straight from the browser to Blob storage either way.
-export const TRAINING_VIDEO_MAX_BYTES = 1024 * 1024 * 1024;
+export const TRAINING_VIDEO_MAX_BYTES = 3 * 1024 * 1024 * 1024;
 export const TRAINING_VIDEO_TYPES = [
   "video/mp4",
   "video/webm",

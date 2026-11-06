@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { hasVaultAccess } from "@/lib/vault";
+import { getAgencySettings } from "@/lib/agencySettings";
 
 export async function GET() {
   const guard = await requireAnyRole();
@@ -32,8 +33,17 @@ export async function GET() {
   if (!user) return NextResponse.json({ profile: null });
 
   const { createdAt, vaultEnabled, vaultAccessStartedAt, ...profile } = user;
+  const { leaderboardEnabled } = await getAgencySettings();
   return NextResponse.json({
-    profile: { ...profile, hasVaultAccess: hasVaultAccess({ createdAt, vaultEnabled, vaultAccessStartedAt }) },
+    profile: {
+      ...profile,
+      hasVaultAccess: hasVaultAccess({
+        createdAt,
+        vaultEnabled,
+        vaultAccessStartedAt,
+      }),
+      leaderboardEnabled,
+    },
   });
 }
 
@@ -54,9 +64,13 @@ export async function PATCH(req: NextRequest) {
   const user = await db.user.update({
     where: { id: guard.session.user.id },
     data: {
-      ...(licensedStates !== undefined ? { licensedStates: licensedStates.map((s) => s.toUpperCase()) } : {}),
+      ...(licensedStates !== undefined
+        ? { licensedStates: licensedStates.map((s) => s.toUpperCase()) }
+        : {}),
       ...(npn !== undefined ? { npn: npn?.trim() || null } : {}),
-      ...(residentState !== undefined ? { residentState: residentState?.trim().toUpperCase() || null } : {}),
+      ...(residentState !== undefined
+        ? { residentState: residentState?.trim().toUpperCase() || null }
+        : {}),
       ...(demoModeEnabled !== undefined ? { demoModeEnabled } : {}),
     },
     select: {

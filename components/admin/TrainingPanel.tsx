@@ -409,7 +409,7 @@ function VideoUrlField({
       return;
     }
     if (file.size > TRAINING_VIDEO_MAX_BYTES) {
-      setError(`${file.name} is too large (1GB max).`);
+      setError(`${file.name} is too large (3GB max).`);
       return;
     }
 

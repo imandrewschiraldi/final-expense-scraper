@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { generateDemoPolicies, demoLeaderboardTotals, generateDemoAgencyPolicies, demoAgencyLeaderboardTotals } from "@/lib/demoData";
+import {
+  generateDemoPolicies,
+  demoLeaderboardTotals,
+  generateDemoAgencyPolicies,
+  demoAgencyLeaderboardTotals,
+} from "@/lib/demoData";
 import { rangeSince, type DashboardRange } from "@/lib/dashboardRange";
 import { getAgencySettings } from "@/lib/agencySettings";
 
@@ -17,12 +22,22 @@ import { getAgencySettings } from "@/lib/agencySettings";
 // previously meant their issued premium was silently dropped instead of
 // just not ranking anyone: new accounts show up on the board immediately
 // instead of waiting for their first issued policy.
-const LEADERBOARD_PERIODS = ["daily", "weekly", "monthly", "all"] as const satisfies readonly DashboardRange[];
+const LEADERBOARD_PERIODS = [
+  "daily",
+  "weekly",
+  "monthly",
+  "all",
+] as const satisfies readonly DashboardRange[];
 type LeaderboardPeriod = (typeof LEADERBOARD_PERIODS)[number];
 
-function parsePeriod(value: string | null, allTimeEnabled: boolean): LeaderboardPeriod {
+function parsePeriod(
+  value: string | null,
+  allTimeEnabled: boolean,
+): LeaderboardPeriod {
   if (value === "all") return allTimeEnabled ? "all" : "monthly";
-  return (LEADERBOARD_PERIODS as readonly string[]).includes(value ?? "") ? (value as LeaderboardPeriod) : "monthly";
+  return (LEADERBOARD_PERIODS as readonly string[]).includes(value ?? "")
+    ? (value as LeaderboardPeriod)
+    : "monthly";
 }
 
 export async function GET(request: Request) {
@@ -30,8 +45,18 @@ export async function GET(request: Request) {
   if ("error" in guard) return guard.error;
 
   try {
-    const { leaderboardAllTimeEnabled } = await getAgencySettings();
-    const period = parsePeriod(new URL(request.url).searchParams.get("period"), leaderboardAllTimeEnabled);
+    const { leaderboardEnabled, leaderboardAllTimeEnabled } =
+      await getAgencySettings();
+    if (!leaderboardEnabled && guard.session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "The leaderboard isn't available right now." },
+        { status: 403 },
+      );
+    }
+    const period = parsePeriod(
+      new URL(request.url).searchParams.get("period"),
+      leaderboardAllTimeEnabled,
+    );
     const since = rangeSince(period);
 
     const [agents, policies] = await Promise.all([
@@ -40,14 +65,33 @@ export async function GET(request: Request) {
         select: { id: true, name: true, profileImageUrl: true },
       }),
       db.policy.findMany({
-        where: { status: "ISSUED", agentId: { not: null }, ...(since ? { issuedAt: { gte: since } } : {}) },
+        where: {
+          status: "ISSUED",
+          agentId: { not: null },
+          ...(since ? { issuedAt: { gte: since } } : {}),
+        },
         select: { annualPremium: true, agentId: true },
       }),
     ]);
 
-    const byAgent = new Map<string, { id: string; name: string; profileImageUrl: string | null; issuedAP: number; issuedCount: number }>();
+    const byAgent = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        profileImageUrl: string | null;
+        issuedAP: number;
+        issuedCount: number;
+      }
+    >();
     for (const a of agents) {
-      byAgent.set(a.id, { id: a.id, name: a.name, profileImageUrl: a.profileImageUrl, issuedAP: 0, issuedCount: 0 });
+      byAgent.set(a.id, {
+        id: a.id,
+        name: a.name,
+        profileImageUrl: a.profileImageUrl,
+        issuedAP: 0,
+        issuedCount: 0,
+      });
     }
     for (const p of policies) {
       if (!p.agentId) continue;
@@ -72,14 +116,22 @@ export async function GET(request: Request) {
       const own = byAgent.get(guard.session.user.id);
       if (own) {
         const ownPolicies = generateDemoPolicies();
-        const { issuedAP, issuedCount } = demoLeaderboardTotals(since ? ownPolicies.filter((p) => p.issuedAt && p.issuedAt >= since) : ownPolicies);
+        const { issuedAP, issuedCount } = demoLeaderboardTotals(
+          since
+            ? ownPolicies.filter((p) => p.issuedAt && p.issuedAt >= since)
+            : ownPolicies,
+        );
         own.issuedAP = issuedAP;
         own.issuedCount = issuedCount;
       }
 
       const otherAgents = agents.filter((a) => a.id !== guard.session.user.id);
       const agencyPolicies = generateDemoAgencyPolicies(otherAgents);
-      const agencyTotals = demoAgencyLeaderboardTotals(since ? agencyPolicies.filter((p) => p.issuedAt && p.issuedAt >= since) : agencyPolicies);
+      const agencyTotals = demoAgencyLeaderboardTotals(
+        since
+          ? agencyPolicies.filter((p) => p.issuedAt && p.issuedAt >= since)
+          : agencyPolicies,
+      );
       for (const [agentId, totals] of agencyTotals) {
         const entry = byAgent.get(agentId);
         if (entry) {
@@ -89,11 +141,23 @@ export async function GET(request: Request) {
       }
     }
 
-    const rankings = Array.from(byAgent.values()).sort((a, b) => b.issuedAP - a.issuedAP);
+    const rankings = Array.from(byAgent.values()).sort(
+      (a, b) => b.issuedAP - a.issuedAP,
+    );
 
-    return NextResponse.json({ rankings, period, allTimeEnabled: leaderboardAllTimeEnabled });
+    return NextResponse.json({
+      rankings,
+      period,
+      allTimeEnabled: leaderboardAllTimeEnabled,
+    });
   } catch (err) {
     console.error("GET /api/portal/leaderboard failed:", err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Failed to load leaderboard" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error:
+          err instanceof Error ? err.message : "Failed to load leaderboard",
+      },
+      { status: 500 },
+    );
   }
 }

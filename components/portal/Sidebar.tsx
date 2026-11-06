@@ -56,6 +56,7 @@ type NavItem = {
   requiresVault?: boolean;
   requiresAgencyDashboard?: boolean;
   requiresRecruitingRadar?: boolean;
+  requiresLeaderboard?: boolean;
 };
 
 // One shared sidebar for the entire platform — Agent Accelerator (leads,
@@ -67,29 +68,152 @@ type NavItem = {
 // Overview rather than buried near the bottom, so a new agent lands on
 // training/communication tools immediately below their dashboard.
 const NAV_ITEMS: NavItem[] = [
-  { href: "/overview", label: "Overview", icon: Home, roles: ["ADMIN", "MANAGER", "AGENT"], section: "overview" },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "AGENT"], section: "overview" },
-  { href: "/agency", label: "Agency Dashboard", icon: Building2, roles: ["ADMIN", "MANAGER", "AGENT"], requiresAgencyDashboard: true, section: "overview" },
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy, roles: ["ADMIN", "MANAGER", "AGENT"], section: "overview" },
+  {
+    href: "/overview",
+    label: "Overview",
+    icon: Home,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    section: "overview",
+  },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    section: "overview",
+  },
+  {
+    href: "/agency",
+    label: "Agency Dashboard",
+    icon: Building2,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    requiresAgencyDashboard: true,
+    section: "overview",
+  },
+  {
+    href: "/leaderboard",
+    label: "Leaderboard",
+    icon: Trophy,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    requiresLeaderboard: true,
+    section: "overview",
+  },
 
-  { href: "/agent/training", label: "Training", icon: GraduationCap, roles: ["MANAGER", "AGENT"], section: "team" },
-  { href: "/admin/training", label: "Training", icon: GraduationCap, roles: ["ADMIN"], section: "team" },
-  { href: "/chat", label: "Team Chat", icon: MessagesSquare, roles: ["ADMIN", "MANAGER", "AGENT"], section: "team" },
+  {
+    href: "/agent/training",
+    label: "Training",
+    icon: GraduationCap,
+    roles: ["MANAGER", "AGENT"],
+    section: "team",
+  },
+  {
+    href: "/admin/training",
+    label: "Training",
+    icon: GraduationCap,
+    roles: ["ADMIN"],
+    section: "team",
+  },
+  {
+    href: "/chat",
+    label: "Team Chat",
+    icon: MessagesSquare,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    section: "team",
+  },
 
-  { href: "/agent/dashboard", label: "My Leads", icon: Users, roles: ["MANAGER", "AGENT"], section: "leads" },
-  { href: "/agent/vault", label: "Vault", icon: Archive, roles: ["MANAGER", "AGENT"], requiresVault: true, section: "leads" },
-  { href: "/agent/buy-leads", label: "Buy Leads", icon: ShoppingCart, roles: ["MANAGER", "AGENT"], section: "leads" },
-  { href: "/book-of-business", label: "Book of Business", icon: BookOpen, roles: ["MANAGER", "AGENT"], section: "leads" },
-  { href: "/admin/leads", label: "Leads", icon: Users, roles: ["ADMIN"], section: "leads" },
-  { href: "/admin/leads/vault", label: "Vault", icon: Archive, roles: ["ADMIN"], section: "leads" },
+  {
+    href: "/agent/dashboard",
+    label: "My Leads",
+    icon: Users,
+    roles: ["MANAGER", "AGENT"],
+    section: "leads",
+  },
+  {
+    href: "/agent/vault",
+    label: "Vault",
+    icon: Archive,
+    roles: ["MANAGER", "AGENT"],
+    requiresVault: true,
+    section: "leads",
+  },
+  {
+    href: "/agent/buy-leads",
+    label: "Buy Leads",
+    icon: ShoppingCart,
+    roles: ["MANAGER", "AGENT"],
+    section: "leads",
+  },
+  {
+    href: "/book-of-business",
+    label: "Book of Business",
+    icon: BookOpen,
+    roles: ["MANAGER", "AGENT"],
+    section: "leads",
+  },
+  {
+    href: "/admin/leads",
+    label: "Leads",
+    icon: Users,
+    roles: ["ADMIN"],
+    section: "leads",
+  },
+  {
+    href: "/admin/leads/vault",
+    label: "Vault",
+    icon: Archive,
+    roles: ["ADMIN"],
+    section: "leads",
+  },
 
-  { href: "/scripts", label: "Scripts", icon: FileText, roles: ["MANAGER", "AGENT"], section: "sell" },
-  { href: "/underwriting-genie", label: "Underwriting Genie", icon: Stethoscope, roles: ["ADMIN", "MANAGER", "AGENT"], section: "sell" },
-  { href: "/quoter", label: "Quote Tool", icon: Quote, roles: ["MANAGER", "AGENT"], section: "sell" },
-  { href: "/commission-calculator", label: "Commission Calculator", icon: Calculator, roles: ["MANAGER", "AGENT"], section: "sell" },
-  { href: "/ask-integrity", label: "Ask Integrity", icon: Bot, roles: ["ADMIN", "MANAGER", "AGENT"], section: "sell" },
-  { href: "/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["MANAGER", "AGENT"], section: "sell" },
-  { href: "/admin/carrier-resources", label: "Carrier Resources", icon: Landmark, roles: ["ADMIN"], section: "sell" },
+  {
+    href: "/scripts",
+    label: "Scripts",
+    icon: FileText,
+    roles: ["MANAGER", "AGENT"],
+    section: "sell",
+  },
+  {
+    href: "/underwriting-genie",
+    label: "Underwriting Genie",
+    icon: Stethoscope,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    section: "sell",
+  },
+  {
+    href: "/quoter",
+    label: "Quote Tool",
+    icon: Quote,
+    roles: ["MANAGER", "AGENT"],
+    section: "sell",
+  },
+  {
+    href: "/commission-calculator",
+    label: "Commission Calculator",
+    icon: Calculator,
+    roles: ["MANAGER", "AGENT"],
+    section: "sell",
+  },
+  {
+    href: "/ask-integrity",
+    label: "Ask Integrity",
+    icon: Bot,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    section: "sell",
+  },
+  {
+    href: "/carrier-resources",
+    label: "Carrier Resources",
+    icon: Landmark,
+    roles: ["MANAGER", "AGENT"],
+    section: "sell",
+  },
+  {
+    href: "/admin/carrier-resources",
+    label: "Carrier Resources",
+    icon: Landmark,
+    roles: ["ADMIN"],
+    section: "sell",
+  },
 
   {
     href: "/admin/recruiting-radar",
@@ -99,11 +223,35 @@ const NAV_ITEMS: NavItem[] = [
     requiresRecruitingRadar: true,
     section: "ops",
   },
-  { href: "/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN", "MANAGER", "AGENT"], section: "ops" },
+  {
+    href: "/reports",
+    label: "Reports",
+    icon: FileBarChart2,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    section: "ops",
+  },
 
-  { href: "/hierarchy", label: "Hierarchy", icon: Network, roles: ["ADMIN", "MANAGER"], section: "admin" },
-  { href: "/admin/agents", label: "Agents", icon: UsersRound, roles: ["ADMIN"], section: "admin" },
-  { href: "/admin/carriers", label: "Carrier Rates", icon: Percent, roles: ["ADMIN"], section: "admin" },
+  {
+    href: "/hierarchy",
+    label: "Hierarchy",
+    icon: Network,
+    roles: ["ADMIN", "MANAGER"],
+    section: "admin",
+  },
+  {
+    href: "/admin/agents",
+    label: "Agents",
+    icon: UsersRound,
+    roles: ["ADMIN"],
+    section: "admin",
+  },
+  {
+    href: "/admin/carriers",
+    label: "Carrier Rates",
+    icon: Percent,
+    roles: ["ADMIN"],
+    section: "admin",
+  },
 ];
 
 // "/admin/leads" is a strict prefix of "/admin/leads/vault", so a plain
@@ -112,7 +260,10 @@ const NAV_ITEMS: NavItem[] = [
 // never for /vault.
 function isItemActive(pathname: string, href: string) {
   if (href === "/admin/leads") {
-    return pathname === href || (pathname.startsWith(`${href}/`) && !pathname.startsWith(`${href}/vault`));
+    return (
+      pathname === href ||
+      (pathname.startsWith(`${href}/`) && !pathname.startsWith(`${href}/vault`))
+    );
   }
   return pathname.startsWith(href);
 }
@@ -124,6 +275,7 @@ type Profile = {
   hasVaultAccess?: boolean;
   agencyDashboardEnabled?: boolean;
   recruitingRadarEnabled?: boolean;
+  leaderboardEnabled?: boolean;
 };
 
 function NavLeaf({
@@ -156,21 +308,35 @@ function NavLeaf({
           : "text-muted hover:bg-copper-gradient-08 hover:text-[var(--copper-metal)] hover:glow-copper-gradient",
       )}
     >
-      {active && <span className="metal-copper-line absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r" />}
+      {active && (
+        <span className="metal-copper-line absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r" />
+      )}
       <span className="relative shrink-0">
         <Icon className="h-4.5 w-4.5" />
         {showDot && collapsed && (
           <span className="metal-copper-surface absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-surface" />
         )}
       </span>
-      {!collapsed && <span className={cn("truncate", active && "metal-copper-text")}>{label}</span>}
-      {showDot && !collapsed && <span className="metal-copper-surface ml-auto h-2 w-2 shrink-0 rounded-full" />}
+      {!collapsed && (
+        <span className={cn("truncate", active && "metal-copper-text")}>
+          {label}
+        </span>
+      )}
+      {showDot && !collapsed && (
+        <span className="metal-copper-surface ml-auto h-2 w-2 shrink-0 rounded-full" />
+      )}
     </Link>
   );
 }
 
 type RemoteResultType = "lead" | "carrier" | "training" | "vendor";
-type RemoteResult = { type: RemoteResultType; id: string; title: string; subtitle?: string; href: string };
+type RemoteResult = {
+  type: RemoteResultType;
+  id: string;
+  title: string;
+  subtitle?: string;
+  href: string;
+};
 
 const REMOTE_ICON: Record<RemoteResultType, LucideIcon> = {
   lead: Users,
@@ -184,7 +350,12 @@ const REMOTE_LABEL: Record<RemoteResultType, string> = {
   training: "Training",
   vendor: "Lead Vendors",
 };
-const REMOTE_ORDER: RemoteResultType[] = ["lead", "carrier", "training", "vendor"];
+const REMOTE_ORDER: RemoteResultType[] = [
+  "lead",
+  "carrier",
+  "training",
+  "vendor",
+];
 
 function SidebarSearch({
   value,
@@ -245,14 +416,22 @@ function SidebarSearch({
   useEffect(() => {
     if (!open) return;
     function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      )
+        setOpen(false);
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
   const trimmed = value.trim();
-  const pageMatches = trimmed ? navItems.filter((item) => item.label.toLowerCase().includes(trimmed.toLowerCase())) : [];
+  const pageMatches = trimmed
+    ? navItems.filter((item) =>
+        item.label.toLowerCase().includes(trimmed.toLowerCase()),
+      )
+    : [];
   const topHref = pageMatches[0]?.href ?? remoteResults[0]?.href;
   const hasAnyMatch = pageMatches.length > 0 || remoteResults.length > 0;
 
@@ -263,7 +442,11 @@ function SidebarSearch({
   }
 
   return (
-    <div ref={containerRef} data-tour="sidebar-search" className="relative mb-3 px-0.5">
+    <div
+      ref={containerRef}
+      data-tour="sidebar-search"
+      className="relative mb-3 px-0.5"
+    >
       <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
       <input
         ref={inputRef}
@@ -294,7 +477,9 @@ function SidebarSearch({
         <div className="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-96 overflow-y-auto rounded-[10px] border border-border bg-surface p-2 shadow-lg">
           {pageMatches.length > 0 && (
             <div className="mb-1.5">
-              <p className="px-2 pb-1 text-[10px] font-bold tracking-[0.1em] text-muted uppercase">Pages</p>
+              <p className="px-2 pb-1 text-[10px] font-bold tracking-[0.1em] text-muted uppercase">
+                Pages
+              </p>
               {pageMatches.slice(0, 5).map((item) => {
                 const Icon = item.icon;
                 return (
@@ -318,7 +503,9 @@ function SidebarSearch({
             const Icon = REMOTE_ICON[type];
             return (
               <div key={type} className="mb-1.5">
-                <p className="px-2 pb-1 text-[10px] font-bold tracking-[0.1em] text-muted uppercase">{REMOTE_LABEL[type]}</p>
+                <p className="px-2 pb-1 text-[10px] font-bold tracking-[0.1em] text-muted uppercase">
+                  {REMOTE_LABEL[type]}
+                </p>
                 {group.map((r) => (
                   <button
                     type="button"
@@ -328,8 +515,14 @@ function SidebarSearch({
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0 text-muted" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] text-foreground">{r.title}</span>
-                      {r.subtitle && <span className="block truncate text-[11px] text-muted">{r.subtitle}</span>}
+                      <span className="block truncate text-[13px] text-foreground">
+                        {r.title}
+                      </span>
+                      {r.subtitle && (
+                        <span className="block truncate text-[11px] text-muted">
+                          {r.subtitle}
+                        </span>
+                      )}
                     </span>
                   </button>
                 ))}
@@ -337,8 +530,12 @@ function SidebarSearch({
             );
           })}
 
-          {loading && <p className="px-2 py-1.5 text-[11px] text-muted">Searching...</p>}
-          {!loading && !hasAnyMatch && trimmed.length >= 2 && <p className="px-2 py-1.5 text-[11px] text-muted">No matches.</p>}
+          {loading && (
+            <p className="px-2 py-1.5 text-[11px] text-muted">Searching...</p>
+          )}
+          {!loading && !hasAnyMatch && trimmed.length >= 2 && (
+            <p className="px-2 py-1.5 text-[11px] text-muted">No matches.</p>
+          )}
         </div>
       )}
     </div>
@@ -367,10 +564,13 @@ function NavLinks({
         // between two items whose section actually differs, so a search
         // filter (or a role hiding a whole section) never leaves a stray
         // line at the top of the list.
-        const showDivider = index > 0 && item.section !== items[index - 1].section;
+        const showDivider =
+          index > 0 && item.section !== items[index - 1].section;
         return (
           <div key={item.href}>
-            {showDivider && <div className="mx-1 my-1 border-t border-sidebar-divider" />}
+            {showDivider && (
+              <div className="mx-1 my-1 border-t border-sidebar-divider" />
+            )}
             <NavLeaf
               href={item.href}
               label={item.label}
@@ -437,7 +637,8 @@ export function Sidebar({
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true") setCollapsed(true);
+    if (localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true")
+      setCollapsed(true);
 
     fetch("/api/profile")
       .then((res) => (res.ok ? res.json() : null))
@@ -449,7 +650,10 @@ export function Sidebar({
       fetch("/api/portal/chat/channels")
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data?.channels) setChatUnread(data.channels.some((c: { unread: boolean }) => c.unread));
+          if (data?.channels)
+            setChatUnread(
+              data.channels.some((c: { unread: boolean }) => c.unread),
+            );
         })
         .catch(() => {});
     }
@@ -481,11 +685,21 @@ export function Sidebar({
       // Unlike requiresAgencyDashboard (default-on, admin can withdraw it),
       // Recruiting Radar is an admin tool by default — ADMIN always sees it
       // regardless of this flag; it only gates AGENT/MANAGER.
-      (!item.requiresRecruitingRadar || role === "ADMIN" || profile?.recruitingRadarEnabled),
+      (!item.requiresRecruitingRadar ||
+        role === "ADMIN" ||
+        profile?.recruitingRadarEnabled) &&
+      // The Leaderboard master switch is agency-wide (not per-agent, unlike
+      // the two flags above) — ADMIN always keeps the link so they can
+      // reach the page to flip it back on.
+      (!item.requiresLeaderboard ||
+        role === "ADMIN" ||
+        profile?.leaderboardEnabled),
   );
 
   const query = search.trim().toLowerCase();
-  const visibleItems = query ? items.filter((item) => item.label.toLowerCase().includes(query)) : items;
+  const visibleItems = query
+    ? items.filter((item) => item.label.toLowerCase().includes(query))
+    : items;
 
   return (
     <>
@@ -508,9 +722,23 @@ export function Sidebar({
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex shrink-0 items-center justify-between px-3" style={{ height: HEADER_HEIGHT }}>
-          <Link href="/overview" className="block shrink-0" onClick={onCloseMobile}>
-            <Image src="/tier1-logo-transparent.png" alt="Tier 1 Financial" width={1560} height={558} className="h-9 w-auto" priority />
+        <div
+          className="flex shrink-0 items-center justify-between px-3"
+          style={{ height: HEADER_HEIGHT }}
+        >
+          <Link
+            href="/overview"
+            className="block shrink-0"
+            onClick={onCloseMobile}
+          >
+            <Image
+              src="/tier1-logo-transparent.png"
+              alt="Tier 1 Financial"
+              width={1560}
+              height={558}
+              className="h-9 w-auto"
+              priority
+            />
           </Link>
           <button
             type="button"
@@ -524,10 +752,22 @@ export function Sidebar({
         <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
           <SidebarSearch value={search} onChange={setSearch} navItems={items} />
           <div className="flex flex-col gap-1">
-            <NavLinks items={visibleItems} pathname={pathname} collapsed={false} onNavigate={onCloseMobile} chatUnread={chatUnread} />
+            <NavLinks
+              items={visibleItems}
+              pathname={pathname}
+              collapsed={false}
+              onNavigate={onCloseMobile}
+              chatUnread={chatUnread}
+            />
           </div>
         </nav>
-        <SidebarFooter collapsed={false} profile={profile} name={name} role={role} onNavigate={onCloseMobile} />
+        <SidebarFooter
+          collapsed={false}
+          profile={profile}
+          name={name}
+          role={role}
+          onNavigate={onCloseMobile}
+        />
       </aside>
 
       {/* Desktop sidebar — a real layout column, collapsible via the chevron. */}
@@ -539,7 +779,10 @@ export function Sidebar({
         )}
       >
         <div
-          className={cn("flex shrink-0 items-center px-3", collapsed ? "justify-center" : "justify-between")}
+          className={cn(
+            "flex shrink-0 items-center px-3",
+            collapsed ? "justify-center" : "justify-between",
+          )}
           style={{ height: HEADER_HEIGHT }}
         >
           <Link href="/overview" className="block shrink-0">
@@ -553,7 +796,14 @@ export function Sidebar({
                 priority
               />
             ) : (
-              <Image src="/tier1-logo-transparent.png" alt="Tier 1 Financial" width={1560} height={558} className="h-10 w-auto" priority />
+              <Image
+                src="/tier1-logo-transparent.png"
+                alt="Tier 1 Financial"
+                width={1560}
+                height={558}
+                className="h-10 w-auto"
+                priority
+              />
             )}
           </Link>
           {!collapsed && (
@@ -561,14 +811,26 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={() => setWide(!wide)}
-                aria-label={wide ? "Use standard width" : "Use wide layout for large monitors"}
-                title={wide ? "Use standard width" : "Use wide layout for large monitors"}
+                aria-label={
+                  wide
+                    ? "Use standard width"
+                    : "Use wide layout for large monitors"
+                }
+                title={
+                  wide
+                    ? "Use standard width"
+                    : "Use wide layout for large monitors"
+                }
                 className={cn(
                   "transition-colors hover:text-foreground",
                   wide ? "text-[var(--copper-metal)]" : "text-muted",
                 )}
               >
-                {wide ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                {wide ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
               </button>
               <button
                 type="button"
@@ -600,13 +862,29 @@ export function Sidebar({
         )}
 
         <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
-          {!collapsed && <SidebarSearch value={search} onChange={setSearch} navItems={items} />}
+          {!collapsed && (
+            <SidebarSearch
+              value={search}
+              onChange={setSearch}
+              navItems={items}
+            />
+          )}
           <div className="flex flex-col gap-1">
-            <NavLinks items={collapsed ? items : visibleItems} pathname={pathname} collapsed={collapsed} chatUnread={chatUnread} />
+            <NavLinks
+              items={collapsed ? items : visibleItems}
+              pathname={pathname}
+              collapsed={collapsed}
+              chatUnread={chatUnread}
+            />
           </div>
         </nav>
 
-        <SidebarFooter collapsed={collapsed} profile={profile} name={name} role={role} />
+        <SidebarFooter
+          collapsed={collapsed}
+          profile={profile}
+          name={name}
+          role={role}
+        />
       </aside>
     </>
   );
