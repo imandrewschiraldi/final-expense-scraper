@@ -28,7 +28,8 @@ export const VENDORS: Vendor[] = [
   },
   {
     name: "Closr Leads",
-    description: "Unlimited lead dialers, plus real-time and aged insurance leads.",
+    description:
+      "Unlimited lead dialers, plus real-time and aged insurance leads.",
     bullets: [
       "Final Expense, Veteran, Trucker, Mortgage Protection & IUL",
       "Built-in dialer to work leads the moment they come in",
@@ -47,6 +48,18 @@ export const VENDORS: Vendor[] = [
     name: "Titan Leads",
     url: "https://www.titanleadsolutions.com/",
     logo: { src: "/vendor-logos/titan-leads.png", width: 238, height: 70 },
+  },
+  {
+    name: "ILoveLeads",
+    description: "Purchase qualified data leads.",
+    bullets: [
+      "Real-time leads",
+      "Pre-booked appointments",
+      "Unlimited inbound lead dialer — blast leads from your own Twilio, Telnyx or SignalHouse numbers (or one they register for you); their AI reads every reply, sorts who's interested, and books the appointment for $0.01/sms",
+    ],
+    url: "https://iloveleads.com/outbound-suite?ref=ANDREW-91",
+    logo: { src: "/vendor-logos/ilove-leads.png", width: 1826, height: 185 },
+    logoOnLight: true,
   },
 ];
 
