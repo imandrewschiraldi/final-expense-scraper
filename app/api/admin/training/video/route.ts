@@ -38,6 +38,12 @@ export async function POST(request: Request) {
         allowedContentTypes: [...TRAINING_VIDEO_TYPES],
         maximumSizeInBytes: TRAINING_VIDEO_MAX_BYTES,
         addRandomSuffix: true,
+        // The default token window (1 hour) can run out mid-transfer for a
+        // large file on a slow connection — at 3GB that's a real
+        // possibility, and an expired token makes the upload silently
+        // stall rather than fail with a clear error. Six hours comfortably
+        // covers even a very slow upload of the largest allowed file.
+        validUntil: Date.now() + 6 * 60 * 60 * 1000,
       }),
     });
     return NextResponse.json(jsonResponse);

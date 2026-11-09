@@ -400,6 +400,11 @@ function VideoUrlField({
   placeholder: string;
 }) {
   const [uploading, setUploading] = useState(false);
+  // A large file can take many minutes with zero visible change otherwise
+  // — a flat "Uploading..." label is indistinguishable from one that's
+  // actually frozen. Real percentage (from @vercel/blob's own progress
+  // callback) lets an admin tell a slow transfer from a stuck one.
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -422,10 +427,12 @@ function VideoUrlField({
 
     setError(null);
     setUploading(true);
+    setUploadPct(0);
     try {
       const blob = await upload(file.name, file, {
         access: "public",
         handleUploadUrl: "/api/admin/training/video",
+        onUploadProgress: ({ percentage }) => setUploadPct(percentage),
       });
       onChange({ ...video, url: blob.url });
     } catch (err) {
@@ -434,6 +441,7 @@ function VideoUrlField({
       );
     } finally {
       setUploading(false);
+      setUploadPct(null);
     }
   }
 
@@ -486,7 +494,9 @@ function VideoUrlField({
             }}
           />
           <Upload className="h-3.5 w-3.5" />
-          {uploading ? "Uploading..." : "Upload"}
+          {uploading
+            ? `Uploading${uploadPct != null ? ` ${Math.round(uploadPct)}%` : "..."}`
+            : "Upload"}
         </label>
         <button
           type="button"
@@ -498,10 +508,27 @@ function VideoUrlField({
           <X className="h-4 w-4" />
         </button>
       </div>
-      <p className="text-[11px] text-muted">
-        Or drag and drop a video file here. Add a thumbnail (left) to make this
-        link&rsquo;s card stand out — e.g. a channel&rsquo;s profile picture.
-      </p>
+      {uploading && uploadPct != null ? (
+        <div className="space-y-1">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface2">
+            <div
+              className="h-full rounded-full bg-copper transition-[width]"
+              style={{ width: `${Math.max(2, uploadPct)}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-muted">
+            Uploading large files can take a while — this bar keeps moving as
+            long as it&rsquo;s still going. Don&rsquo;t close this tab until it
+            finishes.
+          </p>
+        </div>
+      ) : (
+        <p className="text-[11px] text-muted">
+          Or drag and drop a video file here. Add a thumbnail (left) to make
+          this link&rsquo;s card stand out — e.g. a channel&rsquo;s profile
+          picture.
+        </p>
+      )}
       {error && <p className="text-xs text-red-light">{error}</p>}
     </div>
   );
