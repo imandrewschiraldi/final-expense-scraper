@@ -20,7 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Input, Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
   TRAINING_IMAGE_MAX_BYTES,
@@ -603,14 +603,20 @@ function LessonForm({
 
 function LessonRow({
   lesson,
+  chapters,
+  currentChapterId,
   onUpdate,
   onDelete,
+  onMoveToChapter,
   onRemoveVideo,
   onRemoveImage,
 }: {
   lesson: Lesson;
+  chapters: { id: string; title: string }[];
+  currentChapterId: string;
   onUpdate: (id: string, data: LessonInput) => Promise<void>;
   onDelete: (id: string) => void;
+  onMoveToChapter: (chapterId: string) => Promise<void>;
   onRemoveVideo: (videoId: string) => Promise<void>;
   onRemoveImage: (imageId: string) => Promise<void>;
 }) {
@@ -635,6 +641,7 @@ function LessonRow({
   );
   const [images, setImages] = useState(lesson.images.map((img) => img.url));
   const [saving, setSaving] = useState(false);
+  const [moving, setMoving] = useState(false);
   // Tracks which single item (a video or image id) is mid-removal, so
   // only that control shows busy and the rest of the row stays clickable.
   const [removingKey, setRemovingKey] = useState<string | null>(null);
@@ -649,6 +656,12 @@ function LessonRow({
     setRemovingKey(imageId);
     await onRemoveImage(imageId);
     setRemovingKey(null);
+  }
+
+  async function handleMoveToChapter(chapterId: string) {
+    if (chapterId === currentChapterId) return;
+    setMoving(true);
+    await onMoveToChapter(chapterId);
   }
 
   const canSubmit =
@@ -767,7 +780,23 @@ function LessonRow({
           </div>
         )}
       </div>
-      <div className="flex shrink-0 gap-1">
+      <div className="flex shrink-0 items-center gap-1">
+        {chapters.length > 1 && (
+          <Select
+            value={currentChapterId}
+            disabled={moving}
+            onChange={(e) => handleMoveToChapter(e.target.value)}
+            aria-label="Move to chapter"
+            title="Move to a different chapter"
+            className="w-auto py-1.5 text-xs"
+          >
+            {chapters.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title}
+              </option>
+            ))}
+          </Select>
+        )}
         <Button variant="ghost" onClick={() => setEditing(true)}>
           Edit
         </Button>
@@ -821,10 +850,12 @@ function ChapterForm({
  *  own drag-to-reorder, scoped to just this chapter). */
 function ChapterRow({
   chapter,
+  allChapters,
   onUpdateTitle,
   onDelete,
   onUpdateLesson,
   onDeleteLesson,
+  onMoveLessonToChapter,
   onRemoveLessonVideo,
   onRemoveLessonImage,
   addingLesson,
@@ -833,10 +864,12 @@ function ChapterRow({
   onCreateLesson,
 }: {
   chapter: Chapter;
+  allChapters: { id: string; title: string }[];
   onUpdateTitle: (title: string) => Promise<void>;
   onDelete: () => void;
   onUpdateLesson: (id: string, data: LessonInput) => Promise<void>;
   onDeleteLesson: (id: string) => void;
+  onMoveLessonToChapter: (lesson: Lesson, chapterId: string) => Promise<void>;
   onRemoveLessonVideo: (lesson: Lesson, videoId: string) => Promise<void>;
   onRemoveLessonImage: (lesson: Lesson, imageId: string) => Promise<void>;
   addingLesson: boolean;
@@ -927,8 +960,13 @@ function ChapterRow({
             <LessonRow
               key={lesson.id}
               lesson={lesson}
+              chapters={allChapters}
+              currentChapterId={chapter.id}
               onUpdate={onUpdateLesson}
               onDelete={onDeleteLesson}
+              onMoveToChapter={(chapterId) =>
+                onMoveLessonToChapter(lesson, chapterId)
+              }
               onRemoveVideo={(videoId) => onRemoveLessonVideo(lesson, videoId)}
               onRemoveImage={(imageId) => onRemoveLessonImage(lesson, imageId)}
             />
@@ -1099,6 +1137,20 @@ export function TrainingPanel({
   async function deleteLesson(id: string) {
     if (!confirm("Delete this lesson?")) return;
     await fetch(`/api/admin/training/lessons/${id}`, { method: "DELETE" });
+    await refresh();
+  }
+
+  // Moves an existing lesson into a different chapter — dropped at the end
+  // of that chapter's lessons (server-side). Not optimistic like the
+  // reorder handlers above: this changes which chapter's list the lesson
+  // renders under at all, so a full refresh is simpler than hand-patching
+  // two chapters' worth of nested state.
+  async function moveLessonToChapter(lesson: Lesson, chapterId: string) {
+    await fetch(`/api/admin/training/lessons/${lesson.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chapterId }),
+    });
     await refresh();
   }
 
@@ -1314,12 +1366,17 @@ export function TrainingPanel({
                   <ChapterRow
                     key={chapter.id}
                     chapter={chapter}
+                    allChapters={module_.chapters.map((c) => ({
+                      id: c.id,
+                      title: c.title,
+                    }))}
                     onUpdateTitle={(title) =>
                       updateChapterTitle(chapter.id, title)
                     }
                     onDelete={() => deleteChapter(chapter.id)}
                     onUpdateLesson={updateLesson}
                     onDeleteLesson={deleteLesson}
+                    onMoveLessonToChapter={moveLessonToChapter}
                     onRemoveLessonVideo={removeLessonVideo}
                     onRemoveLessonImage={removeLessonImage}
                     addingLesson={addingLessonTo === chapter.id}

@@ -11,18 +11,32 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { title, description, videos, images } = body as {
+  const { title, description, videos, images, chapterId } = body as {
     title?: string;
     description?: string;
     videos?: { url: string; thumbnailUrl?: string | null }[];
     images?: string[];
+    chapterId?: string;
   };
+
+  // Moving a lesson into a different chapter — dropped at the end of that
+  // chapter's own lesson order, not wherever its old order value happened
+  // to land among the new chapter's existing lessons.
+  let newOrder: number | undefined;
+  if (chapterId !== undefined) {
+    const maxOrder = await db.trainingLesson.aggregate({
+      where: { chapterId },
+      _max: { order: true },
+    });
+    newOrder = (maxOrder._max.order ?? -1) + 1;
+  }
 
   const lesson = await db.trainingLesson.update({
     where: { id },
     data: {
       ...(title !== undefined ? { title } : {}),
       ...(description !== undefined ? { description } : {}),
+      ...(chapterId !== undefined ? { chapterId, order: newOrder } : {}),
       // Full replace rather than a diff — the admin panel always sends the
       // complete current video/image list, same as it does for every other
       // field.
