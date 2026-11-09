@@ -20,7 +20,9 @@ type ChatTurn = { role: "user" | "model"; text: string; sources?: Source[] };
 // constructor (the only one Chrome/Edge actually expose) isn't typed at
 // all. Only the handful of members "talk to type" below actually uses.
 type SpeechRecognitionResultLike = { 0: { transcript: string } };
-type SpeechRecognitionEventLike = { results: ArrayLike<SpeechRecognitionResultLike> };
+type SpeechRecognitionEventLike = {
+  results: ArrayLike<SpeechRecognitionResultLike>;
+};
 interface SpeechRecognitionLike extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
@@ -127,7 +129,10 @@ function AiSearchBox() {
       if (!res.ok) {
         setError(data?.error ?? "Something went wrong.");
       } else {
-        setMessages((m) => [...m, { role: "model", text: data.answer, sources: data.sources }]);
+        setMessages((m) => [
+          ...m,
+          { role: "model", text: data.answer, sources: data.sources },
+        ]);
       }
     } catch {
       setError("Couldn't reach the AI assistant.");
@@ -178,7 +183,8 @@ function AiSearchBox() {
 
     recognition.onresult = (e) => {
       let transcript = "";
-      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      for (let i = 0; i < e.results.length; i++)
+        transcript += e.results[i][0].transcript;
       const base = listenBaseRef.current;
       const combined = (base ? `${base} ${transcript}` : transcript).trim();
       setQuestion(combined);
@@ -215,7 +221,10 @@ function AiSearchBox() {
   useEffect(() => {
     if (!open) return;
     function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -285,10 +294,16 @@ function AiSearchBox() {
           <button
             type="button"
             onClick={toggleListening}
-            aria-label={listening ? "Stop dictation" : "Dictate with your microphone"}
-            title={listening ? "Stop dictation" : "Dictate with your microphone"}
+            aria-label={
+              listening ? "Stop dictation" : "Dictate with your microphone"
+            }
+            title={
+              listening ? "Stop dictation" : "Dictate with your microphone"
+            }
             className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
-              listening ? "bg-red-light/15 text-red-light" : "text-muted hover:bg-surface2 hover:text-foreground"
+              listening
+                ? "bg-red-light/15 text-red-light"
+                : "text-muted hover:bg-surface2 hover:text-foreground"
             }`}
           >
             <Mic className={`h-4 w-4 ${listening ? "animate-pulse" : ""}`} />
@@ -341,7 +356,9 @@ function AiSearchBox() {
           className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-border bg-input-bg py-2 pr-3 pl-9 text-left text-sm text-muted hover:text-foreground"
         >
           {botIcon}
-          <span className="truncate">Gemini conversation — click to continue</span>
+          <span className="truncate">
+            Gemini conversation — click to continue
+          </span>
         </div>
       )}
       {open && (loading || hasThread || error) && (
@@ -359,8 +376,15 @@ function AiSearchBox() {
               hides this panel now, it doesn't wipe the thread. This is the
               one deliberate way to clear it all at once. */}
           <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5">
-            <span className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase">Gemini conversation</span>
-            <button type="button" onClick={reset} aria-label="Clear conversation" className="text-muted hover:text-foreground">
+            <span className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase">
+              Gemini conversation
+            </span>
+            <button
+              type="button"
+              onClick={reset}
+              aria-label="Clear conversation"
+              className="text-muted hover:text-foreground"
+            >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -377,8 +401,16 @@ function AiSearchBox() {
                 <p className="whitespace-pre-wrap text-foreground">{m.text}</p>
               </div>
             ))}
-            {loading && <p className={`text-muted ${hasThread ? "mt-3" : ""}`}>Thinking…</p>}
-            {error && <p className={`text-red-light ${hasThread ? "mt-3" : ""}`}>{error}</p>}
+            {loading && (
+              <p className={`text-muted ${hasThread ? "mt-3" : ""}`}>
+                Thinking…
+              </p>
+            )}
+            {error && (
+              <p className={`text-red-light ${hasThread ? "mt-3" : ""}`}>
+                {error}
+              </p>
+            )}
             <div ref={threadEndRef} />
           </div>
           {/* The follow-up input, fixed at the bottom of the conversation —
@@ -455,6 +487,14 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
 
   if (pathname.startsWith("/scripts")) return null;
   const iconsOnly = pathname.startsWith("/commission-calculator");
+  // The Vault's own header already has its own PREV/NEXT lead navigation
+  // and a bell/avatar-free layout by design — the profile picture,
+  // notifications, theme toggle, and quick links would just be clutter
+  // competing with it, so this is the one page that hides the whole icon
+  // cluster (the search box stays).
+  const isVault =
+    pathname.startsWith("/agent/vault") ||
+    pathname.startsWith("/admin/leads/vault");
 
   const iconCluster = (
     <div className="flex items-center gap-3">
@@ -462,17 +502,32 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
       <button
         type="button"
         onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-        aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-        title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+        aria-label={
+          theme === "light" ? "Switch to dark mode" : "Switch to light mode"
+        }
+        title={
+          theme === "light" ? "Switch to dark mode" : "Switch to light mode"
+        }
         className="flex h-9 w-9 shrink-0 items-center justify-center text-muted transition-colors hover:text-foreground"
       >
         {/* Shows the icon for what clicking it switches TO, not the
             current theme — dark mode shows the sun (tap for light),
             light mode shows the moon (tap for dark). */}
-        {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+        {theme === "light" ? (
+          <Moon className="h-5 w-5" />
+        ) : (
+          <Sun className="h-5 w-5" />
+        )}
       </button>
       <NotificationBell />
-      <ProfileMenu profile={profile} name={name} role={role} collapsed showTour={role !== "ADMIN"} menuAlign="down" />
+      <ProfileMenu
+        profile={profile}
+        name={name}
+        role={role}
+        collapsed
+        showTour={role !== "ADMIN"}
+        menuAlign="down"
+      />
     </div>
   );
 
@@ -491,20 +546,24 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
           <AiSearchBox />
         </div>
       )}
-      <div
-        className="absolute top-0 right-4 z-40 hidden items-center sm:right-6 lg:right-10 lg:flex"
-        style={{ height: HEADER_HEIGHT }}
-      >
-        {iconCluster}
-      </div>
+      {!isVault && (
+        <div
+          className="absolute top-0 right-4 z-40 hidden items-center sm:right-6 lg:right-10 lg:flex"
+          style={{ height: HEADER_HEIGHT }}
+        >
+          {iconCluster}
+        </div>
+      )}
 
       {/* Mobile/tablet: unchanged from before — just the bell, same spot. */}
-      <div
-        className="absolute top-0 right-4 z-40 flex items-center gap-2 sm:right-6 lg:hidden"
-        style={{ height: HEADER_HEIGHT }}
-      >
-        <NotificationBell />
-      </div>
+      {!isVault && (
+        <div
+          className="absolute top-0 right-4 z-40 flex items-center gap-2 sm:right-6 lg:hidden"
+          style={{ height: HEADER_HEIGHT }}
+        >
+          <NotificationBell />
+        </div>
+      )}
     </>
   );
 }
