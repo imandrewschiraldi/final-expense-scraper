@@ -135,6 +135,7 @@ model User {
   notifications          Notification[]
   assignmentFlags        AssignmentRunFlag[]
   trainingProgress       TrainingProgress[]
+  kpiEntries             KpiEntry[]
   policies               Policy[]                      @relation("AgentPolicies")
   goals                  Goal[]
   policyStatusChanges    PolicyStatusHistory[]         @relation("PolicyStatusChangedBy")
@@ -420,6 +421,34 @@ model TrainingProgress {
 
   @@unique([agentId, lessonId])
   @@map("training_progress")
+}
+
+/// One row per agent per calendar day — the KPI Tracker's daily log.
+/// AP submitted is deliberately NOT stored here: it's computed live from
+/// Policy.annualPremium/submittedAt for that agent/day, same as the real
+/// client-portal submissions it reflects, so it can never drift from the
+/// actual Book of Business.
+model KpiEntry {
+  id             String   @id @default(cuid())
+  agentId        String
+  agent          User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  /// The calendar day this entry is for (date-only; time component unused).
+  date           DateTime @db.Date
+  deposits       Decimal  @default(0) @db.Decimal(10, 2)
+  leadSpend      Decimal  @default(0) @db.Decimal(10, 2)
+  hoursWorked    Decimal  @default(0) @db.Decimal(5, 2)
+  apptsScheduled Int      @default(0)
+  dials          Int      @default(0)
+  answered       Int      @default(0)
+  apptsShown     Int      @default(0)
+  presentations  Int      @default(0)
+  dealsClosed    Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([agentId, date])
+  @@index([agentId, date])
+  @@map("kpi_entries")
 }
 
 // --- Agent Portal ---
