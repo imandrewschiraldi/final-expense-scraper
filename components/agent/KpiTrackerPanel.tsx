@@ -60,11 +60,15 @@ function DollarInput({
   onChange: (value: number) => void;
   placeholder?: string;
 }) {
-  // Owns its own text while the user is typing rather than mirroring
-  // `value` on every render — the parent's optimistic state updates on
-  // every keystroke too, so syncing back from it here would just be
-  // reflecting this same input's last change at itself.
+  // Owns its own text only while focused, so mid-typing keystrokes
+  // aren't fought by the parent's own echoed-back value — while
+  // unfocused, the displayed text is derived straight from `value`
+  // every render instead (no effect needed), so an external change to
+  // the same value (the Lead spend slider drives this same field) is
+  // always reflected the instant it happens.
   const [text, setText] = useState(value === 0 ? "" : String(value));
+  const [focused, setFocused] = useState(false);
+  const displayText = focused ? text : value === 0 ? "" : String(value);
 
   return (
     <div className="relative">
@@ -75,14 +79,18 @@ function DollarInput({
         type="text"
         inputMode="decimal"
         placeholder={placeholder}
-        value={text}
+        value={displayText}
+        onFocus={() => {
+          setFocused(true);
+          setText(value === 0 ? "" : String(value));
+        }}
         onChange={(e) => {
           const raw = e.target.value.replace(/[^0-9.]/g, "");
           setText(raw);
           const n = Number(raw);
           onChange(Number.isFinite(n) ? n : 0);
         }}
-        onBlur={() => setText(value === 0 ? "" : String(value))}
+        onBlur={() => setFocused(false)}
         className="w-full rounded-lg border border-copper-focus-gradient bg-surface py-2 pr-3 pl-6 text-sm text-foreground placeholder:text-muted focus:outline-none"
       />
     </div>
@@ -276,7 +284,7 @@ export function KpiTrackerPanel() {
                   value={totals.leadSpend}
                   min={0}
                   max={MAX_LEAD_SPEND}
-                  step={50}
+                  step={100}
                   onChange={(v) => updateField("leadSpend", v)}
                 />
                 <div className="mt-1 flex justify-between text-[11px] text-muted">
