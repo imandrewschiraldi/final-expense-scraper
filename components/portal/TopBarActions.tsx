@@ -495,6 +495,10 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
   const isVault =
     pathname.startsWith("/agent/vault") ||
     pathname.startsWith("/admin/leads/vault");
+  // The KPI Tracker's own header already has a title/date row with no
+  // room to spare next to it — the search box stays hidden here while
+  // the icon cluster (theme/bell/avatar) stays, the opposite of Vault.
+  const hideAskGemini = pathname.startsWith("/agent/kpi-tracker");
 
   const iconCluster = (
     <div className="flex items-center gap-3">
@@ -538,7 +542,7 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
           one "justify-between" row — each keeps its own fixed anchor so
           neither depends on the other being present. Commission Calculator
           just skips the search box entirely — nothing to its left there. */}
-      {!iconsOnly && (
+      {!iconsOnly && !hideAskGemini && (
         <div
           className="absolute top-0 left-4 z-40 hidden items-center sm:left-6 lg:left-10 lg:flex"
           style={{ height: HEADER_HEIGHT }}

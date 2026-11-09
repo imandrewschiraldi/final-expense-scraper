@@ -360,6 +360,30 @@ export function KpiTrackerPanel() {
                 />
               </div>
             </div>
+
+            <div className="border-t border-border pt-4">
+              <p className="font-condensed mb-3 text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+                Day total
+              </p>
+              <div className="grid grid-cols-5 gap-2">
+                {(
+                  [
+                    ["Dials", totals.dials],
+                    ["Answered", totals.answered],
+                    ["Appts. shown", totals.apptsShown],
+                    ["Pres.", totals.presentations],
+                    ["Closed", totals.dealsClosed],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label}>
+                    <p className="font-condensed text-2xl font-black text-white">
+                      {value}
+                    </p>
+                    <p className="text-[11px] text-muted">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </Card>

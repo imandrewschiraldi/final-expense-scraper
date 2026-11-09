@@ -26,7 +26,6 @@ import {
   Radar,
   Stethoscope,
   ShoppingCart,
-  Gauge,
   ChevronsLeft,
   ChevronsRight,
   Maximize2,
@@ -192,20 +191,6 @@ const NAV_ITEMS: NavItem[] = [
     label: "Commission Calculator",
     icon: Calculator,
     roles: ["MANAGER", "AGENT"],
-    section: "sell",
-  },
-  {
-    href: "/agent/kpi-tracker",
-    label: "KPI Tracker",
-    icon: Gauge,
-    roles: ["MANAGER", "AGENT"],
-    section: "sell",
-  },
-  {
-    href: "/admin/kpi-tracker",
-    label: "KPI Tracker",
-    icon: Gauge,
-    roles: ["ADMIN"],
     section: "sell",
   },
   {
