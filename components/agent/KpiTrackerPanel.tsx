@@ -233,8 +233,8 @@ export function KpiTrackerPanel() {
         </CardHeader>
         {error && <p className="mb-4 text-xs text-red-light">{error}</p>}
 
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="space-y-5">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-5 rounded-lg border border-border p-5">
             <h3 className="font-condensed text-sm font-bold text-white uppercase">
               Daily activity
             </h3>
@@ -307,7 +307,7 @@ export function KpiTrackerPanel() {
             </div>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-5 rounded-lg border border-border p-5">
             <h3 className="font-condensed text-sm font-bold text-white uppercase">
               Activity
             </h3>
