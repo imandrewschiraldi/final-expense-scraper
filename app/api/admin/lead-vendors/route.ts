@@ -67,3 +67,26 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ vendor });
 }
+
+export async function PATCH(req: NextRequest) {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard.error;
+
+  const body = await req.json().catch(() => null);
+  const ids = Array.isArray(body?.reorder)
+    ? body.reorder.filter((id: unknown): id is string => typeof id === "string")
+    : null;
+  if (!ids) {
+    return NextResponse.json(
+      { error: "reorder must be an array of ids." },
+      { status: 400 },
+    );
+  }
+
+  await db.$transaction(
+    ids.map((id: string, index: number) =>
+      db.leadVendor.update({ where: { id }, data: { order: index } }),
+    ),
+  );
+  return NextResponse.json({ ok: true });
+}

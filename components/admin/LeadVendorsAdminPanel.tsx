@@ -3,7 +3,22 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { upload } from "@vercel/blob/client";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -207,47 +222,73 @@ function VendorRow({
     onDeleted();
   }
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: vendor.id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
-    <Card className="flex items-center gap-4">
-      <span
-        className={
-          vendor.logoOnLight
-            ? "flex h-10 w-20 shrink-0 items-center justify-center rounded-full bg-white"
-            : "flex h-10 w-20 shrink-0 items-center justify-center"
-        }
-      >
-        <Image
-          src={vendor.logoUrl}
-          alt={vendor.name}
-          width={160}
-          height={40}
-          className="h-8 w-auto object-contain"
-          unoptimized
-        />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-white">{vendor.name}</p>
-        {vendor.description && (
-          <p className="truncate text-xs text-muted">{vendor.description}</p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        aria-label="Edit"
-        className="shrink-0 text-muted hover:text-foreground"
-      >
-        <Pencil className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={remove}
-        aria-label="Delete"
-        className="shrink-0 text-muted hover:text-red-light"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
-    </Card>
+    <div ref={setNodeRef} style={style}>
+      <Card className="flex items-center gap-4">
+        <span
+          {...attributes}
+          {...listeners}
+          title="Drag to reorder"
+          className="flex h-6 w-6 shrink-0 cursor-grab touch-none items-center justify-center text-muted active:cursor-grabbing"
+        >
+          <GripVertical className="h-4 w-4" />
+        </span>
+        <span
+          className={
+            vendor.logoOnLight
+              ? "flex h-10 w-20 shrink-0 items-center justify-center rounded-full bg-white"
+              : "flex h-10 w-20 shrink-0 items-center justify-center"
+          }
+        >
+          <Image
+            src={vendor.logoUrl}
+            alt={vendor.name}
+            width={160}
+            height={40}
+            className="h-8 w-auto object-contain"
+            unoptimized
+          />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold text-white">{vendor.name}</p>
+          {vendor.description && (
+            <p className="truncate text-xs text-muted">{vendor.description}</p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label="Edit"
+          className="shrink-0 text-muted hover:text-foreground"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={remove}
+          aria-label="Delete"
+          className="shrink-0 text-muted hover:text-red-light"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </Card>
+    </div>
   );
 }
 
@@ -255,6 +296,10 @@ export function LeadVendorsAdminPanel() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Vendor | "new" | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor),
+  );
 
   function load() {
     fetch("/api/admin/lead-vendors")
@@ -266,6 +311,26 @@ export function LeadVendorsAdminPanel() {
   useEffect(() => {
     load();
   }, []);
+
+  // Reorders optimistically (so the drop feels instant) and persists via
+  // the reorder endpoint — same pattern as Announcements' manage modal.
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = vendors.map((v) => v.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = [...vendors];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+    setVendors(reordered);
+    await fetch("/api/admin/lead-vendors", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reorder: reordered.map((v) => v.id) }),
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -279,16 +344,27 @@ export function LeadVendorsAdminPanel() {
       ) : vendors.length === 0 ? (
         <p className="text-sm text-muted">No vendors yet — add one above.</p>
       ) : (
-        <div className="space-y-2">
-          {vendors.map((vendor) => (
-            <VendorRow
-              key={vendor.id}
-              vendor={vendor}
-              onEdit={() => setEditing(vendor)}
-              onDeleted={load}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={vendors.map((v) => v.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2">
+              {vendors.map((vendor) => (
+                <VendorRow
+                  key={vendor.id}
+                  vendor={vendor}
+                  onEdit={() => setEditing(vendor)}
+                  onDeleted={load}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {editing && (
