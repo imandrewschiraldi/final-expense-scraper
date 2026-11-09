@@ -498,18 +498,21 @@ export function TrainingLessonView({
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   const chapterHref = `/agent/training/modules/${lesson.moduleId}/chapters/${lesson.chapterId}`;
+  const moduleHref = `/agent/training/modules/${lesson.moduleId}`;
 
   const prevHref = navigation.prevId
     ? `/agent/training/lessons/${navigation.prevId}`
     : null;
-  // navigation.nextId only ever points at the next lesson in this same
-  // chapter (see app/agent/training/lessons/[id]/page.tsx) — the last
-  // lesson in a chapter has none, and "Next" from there goes back to that
-  // chapter's own page instead of sliding into the next chapter.
-  const isLastInChapter = !navigation.nextId;
+  // navigation.nextId flows straight through every chapter in the module,
+  // in order (see app/agent/training/lessons/[id]/page.tsx) — finishing
+  // the last lesson of one chapter moves right into the next chapter's
+  // first lesson instead of dropping back to a chapter picker. Only the
+  // very last lesson of the whole module has nowhere further to go, and
+  // "Next" from there goes back to that module's own chapter list instead.
+  const isLastInModule = !navigation.nextId;
   const nextHref = navigation.nextId
     ? `/agent/training/lessons/${navigation.nextId}`
-    : chapterHref;
+    : moduleHref;
 
   // A video resolves either to something trackable (a single playable
   // video — must finish) or, for a link with no single end to reach — a
@@ -633,7 +636,7 @@ export function TrainingLessonView({
               &larr; Prev
             </Button>
             <Button variant="ghost" onClick={() => router.push(nextHref)}>
-              {isLastInChapter ? "Finish Chapter →" : "Next →"}
+              {isLastInModule ? "Finish Module →" : "Next →"}
             </Button>
           </div>
         </div>

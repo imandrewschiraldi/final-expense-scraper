@@ -29,22 +29,27 @@ export default async function AgentTrainingLessonPage({
     notFound();
   }
 
-  const [chapterLessons, progress] = await Promise.all([
-    // Scoped to this lesson's own chapter, not the whole module — Prev/Next
-    // move through this chapter's lessons only; reaching the end hands off
-    // to that chapter's own page (see nextId below) instead of sliding into
-    // the next chapter unannounced.
-    db.trainingLesson.findMany({
-      where: { chapterId: lesson.chapterId },
+  const [moduleChapters, progress] = await Promise.all([
+    // Flattened across every chapter in the module, in chapter then lesson
+    // order — Prev/Next flow straight through the whole module instead of
+    // stopping at each chapter boundary, so finishing the last lesson of
+    // Chapter 1 moves right into Chapter 1 of... Chapter 2's first lesson
+    // instead of dropping back to a chapter picker the agent has to
+    // navigate through again. Only the very last lesson of the whole
+    // module has nowhere further to go (see nextId below).
+    db.trainingChapter.findMany({
+      where: { moduleId: lesson.chapter.moduleId },
       orderBy: { order: "asc" },
-      select: { id: true },
+      include: {
+        lessons: { orderBy: { order: "asc" }, select: { id: true } },
+      },
     }),
     db.trainingProgress.findUnique({
       where: { agentId_lessonId: { agentId, lessonId: id } },
     }),
   ]);
 
-  const lessonIds = chapterLessons.map((l) => l.id);
+  const lessonIds = moduleChapters.flatMap((c) => c.lessons.map((l) => l.id));
   const index = lessonIds.indexOf(id);
   const prevId = index > 0 ? lessonIds[index - 1] : null;
   const nextId =
