@@ -105,7 +105,11 @@ async function searchTraining(q: string, role: string): Promise<SearchResult[]> 
 
   const lessons = await db.trainingLesson.findMany({
     where: { title: { contains: q, mode: "insensitive" } },
-    select: { id: true, title: true, module: { select: { title: true } } },
+    select: {
+      id: true,
+      title: true,
+      chapter: { select: { module: { select: { title: true } } } },
+    },
     take: RESULT_LIMIT,
     orderBy: { order: "asc" },
   });
@@ -114,7 +118,7 @@ async function searchTraining(q: string, role: string): Promise<SearchResult[]> 
       type: "training",
       id: lesson.id,
       title: lesson.title,
-      subtitle: lesson.module.title,
+      subtitle: lesson.chapter.module.title,
       // Admin manages lessons from the module editor, not a per-lesson
       // viewer page — only agent/manager has the lesson-viewing route.
       href: role === "ADMIN" ? trainingHome : `/agent/training/lessons/${lesson.id}`,

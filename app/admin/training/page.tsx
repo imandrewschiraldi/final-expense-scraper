@@ -8,11 +8,16 @@ export default async function AdminTrainingPage() {
   const modules = await db.trainingModule.findMany({
     orderBy: { order: "asc" },
     include: {
-      lessons: {
+      chapters: {
         orderBy: { order: "asc" },
         include: {
-          images: { orderBy: { order: "asc" } },
-          videos: { orderBy: { order: "asc" } },
+          lessons: {
+            orderBy: { order: "asc" },
+            include: {
+              images: { orderBy: { order: "asc" } },
+              videos: { orderBy: { order: "asc" } },
+            },
+          },
         },
       },
     },
@@ -26,10 +31,15 @@ export default async function AdminTrainingPage() {
           ...m,
           createdAt: m.createdAt.toISOString(),
           updatedAt: m.updatedAt.toISOString(),
-          lessons: m.lessons.map((l) => ({
-            ...l,
-            createdAt: l.createdAt.toISOString(),
-            updatedAt: l.updatedAt.toISOString(),
+          chapters: m.chapters.map((c) => ({
+            ...c,
+            createdAt: c.createdAt.toISOString(),
+            updatedAt: c.updatedAt.toISOString(),
+            lessons: c.lessons.map((l) => ({
+              ...l,
+              createdAt: l.createdAt.toISOString(),
+              updatedAt: l.updatedAt.toISOString(),
+            })),
           })),
         }))}
       />

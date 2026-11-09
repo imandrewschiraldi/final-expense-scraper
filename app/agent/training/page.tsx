@@ -12,7 +12,12 @@ export default async function AgentTrainingPage() {
   const [modules, progress] = await Promise.all([
     db.trainingModule.findMany({
       orderBy: { order: "asc" },
-      include: { lessons: { orderBy: { order: "asc" } } },
+      include: {
+        chapters: {
+          orderBy: { order: "asc" },
+          include: { lessons: { orderBy: { order: "asc" } } },
+        },
+      },
     }),
     db.trainingProgress.findMany({
       where: { agentId },
@@ -31,7 +36,15 @@ export default async function AgentTrainingPage() {
         <TrainingModuleList
           modules={modules.map((m) => ({
             ...m,
-            lessons: m.lessons.map((l) => ({ id: l.id, title: l.title, description: l.description })),
+            chapters: m.chapters.map((c) => ({
+              id: c.id,
+              title: c.title,
+              lessons: c.lessons.map((l) => ({
+                id: l.id,
+                title: l.title,
+                description: l.description,
+              })),
+            })),
           }))}
           completedLessonIds={completedLessonIds}
         />

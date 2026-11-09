@@ -9,11 +9,16 @@ export async function GET() {
   const modules = await db.trainingModule.findMany({
     orderBy: { order: "asc" },
     include: {
-      lessons: {
+      chapters: {
         orderBy: { order: "asc" },
         include: {
-          images: { orderBy: { order: "asc" } },
-          videos: { orderBy: { order: "asc" } },
+          lessons: {
+            orderBy: { order: "asc" },
+            include: {
+              images: { orderBy: { order: "asc" } },
+              videos: { orderBy: { order: "asc" } },
+            },
+          },
         },
       },
     },
@@ -46,7 +51,7 @@ export async function POST(req: NextRequest) {
       thumbnailUrl: thumbnailUrl || null,
       order: (maxOrder._max.order ?? 0) + 1,
     },
-    include: { lessons: true },
+    include: { chapters: true },
   });
 
   return NextResponse.json({ module: module_ }, { status: 201 });

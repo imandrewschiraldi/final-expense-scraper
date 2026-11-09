@@ -61,7 +61,7 @@ export async function GET() {
         id: true,
         title: true,
         createdAt: true,
-        module: { select: { title: true } },
+        chapter: { select: { module: { select: { title: true } } } },
       },
     }),
     db.policy.findMany({
@@ -245,7 +245,7 @@ export async function GET() {
     newLessons: lessons.map((l) => ({
       id: l.id,
       title: l.title,
-      moduleTitle: l.module.title,
+      moduleTitle: l.chapter.module.title,
       createdAt: l.createdAt,
     })),
     overviewSubtitle: {

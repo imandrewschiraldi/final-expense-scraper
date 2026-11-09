@@ -5,12 +5,13 @@ import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 type Lesson = { id: string; title: string; description: string | null };
+type Chapter = { id: string; title: string; lessons: Lesson[] };
 type Module = {
   id: string;
   title: string;
   description: string | null;
   thumbnailUrl: string | null;
-  lessons: Lesson[];
+  chapters: Chapter[];
 };
 
 function CheckCircle({ done }: { done: boolean }) {
@@ -125,8 +126,9 @@ export function TrainingModuleList({
   return (
     <div className="space-y-10">
       {modules.map((module_, moduleIndex) => {
-        const total = module_.lessons.length;
-        const completed = module_.lessons.filter((l) =>
+        const allLessons = module_.chapters.flatMap((c) => c.lessons);
+        const total = allLessons.length;
+        const completed = allLessons.filter((l) =>
           completedSet.has(l.id),
         ).length;
         const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -173,28 +175,43 @@ export function TrainingModuleList({
                   No lessons in this module yet.
                 </p>
               ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {module_.lessons.map((lesson, lessonIndex) => (
-                    <Link
-                      key={lesson.id}
-                      href={`/agent/training/lessons/${lesson.id}`}
-                      className="group flex flex-col gap-2 rounded-lg border border-border bg-surface2 p-4 transition-all hover:-translate-y-0.5 hover:border-copper-dim-gradient hover:shadow-[0_10px_24px_-12px_rgba(0,0,0,0.6)]"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-condensed text-[10px] font-bold tracking-[0.12em] text-muted uppercase">
-                          Lesson {lessonIndex + 1}
-                        </span>
-                        <CheckCircle done={completedSet.has(lesson.id)} />
-                      </div>
-                      <p className="line-clamp-2 text-sm font-semibold text-white">
-                        {lesson.title}
-                      </p>
-                      {lesson.description && (
-                        <p className="line-clamp-2 text-xs text-muted">
-                          {lesson.description}
+                <div className="space-y-6">
+                  {module_.chapters.map((chapter, chapterIndex) => (
+                    <div key={chapter.id}>
+                      <h4 className="font-condensed mb-3 text-[11px] font-bold tracking-[0.15em] text-muted uppercase">
+                        Chapter {chapterIndex + 1}: {chapter.title}
+                      </h4>
+                      {chapter.lessons.length === 0 ? (
+                        <p className="text-xs text-muted">
+                          No lessons in this chapter yet.
                         </p>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                          {chapter.lessons.map((lesson, lessonIndex) => (
+                            <Link
+                              key={lesson.id}
+                              href={`/agent/training/lessons/${lesson.id}`}
+                              className="group flex flex-col gap-2 rounded-lg border border-border bg-surface2 p-4 transition-all hover:-translate-y-0.5 hover:border-copper-dim-gradient hover:shadow-[0_10px_24px_-12px_rgba(0,0,0,0.6)]"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-condensed text-[10px] font-bold tracking-[0.12em] text-muted uppercase">
+                                  Lesson {lessonIndex + 1}
+                                </span>
+                                <CheckCircle done={completedSet.has(lesson.id)} />
+                              </div>
+                              <p className="line-clamp-2 text-sm font-semibold text-white">
+                                {lesson.title}
+                              </p>
+                              {lesson.description && (
+                                <p className="line-clamp-2 text-xs text-muted">
+                                  {lesson.description}
+                                </p>
+                              )}
+                            </Link>
+                          ))}
+                        </div>
                       )}
-                    </Link>
+                    </div>
                   ))}
                 </div>
               )}

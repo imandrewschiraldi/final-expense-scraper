@@ -49,13 +49,20 @@ type LessonInput = {
   images: string[];
 };
 
+type Chapter = {
+  id: string;
+  title: string;
+  order: number;
+  lessons: Lesson[];
+};
+
 type Module = {
   id: string;
   title: string;
   description: string | null;
   thumbnailUrl: string | null;
   order: number;
-  lessons: Lesson[];
+  chapters: Chapter[];
 };
 
 function TextArea({
@@ -772,6 +779,177 @@ function LessonRow({
   );
 }
 
+function ChapterForm({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (title: string) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg border-copper-dim-gradient bg-surface2 p-3">
+      <div className="flex-1">
+        <Input
+          placeholder="Chapter title (e.g. Getting Started)"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </div>
+      <Button
+        variant="secondary"
+        disabled={loading || !title.trim()}
+        onClick={async () => {
+          setLoading(true);
+          await onSubmit(title.trim());
+          setLoading(false);
+        }}
+      >
+        {loading ? "Saving..." : "Add Chapter"}
+      </Button>
+      <Button variant="ghost" onClick={onCancel}>
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
+/** One chapter within a module — a drag handle to reorder it among its
+ *  siblings, an inline-editable title, and its own lessons list (with its
+ *  own drag-to-reorder, scoped to just this chapter). */
+function ChapterRow({
+  chapter,
+  onUpdateTitle,
+  onDelete,
+  onUpdateLesson,
+  onDeleteLesson,
+  onRemoveLessonVideo,
+  onRemoveLessonImage,
+  addingLesson,
+  onStartAddLesson,
+  onCancelAddLesson,
+  onCreateLesson,
+}: {
+  chapter: Chapter;
+  onUpdateTitle: (title: string) => Promise<void>;
+  onDelete: () => void;
+  onUpdateLesson: (id: string, data: LessonInput) => Promise<void>;
+  onDeleteLesson: (id: string) => void;
+  onRemoveLessonVideo: (lesson: Lesson, videoId: string) => Promise<void>;
+  onRemoveLessonImage: (lesson: Lesson, imageId: string) => Promise<void>;
+  addingLesson: boolean;
+  onStartAddLesson: () => void;
+  onCancelAddLesson: () => void;
+  onCreateLesson: (data: LessonInput) => Promise<void>;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: chapter.id });
+  const dragStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(chapter.title);
+  const [saving, setSaving] = useState(false);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={dragStyle}
+      className="rounded-lg border border-border bg-surface2 p-3"
+    >
+      <div className="flex items-center gap-2">
+        <span
+          {...attributes}
+          {...listeners}
+          title="Drag to reorder"
+          className="flex h-6 w-6 shrink-0 cursor-grab touch-none items-center justify-center text-muted active:cursor-grabbing"
+        >
+          <GripVertical className="h-4 w-4" />
+        </span>
+        {editing ? (
+          <>
+            <div className="flex-1">
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <Button
+              variant="secondary"
+              disabled={saving || !title.trim()}
+              onClick={async () => {
+                setSaving(true);
+                await onUpdateTitle(title.trim());
+                setSaving(false);
+                setEditing(false);
+              }}
+            >
+              Save
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setTitle(chapter.title);
+                setEditing(false);
+              }}
+            >
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="font-condensed flex-1 truncate text-sm font-bold tracking-wide text-white uppercase">
+              {chapter.title}
+            </p>
+            <Button variant="ghost" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+            <Button variant="danger" onClick={onDelete}>
+              Delete
+            </Button>
+          </>
+        )}
+      </div>
+
+      <div className="mt-3 space-y-2 pl-8">
+        <SortableContext
+          items={chapter.lessons.map((l) => l.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {chapter.lessons.map((lesson) => (
+            <LessonRow
+              key={lesson.id}
+              lesson={lesson}
+              onUpdate={onUpdateLesson}
+              onDelete={onDeleteLesson}
+              onRemoveVideo={(videoId) => onRemoveLessonVideo(lesson, videoId)}
+              onRemoveImage={(imageId) => onRemoveLessonImage(lesson, imageId)}
+            />
+          ))}
+        </SortableContext>
+        {chapter.lessons.length === 0 && (
+          <p className="text-xs text-muted">No lessons in this chapter yet.</p>
+        )}
+
+        {addingLesson ? (
+          <LessonForm onSubmit={onCreateLesson} onCancel={onCancelAddLesson} />
+        ) : (
+          <Button variant="ghost" onClick={onStartAddLesson}>
+            + Add Lesson
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function TrainingPanel({
   initialModules,
 }: {
@@ -784,6 +962,7 @@ export function TrainingPanel({
   const [moduleThumbnailUrl, setModuleThumbnailUrl] = useState<string | null>(
     null,
   );
+  const [addingChapterTo, setAddingChapterTo] = useState<string | null>(null);
   const [addingLessonTo, setAddingLessonTo] = useState<string | null>(null);
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -846,8 +1025,33 @@ export function TrainingPanel({
     await refresh();
   }
 
-  async function createLesson(moduleId: string, data: LessonInput) {
-    await fetch(`/api/admin/training/modules/${moduleId}/lessons`, {
+  async function createChapter(moduleId: string, title: string) {
+    await fetch(`/api/admin/training/modules/${moduleId}/chapters`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    setAddingChapterTo(null);
+    await refresh();
+  }
+
+  async function updateChapterTitle(chapterId: string, title: string) {
+    await fetch(`/api/admin/training/chapters/${chapterId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    await refresh();
+  }
+
+  async function deleteChapter(id: string) {
+    if (!confirm("Delete this chapter and all of its lessons?")) return;
+    await fetch(`/api/admin/training/chapters/${id}`, { method: "DELETE" });
+    await refresh();
+  }
+
+  async function createLesson(chapterId: string, data: LessonInput) {
+    await fetch(`/api/admin/training/chapters/${chapterId}/lessons`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -898,25 +1102,61 @@ export function TrainingPanel({
     await refresh();
   }
 
-  // Reorders optimistically (so the drop feels instant) and persists via
-  // the module's lessons PATCH reorder endpoint — same pattern as the
-  // Announcements drag-to-reorder list.
-  async function handleLessonDragEnd(moduleId: string, event: DragEndEvent) {
+  // One drag handler for a module's whole chapter/lesson tree — dnd-kit's
+  // own generated aria ids get out of sync between server and client
+  // render when sortable lists each get their own nested DndContext, so
+  // this module has exactly one DndContext with two nested SortableContext
+  // levels instead (chapters, and each chapter's lessons) — this handler
+  // disambiguates which level actually got dragged and reorders optimistically
+  // (so the drop feels instant), then persists via the matching reorder
+  // endpoint — same pattern as the Announcements drag-to-reorder list.
+  async function handleModuleDragEnd(moduleId: string, event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const module_ = modules.find((m) => m.id === moduleId);
     if (!module_) return;
-    const ids = module_.lessons.map((l) => l.id);
+
+    const chapterIds = module_.chapters.map((c) => c.id);
+    if (chapterIds.includes(String(active.id))) {
+      const oldIndex = chapterIds.indexOf(String(active.id));
+      const newIndex = chapterIds.indexOf(String(over.id));
+      if (oldIndex === -1 || newIndex === -1) return;
+      const reordered = [...module_.chapters];
+      const [moved] = reordered.splice(oldIndex, 1);
+      reordered.splice(newIndex, 0, moved);
+      setModules((prev) =>
+        prev.map((m) =>
+          m.id === moduleId ? { ...m, chapters: reordered } : m,
+        ),
+      );
+      await fetch(`/api/admin/training/modules/${moduleId}/chapters`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reorder: reordered.map((c) => c.id) }),
+      });
+      return;
+    }
+
+    const chapter = module_.chapters.find((c) =>
+      c.lessons.some((l) => l.id === active.id),
+    );
+    if (!chapter || !chapter.lessons.some((l) => l.id === over.id)) return;
+    const ids = chapter.lessons.map((l) => l.id);
     const oldIndex = ids.indexOf(String(active.id));
     const newIndex = ids.indexOf(String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
-    const reordered = [...module_.lessons];
+    const reordered = [...chapter.lessons];
     const [moved] = reordered.splice(oldIndex, 1);
     reordered.splice(newIndex, 0, moved);
     setModules((prev) =>
-      prev.map((m) => (m.id === moduleId ? { ...m, lessons: reordered } : m)),
+      prev.map((m) => ({
+        ...m,
+        chapters: m.chapters.map((c) =>
+          c.id === chapter.id ? { ...c, lessons: reordered } : c,
+        ),
+      })),
     );
-    await fetch(`/api/admin/training/modules/${moduleId}/lessons`, {
+    await fetch(`/api/admin/training/chapters/${chapter.id}/lessons`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reorder: reordered.map((l) => l.id) }),
@@ -1060,51 +1300,55 @@ export function TrainingPanel({
             )}
           </CardHeader>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
-              onDragEnd={(event) => handleLessonDragEnd(module_.id, event)}
+              onDragEnd={(event) => handleModuleDragEnd(module_.id, event)}
             >
               <SortableContext
-                items={module_.lessons.map((l) => l.id)}
+                items={module_.chapters.map((c) => c.id)}
                 strategy={verticalListSortingStrategy}
               >
-                {module_.lessons.map((lesson) => (
-                  <LessonRow
-                    key={lesson.id}
-                    lesson={lesson}
-                    onUpdate={updateLesson}
-                    onDelete={deleteLesson}
-                    onRemoveVideo={(videoId) =>
-                      removeLessonVideo(lesson, videoId)
+                {module_.chapters.map((chapter) => (
+                  <ChapterRow
+                    key={chapter.id}
+                    chapter={chapter}
+                    onUpdateTitle={(title) =>
+                      updateChapterTitle(chapter.id, title)
                     }
-                    onRemoveImage={(imageId) =>
-                      removeLessonImage(lesson, imageId)
-                    }
+                    onDelete={() => deleteChapter(chapter.id)}
+                    onUpdateLesson={updateLesson}
+                    onDeleteLesson={deleteLesson}
+                    onRemoveLessonVideo={removeLessonVideo}
+                    onRemoveLessonImage={removeLessonImage}
+                    addingLesson={addingLessonTo === chapter.id}
+                    onStartAddLesson={() => setAddingLessonTo(chapter.id)}
+                    onCancelAddLesson={() => setAddingLessonTo(null)}
+                    onCreateLesson={(data) => createLesson(chapter.id, data)}
                   />
                 ))}
               </SortableContext>
             </DndContext>
-            {module_.lessons.length === 0 && (
+            {module_.chapters.length === 0 && (
               <p className="text-sm text-muted">
-                No lessons in this module yet.
+                No chapters in this module yet.
               </p>
             )}
           </div>
 
           <div className="mt-3">
-            {addingLessonTo === module_.id ? (
-              <LessonForm
-                onSubmit={(data) => createLesson(module_.id, data)}
-                onCancel={() => setAddingLessonTo(null)}
+            {addingChapterTo === module_.id ? (
+              <ChapterForm
+                onSubmit={(title) => createChapter(module_.id, title)}
+                onCancel={() => setAddingChapterTo(null)}
               />
             ) : (
               <Button
                 variant="secondary"
-                onClick={() => setAddingLessonTo(module_.id)}
+                onClick={() => setAddingChapterTo(module_.id)}
               >
-                Add Lesson
+                + Add Chapter
               </Button>
             )}
           </div>

@@ -329,27 +329,45 @@ model TrainingModule {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  lessons TrainingLesson[]
+  chapters TrainingChapter[]
 
   @@index([order])
   @@map("training_modules")
 }
 
+/// A module is broken into chapters — each one a named group of lessons
+/// (e.g. "Chapter 1: Getting Started") — so a long module reads as a
+/// structured course instead of one flat lesson list.
+model TrainingChapter {
+  id        String         @id @default(cuid())
+  moduleId  String
+  module    TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title     String
+  order     Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  lessons TrainingLesson[]
+
+  @@index([moduleId, order])
+  @@map("training_chapters")
+}
+
 model TrainingLesson {
-  id          String         @id @default(cuid())
-  moduleId    String
-  module      TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  id          String          @id @default(cuid())
+  chapterId   String
+  chapter     TrainingChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   title       String
   description String?
-  order       Int            @default(0)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  order       Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   progress TrainingProgress[]
   images   TrainingLessonImage[]
   videos   TrainingLessonVideo[]
 
-  @@index([moduleId, order])
+  @@index([chapterId, order])
   @@map("training_lessons")
 }
 

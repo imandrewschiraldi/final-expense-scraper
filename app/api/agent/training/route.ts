@@ -9,7 +9,12 @@ export async function GET() {
   const [modules, completedProgress] = await Promise.all([
     db.trainingModule.findMany({
       orderBy: { order: "asc" },
-      include: { lessons: { orderBy: { order: "asc" } } },
+      include: {
+        chapters: {
+          orderBy: { order: "asc" },
+          include: { lessons: { orderBy: { order: "asc" } } },
+        },
+      },
     }),
     db.trainingProgress.findMany({
       where: { agentId: guard.session.user.id },

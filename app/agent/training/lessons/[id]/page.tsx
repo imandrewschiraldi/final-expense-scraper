@@ -19,7 +19,7 @@ export default async function AgentTrainingLessonPage({
   const lesson = await db.trainingLesson.findUnique({
     where: { id },
     include: {
-      module: true,
+      chapter: { include: { module: true } },
       images: { orderBy: { order: "asc" } },
       videos: { orderBy: { order: "asc" } },
     },
@@ -29,22 +29,24 @@ export default async function AgentTrainingLessonPage({
     notFound();
   }
 
-  const [moduleLessons, progress] = await Promise.all([
+  const [moduleChapters, progress] = await Promise.all([
     // Scoped to this lesson's own module, not every lesson in the whole
-    // course — Prev/Next only ever move within a module; reaching the end
-    // of one hands off to the training overview (see nextId below)
-    // instead of sliding straight into the next module unannounced.
-    db.trainingLesson.findMany({
-      where: { moduleId: lesson.moduleId },
+    // course — Prev/Next move through every chapter's lessons in order;
+    // reaching the end of the module hands off to the training overview
+    // (see nextId below) instead of sliding into the next module unannounced.
+    db.trainingChapter.findMany({
+      where: { moduleId: lesson.chapter.moduleId },
       orderBy: { order: "asc" },
-      select: { id: true },
+      include: {
+        lessons: { orderBy: { order: "asc" }, select: { id: true } },
+      },
     }),
     db.trainingProgress.findUnique({
       where: { agentId_lessonId: { agentId, lessonId: id } },
     }),
   ]);
 
-  const lessonIds = moduleLessons.map((l) => l.id);
+  const lessonIds = moduleChapters.flatMap((c) => c.lessons.map((l) => l.id));
   const index = lessonIds.indexOf(id);
   const prevId = index > 0 ? lessonIds[index - 1] : null;
   const nextId =
@@ -75,7 +77,7 @@ export default async function AgentTrainingLessonPage({
         description: lesson.description,
         videos,
         images: lesson.images.map((img) => ({ id: img.id, url: img.url })),
-        moduleTitle: lesson.module.title,
+        moduleTitle: lesson.chapter.module.title,
       }}
       isCompleted={!!progress}
       navigation={{
