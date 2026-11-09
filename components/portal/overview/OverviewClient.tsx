@@ -25,6 +25,7 @@ import {
   LayoutGrid,
   Check,
   FilePlus2,
+  Gauge,
 } from "lucide-react";
 import { PageHeading } from "@/components/portal/PageHeading";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
@@ -305,18 +306,27 @@ export function OverviewClient() {
             classes would leave which one wins to Tailwind's generated
             stylesheet order rather than anything predictable here. */}
         {!isAdmin && (
-          <Link
-            href="/submit-policy"
-            // mr-3.5 (14px) centers this under the top bar's 4-icon cluster
-            // (QuickLinks/theme/Bell/avatar, 176px wide total at lg+) rather
-            // than sitting flush with its right edge — both are inset the
-            // same lg:px-10 from the viewport, so this is a fixed offset,
-            // not something that needs to track the cluster at runtime.
-            className="font-condensed mr-3.5 inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-bold tracking-[0.08em] text-background uppercase transition-opacity hover:opacity-90"
-          >
-            <FilePlus2 className="h-4 w-4" />
-            Submit Policy
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/agent/kpi-tracker"
+              className="font-condensed inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-[13px] font-bold tracking-[0.08em] text-foreground uppercase transition-colors hover:border-copper-dim-gradient hover:text-white"
+            >
+              <Gauge className="h-4 w-4" />
+              KPI Tracker
+            </Link>
+            <Link
+              href="/submit-policy"
+              // mr-3.5 (14px) centers this under the top bar's 4-icon cluster
+              // (QuickLinks/theme/Bell/avatar, 176px wide total at lg+) rather
+              // than sitting flush with its right edge — both are inset the
+              // same lg:px-10 from the viewport, so this is a fixed offset,
+              // not something that needs to track the cluster at runtime.
+              className="font-condensed mr-3.5 inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-bold tracking-[0.08em] text-background uppercase transition-opacity hover:opacity-90"
+            >
+              <FilePlus2 className="h-4 w-4" />
+              Submit Policy
+            </Link>
+          </div>
         )}
       </div>
 
