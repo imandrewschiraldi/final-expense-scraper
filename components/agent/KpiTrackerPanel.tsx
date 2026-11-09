@@ -5,16 +5,15 @@ import { format } from "date-fns";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Stepper } from "@/components/ui/Stepper";
 import { RangeSlider } from "@/components/ui/RangeSlider";
-import { DashboardRangeSelect } from "@/components/portal/dashboard/DashboardRangeSelect";
-import {
-  DASHBOARD_RANGE_LABELS,
-  type DashboardRange,
-} from "@/lib/dashboardRange";
+import { KpiRangeSelect } from "@/components/agent/KpiRangeSelect";
 import { formatCurrency } from "@/lib/formatMoney";
 import {
   MAX_LEAD_SPEND,
+  KPI_SUMMARY_RANGE_LABELS,
+  kpiSummaryRangeBounds,
   type KpiDailyTotals,
   type KpiPeriodSummary,
+  type KpiSummaryRange,
 } from "@/lib/kpiTracker";
 
 type EditableField =
@@ -40,8 +39,13 @@ const EMPTY_TOTALS: Omit<KpiDailyTotals, "date" | "apSubmitted"> = {
   dealsClosed: 0,
 };
 
-async function fetchSummary(range: DashboardRange): Promise<KpiPeriodSummary> {
-  const res = await fetch(`/api/agent/kpi-tracker/summary?range=${range}`);
+async function fetchSummary(
+  from: string,
+  to: string,
+): Promise<KpiPeriodSummary> {
+  const res = await fetch(
+    `/api/agent/kpi-tracker/summary?from=${from}&to=${to}`,
+  );
   if (!res.ok) throw new Error("Failed to load summary");
   const { summary } = (await res.json()) as { summary: KpiPeriodSummary };
   return summary;
@@ -146,8 +150,16 @@ export function KpiTrackerPanel() {
   const [apSubmitted, setApSubmitted] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const [range, setRange] = useState<DashboardRange>("weekly");
+  const [range, setRange] = useState<KpiSummaryRange>("this_week");
+  const [customFrom, setCustomFrom] = useState(today);
+  const [customTo, setCustomTo] = useState(today);
   const [summary, setSummary] = useState<KpiPeriodSummary | null>(null);
+
+  const bounds = kpiSummaryRangeBounds(
+    range,
+    today,
+    range === "custom" ? { from: customFrom, to: customTo } : undefined,
+  );
 
   const save = useDebouncedSave(500);
 
@@ -173,8 +185,9 @@ export function KpiTrackerPanel() {
   }, [today]);
 
   useEffect(() => {
+    if (bounds.from > bounds.to) return;
     let cancelled = false;
-    fetchSummary(range)
+    fetchSummary(bounds.from, bounds.to)
       .then((summary) => {
         if (!cancelled) setSummary(summary);
       })
@@ -185,7 +198,7 @@ export function KpiTrackerPanel() {
     return () => {
       cancelled = true;
     };
-  }, [range]);
+  }, [bounds.from, bounds.to]);
 
   function updateField(field: EditableField, value: number, immediate = false) {
     setTotals((prev) => ({ ...prev, [field]: value }));
@@ -195,7 +208,7 @@ export function KpiTrackerPanel() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ date: today, [field]: value }),
       })
-        .then(() => fetchSummary(range))
+        .then(() => fetchSummary(bounds.from, bounds.to))
         .then(setSummary)
         .catch(() => setError("A change didn't save — try again."));
     };
@@ -354,7 +367,16 @@ export function KpiTrackerPanel() {
       <Card>
         <CardHeader>
           <CardTitle>Period summary</CardTitle>
-          <DashboardRangeSelect value={range} onChange={setRange} />
+          <KpiRangeSelect
+            value={range}
+            onChange={setRange}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomChange={(from, to) => {
+              setCustomFrom(from);
+              setCustomTo(to);
+            }}
+          />
         </CardHeader>
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -404,17 +426,17 @@ export function KpiTrackerPanel() {
           <SummaryTile
             label="AP submitted"
             value={formatCurrency(summary?.apSubmitted ?? 0)}
-            caption={DASHBOARD_RANGE_LABELS[range]}
+            caption={KPI_SUMMARY_RANGE_LABELS[range]}
           />
           <SummaryTile
             label="Deposits"
             value={formatCurrency(summary?.deposits ?? 0)}
-            caption={DASHBOARD_RANGE_LABELS[range]}
+            caption={KPI_SUMMARY_RANGE_LABELS[range]}
           />
           <SummaryTile
             label="Lead spend"
             value={formatCurrency(summary?.leadSpend ?? 0)}
-            caption={DASHBOARD_RANGE_LABELS[range]}
+            caption={KPI_SUMMARY_RANGE_LABELS[range]}
           />
           <SummaryTile
             label="Days active"

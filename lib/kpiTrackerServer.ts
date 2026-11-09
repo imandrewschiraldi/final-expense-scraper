@@ -115,17 +115,21 @@ export async function upsertDailyEntry(
   });
 }
 
-/** Totals + rates for a rolling period ("This Week" etc, reusing the same
- *  DashboardRange the rest of the portal's range pickers use) — the
- *  Period summary card below the daily log. */
+/** Totals + rates over an explicit [from, to] window of calendar days
+ *  (inclusive) — the Period summary card below the daily log. The caller
+ *  resolves a named period (This Week, Last Month, etc) or a custom range
+ *  into these concrete bounds via kpiSummaryRangeBounds; this function
+ *  doesn't know about period names at all. */
 export async function getPeriodSummary(
   agentId: string,
-  range: DashboardRange,
-  now: Date = new Date(),
+  from: string,
+  to: string,
 ): Promise<KpiPeriodSummary> {
-  const since = rangeSince(range, now);
   const entries = await db.kpiEntry.findMany({
-    where: { agentId, ...(since ? { date: { gte: since } } : {}) },
+    where: {
+      agentId,
+      date: { gte: parseKpiDate(from), lte: parseKpiDate(to) },
+    },
     orderBy: { date: "asc" },
   });
 

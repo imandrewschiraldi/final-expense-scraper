@@ -38,6 +38,72 @@ export function addDaysToKpiDate(dateStr: string, days: number): string {
   return formatKpiDate(d);
 }
 
+export function firstOfMonth(dateStr: string): string {
+  return `${dateStr.slice(0, 7)}-01`;
+}
+
+export function lastOfMonth(dateStr: string): string {
+  const d = parseKpiDate(firstOfMonth(dateStr));
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return formatKpiDate(d);
+}
+
+export function addMonthsToKpiDate(dateStr: string, months: number): string {
+  const d = parseKpiDate(dateStr);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return formatKpiDate(d);
+}
+
+export const KPI_SUMMARY_RANGES = [
+  "this_week",
+  "last_week",
+  "this_month",
+  "last_month",
+  "custom",
+] as const;
+export type KpiSummaryRange = (typeof KPI_SUMMARY_RANGES)[number];
+
+export const KPI_SUMMARY_RANGE_LABELS: Record<KpiSummaryRange, string> = {
+  this_week: "This Week",
+  last_week: "Last Week",
+  this_month: "This Month",
+  last_month: "Last Month",
+  custom: "Custom Range",
+};
+
+/** Resolves a named period (or an explicit custom range) into concrete
+ *  "yyyy-MM-dd" bounds, as of the given `today` — always computed by the
+ *  caller from their own clock, never guessed here (same reasoning as
+ *  everywhere else in this module). */
+export function kpiSummaryRangeBounds(
+  range: KpiSummaryRange,
+  today: string,
+  custom?: { from: string; to: string },
+): { from: string; to: string } {
+  switch (range) {
+    case "this_week": {
+      const start = mondayOfWeek(today);
+      return { from: start, to: addDaysToKpiDate(start, 6) };
+    }
+    case "last_week": {
+      const start = addDaysToKpiDate(mondayOfWeek(today), -7);
+      return { from: start, to: addDaysToKpiDate(start, 6) };
+    }
+    case "this_month":
+      return { from: firstOfMonth(today), to: lastOfMonth(today) };
+    case "last_month": {
+      const lastMonthDay = addMonthsToKpiDate(firstOfMonth(today), -1);
+      return {
+        from: firstOfMonth(lastMonthDay),
+        to: lastOfMonth(lastMonthDay),
+      };
+    }
+    case "custom":
+      return custom ?? { from: today, to: today };
+  }
+}
+
 export type KpiDailyInput = {
   deposits?: number;
   leadSpend?: number;
