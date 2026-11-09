@@ -432,7 +432,16 @@ function VideoUrlField({
       const blob = await upload(file.name, file, {
         access: "public",
         handleUploadUrl: "/api/admin/training/video",
-        onUploadProgress: ({ percentage }) => setUploadPct(percentage),
+        // A large upload goes out as several parts, and once the real
+        // file bytes are fully sent the SDK makes one more small "commit"
+        // request to finalize it — which fires this same callback again
+        // for ITS OWN tiny body, reporting 0% before jumping back to
+        // 100%. Clamping to the high-water mark keeps the bar from ever
+        // visibly sliding backward once the actual transfer is done.
+        onUploadProgress: ({ percentage }) =>
+          setUploadPct((prev) =>
+            prev == null ? percentage : Math.max(prev, percentage),
+          ),
       });
       onChange({ ...video, url: blob.url });
     } catch (err) {
