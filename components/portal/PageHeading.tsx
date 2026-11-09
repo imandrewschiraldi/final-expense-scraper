@@ -31,6 +31,7 @@ const HEADINGS = {
   "underwriting-genie": { width: 776, height: 47 },
   notifications: { width: 553, height: 45 },
   "agent-accelerator": { width: 764, height: 43 },
+  "kpi-tracker": { width: 899, height: 88 },
 } as const;
 
 // Light-mode counterparts, cropped to the same glyph-to-image-height ratio
@@ -61,7 +62,10 @@ const HEADINGS_LIGHT = {
   "underwriting-genie": { width: 768, height: 43 },
   notifications: { width: 548, height: 38 },
   "agent-accelerator": { width: 764, height: 43 },
-} satisfies Partial<Record<keyof typeof HEADINGS, { width: number; height: number }>>;
+  "kpi-tracker": { width: 450, height: 44 },
+} satisfies Partial<
+  Record<keyof typeof HEADINGS, { width: number; height: number }>
+>;
 
 export type PageHeadingSlug = keyof typeof HEADINGS;
 
@@ -99,11 +103,19 @@ export function PageHeading({
   wrapperClassName?: string;
 }) {
   const [theme] = useTheme();
-  const lightSize = (HEADINGS_LIGHT as Partial<Record<PageHeadingSlug, { width: number; height: number }>>)[slug];
+  const lightSize = (
+    HEADINGS_LIGHT as Partial<
+      Record<PageHeadingSlug, { width: number; height: number }>
+    >
+  )[slug];
   const useLight = theme === "light" && !!lightSize;
   const { width, height } = useLight ? lightSize! : HEADINGS[slug];
   return (
-    <div className={wrapperClassName ?? "mb-8 mt-3 flex justify-center lg:mt-[20px]"}>
+    <div
+      className={
+        wrapperClassName ?? "mb-8 mt-3 flex justify-center lg:mt-[20px]"
+      }
+    >
       <Image
         src={`/headings/${slug}${useLight ? "-light" : ""}.png`}
         alt={alt}

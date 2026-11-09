@@ -4,6 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { KpiTrackerPanel } from "@/components/agent/KpiTrackerPanel";
 import { KpiHistoryPanel } from "@/components/agent/KpiHistoryPanel";
+import { PageHeading } from "@/components/portal/PageHeading";
 import { cn } from "@/lib/cn";
 
 type Tab = "tracker" | "history";
@@ -13,22 +14,14 @@ export function KpiTrackerClient() {
 
   return (
     <div>
-      {/* The desktop search box and icon cluster are absolutely positioned
-          over the top 74px of `main` (HEADER_HEIGHT) — PageHeading's pages
-          get away with sitting inside that band because their wordmark is
-          horizontally centered, clear of the search box (left) and icon
-          cluster (right) it would otherwise collide with. This title and
-          date sit flush left/right instead — exactly where those two live
-          — so they need real vertical clearance past the band instead,
-          not just PageHeading's own (horizontally-safe) margin value.
-          Below `lg` the desktop bar is hidden entirely (mobile gets its
-          own in-flow PageHeader instead), so no extra margin is needed
-          there. */}
-      <div className="lg:mt-24">
-        <h1 className="font-condensed text-2xl font-extrabold tracking-wide text-white uppercase">
-          KPI Tracker
-        </h1>
-        <p className="mt-1 text-sm text-muted">
+      {/* PageHeading's own wrapper clears the desktop search box/icon
+          cluster's absolutely-positioned 74px band on its own — its
+          wordmark is horizontally centered, clear of both. Everything
+          below it is safely past that band too. */}
+      <PageHeading slug="kpi-tracker" alt="KPI Tracker" />
+
+      <div>
+        <p className="text-sm text-muted">
           Log daily activity and track pick-up, show, and close rates.
         </p>
         <p className="mt-2 text-sm text-muted">
