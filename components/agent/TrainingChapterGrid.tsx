@@ -43,7 +43,7 @@ export function TrainingChapterGrid({
             eyebrow={`Chapter ${chapterIndex + 1}`}
             title={chapter.title}
             pct={pct}
-            fallbackIcon={<BookOpen className="h-4.5 w-4.5" />}
+            fallbackIcon={<BookOpen className="h-8 w-8" strokeWidth={1.25} />}
           />
         );
       })}

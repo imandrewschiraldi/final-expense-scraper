@@ -35,7 +35,7 @@ export function TrainingChapterLessons({
           title={lesson.title}
           description={lesson.description}
           pct={completedSet.has(lesson.id) ? 100 : 0}
-          fallbackIcon={<PlayCircle className="h-4.5 w-4.5" />}
+          fallbackIcon={<PlayCircle className="h-8 w-8" strokeWidth={1.25} />}
         />
       ))}
     </div>

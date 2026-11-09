@@ -46,7 +46,9 @@ export function TrainingModuleList({
             description={module_.description}
             pct={pct}
             coverUrl={module_.thumbnailUrl}
-            fallbackIcon={<GraduationCap className="h-4.5 w-4.5" />}
+            fallbackIcon={
+              <GraduationCap className="h-8 w-8" strokeWidth={1.25} />
+            }
           />
         );
       })}
