@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
-import { GripVertical, ImagePlus, Upload, X } from "lucide-react";
+import {
+  GripVertical,
+  ImagePlus,
+  TriangleAlert,
+  Upload,
+  X,
+} from "lucide-react";
 import {
   DndContext,
   PointerSensor,
@@ -382,6 +388,35 @@ function LinkThumbnailField({
   );
 }
 
+// How long the upload progress callback can go quiet before the admin
+// sees a "this looks stuck" warning — short enough to actually be useful
+// instead of staring at a frozen percentage for the better part of an
+// hour, long enough that a normal lull between large chunks doesn't
+// trigger a false alarm.
+const STALL_WARNING_MS = 30000;
+
+// @vercel/blob's client SDK has a real gap: for a large file split into
+// multipart parts, it re-requests a token from `handleUploadUrl` before
+// EVERY part — but that specific request is never wired to the
+// `abortSignal` passed into `upload()` (confirmed by reading the SDK
+// source; only the actual byte-upload and complete-multipart requests
+// honor it). If a hang happens to land on one of those token requests —
+// plausible on any large upload, since there's one per part — clicking
+// cancel can't reach it. Racing against the signal ourselves means
+// cancel always wins and frees up the UI, even when the SDK's own
+// request is stuck for good underneath.
+function abortSignalRejection(signal: AbortSignal): Promise<never> {
+  return new Promise((_, reject) => {
+    const abort = () =>
+      reject(new DOMException("The user aborted a request.", "AbortError"));
+    if (signal.aborted) {
+      abort();
+      return;
+    }
+    signal.addEventListener("abort", abort, { once: true });
+  });
+}
+
 /** One video link — paste one (YouTube/Vimeo/Loom/a direct video file
  *  link), or upload a file straight from this device when there's no
  *  hosted link at all. An upload goes directly from the browser to Blob
@@ -405,8 +440,28 @@ function VideoUrlField({
   // actually frozen. Real percentage (from @vercel/blob's own progress
   // callback) lets an admin tell a slow transfer from a stuck one.
   const [uploadPct, setUploadPct] = useState<number | null>(null);
+  // The SDK sets no timeout of its own on the underlying request — a
+  // network hiccup partway through a multi-GB transfer can leave it
+  // hanging forever with no error ever surfacing. This tracks whether
+  // the progress callback has gone quiet long enough to call that out,
+  // since silence is otherwise indistinguishable from "still going".
+  const [stalled, setStalled] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const lastProgressAtRef = useRef(0);
+
+  // `stalled` itself is reset to false wherever an upload starts or ends
+  // (handleFile's own setup and its finally block) — this effect only
+  // ever needs to arm/disarm the watch timer, not touch that state
+  // directly itself.
+  useEffect(() => {
+    if (!uploading) return;
+    const interval = setInterval(() => {
+      setStalled(Date.now() - lastProgressAtRef.current > STALL_WARNING_MS);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [uploading]);
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
@@ -428,30 +483,51 @@ function VideoUrlField({
     setError(null);
     setUploading(true);
     setUploadPct(0);
+    setStalled(false);
+    lastProgressAtRef.current = Date.now();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     try {
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/admin/training/video",
-        // A large upload goes out as several parts, and once the real
-        // file bytes are fully sent the SDK makes one more small "commit"
-        // request to finalize it — which fires this same callback again
-        // for ITS OWN tiny body, reporting 0% before jumping back to
-        // 100%. Clamping to the high-water mark keeps the bar from ever
-        // visibly sliding backward once the actual transfer is done.
-        onUploadProgress: ({ percentage }) =>
-          setUploadPct((prev) =>
-            prev == null ? percentage : Math.max(prev, percentage),
-          ),
-      });
+      const blob = await Promise.race([
+        upload(file.name, file, {
+          access: "public",
+          handleUploadUrl: "/api/admin/training/video",
+          abortSignal: controller.signal,
+          // A large upload goes out as several parts, and once the real
+          // file bytes are fully sent the SDK makes one more small "commit"
+          // request to finalize it — which fires this same callback again
+          // for ITS OWN tiny body, reporting 0% before jumping back to
+          // 100%. Clamping to the high-water mark keeps the bar from ever
+          // visibly sliding backward once the actual transfer is done.
+          onUploadProgress: ({ percentage }) => {
+            lastProgressAtRef.current = Date.now();
+            setStalled(false);
+            setUploadPct((prev) =>
+              prev == null ? percentage : Math.max(prev, percentage),
+            );
+          },
+        }),
+        abortSignalRejection(controller.signal),
+      ]);
       onChange({ ...video, url: blob.url });
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "That video didn't upload.",
+        err instanceof DOMException && err.name === "AbortError"
+          ? "Upload canceled."
+          : err instanceof Error
+            ? err.message
+            : "That video didn't upload.",
       );
     } finally {
       setUploading(false);
       setUploadPct(null);
+      setStalled(false);
+      abortControllerRef.current = null;
     }
+  }
+
+  function cancelUpload() {
+    abortControllerRef.current?.abort();
   }
 
   return (
@@ -509,9 +585,9 @@ function VideoUrlField({
         </label>
         <button
           type="button"
-          onClick={onRemove}
-          aria-label="Remove this link"
-          title="Remove this link"
+          onClick={uploading ? cancelUpload : onRemove}
+          aria-label={uploading ? "Cancel upload" : "Remove this link"}
+          title={uploading ? "Cancel upload" : "Remove this link"}
           className="shrink-0 rounded-lg border border-transparent px-2 text-muted transition-colors hover:border-border hover:text-red-light"
         >
           <X className="h-4 w-4" />
@@ -521,15 +597,26 @@ function VideoUrlField({
         <div className="space-y-1">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface2">
             <div
-              className="h-full rounded-full bg-copper transition-[width]"
+              className={cn(
+                "h-full rounded-full transition-[width]",
+                stalled ? "bg-red-light" : "bg-copper",
+              )}
               style={{ width: `${Math.max(2, uploadPct)}%` }}
             />
           </div>
-          <p className="text-[11px] text-muted">
-            Uploading large files can take a while — this bar keeps moving as
-            long as it&rsquo;s still going. Don&rsquo;t close this tab until it
-            finishes.
-          </p>
+          {stalled ? (
+            <p className="flex items-center gap-1.5 text-[11px] text-red-light">
+              <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+              This hasn&rsquo;t moved in a while and may be stuck — click the X
+              above to cancel and try again.
+            </p>
+          ) : (
+            <p className="text-[11px] text-muted">
+              Uploading large files can take a while — this bar keeps moving as
+              long as it&rsquo;s still going. Don&rsquo;t close this tab until
+              it finishes.
+            </p>
+          )}
         </div>
       ) : (
         <p className="text-[11px] text-muted">
