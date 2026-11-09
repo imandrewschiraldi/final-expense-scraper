@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
+import { uploadTrainingVideo } from "@/lib/clientVideoUpload";
 import {
   GripVertical,
   ImagePlus,
@@ -395,16 +395,13 @@ function LinkThumbnailField({
 // trigger a false alarm.
 const STALL_WARNING_MS = 30000;
 
-// @vercel/blob's client SDK has a real gap: for a large file split into
-// multipart parts, it re-requests a token from `handleUploadUrl` before
-// EVERY part — but that specific request is never wired to the
-// `abortSignal` passed into `upload()` (confirmed by reading the SDK
-// source; only the actual byte-upload and complete-multipart requests
-// honor it). If a hang happens to land on one of those token requests —
-// plausible on any large upload, since there's one per part — clicking
-// cancel can't reach it. Racing against the signal ourselves means
-// cancel always wins and frees up the UI, even when the SDK's own
-// request is stuck for good underneath.
+// `uploadTrainingVideo` (lib/clientVideoUpload.ts) already retries a
+// stalled part on its own, but as a last line of defense — if it ever
+// throws for some other reason while `abortSignal` is also mid-abort,
+// or the internal retry loop takes a while to notice a cancel — racing
+// against the signal ourselves means cancel always wins and frees up
+// the UI immediately, rather than waiting on whatever's unwinding
+// underneath.
 function abortSignalRejection(signal: AbortSignal): Promise<never> {
   return new Promise((_, reject) => {
     const abort = () =>
@@ -489,22 +486,13 @@ function VideoUrlField({
     abortControllerRef.current = controller;
     try {
       const blob = await Promise.race([
-        upload(file.name, file, {
-          access: "public",
+        uploadTrainingVideo(file, {
           handleUploadUrl: "/api/admin/training/video",
           abortSignal: controller.signal,
-          // A large upload goes out as several parts, and once the real
-          // file bytes are fully sent the SDK makes one more small "commit"
-          // request to finalize it — which fires this same callback again
-          // for ITS OWN tiny body, reporting 0% before jumping back to
-          // 100%. Clamping to the high-water mark keeps the bar from ever
-          // visibly sliding backward once the actual transfer is done.
-          onUploadProgress: ({ percentage }) => {
+          onProgress: (pct) => {
             lastProgressAtRef.current = Date.now();
             setStalled(false);
-            setUploadPct((prev) =>
-              prev == null ? percentage : Math.max(prev, percentage),
-            );
+            setUploadPct((prev) => (prev == null ? pct : Math.max(prev, pct)));
           },
         }),
         abortSignalRejection(controller.signal),
