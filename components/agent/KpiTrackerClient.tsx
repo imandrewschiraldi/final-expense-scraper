@@ -20,14 +20,9 @@ export function KpiTrackerClient() {
           below it is safely past that band too. */}
       <PageHeading slug="kpi-tracker" alt="KPI Tracker" />
 
-      <div>
-        <p className="text-sm text-muted">
-          Log daily activity and track pick-up, show, and close rates.
-        </p>
-        <p className="mt-2 text-sm text-muted">
-          {format(new Date(), "EEE, MMM d, yyyy")}
-        </p>
-      </div>
+      <p className="text-right text-sm text-muted">
+        {format(new Date(), "EEE, MMM d, yyyy")}
+      </p>
 
       <div className="mt-6 mb-6 flex items-center gap-6 border-b border-border">
         {(
@@ -51,6 +46,10 @@ export function KpiTrackerClient() {
           </button>
         ))}
       </div>
+
+      <p className="mb-6 text-sm text-muted">
+        Log daily activity and track pick-up, show, and close rates.
+      </p>
 
       {tab === "tracker" ? <KpiTrackerPanel /> : <KpiHistoryPanel />}
     </div>
