@@ -12,10 +12,12 @@ export default async function AgentTrainingPage() {
   const [modules, progress] = await Promise.all([
     db.trainingModule.findMany({
       orderBy: { order: "asc" },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        thumbnailUrl: true,
         chapters: {
-          orderBy: { order: "asc" },
-          include: { lessons: { orderBy: { order: "asc" } } },
+          select: { lessons: { select: { id: true } } },
         },
       },
     }),
@@ -31,21 +33,12 @@ export default async function AgentTrainingPage() {
     <div>
       <PageHeading slug="training" alt="Training" />
       {modules.length === 0 ? (
-        <p className="text-sm text-muted">No training modules have been added yet — check back soon.</p>
+        <p className="text-sm text-muted">
+          No training modules have been added yet — check back soon.
+        </p>
       ) : (
         <TrainingModuleList
-          modules={modules.map((m) => ({
-            ...m,
-            chapters: m.chapters.map((c) => ({
-              id: c.id,
-              title: c.title,
-              lessons: c.lessons.map((l) => ({
-                id: l.id,
-                title: l.title,
-                description: l.description,
-              })),
-            })),
-          }))}
+          modules={modules}
           completedLessonIds={completedLessonIds}
         />
       )}

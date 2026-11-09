@@ -27,7 +27,10 @@ type Lesson = {
     channelInfo: YoutubeChannelInfo | null;
   }[];
   images: { id: string; url: string }[];
+  moduleId: string;
   moduleTitle: string;
+  chapterId: string;
+  chapterTitle: string;
 };
 
 type Navigation = {
@@ -494,17 +497,19 @@ export function TrainingLessonView({
   const completing = useRef(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
+  const chapterHref = `/agent/training/modules/${lesson.moduleId}/chapters/${lesson.chapterId}`;
+
   const prevHref = navigation.prevId
     ? `/agent/training/lessons/${navigation.prevId}`
     : null;
   // navigation.nextId only ever points at the next lesson in this same
-  // module (see app/agent/training/lessons/[id]/page.tsx) — the last
-  // lesson in a module has none, and "Next" from there goes back to the
-  // training overview instead of sliding into the next module.
-  const isLastInModule = !navigation.nextId;
+  // chapter (see app/agent/training/lessons/[id]/page.tsx) — the last
+  // lesson in a chapter has none, and "Next" from there goes back to that
+  // chapter's own page instead of sliding into the next chapter.
+  const isLastInChapter = !navigation.nextId;
   const nextHref = navigation.nextId
     ? `/agent/training/lessons/${navigation.nextId}`
-    : "/agent/training";
+    : chapterHref;
 
   // A video resolves either to something trackable (a single playable
   // video — must finish) or, for a link with no single end to reach — a
@@ -608,10 +613,10 @@ export function TrainingLessonView({
     <div className="space-y-6 pt-2 lg:pt-[70px]">
       <div className="flex items-center justify-between">
         <Link
-          href="/agent/training"
+          href={chapterHref}
           className="text-sm text-muted hover:text-foreground"
         >
-          &larr; Back to Training
+          &larr; Back to {lesson.chapterTitle}
         </Link>
         <div className="flex items-center gap-3">
           {navigation.position && (
@@ -628,7 +633,7 @@ export function TrainingLessonView({
               &larr; Prev
             </Button>
             <Button variant="ghost" onClick={() => router.push(nextHref)}>
-              {isLastInModule ? "Finish Module →" : "Next →"}
+              {isLastInChapter ? "Finish Chapter →" : "Next →"}
             </Button>
           </div>
         </div>
@@ -638,7 +643,7 @@ export function TrainingLessonView({
         <CardHeader>
           <div>
             <p className="font-condensed metal-copper-text text-[11px] font-bold tracking-[0.14em] uppercase">
-              {lesson.moduleTitle}
+              {lesson.moduleTitle} &middot; {lesson.chapterTitle}
             </p>
             <CardTitle>{lesson.title}</CardTitle>
           </div>
