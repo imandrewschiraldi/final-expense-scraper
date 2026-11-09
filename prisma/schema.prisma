@@ -1030,3 +1030,24 @@ model OverviewWidget {
 
   @@map("overview_widgets")
 }
+
+/// A card on the agent-facing "Buy Leads" page (app/agent/buy-leads) —
+/// admin-managed replacement for what used to be a hardcoded array in
+/// lib/vendors.ts. `logoOnLight` puts the logo on a rounded white chip
+/// instead of blending it onto the dark card, for logos with a light/solid
+/// background that wouldn't read otherwise.
+model LeadVendor {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  bullets     String[] @default([])
+  url         String
+  logoUrl     String
+  logoOnLight Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([order])
+  @@map("lead_vendors")
+}

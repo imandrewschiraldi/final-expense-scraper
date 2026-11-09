@@ -164,6 +164,13 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN"],
     section: "leads",
   },
+  {
+    href: "/admin/lead-vendors",
+    label: "Lead Vendors",
+    icon: ShoppingCart,
+    roles: ["ADMIN"],
+    section: "leads",
+  },
 
   {
     href: "/scripts",

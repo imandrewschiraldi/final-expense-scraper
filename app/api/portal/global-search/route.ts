@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { VENDORS, vendorSlug } from "@/lib/vendors";
+import { vendorSlug } from "@/lib/vendors";
 
 export const dynamic = "force-dynamic";
 
 type ResultType = "lead" | "carrier" | "training" | "vendor";
-type SearchResult = { type: ResultType; id: string; title: string; subtitle?: string; href: string };
+type SearchResult = {
+  type: ResultType;
+  id: string;
+  title: string;
+  subtitle?: string;
+  href: string;
+};
 
 const RESULT_LIMIT = 5;
 
@@ -29,19 +35,29 @@ export async function GET(req: NextRequest) {
   const role = guard.session.user.role;
   const userId = guard.session.user.id;
 
-  const [leadResults, carrierResults, trainingResults] = await Promise.all([
-    searchLeads(q, role, userId),
-    searchCarriers(q, role),
-    searchTraining(q, role),
-  ]);
-  const vendorResults = searchVendors(q);
+  const [leadResults, carrierResults, trainingResults, vendorResults] =
+    await Promise.all([
+      searchLeads(q, role, userId),
+      searchCarriers(q, role),
+      searchTraining(q, role),
+      searchVendors(q),
+    ]);
 
   return NextResponse.json({
-    results: [...leadResults, ...carrierResults, ...trainingResults, ...vendorResults],
+    results: [
+      ...leadResults,
+      ...carrierResults,
+      ...trainingResults,
+      ...vendorResults,
+    ],
   });
 }
 
-async function searchLeads(q: string, role: string, userId: string): Promise<SearchResult[]> {
+async function searchLeads(
+  q: string,
+  role: string,
+  userId: string,
+): Promise<SearchResult[]> {
   // Agents/managers only ever see their own assigned leads everywhere else
   // in the app (see app/agent/dashboard/page.tsx, app/agent/leads/[id]/page.tsx,
   // lib/agentLeads.ts) — search has to respect that same boundary, not a
@@ -51,7 +67,18 @@ async function searchLeads(q: string, role: string, userId: string): Promise<Sea
   const words = q.split(/\s+/).filter(Boolean);
   const nameOr =
     words.length > 1
-      ? [{ AND: [{ firstName: { contains: words[0], mode: "insensitive" as const } }, { lastName: { contains: words[1], mode: "insensitive" as const } }] }]
+      ? [
+          {
+            AND: [
+              {
+                firstName: { contains: words[0], mode: "insensitive" as const },
+              },
+              {
+                lastName: { contains: words[1], mode: "insensitive" as const },
+              },
+            ],
+          },
+        ]
       : [
           { firstName: { contains: q, mode: "insensitive" as const } },
           { lastName: { contains: q, mode: "insensitive" as const } },
@@ -63,7 +90,14 @@ async function searchLeads(q: string, role: string, userId: string): Promise<Sea
       isArchived: false,
       OR: [...nameOr, { phone: { contains: q } }],
     },
-    select: { id: true, firstName: true, lastName: true, phone: true, status: true, assignedAgentId: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      status: true,
+      assignedAgentId: true,
+    },
     take: RESULT_LIMIT,
     orderBy: { updatedAt: "desc" },
   });
@@ -80,7 +114,10 @@ async function searchLeads(q: string, role: string, userId: string): Promise<Sea
   }));
 }
 
-async function searchCarriers(q: string, role: string): Promise<SearchResult[]> {
+async function searchCarriers(
+  q: string,
+  role: string,
+): Promise<SearchResult[]> {
   const carriers = await db.carrier.findMany({
     where: { name: { contains: q, mode: "insensitive" } },
     select: { id: true, name: true },
@@ -96,11 +133,17 @@ async function searchCarriers(q: string, role: string): Promise<SearchResult[]> 
     // Agent-facing grid supports ?carrier= deep-linking (scrolls + rings
     // the card); the admin editing panel doesn't need that treatment — a
     // searched carrier there is still easy to find in its own list.
-    href: role === "ADMIN" ? "/admin/carrier-resources" : `/carrier-resources?carrier=${carrier.id}`,
+    href:
+      role === "ADMIN"
+        ? "/admin/carrier-resources"
+        : `/carrier-resources?carrier=${carrier.id}`,
   }));
 }
 
-async function searchTraining(q: string, role: string): Promise<SearchResult[]> {
+async function searchTraining(
+  q: string,
+  role: string,
+): Promise<SearchResult[]> {
   const trainingHome = role === "ADMIN" ? "/admin/training" : "/agent/training";
 
   const lessons = await db.trainingLesson.findMany({
@@ -121,7 +164,10 @@ async function searchTraining(q: string, role: string): Promise<SearchResult[]> 
       subtitle: lesson.chapter.module.title,
       // Admin manages lessons from the module editor, not a per-lesson
       // viewer page — only agent/manager has the lesson-viewing route.
-      href: role === "ADMIN" ? trainingHome : `/agent/training/lessons/${lesson.id}`,
+      href:
+        role === "ADMIN"
+          ? trainingHome
+          : `/agent/training/lessons/${lesson.id}`,
     }));
   }
 
@@ -142,15 +188,17 @@ async function searchTraining(q: string, role: string): Promise<SearchResult[]> 
   }));
 }
 
-function searchVendors(q: string): SearchResult[] {
-  const needle = q.toLowerCase();
-  return VENDORS.filter((v) => v.name.toLowerCase().includes(needle))
-    .slice(0, RESULT_LIMIT)
-    .map((vendor) => ({
-      type: "vendor" as const,
-      id: vendorSlug(vendor.name),
-      title: vendor.name,
-      subtitle: "Lead vendor",
-      href: `/agent/buy-leads?vendor=${vendorSlug(vendor.name)}`,
-    }));
+async function searchVendors(q: string): Promise<SearchResult[]> {
+  const vendors = await db.leadVendor.findMany({
+    where: { name: { contains: q, mode: "insensitive" } },
+    take: RESULT_LIMIT,
+    select: { name: true },
+  });
+  return vendors.map((vendor) => ({
+    type: "vendor" as const,
+    id: vendorSlug(vendor.name),
+    title: vendor.name,
+    subtitle: "Lead vendor",
+    href: `/agent/buy-leads?vendor=${vendorSlug(vendor.name)}`,
+  }));
 }

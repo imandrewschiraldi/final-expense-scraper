@@ -1,18 +1,24 @@
 import { Suspense } from "react";
 import { BuyLeadsGrid } from "@/components/portal/BuyLeadsGrid";
 import { PageHeading } from "@/components/portal/PageHeading";
+import { db } from "@/lib/db";
 
-export default function BuyLeadsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function BuyLeadsPage() {
+  const vendors = await db.leadVendor.findMany({ orderBy: { order: "asc" } });
+
   return (
     <div>
       <PageHeading slug="trusted-lead-vendors" alt="Trusted Lead Vendors" />
       <p className="mb-8 text-sm text-muted">
-        Trusted lead sources our agents use to supplement what comes through the Vault.
+        Trusted lead sources our agents use to supplement what comes through the
+        Vault.
       </p>
       {/* BuyLeadsGrid reads ?vendor= via useSearchParams (deep link from
           global search) — Next requires that behind a Suspense boundary. */}
       <Suspense fallback={null}>
-        <BuyLeadsGrid />
+        <BuyLeadsGrid vendors={vendors} />
       </Suspense>
     </div>
   );

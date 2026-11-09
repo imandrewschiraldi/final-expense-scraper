@@ -6,12 +6,27 @@ import { useSearchParams } from "next/navigation";
 import { ArrowUpRight, Store } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Card } from "@/components/ui/Card";
-import { VENDORS, vendorSlug } from "@/lib/vendors";
+import { vendorSlug } from "@/lib/vendors";
+
+type Vendor = {
+  id: string;
+  name: string;
+  description: string | null;
+  bullets: string[];
+  url: string;
+  logoUrl: string;
+  logoOnLight: boolean;
+};
 
 function StatusPill({ live }: { live: boolean }) {
   return (
     <span className="font-condensed flex items-center gap-1.5 text-[11px] font-bold tracking-[0.08em] text-muted uppercase">
-      <span className={cn("h-1.5 w-1.5 rounded-full", live ? "metal-green-surface animate-pulse" : "bg-muted")} />
+      <span
+        className={cn(
+          "h-1.5 w-1.5 rounded-full",
+          live ? "metal-green-surface animate-pulse" : "bg-muted",
+        )}
+      />
       {live ? "Live Now" : "Coming Soon"}
     </span>
   );
@@ -33,7 +48,7 @@ function VisitSiteButton({ url }: { url: string }) {
   );
 }
 
-export function BuyLeadsGrid() {
+export function BuyLeadsGrid({ vendors }: { vendors: Vendor[] }) {
   // Deep link from the sidebar's global search ("type a vendor name, land
   // on it") — ?vendor=<slug> scrolls that card into view and briefly rings
   // it so it's obvious which one matched, instead of just loading the page.
@@ -54,11 +69,11 @@ export function BuyLeadsGrid() {
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      {VENDORS.map((vendor) => {
+      {vendors.map((vendor) => {
         const slug = vendorSlug(vendor.name);
         return (
           <div
-            key={vendor.name}
+            key={vendor.id}
             id={`vendor-${slug}`}
             ref={(el) => {
               refs.current[slug] = el;
@@ -84,29 +99,47 @@ export function BuyLeadsGrid() {
                 "--muted": "#606060",
               } as React.CSSProperties
             }
-            className={cn("rounded-[10px] transition-shadow", highlighted === slug && "ring-2 ring-[var(--copper-metal)]")}
+            className={cn(
+              "rounded-[10px] transition-shadow",
+              highlighted === slug && "ring-2 ring-[var(--copper-metal)]",
+            )}
           >
             <Card className="flex h-full flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className={cn("inline-flex items-center", vendor.logoOnLight && "rounded-full bg-[#ffffff] px-3 py-1.5")}>
+                <span
+                  className={cn(
+                    "flex h-10 w-32 items-center",
+                    vendor.logoOnLight
+                      ? "justify-center rounded-full bg-[#ffffff] px-3 py-1.5"
+                      : "justify-start",
+                  )}
+                >
                   <Image
-                    src={vendor.logo.src}
+                    src={vendor.logoUrl}
                     alt={vendor.name}
-                    width={vendor.logo.width}
-                    height={vendor.logo.height}
-                    className={cn("w-auto", vendor.logoHeightClass ?? "h-8")}
+                    width={160}
+                    height={40}
+                    unoptimized
+                    className="h-8 w-auto object-contain"
                   />
                 </span>
                 <StatusPill live />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-white">{vendor.name}</h2>
-                {vendor.description && <p className="mt-1 text-sm text-muted">{vendor.description}</p>}
+                {vendor.description && (
+                  <p className="mt-1 text-sm text-muted">
+                    {vendor.description}
+                  </p>
+                )}
               </div>
               {vendor.bullets && (
                 <ul className="space-y-1.5">
                   {vendor.bullets.map((bullet) => (
-                    <li key={bullet} className="flex items-start gap-2 text-sm text-muted">
+                    <li
+                      key={bullet}
+                      className="flex items-start gap-2 text-sm text-muted"
+                    >
                       <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-copper-dim" />
                       {bullet}
                     </li>
@@ -130,7 +163,9 @@ export function BuyLeadsGrid() {
         </div>
         <div>
           <h2 className="text-lg font-bold text-white">More Vendors</h2>
-          <p className="mt-1 text-sm text-muted">Additional lead sources are being vetted and will appear here.</p>
+          <p className="mt-1 text-sm text-muted">
+            Additional lead sources are being vetted and will appear here.
+          </p>
         </div>
         <div className="mt-auto pt-1">
           <span className="font-condensed inline-flex w-fit items-center rounded-full border border-border px-4 py-2 text-[13px] font-bold text-muted">
