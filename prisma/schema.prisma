@@ -340,13 +340,16 @@ model TrainingModule {
 /// (e.g. "Chapter 1: Getting Started") — so a long module reads as a
 /// structured course instead of one flat lesson list.
 model TrainingChapter {
-  id        String         @id @default(cuid())
-  moduleId  String
-  module    TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  title     String
-  order     Int            @default(0)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id           String         @id @default(cuid())
+  moduleId     String
+  module       TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title        String
+  order        Int            @default(0)
+  /// Defaults to the Tier 1 Financial brand mark — every chapter shares
+  /// this same cover image today since there's no per-chapter art yet.
+  thumbnailUrl String?        @default("/training/chapter-cover.jpg")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   lessons TrainingLesson[]
 

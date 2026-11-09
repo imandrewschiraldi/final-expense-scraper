@@ -27,6 +27,7 @@ export default async function AgentTrainingModulePage({
         select: {
           id: true,
           title: true,
+          thumbnailUrl: true,
           lessons: { select: { id: true } },
         },
       },

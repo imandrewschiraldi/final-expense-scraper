@@ -4,12 +4,16 @@ import { BookOpen } from "lucide-react";
 import { TrainingTile } from "@/components/agent/TrainingTile";
 
 type Lesson = { id: string };
-type Chapter = { id: string; title: string; lessons: Lesson[] };
+type Chapter = {
+  id: string;
+  title: string;
+  thumbnailUrl: string | null;
+  lessons: Lesson[];
+};
 
 /** A module's own page — every chapter as a small tile, same treatment as
  *  the module grid one level up. Picking one drills into that chapter's
- *  lesson breakdown. Chapters have no cover photo in the schema (unlike
- *  modules), so every tile falls back to the same branded icon header. */
+ *  lesson breakdown. */
 export function TrainingChapterGrid({
   moduleId,
   chapters,
@@ -43,6 +47,7 @@ export function TrainingChapterGrid({
             eyebrow={`Chapter ${chapterIndex + 1}`}
             title={chapter.title}
             pct={pct}
+            coverUrl={chapter.thumbnailUrl}
             fallbackIcon={<BookOpen className="h-8 w-8" strokeWidth={1.25} />}
           />
         );
