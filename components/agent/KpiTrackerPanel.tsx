@@ -208,9 +208,9 @@ export function KpiTrackerPanel() {
     };
   }, [bounds.from, bounds.to]);
 
-  function updateField(field: EditableField, value: number, immediate = false) {
+  function updateField(field: EditableField, value: number) {
     setTotals((prev) => ({ ...prev, [field]: value }));
-    const commit = () => {
+    save(field, () => {
       fetch("/api/agent/kpi-tracker/entry", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
@@ -219,9 +219,7 @@ export function KpiTrackerPanel() {
         .then(() => fetchSummary(bounds.from, bounds.to))
         .then(setSummary)
         .catch(() => setError("A change didn't save — try again."));
-    };
-    if (immediate) commit();
-    else save(field, commit);
+    });
   }
 
   if (loading) {
@@ -300,7 +298,7 @@ export function KpiTrackerPanel() {
               </label>
               <Stepper
                 value={totals.hoursWorked}
-                onChange={(v) => updateField("hoursWorked", v, true)}
+                onChange={(v) => updateField("hoursWorked", v)}
               />
             </div>
 
@@ -310,7 +308,7 @@ export function KpiTrackerPanel() {
               </label>
               <Stepper
                 value={totals.apptsScheduled}
-                onChange={(v) => updateField("apptsScheduled", v, true)}
+                onChange={(v) => updateField("apptsScheduled", v)}
               />
             </div>
           </div>
@@ -325,7 +323,7 @@ export function KpiTrackerPanel() {
                 <label className="mb-1.5 block text-xs text-muted">Dials</label>
                 <Stepper
                   value={totals.dials}
-                  onChange={(v) => updateField("dials", v, true)}
+                  onChange={(v) => updateField("dials", v)}
                 />
               </div>
               <div>
@@ -334,7 +332,7 @@ export function KpiTrackerPanel() {
                 </label>
                 <Stepper
                   value={totals.answered}
-                  onChange={(v) => updateField("answered", v, true)}
+                  onChange={(v) => updateField("answered", v)}
                 />
               </div>
               <div>
@@ -343,7 +341,7 @@ export function KpiTrackerPanel() {
                 </label>
                 <Stepper
                   value={totals.apptsShown}
-                  onChange={(v) => updateField("apptsShown", v, true)}
+                  onChange={(v) => updateField("apptsShown", v)}
                 />
               </div>
             </div>
@@ -355,7 +353,7 @@ export function KpiTrackerPanel() {
                 </label>
                 <Stepper
                   value={totals.presentations}
-                  onChange={(v) => updateField("presentations", v, true)}
+                  onChange={(v) => updateField("presentations", v)}
                 />
               </div>
               <div>
@@ -364,7 +362,7 @@ export function KpiTrackerPanel() {
                 </label>
                 <Stepper
                   value={totals.dealsClosed}
-                  onChange={(v) => updateField("dealsClosed", v, true)}
+                  onChange={(v) => updateField("dealsClosed", v)}
                 />
               </div>
             </div>
