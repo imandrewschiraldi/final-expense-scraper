@@ -799,8 +799,14 @@ export function Sidebar({
       <aside
         data-tour-ui="sidebar"
         className={cn(
-          "sticky top-0 hidden h-screen shrink-0 flex-col bg-gradient-to-b from-surface to-background transition-all duration-300 ease-out lg:flex",
-          !cardLayoutEnabled && "border-r border-white/[0.06]",
+          "sticky top-0 hidden h-screen shrink-0 flex-col transition-all duration-300 ease-out lg:flex",
+          // The default surface-to-background gradient reads as a grey cast
+          // at the top once the overlay card removes the border that used
+          // to sit right there — solid black instead, to actually match
+          // the page background it now bleeds into with nothing between.
+          cardLayoutEnabled
+            ? "bg-background"
+            : "border-r border-white/[0.06] bg-gradient-to-b from-surface to-background",
           collapsed ? "w-[68px]" : "w-60",
         )}
       >
