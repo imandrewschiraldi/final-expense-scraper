@@ -9,7 +9,11 @@ import { StatCard } from "@/components/admin/StatCard";
 import { formatPhone } from "@/lib/formatPhone";
 import { formatDob } from "@/lib/formatDob";
 import { LEAD_TYPE_LABELS, LEAD_TYPES, LeadType } from "@/lib/leadType";
-import { LEAD_STATUS_LABELS, LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
+import {
+  LEAD_STATUS_LABELS,
+  LEAD_STATUSES,
+  LeadStatus,
+} from "@/lib/leadStatus";
 import { US_STATES } from "@/lib/usStates";
 
 type Lead = {
@@ -27,14 +31,22 @@ type Lead = {
 };
 
 type StateCount = { state: string; count: number };
-type AgentOption = { id: string; name: string; _count: { assignedLeads: number } };
+type AgentOption = {
+  id: string;
+  name: string;
+  _count: { assignedLeads: number };
+};
 
 export function AllLeadsPanel() {
   const [stateFilter, setStateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [leadTypeFilter, setLeadTypeFilter] = useState("");
-  const [archivedFilter, setArchivedFilter] = useState<"any" | "true" | "false">("any");
-  const [vaultFilter, setVaultFilter] = useState<"any" | "true" | "false">("any");
+  const [archivedFilter, setArchivedFilter] = useState<
+    "any" | "true" | "false"
+  >("any");
+  const [vaultFilter, setVaultFilter] = useState<"any" | "true" | "false">(
+    "any",
+  );
   const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [previouslyAssignedOnly, setPreviouslyAssignedOnly] = useState(false);
   const [moving, setMoving] = useState(false);
@@ -55,10 +67,18 @@ export function AllLeadsPanel() {
   const [unvaulting, setUnvaulting] = useState(false);
   const [unvaultMessage, setUnvaultMessage] = useState<string | null>(null);
 
+  const [unvaultPhonesText, setUnvaultPhonesText] = useState("");
+  const [unvaultingPhones, setUnvaultingPhones] = useState(false);
+  const [unvaultPhonesMessage, setUnvaultPhonesMessage] = useState<
+    string | null
+  >(null);
+
   const [agentsWithLeads, setAgentsWithLeads] = useState<AgentOption[]>([]);
   const [unassignAgentId, setUnassignAgentId] = useState("");
   const [unassigningAgent, setUnassigningAgent] = useState(false);
-  const [unassignAgentMessage, setUnassignAgentMessage] = useState<string | null>(null);
+  const [unassignAgentMessage, setUnassignAgentMessage] = useState<
+    string | null
+  >(null);
 
   const loadAgentsWithLeads = useCallback(async () => {
     const res = await fetch("/api/admin/agents");
@@ -97,7 +117,9 @@ export function AllLeadsPanel() {
     // Unassigned/Assigned counts exclude vault leads — the vault is tracked
     // separately since it isn't "owned" by anyone until an agent claims it.
     const [unassignedRes, nonVaultRes, vaultRes] = await Promise.all([
-      fetch("/api/admin/leads?archived=any&unassignedOnly=true&isVaulted=false&page=1"),
+      fetch(
+        "/api/admin/leads?archived=any&unassignedOnly=true&isVaulted=false&page=1",
+      ),
       fetch("/api/admin/leads?archived=any&isVaulted=false&page=1"),
       fetch("/api/admin/leads?archived=any&isVaulted=true&page=1"),
     ]);
@@ -136,7 +158,10 @@ export function AllLeadsPanel() {
 
   const buildFilterParams = useCallback(
     (extra?: Record<string, string>) => {
-      const params = new URLSearchParams({ archived: archivedFilter, ...extra });
+      const params = new URLSearchParams({
+        archived: archivedFilter,
+        ...extra,
+      });
       if (stateFilter) params.set("state", stateFilter);
       if (statusFilter) params.set("status", statusFilter);
       if (leadTypeFilter) params.set("leadType", leadTypeFilter);
@@ -145,7 +170,15 @@ export function AllLeadsPanel() {
       if (previouslyAssignedOnly) params.set("wasRecycled", "true");
       return params;
     },
-    [stateFilter, statusFilter, leadTypeFilter, archivedFilter, vaultFilter, unassignedOnly, previouslyAssignedOnly],
+    [
+      stateFilter,
+      statusFilter,
+      leadTypeFilter,
+      archivedFilter,
+      vaultFilter,
+      unassignedOnly,
+      previouslyAssignedOnly,
+    ],
   );
 
   const loadLeads = useCallback(async () => {
@@ -189,7 +222,8 @@ export function AllLeadsPanel() {
     }
   }
 
-  const allOnPageSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
+  const allOnPageSelected =
+    leads.length > 0 && leads.every((l) => selected.has(l.id));
 
   function toggleAllOnPage() {
     if (allOnPageSelected) {
@@ -201,7 +235,12 @@ export function AllLeadsPanel() {
 
   async function deleteSelected() {
     if (selected.size === 0) return;
-    if (!window.confirm(`Permanently delete ${selected.size} selected lead(s)? This can't be undone.`)) return;
+    if (
+      !window.confirm(
+        `Permanently delete ${selected.size} selected lead(s)? This can't be undone.`,
+      )
+    )
+      return;
 
     setLoading(true);
     setMessage(null);
@@ -225,7 +264,8 @@ export function AllLeadsPanel() {
 
   async function deleteByState() {
     if (!deleteStateValue) return;
-    const count = stateCounts.find((s) => s.state === deleteStateValue)?.count ?? 0;
+    const count =
+      stateCounts.find((s) => s.state === deleteStateValue)?.count ?? 0;
     const confirmed = window.confirm(
       `Permanently delete ALL ${count.toLocaleString()} lead(s) with state "${deleteStateValue}"? This can't be undone.`,
     );
@@ -241,7 +281,9 @@ export function AllLeadsPanel() {
     const data = await res.json();
     setDeleting(false);
     if (res.ok) {
-      setMessage(`Deleted ${data.deleted} lead(s) with state "${deleteStateValue}".`);
+      setMessage(
+        `Deleted ${data.deleted} lead(s) with state "${deleteStateValue}".`,
+      );
       setPage(1);
       loadLeads();
       loadStateCounts();
@@ -253,7 +295,12 @@ export function AllLeadsPanel() {
 
   async function moveSelectedToVault() {
     if (selected.size === 0) return;
-    if (!window.confirm(`Move ${selected.size} selected lead(s) into the shared Vault pool?`)) return;
+    if (
+      !window.confirm(
+        `Move ${selected.size} selected lead(s) into the shared Vault pool?`,
+      )
+    )
+      return;
 
     setMoving(true);
     setMessage(null);
@@ -276,7 +323,8 @@ export function AllLeadsPanel() {
 
   async function removeFromVaultByState() {
     if (!unvaultStateValue) return;
-    const count = vaultStateCounts.find((s) => s.state === unvaultStateValue)?.count ?? 0;
+    const count =
+      vaultStateCounts.find((s) => s.state === unvaultStateValue)?.count ?? 0;
     const confirmed = window.confirm(
       `Remove ALL ${count.toLocaleString()} lead(s) with state "${unvaultStateValue}" from the Vault and return them to the unassigned pool?`,
     );
@@ -292,13 +340,58 @@ export function AllLeadsPanel() {
     const data = await res.json();
     setUnvaulting(false);
     if (res.ok) {
-      setUnvaultMessage(`Removed ${data.removed.toLocaleString()} lead(s) with state "${unvaultStateValue}" from the vault.`);
+      setUnvaultMessage(
+        `Removed ${data.removed.toLocaleString()} lead(s) with state "${unvaultStateValue}" from the vault.`,
+      );
       setPage(1);
       loadLeads();
       loadAssignmentSummary();
       loadVaultStateCounts();
     } else {
       setUnvaultMessage(data.error ?? "Remove from vault failed");
+    }
+  }
+
+  // Pulled out of the pasted blob with a standard NANP phone pattern so the
+  // admin can paste raw CSV rows (name, phone, dob, state, notes...) as-is —
+  // dates and notes don't form a matching 10-digit run.
+  function extractPhones(text: string): string[] {
+    const matches =
+      text.match(/(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g) ?? [];
+    return [...new Set(matches)];
+  }
+
+  async function removeFromVaultByPhoneList() {
+    const phones = extractPhones(unvaultPhonesText);
+    if (phones.length === 0) {
+      setUnvaultPhonesMessage("No phone numbers found in the pasted text.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Found ${phones.length.toLocaleString()} phone number(s) in the pasted text. Remove any matching Vault leads and return them to the unassigned pool?`,
+    );
+    if (!confirmed) return;
+
+    setUnvaultingPhones(true);
+    setUnvaultPhonesMessage(null);
+    const res = await fetch("/api/admin/leads/remove-from-vault", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phones }),
+    });
+    const data = await res.json();
+    setUnvaultingPhones(false);
+    if (res.ok) {
+      setUnvaultPhonesMessage(
+        `Matched ${data.matched?.toLocaleString() ?? phones.length} lead(s) in the vault and removed ${data.removed.toLocaleString()} of them to the unassigned pool.`,
+      );
+      setUnvaultPhonesText("");
+      setPage(1);
+      loadLeads();
+      loadAssignmentSummary();
+      loadVaultStateCounts();
+    } else {
+      setUnvaultPhonesMessage(data.error ?? "Remove from vault failed");
     }
   }
 
@@ -322,7 +415,9 @@ export function AllLeadsPanel() {
     const data = await res.json();
     setUnassigningAgent(false);
     if (res.ok) {
-      setUnassignAgentMessage(`Unassigned ${data.unassigned.toLocaleString()} lead(s) from ${agent?.name ?? "this agent"}.`);
+      setUnassignAgentMessage(
+        `Unassigned ${data.unassigned.toLocaleString()} lead(s) from ${agent?.name ?? "this agent"}.`,
+      );
       setUnassignAgentId("");
       setPage(1);
       loadLeads();
@@ -341,11 +436,14 @@ export function AllLeadsPanel() {
   }
 
   const filteredMergeStates = mergeSearch.trim()
-    ? stateCounts.filter((s) => s.state.toLowerCase().includes(mergeSearch.trim().toLowerCase()))
+    ? stateCounts.filter((s) =>
+        s.state.toLowerCase().includes(mergeSearch.trim().toLowerCase()),
+      )
     : stateCounts;
 
   const allShownSelected =
-    filteredMergeStates.length > 0 && filteredMergeStates.every((s) => mergeFrom.has(s.state));
+    filteredMergeStates.length > 0 &&
+    filteredMergeStates.every((s) => mergeFrom.has(s.state));
 
   function toggleAllShown() {
     const next = new Set(mergeFrom);
@@ -378,7 +476,9 @@ export function AllLeadsPanel() {
     const data = await res.json();
     setMerging(false);
     if (res.ok) {
-      setMergeMessage(`Merged ${data.updated.toLocaleString()} lead(s) into "${mergeTo}".`);
+      setMergeMessage(
+        `Merged ${data.updated.toLocaleString()} lead(s) into "${mergeTo}".`,
+      );
       setMergeFrom(new Set());
       loadStateCounts();
       loadLeads();
@@ -390,7 +490,11 @@ export function AllLeadsPanel() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Unassigned Leads" value={unassignedTotal} accent="copper" />
+        <StatCard
+          label="Unassigned Leads"
+          value={unassignedTotal}
+          accent="copper"
+        />
         <StatCard label="Assigned Leads" value={assignedTotal} accent="teal" />
         <StatCard label="Vault Leads" value={vaultTotal} accent="copper" />
       </div>
@@ -518,21 +622,41 @@ export function AllLeadsPanel() {
         <CardHeader>
           <CardTitle>{total.toLocaleString()} Lead(s)</CardTitle>
           <div className="flex flex-wrap gap-2">
-            <a href={`/api/admin/leads/export?${buildFilterParams().toString()}`}>
+            <a
+              href={`/api/admin/leads/export?${buildFilterParams().toString()}`}
+            >
               <Button variant="secondary" disabled={total === 0}>
                 Export CSV ({total.toLocaleString()})
               </Button>
             </a>
-            <Button variant="ghost" onClick={selectAllMatchingFilters} disabled={selectingAll || total === 0}>
-              {selectingAll ? "Selecting..." : `Select All ${total.toLocaleString()}`}
+            <Button
+              variant="ghost"
+              onClick={selectAllMatchingFilters}
+              disabled={selectingAll || total === 0}
+            >
+              {selectingAll
+                ? "Selecting..."
+                : `Select All ${total.toLocaleString()}`}
             </Button>
-            <Button variant="ghost" onClick={() => setSelected(new Set())} disabled={selected.size === 0}>
+            <Button
+              variant="ghost"
+              onClick={() => setSelected(new Set())}
+              disabled={selected.size === 0}
+            >
               Clear Selection
             </Button>
-            <Button variant="secondary" onClick={moveSelectedToVault} disabled={selected.size === 0 || moving}>
+            <Button
+              variant="secondary"
+              onClick={moveSelectedToVault}
+              disabled={selected.size === 0 || moving}
+            >
               Move Selected to Vault ({selected.size.toLocaleString()})
             </Button>
-            <Button variant="danger" onClick={deleteSelected} disabled={selected.size === 0 || loading}>
+            <Button
+              variant="danger"
+              onClick={deleteSelected}
+              disabled={selected.size === 0 || loading}
+            >
               Delete Selected ({selected.size.toLocaleString()})
             </Button>
           </div>
@@ -540,8 +664,9 @@ export function AllLeadsPanel() {
 
         {message && <p className="mb-3 text-sm text-teal-light">{message}</p>}
         <p className="mb-3 text-xs text-muted">
-          &quot;Export CSV&quot; and &quot;Select All&quot; both use every lead matching your current filters, not
-          just the 50 shown on this page. &quot;Move Selected to Vault&quot; only affects unassigned leads — any
+          &quot;Export CSV&quot; and &quot;Select All&quot; both use every lead
+          matching your current filters, not just the 50 shown on this page.
+          &quot;Move Selected to Vault&quot; only affects unassigned leads — any
           selected leads already assigned to an agent are skipped.
         </p>
 
@@ -568,22 +693,39 @@ export function AllLeadsPanel() {
             </thead>
             <tbody>
               {leads.map((lead) => (
-                <tr key={lead.id} className="border-b border-border/60 hover:bg-surface2">
+                <tr
+                  key={lead.id}
+                  className="border-b border-border/60 hover:bg-surface2"
+                >
                   <td className="py-2 pr-4">
-                    <input type="checkbox" checked={selected.has(lead.id)} onChange={() => toggle(lead.id)} />
+                    <input
+                      type="checkbox"
+                      checked={selected.has(lead.id)}
+                      onChange={() => toggle(lead.id)}
+                    />
                   </td>
                   <td className="py-2 pr-4 text-white">
                     {lead.firstName} {lead.lastName}
                   </td>
-                  <td className="py-2 pr-4 text-muted">{formatPhone(lead.phone)}</td>
+                  <td className="py-2 pr-4 text-muted">
+                    {formatPhone(lead.phone)}
+                  </td>
                   <td className="py-2 pr-4 text-muted">{lead.state}</td>
-                  <td className="py-2 pr-4 text-muted">{formatDob(lead.dateOfBirth)}</td>
-                  <td className="py-2 pr-4 text-muted">{LEAD_TYPE_LABELS[lead.leadType]}</td>
+                  <td className="py-2 pr-4 text-muted">
+                    {formatDob(lead.dateOfBirth)}
+                  </td>
+                  <td className="py-2 pr-4 text-muted">
+                    {LEAD_TYPE_LABELS[lead.leadType]}
+                  </td>
                   <td className="py-2 pr-4">
                     <StatusBadge status={lead.status} />
                   </td>
-                  <td className="py-2 pr-4 text-muted">{lead.assignedAgent?.name ?? "Unassigned"}</td>
-                  <td className="py-2 pr-4 text-muted">{lead.isVaulted ? "Yes" : "—"}</td>
+                  <td className="py-2 pr-4 text-muted">
+                    {lead.assignedAgent?.name ?? "Unassigned"}
+                  </td>
+                  <td className="py-2 pr-4 text-muted">
+                    {lead.isVaulted ? "Yes" : "—"}
+                  </td>
                 </tr>
               ))}
               {leads.length === 0 && !loading && (
@@ -598,11 +740,19 @@ export function AllLeadsPanel() {
         </div>
 
         <div className="mt-4 flex items-center gap-3">
-          <Button variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          <Button
+            variant="ghost"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
             Previous
           </Button>
           <span className="text-sm text-muted">Page {page}</span>
-          <Button variant="ghost" disabled={leads.length < 50} onClick={() => setPage((p) => p + 1)}>
+          <Button
+            variant="ghost"
+            disabled={leads.length < 50}
+            onClick={() => setPage((p) => p + 1)}
+          >
             Next
           </Button>
         </div>
@@ -613,15 +763,18 @@ export function AllLeadsPanel() {
           <CardTitle>Delete Leads by State</CardTitle>
         </CardHeader>
         <p className="mb-3 text-sm text-muted">
-          Permanently removes every lead currently stored with the exact state value you pick — useful for
-          clearing out a bad batch entirely.
+          Permanently removes every lead currently stored with the exact state
+          value you pick — useful for clearing out a bad batch entirely.
         </p>
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-56">
             <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
               State value
             </label>
-            <Select value={deleteStateValue} onChange={(e) => setDeleteStateValue(e.target.value)}>
+            <Select
+              value={deleteStateValue}
+              onChange={(e) => setDeleteStateValue(e.target.value)}
+            >
               {stateCounts.map((s) => (
                 <option key={s.state} value={s.state}>
                   {s.state} ({s.count.toLocaleString()})
@@ -629,7 +782,11 @@ export function AllLeadsPanel() {
               ))}
             </Select>
           </div>
-          <Button variant="danger" onClick={deleteByState} disabled={deleting || !deleteStateValue}>
+          <Button
+            variant="danger"
+            onClick={deleteByState}
+            disabled={deleting || !deleteStateValue}
+          >
             Delete All in &quot;{deleteStateValue}&quot;
           </Button>
         </div>
@@ -640,17 +797,25 @@ export function AllLeadsPanel() {
           <CardTitle>Remove Leads From Vault by State</CardTitle>
         </CardHeader>
         <p className="mb-3 text-sm text-muted">
-          Pulls every lead with the state you pick out of the shared Vault and drops them back into the
-          regular unassigned pool, where they become assignable again. Doesn&apos;t delete anything.
+          Pulls every lead with the state you pick out of the shared Vault and
+          drops them back into the regular unassigned pool, where they become
+          assignable again. Doesn&apos;t delete anything.
         </p>
-        {unvaultMessage && <p className="mb-3 text-sm text-teal-light">{unvaultMessage}</p>}
+        {unvaultMessage && (
+          <p className="mb-3 text-sm text-teal-light">{unvaultMessage}</p>
+        )}
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-56">
             <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
               State value
             </label>
-            <Select value={unvaultStateValue} onChange={(e) => setUnvaultStateValue(e.target.value)}>
-              {vaultStateCounts.length === 0 && <option value="">No leads currently in vault</option>}
+            <Select
+              value={unvaultStateValue}
+              onChange={(e) => setUnvaultStateValue(e.target.value)}
+            >
+              {vaultStateCounts.length === 0 && (
+                <option value="">No leads currently in vault</option>
+              )}
               {vaultStateCounts.map((s) => (
                 <option key={s.state} value={s.state}>
                   {s.state} ({s.count.toLocaleString()})
@@ -661,7 +826,9 @@ export function AllLeadsPanel() {
           <Button
             variant="secondary"
             onClick={removeFromVaultByState}
-            disabled={unvaulting || !unvaultStateValue || vaultStateCounts.length === 0}
+            disabled={
+              unvaulting || !unvaultStateValue || vaultStateCounts.length === 0
+            }
           >
             Remove All &quot;{unvaultStateValue}&quot; From Vault
           </Button>
@@ -670,21 +837,65 @@ export function AllLeadsPanel() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Remove Leads From Vault by Phone List</CardTitle>
+        </CardHeader>
+        <p className="mb-3 text-sm text-muted">
+          Paste a phone number list — or raw CSV rows, any format — and any
+          Vault lead whose phone matches gets pulled out of the Vault and
+          returned to the unassigned pool. Doesn&apos;t delete anything, and
+          leaves non-matching leads untouched.
+        </p>
+        {unvaultPhonesMessage && (
+          <p className="mb-3 text-sm text-teal-light">{unvaultPhonesMessage}</p>
+        )}
+        <textarea
+          value={unvaultPhonesText}
+          onChange={(e) => setUnvaultPhonesText(e.target.value)}
+          placeholder={
+            "Paste phone numbers or whole CSV rows here, e.g.\nPaul Durboraw,12403130600,12/23/1947,MD,retired\n(503) 828-8884\n..."
+          }
+          rows={6}
+          className="mb-3 w-full rounded-md border border-border bg-black/20 px-3 py-2 text-xs text-white placeholder:text-muted focus:border-primary focus:outline-none"
+        />
+        <Button
+          variant="secondary"
+          onClick={removeFromVaultByPhoneList}
+          disabled={unvaultingPhones || !unvaultPhonesText.trim()}
+        >
+          {unvaultingPhones
+            ? "Removing..."
+            : "Remove Matching Leads From Vault"}
+        </Button>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Unassign Agent&apos;s Leads</CardTitle>
         </CardHeader>
         <p className="mb-3 text-sm text-muted">
-          Pulls every currently-assigned lead off the agent you pick and returns them to the regular unassigned
-          pool — not the vault. They keep their status and history, and stay visible in All Leads under
-          &quot;Previously Assigned Only&quot; so you can review what they were working before reassigning.
+          Pulls every currently-assigned lead off the agent you pick and returns
+          them to the regular unassigned pool — not the vault. They keep their
+          status and history, and stay visible in All Leads under
+          &quot;Previously Assigned Only&quot; so you can review what they were
+          working before reassigning.
         </p>
-        {unassignAgentMessage && <p className="mb-3 text-sm text-teal-light">{unassignAgentMessage}</p>}
+        {unassignAgentMessage && (
+          <p className="mb-3 text-sm text-teal-light">{unassignAgentMessage}</p>
+        )}
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-64">
             <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
               Agent
             </label>
-            <Select value={unassignAgentId} onChange={(e) => setUnassignAgentId(e.target.value)}>
-              {agentsWithLeads.length === 0 && <option value="">No agents currently have assigned leads</option>}
+            <Select
+              value={unassignAgentId}
+              onChange={(e) => setUnassignAgentId(e.target.value)}
+            >
+              {agentsWithLeads.length === 0 && (
+                <option value="">
+                  No agents currently have assigned leads
+                </option>
+              )}
               {agentsWithLeads.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} ({a._count.assignedLeads.toLocaleString()})
@@ -695,10 +906,15 @@ export function AllLeadsPanel() {
           <Button
             variant="danger"
             onClick={unassignAgentLeads}
-            disabled={unassigningAgent || !unassignAgentId || agentsWithLeads.length === 0}
+            disabled={
+              unassigningAgent ||
+              !unassignAgentId ||
+              agentsWithLeads.length === 0
+            }
           >
             Unassign All From{" "}
-            {agentsWithLeads.find((a) => a.id === unassignAgentId)?.name ?? "..."}
+            {agentsWithLeads.find((a) => a.id === unassignAgentId)?.name ??
+              "..."}
           </Button>
         </div>
       </Card>
@@ -708,13 +924,16 @@ export function AllLeadsPanel() {
           <CardTitle>Merge Duplicate State Values</CardTitle>
         </CardHeader>
         <p className="mb-3 text-sm text-muted">
-          If leads got imported with inconsistent state values (e.g. some rows say &quot;FL&quot;, others say
-          &quot;Florida&quot; or &quot;fl&quot;), check the ones you want combined below, pick the correct
-          two-letter code to merge them into, and merge. This changes the stored state on every matching lead —
-          it does not delete anything.
+          If leads got imported with inconsistent state values (e.g. some rows
+          say &quot;FL&quot;, others say &quot;Florida&quot; or &quot;fl&quot;),
+          check the ones you want combined below, pick the correct two-letter
+          code to merge them into, and merge. This changes the stored state on
+          every matching lead — it does not delete anything.
         </p>
 
-        {mergeMessage && <p className="mb-3 text-sm text-teal-light">{mergeMessage}</p>}
+        {mergeMessage && (
+          <p className="mb-3 text-sm text-teal-light">{mergeMessage}</p>
+        )}
 
         <div className="mb-3 flex flex-wrap items-end gap-3">
           <div className="w-64">
@@ -732,19 +951,29 @@ export function AllLeadsPanel() {
             onClick={toggleAllShown}
             disabled={filteredMergeStates.length === 0}
           >
-            {allShownSelected ? "Deselect" : "Select"} All Shown ({filteredMergeStates.length})
+            {allShownSelected ? "Deselect" : "Select"} All Shown (
+            {filteredMergeStates.length})
           </Button>
         </div>
 
         <div className="mb-4 grid max-h-56 grid-cols-2 gap-1.5 overflow-y-auto rounded-lg border border-border bg-surface p-3 sm:grid-cols-3">
           {filteredMergeStates.map((s) => (
-            <label key={s.state} className="flex items-center gap-2 text-sm text-muted">
-              <input type="checkbox" checked={mergeFrom.has(s.state)} onChange={() => toggleMergeFrom(s.state)} />
+            <label
+              key={s.state}
+              className="flex items-center gap-2 text-sm text-muted"
+            >
+              <input
+                type="checkbox"
+                checked={mergeFrom.has(s.state)}
+                onChange={() => toggleMergeFrom(s.state)}
+              />
               {s.state} ({s.count.toLocaleString()})
             </label>
           ))}
           {filteredMergeStates.length === 0 && (
-            <p className="col-span-full py-2 text-sm text-muted">No state values match &quot;{mergeSearch}&quot;.</p>
+            <p className="col-span-full py-2 text-sm text-muted">
+              No state values match &quot;{mergeSearch}&quot;.
+            </p>
           )}
         </div>
 
@@ -753,7 +982,10 @@ export function AllLeadsPanel() {
             <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
               Merge into
             </label>
-            <Select value={mergeTo} onChange={(e) => setMergeTo(e.target.value)}>
+            <Select
+              value={mergeTo}
+              onChange={(e) => setMergeTo(e.target.value)}
+            >
               <option value="">Select target state...</option>
               {US_STATES.map((s) => (
                 <option key={s.code} value={s.code}>
@@ -762,8 +994,12 @@ export function AllLeadsPanel() {
               ))}
             </Select>
           </div>
-          <Button onClick={mergeStates} disabled={merging || mergeFrom.size === 0 || !mergeTo}>
-            Merge {mergeFrom.size > 0 ? `${mergeFrom.size} value(s)` : ""} Into {mergeTo || "..."}
+          <Button
+            onClick={mergeStates}
+            disabled={merging || mergeFrom.size === 0 || !mergeTo}
+          >
+            Merge {mergeFrom.size > 0 ? `${mergeFrom.size} value(s)` : ""} Into{" "}
+            {mergeTo || "..."}
           </Button>
         </div>
       </Card>
