@@ -26,6 +26,7 @@ import {
   Radar,
   Stethoscope,
   ShoppingCart,
+  Gauge,
   ChevronsLeft,
   ChevronsRight,
   Maximize2,
@@ -96,6 +97,17 @@ const NAV_ITEMS: NavItem[] = [
     icon: Trophy,
     roles: ["ADMIN", "MANAGER", "AGENT"],
     requiresLeaderboard: true,
+    section: "overview",
+  },
+  {
+    // Agents log their own day from the Overview page's KPI Tracker
+    // button, not the sidebar (see OverviewClient.tsx) — this is the
+    // admin-only team-wide rollup across every agent, which needs its own
+    // nav entry since there's no agent-style button for admins to find it.
+    href: "/admin/kpi-tracker",
+    label: "KPI Tracker",
+    icon: Gauge,
+    roles: ["ADMIN"],
     section: "overview",
   },
 

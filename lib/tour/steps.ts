@@ -60,7 +60,7 @@ export const TOUR_SECTIONS: TourSection[] = [
         path: "/profile",
         selector: '[data-tour="profile-picture-button"]',
         title: "Add a Profile Picture",
-        body: "Click your photo (or the \"Change picture\" link beside it) to upload one. It shows up next to your name across the Leaderboard, Team Chat, and anywhere else your activity appears.",
+        body: 'Click your photo (or the "Change picture" link beside it) to upload one. It shows up next to your name across the Leaderboard, Team Chat, and anywhere else your activity appears.',
       },
       {
         id: "push-notifications",
@@ -101,6 +101,14 @@ export const TOUR_SECTIONS: TourSection[] = [
         selector: '[data-tour="hall-of-fame-card"]',
         title: "Hall of Fame",
         body: "Your progress toward this calendar year's issued-premium milestone, updated the moment a policy of yours is marked issued.",
+      },
+      {
+        id: "kpi-tracker",
+        path: "/overview",
+        selector: 'a[href="/agent/kpi-tracker"]',
+        title: "KPI Tracker",
+        body: "Log today's dials, appointments, presentations, and closes as you go — AP submitted is filled in automatically from your submitted policies. My History rolls it up into a weekly view.",
+        roles: ["MANAGER", "AGENT"],
       },
     ],
   },
@@ -252,7 +260,7 @@ export const TOUR_SECTIONS: TourSection[] = [
         path: "/agent/training",
         selector: 'a[href="/agent/training"]',
         title: "Training",
-        body: "Onboarding lessons and ongoing training modules.",
+        body: "Onboarding lessons and ongoing training modules — each module breaks down into chapters, then individual lessons.",
         roles: ["MANAGER", "AGENT"],
       },
     ],
@@ -275,7 +283,9 @@ export const ALL_STEPS: TourStep[] = TOUR_SECTIONS.flatMap((s) => s.steps);
 export function visibleSections(role: Role): TourSection[] {
   return TOUR_SECTIONS.map((section) => ({
     ...section,
-    steps: section.steps.filter((step) => !step.roles || step.roles.includes(role)),
+    steps: section.steps.filter(
+      (step) => !step.roles || step.roles.includes(role),
+    ),
   })).filter((section) => section.steps.length > 0);
 }
 
