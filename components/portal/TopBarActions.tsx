@@ -495,10 +495,13 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
   const isVault =
     pathname.startsWith("/agent/vault") ||
     pathname.startsWith("/admin/leads/vault");
-  // The KPI Tracker's own header already has a title/date row with no
-  // room to spare next to it — the search box stays hidden here while
-  // the icon cluster (theme/bell/avatar) stays, the opposite of Vault.
-  const hideAskGemini = pathname.startsWith("/agent/kpi-tracker");
+  // Several admin pages' own plain-text headings sit too close to this
+  // box to share the row (KPI Tracker, Carrier Resources, Agents, Carrier
+  // rates, Lead Vendors) — rather than special-case each one, Ask Gemini
+  // is dropped for the admin account entirely; the icon cluster (theme/
+  // bell/avatar) stays, the opposite of Vault.
+  const hideAskGemini =
+    role === "ADMIN" || pathname.startsWith("/agent/kpi-tracker");
 
   const iconCluster = (
     <div className="flex items-center gap-3">
