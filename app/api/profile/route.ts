@@ -21,6 +21,7 @@ export async function GET() {
       npn: true,
       residentState: true,
       demoModeEnabled: true,
+      cardLayoutEnabled: true,
       createdAt: true,
       vaultEnabled: true,
       vaultAccessStartedAt: true,
@@ -52,15 +53,23 @@ export async function PATCH(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { licensedStates, npn, residentState, demoModeEnabled } = body as {
+  const {
+    licensedStates,
+    npn,
+    residentState,
+    demoModeEnabled,
+    cardLayoutEnabled,
+  } = body as {
     licensedStates?: string[];
     npn?: string | null;
     residentState?: string | null;
     demoModeEnabled?: boolean;
+    cardLayoutEnabled?: boolean;
   };
 
   // Comp level and role are admin-only (set via /api/admin/agents/[id]) and
-  // deliberately not accepted here.
+  // deliberately not accepted here. cardLayoutEnabled is a beta toggle for
+  // admins to try on their own account — not accepted from anyone else.
   const user = await db.user.update({
     where: { id: guard.session.user.id },
     data: {
@@ -72,6 +81,9 @@ export async function PATCH(req: NextRequest) {
         ? { residentState: residentState?.trim().toUpperCase() || null }
         : {}),
       ...(demoModeEnabled !== undefined ? { demoModeEnabled } : {}),
+      ...(cardLayoutEnabled !== undefined && guard.session.user.role === "ADMIN"
+        ? { cardLayoutEnabled }
+        : {}),
     },
     select: {
       id: true,
@@ -84,6 +96,7 @@ export async function PATCH(req: NextRequest) {
       npn: true,
       residentState: true,
       demoModeEnabled: true,
+      cardLayoutEnabled: true,
       agencyDashboardEnabled: true,
       recruitingRadarEnabled: true,
     },

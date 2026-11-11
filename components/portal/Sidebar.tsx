@@ -638,11 +638,17 @@ export function Sidebar({
   name,
   mobileOpen,
   onCloseMobile,
+  cardLayoutEnabled = false,
 }: {
   role: Role;
   name: string;
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  // Admin-only beta toggle (see AppShell) — when on, main renders as a
+  // rounded overlay card instead of a flush panel, so the sidebar's own
+  // border and copper-line segment (which existed to meet main's own
+  // hard edge) no longer have anything to line up against.
+  cardLayoutEnabled?: boolean;
 }) {
   const pathname = usePathname();
   // Starts false (matching SSR, which has no access to localStorage) and
@@ -793,7 +799,8 @@ export function Sidebar({
       <aside
         data-tour-ui="sidebar"
         className={cn(
-          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/[0.06] bg-gradient-to-b from-surface to-background transition-all duration-300 ease-out lg:flex",
+          "sticky top-0 hidden h-screen shrink-0 flex-col bg-gradient-to-b from-surface to-background transition-all duration-300 ease-out lg:flex",
+          !cardLayoutEnabled && "border-r border-white/[0.06]",
           collapsed ? "w-[68px]" : "w-60",
         )}
       >
@@ -866,8 +873,12 @@ export function Sidebar({
             border on it — matches HeaderDivider's own placement exactly
             (a 2px bar starting at top: HEADER_HEIGHT), so the two lines
             land pixel-aligned instead of a border-box border sitting 2px
-            higher, inside the row itself. */}
-        <div className="metal-copper-line h-0.5 shrink-0" />
+            higher, inside the row itself. Dropped in the overlay-card
+            layout: main's own line is confined inside that card now, with
+            nothing at this same height in the sidebar to line up with. */}
+        {!cardLayoutEnabled && (
+          <div className="metal-copper-line h-0.5 shrink-0" />
+        )}
 
         {collapsed && (
           <button

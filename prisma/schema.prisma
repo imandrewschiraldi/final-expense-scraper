@@ -113,6 +113,12 @@ model User {
   /// system. Purely a per-viewer read-time overlay: never writes fake rows
   /// to the real tables, and never affects what any other user sees.
   demoModeEnabled        Boolean   @default(false)
+  /// Admin-only beta toggle for the rounded "overlay card" page shell (vs.
+  /// today's full-bleed main column) — per-viewer, same reasoning as
+  /// demoModeEnabled, so an admin can try it on their own account and
+  /// switch straight back if they don't like it, with no effect on anyone
+  /// else's view.
+  cardLayoutEnabled      Boolean   @default(false)
   /// Null until the platform guided tour has been completed or dismissed
   /// once. No column default on purpose — a brand-new account (the only
   /// case the tour should auto-start for) gets null here; the migration

@@ -23,6 +23,7 @@ type Profile = {
   npn: string | null;
   residentState: string | null;
   demoModeEnabled: boolean;
+  cardLayoutEnabled: boolean;
 };
 
 export function ProfilePanel() {
@@ -46,6 +47,7 @@ export function ProfilePanel() {
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
 
   const [togglingDemoMode, setTogglingDemoMode] = useState(false);
+  const [togglingCardLayout, setTogglingCardLayout] = useState(false);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -65,7 +67,11 @@ export function ProfilePanel() {
     const res = await fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ licensedStates: editStates, npn: editNpn, residentState: editResidentState }),
+      body: JSON.stringify({
+        licensedStates: editStates,
+        npn: editNpn,
+        residentState: editResidentState,
+      }),
     });
     setSaving(false);
     if (res.ok) {
@@ -129,6 +135,25 @@ export function ProfilePanel() {
     }
   }
 
+  async function toggleCardLayout() {
+    if (!profile) return;
+    const next = !profile.cardLayoutEnabled;
+    setTogglingCardLayout(true);
+    setError(null);
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardLayoutEnabled: next }),
+    });
+    setTogglingCardLayout(false);
+    if (res.ok) {
+      const data = await res.json();
+      setProfile(data.profile);
+    } else {
+      setError("Failed to toggle the new page layout.");
+    }
+  }
+
   async function switchRole(role: SwitchableRole) {
     setSwitching(true);
     setError(null);
@@ -165,11 +190,16 @@ export function ProfilePanel() {
     setError(null);
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch("/api/profile/picture", { method: "POST", body: formData });
+    const res = await fetch("/api/profile/picture", {
+      method: "POST",
+      body: formData,
+    });
     const data = await res.json();
     setUploading(false);
     if (res.ok) {
-      setProfile((prev) => (prev ? { ...prev, profileImageUrl: data.profileImageUrl } : prev));
+      setProfile((prev) =>
+        prev ? { ...prev, profileImageUrl: data.profileImageUrl } : prev,
+      );
     } else {
       setError(data.error ?? "Failed to upload picture.");
     }
@@ -205,7 +235,13 @@ export function ProfilePanel() {
               // only for a URL it's actually configured to optimize;
               // anything else throws at render and takes the whole page
               // down with it, so that case falls back to the plain initial.
-              <Image src={avatarSrc} alt="" width={80} height={80} className="h-full w-full object-cover" />
+              <Image
+                src={avatarSrc}
+                alt=""
+                width={80}
+                height={80}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-muted">
                 {profile.name.charAt(0).toUpperCase()}
@@ -213,7 +249,9 @@ export function ProfilePanel() {
             )}
           </button>
           <div className="min-w-0">
-            <p className="truncate text-lg font-semibold text-white">{profile.name}</p>
+            <p className="truncate text-lg font-semibold text-white">
+              {profile.name}
+            </p>
             <p className="truncate text-sm text-muted">{profile.email}</p>
             <button
               type="button"
@@ -224,7 +262,13 @@ export function ProfilePanel() {
               {uploading ? "Uploading..." : "Change picture"}
             </button>
           </div>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePictureChange} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePictureChange}
+          />
         </div>
       </Card>
 
@@ -234,7 +278,9 @@ export function ProfilePanel() {
         </CardHeader>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">Role</span>
+            <span className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              Role
+            </span>
             <p className="text-white">{profile.role}</p>
           </div>
           {profile.email === ROLE_SWITCH_EMAIL && (
@@ -250,7 +296,9 @@ export function ProfilePanel() {
                     onClick={() => switchRole(role)}
                     disabled={switching || profile.role === role}
                   >
-                    {switching ? "Switching..." : role.charAt(0) + role.slice(1).toLowerCase()}
+                    {switching
+                      ? "Switching..."
+                      : role.charAt(0) + role.slice(1).toLowerCase()}
                   </Button>
                 ))}
               </div>
@@ -267,7 +315,9 @@ export function ProfilePanel() {
         </div>
       </Card>
 
-      {(profile.role === "AGENT" || profile.role === "MANAGER") && <ProfileTourButton />}
+      {(profile.role === "AGENT" || profile.role === "MANAGER") && (
+        <ProfileTourButton />
+      )}
 
       <Card>
         <CardHeader>
@@ -275,19 +325,52 @@ export function ProfilePanel() {
         </CardHeader>
         <div className="flex items-start justify-between gap-4">
           <p className="max-w-md text-sm text-muted">
-            Shows realistic-looking fake production across your Dashboard, Book of Business, and Leaderboard row —
-            useful when demoing the system to someone. It&apos;s only ever what appears on your own screen: nothing
-            fake is ever written to the real data, and no one else&apos;s view is affected.
+            Shows realistic-looking fake production across your Dashboard, Book
+            of Business, and Leaderboard row — useful when demoing the system to
+            someone. It&apos;s only ever what appears on your own screen:
+            nothing fake is ever written to the real data, and no one
+            else&apos;s view is affected.
           </p>
           <Button
             variant={profile.demoModeEnabled ? "ghost" : "secondary"}
             onClick={toggleDemoMode}
             disabled={togglingDemoMode}
           >
-            {togglingDemoMode ? "Saving..." : profile.demoModeEnabled ? "On — Turn Off" : "Off — Turn On"}
+            {togglingDemoMode
+              ? "Saving..."
+              : profile.demoModeEnabled
+                ? "On — Turn Off"
+                : "Off — Turn On"}
           </Button>
         </div>
       </Card>
+
+      {profile.role === "ADMIN" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>New Page Layout (Beta)</CardTitle>
+          </CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <p className="max-w-md text-sm text-muted">
+              Tries the rounded &ldquo;overlay card&rdquo; page shell instead of
+              today&apos;s full-bleed layout — only on your own account, so you
+              can switch straight back if you don&apos;t like it. No one
+              else&apos;s view changes.
+            </p>
+            <Button
+              variant={profile.cardLayoutEnabled ? "ghost" : "secondary"}
+              onClick={toggleCardLayout}
+              disabled={togglingCardLayout}
+            >
+              {togglingCardLayout
+                ? "Saving..."
+                : profile.cardLayoutEnabled
+                  ? "On — Turn Off"
+                  : "Off — Turn On"}
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {(profile.role === "AGENT" || profile.role === "MANAGER") && (
         <Card>
@@ -299,13 +382,20 @@ export function ProfilePanel() {
               <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
                 NPN (National Producer Number)
               </label>
-              <Input value={editNpn} onChange={(e) => setEditNpn(e.target.value)} placeholder="e.g. 1234567" />
+              <Input
+                value={editNpn}
+                onChange={(e) => setEditNpn(e.target.value)}
+                placeholder="e.g. 1234567"
+              />
             </div>
             <div>
               <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
                 Resident State
               </label>
-              <Select value={editResidentState} onChange={(e) => setEditResidentState(e.target.value)}>
+              <Select
+                value={editResidentState}
+                onChange={(e) => setEditResidentState(e.target.value)}
+              >
                 <option value="">Select state...</option>
                 {US_STATES.map((s) => (
                   <option key={s.code} value={s.code}>
@@ -326,7 +416,9 @@ export function ProfilePanel() {
           <Button className="mt-4" onClick={saveDetails} disabled={saving}>
             {saving ? "Saving..." : "Save Details"}
           </Button>
-          {saveMessage && <p className="mt-2 text-sm text-teal-light">{saveMessage}</p>}
+          {saveMessage && (
+            <p className="mt-2 text-sm text-teal-light">{saveMessage}</p>
+          )}
         </Card>
       )}
 
@@ -376,8 +468,12 @@ export function ProfilePanel() {
           <Button type="submit" disabled={changingPassword}>
             {changingPassword ? "Saving..." : "Update Password"}
           </Button>
-          {passwordMessage && <p className="text-sm text-teal-light">{passwordMessage}</p>}
-          {passwordError && <p className="text-sm text-red-light">{passwordError}</p>}
+          {passwordMessage && (
+            <p className="text-sm text-teal-light">{passwordMessage}</p>
+          )}
+          {passwordError && (
+            <p className="text-sm text-red-light">{passwordError}</p>
+          )}
         </form>
       </Card>
     </div>
