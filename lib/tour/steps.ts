@@ -42,20 +42,6 @@ export const TOUR_SECTIONS: TourSection[] = [
         body: "Click your name/photo here any time to open a menu — My Profile (your picture, contact details, password, and Demo Mode), Interaction Sounds, this tour, and Log Out all live there.",
       },
       {
-        id: "sidebar-search",
-        path: "/overview",
-        selector: '[data-tour="sidebar-search"]',
-        title: "Search Everything",
-        body: "One search box for the whole platform — leads/contacts, carriers, training lessons, and lead vendors, plus any page by name. Press ⌘K (Ctrl+K on Windows) to jump to it from anywhere.",
-      },
-      {
-        id: "ask-gemini",
-        path: "/overview",
-        selector: '[data-tour="ask-gemini-box"]',
-        title: "Ask Gemini",
-        body: "Type or dictate a question — underwriting/carrier-eligibility questions pull from the agency's own guidelines, everything else (industry terms, markets, lead vendors, and more) gets a live web search. Drag it anywhere on the page, and resize it from the bottom-right corner once a conversation's open.",
-      },
-      {
         id: "profile-picture",
         path: "/profile",
         selector: '[data-tour="profile-picture-button"]',
@@ -68,6 +54,20 @@ export const TOUR_SECTIONS: TourSection[] = [
         selector: '[data-tour="push-notifications-card"]',
         title: "Turn On Notifications",
         body: "Enable push notifications on this device to get alerted for new leads, goals you hit, and Team Chat messages — even when the app isn't open.",
+      },
+      {
+        id: "sidebar-search",
+        path: "/overview",
+        selector: '[data-tour="sidebar-search"]',
+        title: "Search Everything",
+        body: "One search box for the whole platform — leads/contacts, carriers, training lessons, and lead vendors, plus any page by name. Press ⌘K (Ctrl+K on Windows) to jump to it from anywhere.",
+      },
+      {
+        id: "ask-gemini",
+        path: "/overview",
+        selector: '[data-tour="ask-gemini-box"]',
+        title: "Ask Gemini",
+        body: "Type or dictate a question — underwriting/carrier-eligibility questions pull from the agency's own guidelines, everything else (industry terms, markets, lead vendors, and more) gets a live web search. Drag it anywhere on the page, and resize it from the bottom-right corner once a conversation's open.",
       },
       {
         id: "notification-bell",
@@ -89,6 +89,22 @@ export const TOUR_SECTIONS: TourSection[] = [
         body: "Your home page — this is what you land on first. Recent Team Chat activity and newly added Training show up here automatically, alongside the two sections below.",
       },
       {
+        id: "kpi-tracker",
+        path: "/overview",
+        selector: 'a[href="/agent/kpi-tracker"]',
+        title: "KPI Tracker",
+        body: "Log today's dials, appointments, presentations, and closes as you go — AP submitted is filled in automatically from your submitted policies. My History rolls it up into a weekly view.",
+        roles: ["MANAGER", "AGENT"],
+      },
+      {
+        id: "submit-policy",
+        path: "/submit-policy",
+        selector: 'a[href="/submit-policy"]',
+        title: "Submit Policy",
+        body: "Log a new sale here — carrier, product, premium, and the lead it came from.",
+        roles: ["MANAGER", "AGENT"],
+      },
+      {
         id: "announcements-carousel",
         path: "/overview",
         selector: '[data-tour="announcements-carousel"]',
@@ -101,14 +117,6 @@ export const TOUR_SECTIONS: TourSection[] = [
         selector: '[data-tour="hall-of-fame-card"]',
         title: "Hall of Fame",
         body: "Your progress toward this calendar year's issued-premium milestone, updated the moment a policy of yours is marked issued.",
-      },
-      {
-        id: "kpi-tracker",
-        path: "/overview",
-        selector: 'a[href="/agent/kpi-tracker"]',
-        title: "KPI Tracker",
-        body: "Log today's dials, appointments, presentations, and closes as you go — AP submitted is filled in automatically from your submitted policies. My History rolls it up into a weekly view.",
-        roles: ["MANAGER", "AGENT"],
       },
     ],
   },
@@ -139,6 +147,19 @@ export const TOUR_SECTIONS: TourSection[] = [
     ],
   },
   {
+    label: "Training",
+    steps: [
+      {
+        id: "training-agent",
+        path: "/agent/training",
+        selector: 'a[href="/agent/training"]',
+        title: "Training",
+        body: "Onboarding lessons and ongoing training modules — each module breaks down into chapters, then individual lessons.",
+        roles: ["MANAGER", "AGENT"],
+      },
+    ],
+  },
+  {
     label: "Team Chat",
     steps: [
       {
@@ -165,8 +186,24 @@ export const TOUR_SECTIONS: TourSection[] = [
     ],
   },
   {
-    label: "Selling Tools",
+    label: "Leads",
     steps: [
+      {
+        id: "my-leads",
+        path: "/agent/dashboard",
+        selector: 'a[href="/agent/dashboard"]',
+        title: "My Leads",
+        body: "Every lead currently assigned to you, with its status and contact info.",
+        roles: ["MANAGER", "AGENT"],
+      },
+      {
+        id: "buy-leads",
+        path: "/agent/buy-leads",
+        selector: 'a[href="/agent/buy-leads"]',
+        title: "Buy Leads",
+        body: "Trusted third-party lead vendors to supplement what comes through the Vault.",
+        roles: ["MANAGER", "AGENT"],
+      },
       {
         id: "book-of-business",
         path: "/book-of-business",
@@ -175,14 +212,11 @@ export const TOUR_SECTIONS: TourSection[] = [
         body: "Every policy you've submitted, with its status, in one place.",
         roles: ["MANAGER", "AGENT"],
       },
-      {
-        id: "submit-policy",
-        path: "/submit-policy",
-        selector: 'a[href="/submit-policy"]',
-        title: "Submit Policy",
-        body: "Log a new sale here — carrier, product, premium, and the lead it came from.",
-        roles: ["MANAGER", "AGENT"],
-      },
+    ],
+  },
+  {
+    label: "Selling Tools",
+    steps: [
       {
         id: "scripts-overview",
         path: "/scripts",
@@ -227,40 +261,6 @@ export const TOUR_SECTIONS: TourSection[] = [
         selector: 'a[href="/carrier-resources"]',
         title: "Carrier Resources",
         body: "Phone numbers and portal links for every carrier you write with, in one place.",
-        roles: ["MANAGER", "AGENT"],
-      },
-    ],
-  },
-  {
-    label: "Leads",
-    steps: [
-      {
-        id: "my-leads",
-        path: "/agent/dashboard",
-        selector: 'a[href="/agent/dashboard"]',
-        title: "My Leads",
-        body: "Every lead currently assigned to you, with its status and contact info.",
-        roles: ["MANAGER", "AGENT"],
-      },
-      {
-        id: "buy-leads",
-        path: "/agent/buy-leads",
-        selector: 'a[href="/agent/buy-leads"]',
-        title: "Buy Leads",
-        body: "Trusted third-party lead vendors to supplement what comes through the Vault.",
-        roles: ["MANAGER", "AGENT"],
-      },
-    ],
-  },
-  {
-    label: "Training",
-    steps: [
-      {
-        id: "training-agent",
-        path: "/agent/training",
-        selector: 'a[href="/agent/training"]',
-        title: "Training",
-        body: "Onboarding lessons and ongoing training modules — each module breaks down into chapters, then individual lessons.",
         roles: ["MANAGER", "AGENT"],
       },
     ],
