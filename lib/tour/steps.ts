@@ -137,13 +137,6 @@ export const TOUR_SECTIONS: TourSection[] = [
         title: "Change the Timeframe",
         body: "Switch between Daily, Weekly, Monthly, Year-to-Date, or All — the KPIs and analytics below update to match whichever one you pick.",
       },
-      {
-        id: "leaderboard",
-        path: "/leaderboard",
-        selector: 'a[href="/leaderboard"]',
-        title: "Leaderboard",
-        body: "See where you rank against the rest of the team by issued annual premium, updated live.",
-      },
     ],
   },
   {
