@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -38,7 +38,10 @@ type AgentOption = {
 };
 
 export function AllLeadsPanel() {
-  const [stateFilter, setStateFilter] = useState("");
+  const [stateFilters, setStateFilters] = useState<Set<string>>(new Set());
+  const [stateFilterOpen, setStateFilterOpen] = useState(false);
+  const [stateFilterSearch, setStateFilterSearch] = useState("");
+  const stateFilterRef = useRef<HTMLDivElement>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [leadTypeFilter, setLeadTypeFilter] = useState("");
   const [archivedFilter, setArchivedFilter] = useState<
@@ -156,13 +159,42 @@ export function AllLeadsPanel() {
     loadStateCounts();
   }, [loadStateCounts]);
 
+  useEffect(() => {
+    if (!stateFilterOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        stateFilterRef.current &&
+        !stateFilterRef.current.contains(e.target as Node)
+      ) {
+        setStateFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [stateFilterOpen]);
+
+  function toggleStateFilter(state: string) {
+    const next = new Set(stateFilters);
+    if (next.has(state)) next.delete(state);
+    else next.add(state);
+    setStateFilters(next);
+    setPage(1);
+  }
+
+  const filteredStateOptions = stateFilterSearch.trim()
+    ? stateCounts.filter((s) =>
+        s.state.toLowerCase().includes(stateFilterSearch.trim().toLowerCase()),
+      )
+    : stateCounts;
+
   const buildFilterParams = useCallback(
     (extra?: Record<string, string>) => {
       const params = new URLSearchParams({
         archived: archivedFilter,
         ...extra,
       });
-      if (stateFilter) params.set("state", stateFilter);
+      if (stateFilters.size > 0)
+        params.set("states", [...stateFilters].join(","));
       if (statusFilter) params.set("status", statusFilter);
       if (leadTypeFilter) params.set("leadType", leadTypeFilter);
       if (vaultFilter !== "any") params.set("isVaulted", vaultFilter);
@@ -171,7 +203,7 @@ export function AllLeadsPanel() {
       return params;
     },
     [
-      stateFilter,
+      stateFilters,
       statusFilter,
       leadTypeFilter,
       archivedFilter,
@@ -504,24 +536,78 @@ export function AllLeadsPanel() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <div className="flex flex-wrap items-end gap-4">
-          <div className="w-48">
+          <div className="relative w-56" ref={stateFilterRef}>
             <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
               State
             </label>
-            <Select
-              value={stateFilter}
-              onChange={(e) => {
-                setStateFilter(e.target.value);
-                setPage(1);
-              }}
+            <button
+              type="button"
+              onClick={() => setStateFilterOpen((o) => !o)}
+              className="flex w-full items-center justify-between rounded-md border border-border bg-black/20 px-3 py-2 text-left text-sm text-white"
             >
-              <option value="">All States</option>
-              {stateCounts.map((s) => (
-                <option key={s.state} value={s.state}>
-                  {s.state} ({s.count.toLocaleString()})
-                </option>
-              ))}
-            </Select>
+              <span>
+                {stateFilters.size === 0
+                  ? "All States"
+                  : stateFilters.size === 1
+                    ? [...stateFilters][0]
+                    : `${stateFilters.size} states selected`}
+              </span>
+              <span className="text-muted">▾</span>
+            </button>
+            {stateFilterOpen && (
+              <div className="absolute z-20 mt-1 w-full rounded-md border border-border bg-surface p-2 shadow-lg">
+                <Input
+                  value={stateFilterSearch}
+                  onChange={(e) => setStateFilterSearch(e.target.value)}
+                  placeholder="Search states..."
+                  className="mb-2"
+                />
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    className="text-xs text-muted hover:text-foreground"
+                    onClick={() => {
+                      setStateFilters(new Set());
+                      setPage(1);
+                    }}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-muted hover:text-foreground"
+                    onClick={() => {
+                      setStateFilters(
+                        new Set(filteredStateOptions.map((s) => s.state)),
+                      );
+                      setPage(1);
+                    }}
+                  >
+                    Select All Shown
+                  </button>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {filteredStateOptions.map((s) => (
+                    <label
+                      key={s.state}
+                      className="flex items-center gap-2 rounded px-1 py-1 text-sm text-muted hover:bg-black/20"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={stateFilters.has(s.state)}
+                        onChange={() => toggleStateFilter(s.state)}
+                      />
+                      {s.state} ({s.count.toLocaleString()})
+                    </label>
+                  ))}
+                  {filteredStateOptions.length === 0 && (
+                    <p className="px-1 py-1 text-sm text-muted">
+                      No states match &quot;{stateFilterSearch}&quot;.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <div className="w-52">
             <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">

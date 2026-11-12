@@ -3,7 +3,11 @@ import Papa from "papaparse";
 import { format } from "date-fns";
 import { requireAdmin } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { LEAD_STATUSES, LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
+import {
+  LEAD_STATUSES,
+  LEAD_STATUS_LABELS,
+  LeadStatus,
+} from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, isLeadType } from "@/lib/leadType";
 import { formatPhone } from "@/lib/formatPhone";
 import { formatDob } from "@/lib/formatDob";
@@ -15,6 +19,10 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const state = searchParams.get("state");
+  const statesParam = searchParams.get("states");
+  const states = statesParam
+    ? statesParam.split(",").filter(Boolean)
+    : undefined;
   const status = searchParams.get("status") as LeadStatus | null;
   const leadType = searchParams.get("leadType");
   const agentId = searchParams.get("agentId");
@@ -23,19 +31,28 @@ export async function GET(req: NextRequest) {
   const isVaultedParam = searchParams.get("isVaulted");
   const vaultOriginParam = searchParams.get("vaultOrigin");
 
-  const where: Prisma.LeadWhereInput = archivedParam === "any" ? {} : { isArchived: archivedParam === "true" };
+  const where: Prisma.LeadWhereInput =
+    archivedParam === "any" ? {} : { isArchived: archivedParam === "true" };
 
-  if (state) where.state = state;
+  if (states && states.length > 0) where.state = { in: states };
+  else if (state) where.state = state;
   if (status && LEAD_STATUSES.includes(status)) where.status = status;
   if (leadType && isLeadType(leadType)) where.leadType = leadType;
   if (unassignedOnly) where.assignedAgentId = null;
   else if (agentId) where.assignedAgentId = agentId;
-  if (isVaultedParam === "true" || isVaultedParam === "false") where.isVaulted = isVaultedParam === "true";
-  if (vaultOriginParam === "true" || vaultOriginParam === "false") where.vaultOrigin = vaultOriginParam === "true";
+  if (isVaultedParam === "true" || isVaultedParam === "false")
+    where.isVaulted = isVaultedParam === "true";
+  if (vaultOriginParam === "true" || vaultOriginParam === "false")
+    where.vaultOrigin = vaultOriginParam === "true";
 
   const leads = await db.lead.findMany({
     where,
-    orderBy: { createdAt: "desc" },
+    // Grouped by state first so a multi-state export reads as one block
+    // per state rather than every state's leads interleaved by date.
+    orderBy:
+      states && states.length > 1
+        ? [{ state: "asc" }, { createdAt: "desc" }]
+        : { createdAt: "desc" },
     include: { assignedAgent: { select: { name: true } } },
   });
 
@@ -61,7 +78,8 @@ export async function GET(req: NextRequest) {
       "Marital Status": lead.maritalStatus ?? "",
       Height: lead.height ?? "",
       Weight: lead.weight ?? "",
-      "Tobacco Use": lead.tobaccoUse == null ? "" : lead.tobaccoUse ? "Yes" : "No",
+      "Tobacco Use":
+        lead.tobaccoUse == null ? "" : lead.tobaccoUse ? "Yes" : "No",
       Occupation: lead.occupation ?? "",
       Income: lead.income ?? "",
       "Existing Coverage": lead.existingCoverage ?? "",
@@ -71,7 +89,15 @@ export async function GET(req: NextRequest) {
     })),
   );
 
-  const filename = `leads${state ? `-${state}` : ""}${unassignedOnly ? "-unassigned" : ""}-${format(new Date(), "yyyy-MM-dd")}.csv`;
+  const stateLabel =
+    states && states.length > 0
+      ? states.length <= 5
+        ? `-${states.join("_")}`
+        : `-${states.length}-states`
+      : state
+        ? `-${state}`
+        : "";
+  const filename = `leads${stateLabel}${unassignedOnly ? "-unassigned" : ""}-${format(new Date(), "yyyy-MM-dd")}.csv`;
 
   return new NextResponse(csv, {
     headers: {

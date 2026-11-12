@@ -13,6 +13,10 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const state = searchParams.get("state");
+  const statesParam = searchParams.get("states");
+  const states = statesParam
+    ? statesParam.split(",").filter(Boolean)
+    : undefined;
   const status = searchParams.get("status") as LeadStatus | null;
   const leadType = searchParams.get("leadType");
   const agentId = searchParams.get("agentId");
@@ -29,13 +33,16 @@ export async function GET(req: NextRequest) {
   const where: Prisma.LeadWhereInput =
     archivedParam === "any" ? {} : { isArchived: archivedParam === "true" };
 
-  if (state) where.state = state;
+  if (states && states.length > 0) where.state = { in: states };
+  else if (state) where.state = state;
   if (status && LEAD_STATUSES.includes(status)) where.status = status;
   if (leadType && isLeadType(leadType)) where.leadType = leadType;
   if (unassignedOnly) where.assignedAgentId = null;
   else if (agentId) where.assignedAgentId = agentId;
-  if (isVaultedParam === "true" || isVaultedParam === "false") where.isVaulted = isVaultedParam === "true";
-  if (vaultOriginParam === "true" || vaultOriginParam === "false") where.vaultOrigin = vaultOriginParam === "true";
+  if (isVaultedParam === "true" || isVaultedParam === "false")
+    where.isVaulted = isVaultedParam === "true";
+  if (vaultOriginParam === "true" || vaultOriginParam === "false")
+    where.vaultOrigin = vaultOriginParam === "true";
   if (wasRecycledParam === "true") where.wasRecycled = true;
 
   // Used by "Select All" bulk actions — returns every matching id (no
@@ -74,8 +81,17 @@ export async function DELETE(req: NextRequest) {
 
   // Require at least one explicit filter — never allow a bodyless call to
   // wipe every lead in the system.
-  if ((!ids || ids.length === 0) && !state && !leadType && !status && vaultOrigin === undefined) {
-    return NextResponse.json({ error: "No leads specified to delete" }, { status: 400 });
+  if (
+    (!ids || ids.length === 0) &&
+    !state &&
+    !leadType &&
+    !status &&
+    vaultOrigin === undefined
+  ) {
+    return NextResponse.json(
+      { error: "No leads specified to delete" },
+      { status: 400 },
+    );
   }
 
   const where: Prisma.LeadWhereInput = {};
@@ -84,7 +100,8 @@ export async function DELETE(req: NextRequest) {
   } else {
     if (state) where.state = state;
     if (leadType && isLeadType(leadType)) where.leadType = leadType;
-    if (status && LEAD_STATUSES.includes(status as LeadStatus)) where.status = status as LeadStatus;
+    if (status && LEAD_STATUSES.includes(status as LeadStatus))
+      where.status = status as LeadStatus;
     if (vaultOrigin !== undefined) where.vaultOrigin = vaultOrigin;
   }
 
