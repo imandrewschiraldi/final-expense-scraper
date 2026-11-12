@@ -28,6 +28,7 @@ import {
   Gauge,
 } from "lucide-react";
 import { PageHeading } from "@/components/portal/PageHeading";
+import { PeopleSearchButton } from "@/components/portal/PeopleSearchButton";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
 import { BonusVolumeCard } from "@/components/portal/overview/BonusVolumeCard";
@@ -279,55 +280,58 @@ export function OverviewClient() {
             )}
           </div>
         </div>
-        {isAdmin && data && (
-          <button
-            type="button"
-            onClick={() => setEditing((e) => !e)}
-            className={`font-condensed flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] font-bold tracking-wide uppercase transition-colors ${
-              editing
-                ? "border-copper-dim-gradient bg-surface2 text-white"
-                : "border-border text-muted hover:text-foreground"
-            }`}
-          >
-            {editing ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <LayoutGrid className="h-3.5 w-3.5" />
-            )}
-            {editing ? "Done" : "Edit Layout"}
-          </button>
-        )}
-        {/* Moved here from the sidebar's "Sell" section — same audience
-            (manager/agent, not admin) it was already scoped to there.
-            Deliberately not the shared Button component: its variants each
-            bake in their own background/text classes, and this codebase's
-            cn() is plain clsx (no tailwind-merge), so layering bg-white/
-            text-background on top of a variant's own background/color
-            classes would leave which one wins to Tailwind's generated
-            stylesheet order rather than anything predictable here. */}
-        {!isAdmin && (
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              href="/agent/kpi-tracker"
-              className="font-condensed inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-[13px] font-bold tracking-[0.08em] text-foreground uppercase transition-colors hover:border-copper-dim-gradient hover:text-white"
+        <div className="flex shrink-0 items-center gap-2">
+          <PeopleSearchButton />
+          {isAdmin && data && (
+            <button
+              type="button"
+              onClick={() => setEditing((e) => !e)}
+              className={`font-condensed flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] font-bold tracking-wide uppercase transition-colors ${
+                editing
+                  ? "border-copper-dim-gradient bg-surface2 text-white"
+                  : "border-border text-muted hover:text-foreground"
+              }`}
             >
-              <Gauge className="h-4 w-4" />
-              KPI Tracker
-            </Link>
-            <Link
-              href="/submit-policy"
-              // mr-3.5 (14px) centers this under the top bar's 4-icon cluster
-              // (QuickLinks/theme/Bell/avatar, 176px wide total at lg+) rather
-              // than sitting flush with its right edge — both are inset the
-              // same lg:px-10 from the viewport, so this is a fixed offset,
-              // not something that needs to track the cluster at runtime.
-              className="font-condensed mr-3.5 inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-bold tracking-[0.08em] text-background uppercase transition-opacity hover:opacity-90"
-            >
-              <FilePlus2 className="h-4 w-4" />
-              Submit Policy
-            </Link>
-          </div>
-        )}
+              {editing ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : (
+                <LayoutGrid className="h-3.5 w-3.5" />
+              )}
+              {editing ? "Done" : "Edit Layout"}
+            </button>
+          )}
+          {/* Moved here from the sidebar's "Sell" section — same audience
+              (manager/agent, not admin) it was already scoped to there.
+              Deliberately not the shared Button component: its variants each
+              bake in their own background/text classes, and this codebase's
+              cn() is plain clsx (no tailwind-merge), so layering bg-white/
+              text-background on top of a variant's own background/color
+              classes would leave which one wins to Tailwind's generated
+              stylesheet order rather than anything predictable here. */}
+          {!isAdmin && (
+            <>
+              <Link
+                href="/agent/kpi-tracker"
+                className="font-condensed inline-flex shrink-0 items-center gap-2 rounded-full border border-border px-4 py-2 text-[13px] font-bold tracking-[0.08em] text-foreground uppercase transition-colors hover:border-copper-dim-gradient hover:text-white"
+              >
+                <Gauge className="h-4 w-4" />
+                KPI Tracker
+              </Link>
+              <Link
+                href="/submit-policy"
+                // mr-3.5 (14px) centers this under the top bar's 4-icon cluster
+                // (QuickLinks/theme/Bell/avatar, 176px wide total at lg+) rather
+                // than sitting flush with its right edge — both are inset the
+                // same lg:px-10 from the viewport, so this is a fixed offset,
+                // not something that needs to track the cluster at runtime.
+                className="font-condensed mr-3.5 inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] font-bold tracking-[0.08em] text-background uppercase transition-opacity hover:opacity-90"
+              >
+                <FilePlus2 className="h-4 w-4" />
+                Submit Policy
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
       <AnnouncementsCarousel />
