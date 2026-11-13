@@ -499,9 +499,16 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
   // box to share the row (KPI Tracker, Carrier Resources, Agents, Carrier
   // rates, Lead Vendors) — rather than special-case each one, Ask Gemini
   // is dropped for the admin account entirely; the icon cluster (theme/
-  // bell/avatar) stays, the opposite of Vault.
+  // bell/avatar) stays, the opposite of Vault. Same overlap on the
+  // agent/manager side's own KPI Tracker, Buy Leads ("Trusted Lead
+  // Vendors"), and Carrier Resources headings — those three are hidden by
+  // path instead, since agents/managers still want Ask Gemini everywhere
+  // else.
   const hideAskGemini =
-    role === "ADMIN" || pathname.startsWith("/agent/kpi-tracker");
+    role === "ADMIN" ||
+    pathname.startsWith("/agent/kpi-tracker") ||
+    pathname.startsWith("/agent/buy-leads") ||
+    pathname.startsWith("/carrier-resources");
 
   const iconCluster = (
     <div className="flex items-center gap-3">
