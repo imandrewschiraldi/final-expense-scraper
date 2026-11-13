@@ -1,6 +1,7 @@
 import Papa from "papaparse";
 import { db } from "@/lib/db";
 import { resolveStateCode } from "@/lib/usStates";
+import { generateUniqueLeadNumbers } from "@/lib/leadNumber";
 import type { LeadType } from "@/lib/leadType";
 
 export type ParsedLeadRow = {
@@ -56,7 +57,11 @@ export type ColumnMapping = {
 };
 
 function normalizeHeader(header: string) {
-  return header.replace(/^\uFEFF/, "").trim().toLowerCase().replace(/[\s_]+/g, " ");
+  return header
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, " ");
 }
 
 function splitName(fullName: string): { firstName: string; lastName: string } {
@@ -90,14 +95,20 @@ function parseFlexibleDate(raw: string): Date | null {
   const value = raw.trim();
   if (!value) return null;
 
-  const slashOrDash = value.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2}|\d{4})$/);
+  const slashOrDash = value.match(
+    /^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2}|\d{4})$/,
+  );
   if (slashOrDash) {
     const [, m, d, y] = slashOrDash;
     const month = Number(m);
     const day = Number(d);
     const year = y.length === 2 ? twoDigitYearToFour(Number(y)) : Number(y);
     const date = new Date(year, month - 1, day);
-    if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+    if (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    ) {
       return date;
     }
   }
@@ -106,7 +117,11 @@ function parseFlexibleDate(raw: string): Date | null {
   if (isoLike) {
     const [, y, m, d] = isoLike;
     const date = new Date(Number(y), Number(m) - 1, Number(d));
-    if (date.getFullYear() === Number(y) && date.getMonth() === Number(m) - 1 && date.getDate() === Number(d)) {
+    if (
+      date.getFullYear() === Number(y) &&
+      date.getMonth() === Number(m) - 1 &&
+      date.getDate() === Number(d)
+    ) {
       return date;
     }
   }
@@ -117,7 +132,10 @@ function parseFlexibleDate(raw: string): Date | null {
   return null;
 }
 
-export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): CsvParseResult {
+export function parseLeadsCsv(
+  fileContent: string,
+  mapping?: ColumnMapping,
+): CsvParseResult {
   const parsed = Papa.parse<Record<string, string>>(fileContent, {
     header: true,
     skipEmptyLines: true,
@@ -130,11 +148,19 @@ export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): Csv
   const m = mapping
     ? {
         nameMode: mapping.nameMode,
-        nameField: mapping.nameField ? normalizeHeader(mapping.nameField) : undefined,
-        firstNameField: mapping.firstNameField ? normalizeHeader(mapping.firstNameField) : undefined,
-        lastNameField: mapping.lastNameField ? normalizeHeader(mapping.lastNameField) : undefined,
+        nameField: mapping.nameField
+          ? normalizeHeader(mapping.nameField)
+          : undefined,
+        firstNameField: mapping.firstNameField
+          ? normalizeHeader(mapping.firstNameField)
+          : undefined,
+        lastNameField: mapping.lastNameField
+          ? normalizeHeader(mapping.lastNameField)
+          : undefined,
         phoneField: normalizeHeader(mapping.phoneField),
-        dobField: mapping.dobField ? normalizeHeader(mapping.dobField) : undefined,
+        dobField: mapping.dobField
+          ? normalizeHeader(mapping.dobField)
+          : undefined,
         stateField: normalizeHeader(mapping.stateField),
       }
     : null;
@@ -147,32 +173,59 @@ export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): Csv
         ? record[m.nameField ?? ""]
         : undefined
       : (record["name"] ?? record["full name"]);
-    const firstNameField = m ? (m.nameMode === "split" ? record[m.firstNameField ?? ""] : undefined) : record["first name"];
-    const lastNameField = m ? (m.nameMode === "split" ? record[m.lastNameField ?? ""] : undefined) : record["last name"];
-    const phoneRaw = m ? record[m.phoneField] : (record["phone"] ?? record["phone number"]);
-    const dobRaw = m ? (m.dobField ? record[m.dobField] : undefined) : (record["date of birth"] ?? record["dob"]);
+    const firstNameField = m
+      ? m.nameMode === "split"
+        ? record[m.firstNameField ?? ""]
+        : undefined
+      : record["first name"];
+    const lastNameField = m
+      ? m.nameMode === "split"
+        ? record[m.lastNameField ?? ""]
+        : undefined
+      : record["last name"];
+    const phoneRaw = m
+      ? record[m.phoneField]
+      : (record["phone"] ?? record["phone number"]);
+    const dobRaw = m
+      ? m.dobField
+        ? record[m.dobField]
+        : undefined
+      : (record["date of birth"] ?? record["dob"]);
     const stateRaw = m ? record[m.stateField] : record["state"];
 
     // These supplemental fields are never part of the manual column
     // mapping UI (that stays scoped to name/phone/dob/state) — they're
     // always picked up heuristically by common header name, if present.
     const email = record["email"] ?? record["email address"];
-    const address = record["address"] ?? record["street address"] ?? record["mailing address"];
+    const address =
+      record["address"] ??
+      record["street address"] ??
+      record["mailing address"];
     const zip = record["zip"] ?? record["zip code"] ?? record["postal code"];
     const county = record["county"];
     const beneficiary = record["beneficiary"] ?? record["beneficiary name"];
-    const beneficiaryRelationship = record["beneficiary relationship"] ?? record["relationship to beneficiary"];
+    const beneficiaryRelationship =
+      record["beneficiary relationship"] ??
+      record["relationship to beneficiary"];
     const gender = record["gender"] ?? record["sex"];
     const maritalStatus = record["marital status"];
     const height = record["height"];
     const weight = record["weight"];
-    const tobaccoRaw = record["tobacco"] ?? record["tobacco use"] ?? record["smoker"];
-    const occupation = record["occupation"] ?? record["job"] ?? record["employer"];
+    const tobaccoRaw =
+      record["tobacco"] ?? record["tobacco use"] ?? record["smoker"];
+    const occupation =
+      record["occupation"] ?? record["job"] ?? record["employer"];
     const income = record["income"] ?? record["annual income"];
-    const existingCoverage = record["existing coverage"] ?? record["current coverage"];
-    const coverageAmountRequested = record["coverage amount"] ?? record["coverage requested"] ?? record["face amount"];
-    const militaryBranch = record["military branch"] ?? record["branch of service"];
-    const vendorNotes = record["notes"] ?? record["comments"] ?? record["vendor notes"];
+    const existingCoverage =
+      record["existing coverage"] ?? record["current coverage"];
+    const coverageAmountRequested =
+      record["coverage amount"] ??
+      record["coverage requested"] ??
+      record["face amount"];
+    const militaryBranch =
+      record["military branch"] ?? record["branch of service"];
+    const vendorNotes =
+      record["notes"] ?? record["comments"] ?? record["vendor notes"];
 
     let firstName = firstNameField?.trim() ?? "";
     let lastName = lastNameField?.trim() ?? "";
@@ -218,7 +271,9 @@ export function parseLeadsCsv(fileContent: string, mapping?: ColumnMapping): Csv
     const state = resolvedState ?? stateRaw?.trim().toUpperCase() ?? "";
 
     const tobaccoUse =
-      tobaccoRaw && tobaccoRaw.trim() ? /^(y|yes|true|1)$/i.test(tobaccoRaw.trim()) : undefined;
+      tobaccoRaw && tobaccoRaw.trim()
+        ? /^(y|yes|true|1)$/i.test(tobaccoRaw.trim())
+        : undefined;
 
     rows.push({
       line,
@@ -293,14 +348,24 @@ export async function importLeadsFromCsv(
     dedupedRows.push(row);
   }
 
-  const existingPhones = new Map<string, { firstName: string; lastName: string }>();
+  const existingPhones = new Map<
+    string,
+    { firstName: string; lastName: string }
+  >();
   for (let i = 0; i < dedupedRows.length; i += IMPORT_BATCH_SIZE) {
-    const chunk = dedupedRows.slice(i, i + IMPORT_BATCH_SIZE).map((r) => r.phone);
+    const chunk = dedupedRows
+      .slice(i, i + IMPORT_BATCH_SIZE)
+      .map((r) => r.phone);
     const existing = await db.lead.findMany({
       where: { phone: { in: chunk } },
       select: { phone: true, firstName: true, lastName: true },
     });
-    existing.forEach((l) => existingPhones.set(l.phone, { firstName: l.firstName, lastName: l.lastName }));
+    existing.forEach((l) =>
+      existingPhones.set(l.phone, {
+        firstName: l.firstName,
+        lastName: l.lastName,
+      }),
+    );
   }
 
   const uniqueRows: ParsedLeadRow[] = [];
@@ -339,8 +404,10 @@ export async function importLeadsFromCsv(
 
   for (let i = 0; i < uniqueRows.length; i += IMPORT_BATCH_SIZE) {
     const chunk = uniqueRows.slice(i, i + IMPORT_BATCH_SIZE);
+    const leadNumbers = await generateUniqueLeadNumbers(chunk.length);
     await db.lead.createMany({
-      data: chunk.map((row) => ({
+      data: chunk.map((row, idx) => ({
+        leadNumber: leadNumbers[idx],
         firstName: row.firstName,
         lastName: row.lastName,
         phone: row.phone,
@@ -367,7 +434,9 @@ export async function importLeadsFromCsv(
         coverageAmountRequested: row.coverageAmountRequested,
         militaryBranch: row.militaryBranch,
         vendorNotes: row.vendorNotes,
-        ...(isSelf ? { assignedAgentId: assignToAgentId, assignedAt: now } : {}),
+        ...(isSelf
+          ? { assignedAgentId: assignToAgentId, assignedAt: now }
+          : {}),
       })),
     });
   }

@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
 
   const csv = Papa.unparse(
     leads.map((lead) => ({
+      "Lead Number": lead.leadNumber ?? "",
       "First Name": lead.firstName,
       "Last Name": lead.lastName,
       Phone: formatPhone(lead.phone),

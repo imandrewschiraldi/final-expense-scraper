@@ -18,6 +18,7 @@ import { US_STATES } from "@/lib/usStates";
 
 type Lead = {
   id: string;
+  leadNumber: string | null;
   firstName: string;
   lastName: string;
   phone: string;
@@ -73,6 +74,11 @@ export function AllLeadsPanel() {
   const [unvaultPhonesText, setUnvaultPhonesText] = useState("");
   const [unvaultingPhones, setUnvaultingPhones] = useState(false);
   const [unvaultPhonesMessage, setUnvaultPhonesMessage] = useState<
+    string | null
+  >(null);
+
+  const [backfillingLeadNumbers, setBackfillingLeadNumbers] = useState(false);
+  const [backfillLeadNumbersMessage, setBackfillLeadNumbersMessage] = useState<
     string | null
   >(null);
 
@@ -427,6 +433,31 @@ export function AllLeadsPanel() {
     }
   }
 
+  async function backfillLeadNumbers() {
+    const confirmed = window.confirm(
+      "Assign a lead number to every lead that doesn't have one yet, and give each a random date added sometime in the last 9-12 months? " +
+        "This overwrites those leads' \"date added\" — it can't be undone. Leads that already have a lead number are left untouched.",
+    );
+    if (!confirmed) return;
+
+    setBackfillingLeadNumbers(true);
+    setBackfillLeadNumbersMessage(null);
+    const res = await fetch("/api/admin/leads/backfill-lead-numbers", {
+      method: "POST",
+    });
+    const data = await res.json();
+    setBackfillingLeadNumbers(false);
+    if (res.ok) {
+      setBackfillLeadNumbersMessage(
+        `Assigned lead numbers to ${data.updated.toLocaleString()} lead(s).`,
+      );
+      setPage(1);
+      loadLeads();
+    } else {
+      setBackfillLeadNumbersMessage(data.error ?? "Backfill failed");
+    }
+  }
+
   async function unassignAgentLeads() {
     if (!unassignAgentId) return;
     const agent = agentsWithLeads.find((a) => a.id === unassignAgentId);
@@ -767,6 +798,7 @@ export function AllLeadsPanel() {
                     onChange={toggleAllOnPage}
                   />
                 </th>
+                <th className="py-2 pr-4">Lead #</th>
                 <th className="py-2 pr-4">Name</th>
                 <th className="py-2 pr-4">Phone</th>
                 <th className="py-2 pr-4">State</th>
@@ -789,6 +821,9 @@ export function AllLeadsPanel() {
                       checked={selected.has(lead.id)}
                       onChange={() => toggle(lead.id)}
                     />
+                  </td>
+                  <td className="py-2 pr-4 font-mono text-xs text-muted">
+                    {lead.leadNumber ?? "—"}
                   </td>
                   <td className="py-2 pr-4 text-white">
                     {lead.firstName} {lead.lastName}
@@ -842,6 +877,30 @@ export function AllLeadsPanel() {
             Next
           </Button>
         </div>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Assign Lead Numbers</CardTitle>
+        </CardHeader>
+        <p className="mb-3 text-sm text-muted">
+          Gives every lead without one a unique lead number (&quot;VL00&quot; +
+          6 digits) and a random &quot;date added&quot; somewhere in the last
+          9-12 months. Safe to run more than once — only leads still missing a
+          number are touched.
+        </p>
+        {backfillLeadNumbersMessage && (
+          <p className="mb-3 text-sm text-teal-light">
+            {backfillLeadNumbersMessage}
+          </p>
+        )}
+        <Button
+          variant="secondary"
+          onClick={backfillLeadNumbers}
+          disabled={backfillingLeadNumbers}
+        >
+          {backfillingLeadNumbers ? "Assigning..." : "Assign Lead Numbers"}
+        </Button>
       </Card>
 
       <Card>
