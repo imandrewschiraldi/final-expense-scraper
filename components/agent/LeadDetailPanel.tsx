@@ -68,7 +68,12 @@ const STATUS_OPTIONS: LeadStatus[] = [
   "NOT_INTERESTED",
 ];
 
-type Note = { id: string; body: string; createdAt: string; author: { name: string } | null };
+type Note = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: { name: string } | null;
+};
 
 type ContactLogEntry = {
   id: string;
@@ -79,6 +84,7 @@ type ContactLogEntry = {
 
 type Lead = {
   id: string;
+  leadNumber: string | null;
   firstName: string;
   lastName: string;
   phone: string;
@@ -88,6 +94,7 @@ type Lead = {
   leadType: LeadType;
   isArchived: boolean;
   isVaulted: boolean;
+  createdAt: string;
   notes: Note[];
   contactLogEntries: ContactLogEntry[];
   email?: string | null;
@@ -186,13 +193,18 @@ export function LeadDetailPanel({
     params.set("dir", dir);
     return `${basePath}/${id}?${params.toString()}`;
   }
-  const prevHref = navigation.prevId ? navHref(navigation.prevId, "prev") : null;
-  const nextHref = navigation.nextId ? navHref(navigation.nextId, "next") : null;
+  const prevHref = navigation.prevId
+    ? navHref(navigation.prevId, "prev")
+    : null;
+  const nextHref = navigation.nextId
+    ? navHref(navigation.nextId, "next")
+    : null;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
-      const isEditing = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+      const isEditing =
+        target.tagName === "INPUT" || target.tagName === "TEXTAREA";
       if (isEditing) return;
 
       if (e.key === "ArrowLeft" && prevHref) {
@@ -269,10 +281,17 @@ export function LeadDetailPanel({
   }
 
   async function deleteLead() {
-    if (!window.confirm(`Permanently delete ${lead.firstName} ${lead.lastName}? This can't be undone.`)) return;
+    if (
+      !window.confirm(
+        `Permanently delete ${lead.firstName} ${lead.lastName}? This can't be undone.`,
+      )
+    )
+      return;
     setDeleting(true);
     setDeleteError(null);
-    const res = await fetch(`/api/agent/leads/${lead.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/agent/leads/${lead.id}`, {
+      method: "DELETE",
+    });
     if (res.ok) {
       router.push(backHref);
       router.refresh();
@@ -309,7 +328,12 @@ export function LeadDetailPanel({
             </Button>
           )}
           {canDelete && (
-            <Button variant="ghost" onClick={deleteLead} disabled={deleting} className="!text-red-light">
+            <Button
+              variant="ghost"
+              onClick={deleteLead}
+              disabled={deleting}
+              className="!text-red-light"
+            >
               {deleting ? "Deleting..." : "Delete"}
             </Button>
           )}
@@ -322,7 +346,10 @@ export function LeadDetailPanel({
   return (
     <div className="space-y-6">
       <div className="mt-3 flex items-center justify-between">
-        <Link href={backHref} className="text-sm text-muted hover:text-foreground">
+        <Link
+          href={backHref}
+          className="text-sm text-muted hover:text-foreground"
+        >
           &larr; {backLabel}
         </Link>
         <div className="flex items-center gap-3">
@@ -375,9 +402,14 @@ export function LeadDetailPanel({
                 <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-muted">
                   <PhoneLink phone={lead.phone} />
                   <span>
-                    &middot; {lead.state} &middot; DOB {formatDob(lead.dateOfBirth)} &middot;{" "}
+                    &middot; {lead.state} &middot; DOB{" "}
+                    {formatDob(lead.dateOfBirth)} &middot;{" "}
                     {LEAD_TYPE_LABELS[lead.leadType]}
                   </span>
+                </p>
+                <p className="mt-1 font-mono text-xs text-muted">
+                  {lead.leadNumber ?? "—"} &middot; Added{" "}
+                  {format(new Date(lead.createdAt), "MMM d, yyyy")}
                 </p>
               </div>
               <div className="flex items-center gap-3">{headerActions}</div>
@@ -391,29 +423,42 @@ export function LeadDetailPanel({
               <Input
                 placeholder="First Name"
                 value={editForm.firstName}
-                onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, firstName: e.target.value })
+                }
               />
               <Input
                 placeholder="Last Name"
                 value={editForm.lastName}
-                onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, lastName: e.target.value })
+                }
               />
               <Input
                 placeholder="Phone"
                 value={editForm.phone}
-                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, phone: e.target.value })
+                }
               />
               <Input
                 placeholder="State"
                 value={editForm.state}
-                onChange={(e) => setEditForm({ ...editForm, state: e.target.value.toUpperCase() })}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    state: e.target.value.toUpperCase(),
+                  })
+                }
                 maxLength={2}
               />
               <Input
                 type="date"
                 placeholder="Date of Birth (optional)"
                 value={editForm.dateOfBirth}
-                onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, dateOfBirth: e.target.value })
+                }
               />
             </div>
             {editError && <p className="text-sm text-red-light">{editError}</p>}
@@ -421,40 +466,51 @@ export function LeadDetailPanel({
               <Button onClick={saveEdit} disabled={editSaving}>
                 {editSaving ? "Saving..." : "Save Changes"}
               </Button>
-              <Button variant="ghost" onClick={() => setEditing(false)} disabled={editSaving}>
+              <Button
+                variant="ghost"
+                onClick={() => setEditing(false)}
+                disabled={editSaving}
+              >
                 Cancel
               </Button>
             </div>
           </div>
         )}
-        {deleteError && <p className="mb-4 text-sm text-red-light">{deleteError}</p>}
+        {deleteError && (
+          <p className="mb-4 text-sm text-red-light">{deleteError}</p>
+        )}
 
-        {!editing && (lead.isArchived ? (
-          <p className="rounded-[10px] border border-border bg-surface2 p-3 text-sm text-muted">
-            This lead is {LEAD_STATUS_LABELS[lead.status].toLowerCase()} and locked — it has exited your active
-            pool.
-          </p>
-        ) : (
-          <div>
-            <label className="font-condensed mb-2 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
-              Update Status
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {STATUS_OPTIONS.map((status) => (
-                <Button
-                  key={status}
-                  variant="secondary"
-                  disabled={saving}
-                  onClick={() => updateStatus(status)}
-                  className={cn(status === lead.status && "btn-metal-copper-active")}
-                >
-                  {LEAD_STATUS_LABELS[status]}
-                </Button>
-              ))}
+        {!editing &&
+          (lead.isArchived ? (
+            <p className="rounded-[10px] border border-border bg-surface2 p-3 text-sm text-muted">
+              This lead is {LEAD_STATUS_LABELS[lead.status].toLowerCase()} and
+              locked — it has exited your active pool.
+            </p>
+          ) : (
+            <div>
+              <label className="font-condensed mb-2 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+                Update Status
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {STATUS_OPTIONS.map((status) => (
+                  <Button
+                    key={status}
+                    variant="secondary"
+                    disabled={saving}
+                    onClick={() => updateStatus(status)}
+                    className={cn(
+                      status === lead.status && "btn-metal-copper-active",
+                    )}
+                  >
+                    {LEAD_STATUS_LABELS[status]}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-        {!editing && error && <p className="mt-3 text-sm text-red-light">{error}</p>}
+          ))}
+        {!editing && error && (
+          <p className="mt-3 text-sm text-red-light">{error}</p>
+        )}
       </Card>
 
       {!editing &&
@@ -480,7 +536,9 @@ export function LeadDetailPanel({
                     <dt className="font-condensed text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
                       Tobacco Use
                     </dt>
-                    <dd className="text-white">{lead.tobaccoUse ? "Yes" : "No"}</dd>
+                    <dd className="text-white">
+                      {lead.tobaccoUse ? "Yes" : "No"}
+                    </dd>
                   </div>
                 )}
               </dl>
@@ -493,19 +551,27 @@ export function LeadDetailPanel({
           <CardTitle>Contact Log</CardTitle>
         </CardHeader>
         <p className="mb-3 text-sm text-muted">
-          A record of every time this lead was marked Contacted, No Answer, or Not Interested — so you can
-          see who&apos;s already reached out before calling.
+          A record of every time this lead was marked Contacted, No Answer, or
+          Not Interested — so you can see who&apos;s already reached out before
+          calling.
         </p>
         <div className="space-y-2">
-          {lead.contactLogEntries.length === 0 && <p className="text-sm text-muted">No contact attempts logged yet.</p>}
+          {lead.contactLogEntries.length === 0 && (
+            <p className="text-sm text-muted">
+              No contact attempts logged yet.
+            </p>
+          )}
           {lead.contactLogEntries.map((entry) => (
             <div
               key={entry.id}
               className="flex items-center justify-between rounded-lg border border-border bg-surface2 px-3 py-2 text-sm"
             >
-              <span className="font-semibold text-white">{LEAD_STATUS_LABELS[entry.status]}</span>
+              <span className="font-semibold text-white">
+                {LEAD_STATUS_LABELS[entry.status]}
+              </span>
               <span className="text-xs text-muted">
-                {entry.agent?.name ?? "Former Agent"} &middot; {format(new Date(entry.createdAt), "MMM d, yyyy h:mm a")}
+                {entry.agent?.name ?? "Former Agent"} &middot;{" "}
+                {format(new Date(entry.createdAt), "MMM d, yyyy h:mm a")}
               </span>
             </div>
           ))}
@@ -528,19 +594,24 @@ export function LeadDetailPanel({
           </Button>
         </div>
         <div className="space-y-3">
-          {lead.notes.length === 0 && <p className="text-sm text-muted">No notes yet.</p>}
+          {lead.notes.length === 0 && (
+            <p className="text-sm text-muted">No notes yet.</p>
+          )}
           {lead.notes.map((note) => (
             <Callout key={note.id} variant="teal">
               <p className="text-white">{note.body}</p>
               <p className="mt-1 text-xs text-teal-light">
-                {note.author?.name ?? "Former Agent"} &middot; {format(new Date(note.createdAt), "MMM d, yyyy h:mm a")}
+                {note.author?.name ?? "Former Agent"} &middot;{" "}
+                {format(new Date(note.createdAt), "MMM d, yyyy h:mm a")}
               </p>
             </Callout>
           ))}
         </div>
       </Card>
 
-      <p className="text-center text-xs text-muted">Tip: use the &larr; and &rarr; arrow keys to move between leads.</p>
+      <p className="text-center text-xs text-muted">
+        Tip: use the &larr; and &rarr; arrow keys to move between leads.
+      </p>
     </div>
   );
 }

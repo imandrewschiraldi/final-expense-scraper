@@ -19,12 +19,18 @@ export async function GET(req: NextRequest) {
   const state = searchParams.get("state");
 
   const leads = await db.lead.findMany({
-    where: buildAgentLeadsWhere(guard.session.user.id, { status, archived, state }),
+    where: buildAgentLeadsWhere(guard.session.user.id, {
+      status,
+      archived,
+      state,
+    }),
     orderBy: AGENT_LEADS_ORDER_BY,
   });
 
   const csv = Papa.unparse(
     leads.map((lead) => ({
+      "Lead Number": lead.leadNumber ?? "",
+      "Date Added": format(lead.createdAt, "MM/dd/yyyy"),
       "First Name": lead.firstName,
       "Last Name": lead.lastName,
       Phone: formatPhone(lead.phone),
@@ -32,7 +38,9 @@ export async function GET(req: NextRequest) {
       "Date of Birth": formatDob(lead.dateOfBirth),
       "Lead Type": LEAD_TYPE_LABELS[lead.leadType],
       Status: LEAD_STATUS_LABELS[lead.status],
-      "Assigned At": lead.assignedAt ? format(lead.assignedAt, "MM/dd/yyyy") : "",
+      "Assigned At": lead.assignedAt
+        ? format(lead.assignedAt, "MM/dd/yyyy")
+        : "",
       Email: lead.email ?? "",
       Address: lead.address ?? "",
       Zip: lead.zip ?? "",
@@ -43,7 +51,8 @@ export async function GET(req: NextRequest) {
       "Marital Status": lead.maritalStatus ?? "",
       Height: lead.height ?? "",
       Weight: lead.weight ?? "",
-      "Tobacco Use": lead.tobaccoUse == null ? "" : lead.tobaccoUse ? "Yes" : "No",
+      "Tobacco Use":
+        lead.tobaccoUse == null ? "" : lead.tobaccoUse ? "Yes" : "No",
       Occupation: lead.occupation ?? "",
       Income: lead.income ?? "",
       "Existing Coverage": lead.existingCoverage ?? "",

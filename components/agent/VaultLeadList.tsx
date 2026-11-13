@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -12,6 +13,7 @@ import { formatDob } from "@/lib/formatDob";
 
 type Lead = {
   id: string;
+  leadNumber: string | null;
   firstName: string;
   lastName: string;
   phone: string;
@@ -19,6 +21,7 @@ type Lead = {
   dateOfBirth: string | null;
   status: LeadStatus;
   leadType: LeadType;
+  createdAt: string;
 };
 
 type StateCount = { state: string; count: number };
@@ -55,7 +58,9 @@ export function VaultLeadList() {
     loadLeads();
   }, [loadLeads]);
 
-  const filterQuery = stateFilter ? new URLSearchParams({ state: stateFilter }).toString() : "";
+  const filterQuery = stateFilter
+    ? new URLSearchParams({ state: stateFilter }).toString()
+    : "";
 
   return (
     <div>
@@ -85,37 +90,58 @@ export function VaultLeadList() {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="font-condensed border-b border-border text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
+              <th className="px-4 py-3">Lead #</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Phone</th>
               <th className="px-4 py-3">State</th>
               <th className="px-4 py-3">DOB</th>
               <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Date Added</th>
               <th className="px-4 py-3">Status</th>
             </tr>
           </thead>
           <tbody>
             {!loading && leads.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-muted">
+                <td colSpan={8} className="px-4 py-6 text-center text-muted">
                   No vault leads match this filter.
                 </td>
               </tr>
             )}
             {leads.map((lead) => (
-              <tr key={lead.id} className="border-b border-border/60 hover:bg-surface2">
+              <tr
+                key={lead.id}
+                className="border-b border-border/60 hover:bg-surface2"
+              >
+                <td className="px-4 py-3 font-mono text-xs text-muted">
+                  {lead.leadNumber ?? "—"}
+                </td>
                 <td className="px-4 py-3">
-                  <Link href={`/agent/vault/${lead.id}?${filterQuery}`} className="text-white hover:metal-copper-text">
+                  <Link
+                    href={`/agent/vault/${lead.id}?${filterQuery}`}
+                    className="text-white hover:metal-copper-text"
+                  >
                     {lead.firstName} {lead.lastName}
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-muted">
-                  <a href={telHref(lead.phone)} className="hover:metal-copper-text hover:underline">
+                  <a
+                    href={telHref(lead.phone)}
+                    className="hover:metal-copper-text hover:underline"
+                  >
                     {formatPhone(lead.phone)}
                   </a>
                 </td>
                 <td className="px-4 py-3 text-muted">{lead.state}</td>
-                <td className="px-4 py-3 text-muted">{formatDob(lead.dateOfBirth)}</td>
-                <td className="px-4 py-3 text-muted">{LEAD_TYPE_LABELS[lead.leadType]}</td>
+                <td className="px-4 py-3 text-muted">
+                  {formatDob(lead.dateOfBirth)}
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  {LEAD_TYPE_LABELS[lead.leadType]}
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  {format(new Date(lead.createdAt), "MM/dd/yyyy")}
+                </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={lead.status} />
                 </td>
@@ -126,11 +152,19 @@ export function VaultLeadList() {
       </div>
 
       <div className="mt-4 flex items-center gap-3">
-        <Button variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+        <Button
+          variant="ghost"
+          disabled={page <= 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
           Previous
         </Button>
         <span className="text-sm text-muted">Page {page}</span>
-        <Button variant="ghost" disabled={leads.length < 50} onClick={() => setPage((p) => p + 1)}>
+        <Button
+          variant="ghost"
+          disabled={leads.length < 50}
+          onClick={() => setPage((p) => p + 1)}
+        >
           Next
         </Button>
       </div>

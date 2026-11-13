@@ -20,7 +20,11 @@ export default async function VaultLeadDetailPage({
   const agent = session?.user.id
     ? await db.user.findUnique({
         where: { id: session.user.id },
-        select: { createdAt: true, vaultEnabled: true, vaultAccessStartedAt: true },
+        select: {
+          createdAt: true,
+          vaultEnabled: true,
+          vaultAccessStartedAt: true,
+        },
       })
     : null;
 
@@ -33,8 +37,14 @@ export default async function VaultLeadDetailPage({
   const lead = await db.lead.findFirst({
     where: { id, isVaulted: true },
     include: {
-      notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
-      contactLogEntries: { orderBy: { createdAt: "desc" }, include: { agent: { select: { name: true } } } },
+      notes: {
+        orderBy: { createdAt: "desc" },
+        include: { author: { select: { name: true } } },
+      },
+      contactLogEntries: {
+        orderBy: { createdAt: "desc" },
+        include: { agent: { select: { name: true } } },
+      },
     },
   });
 
@@ -42,7 +52,10 @@ export default async function VaultLeadDetailPage({
     notFound();
   }
 
-  const where = { isVaulted: true, ...(filters.state ? { state: filters.state } : {}) };
+  const where = {
+    isVaulted: true,
+    ...(filters.state ? { state: filters.state } : {}),
+  };
   // The vault can run to 100K+ leads, so Prev/Next and the "N of total"
   // counter are computed with targeted indexed queries (see the
   // isVaulted+createdAt index) rather than fetching every sibling id and
@@ -50,30 +63,53 @@ export default async function VaultLeadDetailPage({
   // fetch on every single Prev/Next click.
   const earlierWhere = {
     ...where,
-    OR: [{ createdAt: { lt: lead.createdAt } }, { createdAt: lead.createdAt, id: { lt: lead.id } }],
+    OR: [
+      { createdAt: { lt: lead.createdAt } },
+      { createdAt: lead.createdAt, id: { lt: lead.id } },
+    ],
   };
   const laterWhere = {
     ...where,
-    OR: [{ createdAt: { gt: lead.createdAt } }, { createdAt: lead.createdAt, id: { gt: lead.id } }],
+    OR: [
+      { createdAt: { gt: lead.createdAt } },
+      { createdAt: lead.createdAt, id: { gt: lead.id } },
+    ],
   };
   const [total, rank, prevLead, nextLead] = await Promise.all([
     db.lead.count({ where }),
     db.lead.count({ where: earlierWhere }),
-    db.lead.findFirst({ where: earlierWhere, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true } }),
-    db.lead.findFirst({ where: laterWhere, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true } }),
+    db.lead.findFirst({
+      where: earlierWhere,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { id: true },
+    }),
+    db.lead.findFirst({
+      where: laterWhere,
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { id: true },
+    }),
   ]);
   const prevId = prevLead?.id ?? null;
   const nextId = nextLead?.id ?? null;
 
-  const filterQuery = new URLSearchParams(filters.state ? { state: filters.state } : {}).toString();
+  const filterQuery = new URLSearchParams(
+    filters.state ? { state: filters.state } : {},
+  ).toString();
 
   return (
     <LeadDetailPanel
       lead={{
         ...lead,
         dateOfBirth: lead.dateOfBirth?.toISOString() ?? null,
-        notes: lead.notes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString() })),
-        contactLogEntries: lead.contactLogEntries.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
+        createdAt: lead.createdAt.toISOString(),
+        notes: lead.notes.map((n) => ({
+          ...n,
+          createdAt: n.createdAt.toISOString(),
+        })),
+        contactLogEntries: lead.contactLogEntries.map((c) => ({
+          ...c,
+          createdAt: c.createdAt.toISOString(),
+        })),
       }}
       navigation={{
         prevId,
