@@ -8,7 +8,7 @@ import { Landmark, Send } from "lucide-react";
 // — the whole point being this never grows, shrinks, or changes color the
 // way the header's "Ask Gemini" box (and this component's own earlier
 // versions) did.
-const BUBBLE_WIDTH = "w-[178px]";
+const BUBBLE_WIDTH = "w-[188px]";
 
 /**
  * A pill button (matching People Search/KPI Tracker/etc. here on
@@ -85,7 +85,7 @@ export function RoutingNumberButton() {
           className="font-condensed flex w-full items-center justify-center gap-2 rounded-full border border-border px-2.5 py-2 text-[13px] font-bold tracking-[0.08em] text-foreground uppercase transition-colors hover:border-copper-dim-gradient hover:text-white"
         >
           <Landmark className="h-4 w-4" />
-          Routing Number Genie
+          Routing Number Lookup
         </button>
       ) : (
         <form onSubmit={ask} className="relative">
