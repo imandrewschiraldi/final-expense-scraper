@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { PageHeading } from "@/components/portal/PageHeading";
 import { PeopleSearchButton } from "@/components/portal/PeopleSearchButton";
+import { RoutingNumberButton } from "@/components/portal/RoutingNumberButton";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
 import { BonusVolumeCard } from "@/components/portal/overview/BonusVolumeCard";
@@ -282,6 +283,7 @@ export function OverviewClient() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <PeopleSearchButton />
+          <RoutingNumberButton />
           {isAdmin && data && (
             <button
               type="button"
