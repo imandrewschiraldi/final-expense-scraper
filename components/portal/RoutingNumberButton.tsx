@@ -8,7 +8,7 @@ import { Landmark, Send } from "lucide-react";
 // — the whole point being this never grows, shrinks, or changes color the
 // way the header's "Ask Gemini" box (and this component's own earlier
 // versions) did.
-const BUBBLE_WIDTH = "w-[232px]";
+const BUBBLE_WIDTH = "w-[178px]";
 
 /**
  * A pill button (matching People Search/KPI Tracker/etc. here on
@@ -82,7 +82,7 @@ export function RoutingNumberButton() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="font-condensed flex w-full items-center justify-center gap-2 rounded-full border border-border px-4 py-2 text-[13px] font-bold tracking-[0.08em] text-foreground uppercase transition-colors hover:border-copper-dim-gradient hover:text-white"
+          className="font-condensed flex w-full items-center justify-center gap-2 rounded-full border border-border px-2.5 py-2 text-[13px] font-bold tracking-[0.08em] text-foreground uppercase transition-colors hover:border-copper-dim-gradient hover:text-white"
         >
           <Landmark className="h-4 w-4" />
           Routing Number Genie
@@ -95,7 +95,7 @@ export function RoutingNumberButton() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Bank + city, state"
-            className="w-full rounded-full border border-border bg-transparent py-2 pr-8 pl-4 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+            className="w-full rounded-full border border-border bg-transparent py-2 pr-8 pl-2.5 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
           />
           <button
             type="submit"
