@@ -94,7 +94,7 @@ export function RoutingNumberButton() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Bank + city/ZIP"
+            placeholder="Bank + city, state"
             className="w-full rounded-full border border-border bg-transparent py-2 pr-8 pl-4 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
           />
           <button
