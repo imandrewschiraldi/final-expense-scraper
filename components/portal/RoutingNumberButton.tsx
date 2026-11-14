@@ -109,12 +109,14 @@ export function RoutingNumberButton() {
         </form>
       )}
       {(loading || answer || error) && (
-        <div className="border-copper-dim-gradient absolute top-full left-0 z-20 mt-2 w-72 rounded-[10px] bg-surface p-3 text-sm shadow-lg">
-          {loading && <p className="text-muted">Looking it up…</p>}
-          {error && <p className="text-red-light">{error}</p>}
-          {answer && (
-            <p className="whitespace-pre-wrap text-foreground">{answer}</p>
-          )}
+        <div className="absolute top-full left-1/2 z-20 mt-2 w-72 -translate-x-1/2">
+          <div className="border-copper-dim-gradient rounded-[10px] bg-surface p-3 text-sm shadow-lg">
+            {loading && <p className="text-muted">Looking it up…</p>}
+            {error && <p className="text-red-light">{error}</p>}
+            {answer && (
+              <p className="whitespace-pre-wrap text-foreground">{answer}</p>
+            )}
+          </div>
         </div>
       )}
     </div>
