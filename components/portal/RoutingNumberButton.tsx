@@ -109,7 +109,7 @@ export function RoutingNumberButton() {
         </form>
       )}
       {(loading || answer || error) && (
-        <div className="absolute top-full left-1/2 z-20 mt-2 w-72 -translate-x-1/2">
+        <div className="absolute top-full right-0 z-20 mt-2 w-72">
           <div className="border-copper-dim-gradient rounded-[10px] bg-surface p-3 text-sm shadow-lg">
             {loading && <p className="text-muted">Looking it up…</p>}
             {error && <p className="text-red-light">{error}</p>}
