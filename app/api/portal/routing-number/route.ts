@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
+import { zipToState } from "@/lib/zipToState";
 
 // Same Gemini + live-search pattern as /api/portal/ask-ai (see that file for
 // why Firecrawl is primary and LinkUp is the fallback) — reused here rather
@@ -100,6 +101,40 @@ async function liveSearch(query: string): Promise<LiveSearchResult> {
   return null;
 }
 
+// Pages that list routing numbers are indexed under a city/state name, not
+// raw ZIP digits, so a ZIP-only query often finds nothing even for a big
+// bank branch that's well documented under its city. Try the query as
+// typed first, then — if it contains a 5-digit ZIP — retry with the ZIP
+// swapped for its state name/abbreviation and also with the state added
+// alongside it, so the search has a real shot at matching indexed text.
+// "ABA routing number" (not "bank routing number") also covers credit
+// unions, which aren't "banks" but still have routing numbers.
+function buildSearchQueries(query: string): string[] {
+  const queries = [`${query} ABA routing number`];
+  const zipMatch = query.match(/\b(\d{5})(?:-\d{4})?\b/);
+  if (zipMatch) {
+    const state = zipToState(zipMatch[1]);
+    if (state) {
+      const zip = zipMatch[0];
+      queries.push(
+        `${query.replace(zip, `${state.name} (${state.abbr})`)} ABA routing number`,
+      );
+      queries.push(`${query} ${state.name} ABA routing number`);
+    }
+  }
+  return queries;
+}
+
+async function liveSearchWithFallbacks(
+  queries: string[],
+): Promise<LiveSearchResult> {
+  for (const query of queries) {
+    const result = await liveSearch(query);
+    if (result) return result;
+  }
+  return null;
+}
+
 const SYSTEM_INSTRUCTION =
   "You look up ABA bank routing numbers for an insurance agency's internal sales platform, given a bank name plus a city, state, or ZIP. " +
   "You're given a live web search result for the query — base your answer on that, not on memory alone. " +
@@ -183,7 +218,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: OFF_TOPIC_ERROR }, { status: 400 });
   }
 
-  const searchResult = await liveSearch(`${query} bank routing number`);
+  const searchResult = await liveSearchWithFallbacks(buildSearchQueries(query));
   if (!searchResult) {
     return NextResponse.json({
       error:
