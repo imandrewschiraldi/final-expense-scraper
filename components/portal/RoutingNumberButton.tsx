@@ -1,64 +1,39 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Landmark, Send, X } from "lucide-react";
-
-// The agency's own Custom GPT, tuned specifically for this lookup — not
-// callable from here (no API for a ChatGPT-builder GPT, and it's gated to
-// whoever's signed into chatgpt.com with access to it), so it's offered as
-// a direct link alongside the built-in answer rather than embedded.
-const CUSTOM_GPT_URL =
-  "https://chatgpt.com/g/g-68e875684a288191b309977ba96716f3-routing-number-genie";
+import { useState } from "react";
+import { Landmark } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 /**
- * Same interaction shape as the header's "Ask Gemini" box — a single free
- * text input, type and hit send, answer appears below — but triggered from
- * a pill button (matching People Search/KPI Tracker/etc. here on Overview)
- * instead of always being visible, since this is a narrow one-off lookup
- * rather than something agents reach for constantly.
- *
- * One-shot, not a conversation: submitting again just replaces the answer
- * below instead of threading a follow-up, since "what's the routing number
- * for X" has no natural follow-up question the way an open Q&A box does.
+ * A fixed-size pill button (matching People Search/KPI Tracker/etc. here
+ * on Overview) that opens a popup to look up a bank's routing number —
+ * the button itself never changes size or color, unlike the header's
+ * "Ask Gemini" box this was first modeled on. Two separate fields (bank
+ * name, city/ZIP) rather than one free-text box so there's no ambiguity
+ * about what goes where. No link out to the agency's own Custom GPT by
+ * design — this is meant to be the only way agents look this up, not a
+ * detour to somewhere else.
  */
 export function RoutingNumberButton() {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    inputRef.current?.focus();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        close();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
-
-  function close() {
+  function handleClose() {
     setOpen(false);
-    setQuery("");
+    setBankName("");
+    setLocation("");
     setAnswer(null);
     setError(null);
   }
 
-  async function ask(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim() || loading) return;
+  async function ask() {
+    if (!bankName.trim() || !location.trim() || loading) return;
     setLoading(true);
     setAnswer(null);
     setError(null);
@@ -66,7 +41,9 @@ export function RoutingNumberButton() {
       const res = await fetch("/api/portal/routing-number", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.trim() }),
+        body: JSON.stringify({
+          query: `${bankName.trim()}, ${location.trim()}`,
+        }),
       });
       const data = await res.json();
       if (res.ok && data.answer) {
@@ -81,8 +58,8 @@ export function RoutingNumberButton() {
     }
   }
 
-  if (!open) {
-    return (
+  return (
+    <>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -91,66 +68,58 @@ export function RoutingNumberButton() {
         <Landmark className="h-4 w-4" />
         Routing Number Genie
       </button>
-    );
-  }
 
-  return (
-    <div ref={containerRef} className="relative w-full max-w-[290px]">
-      <form onSubmit={ask}>
-        <Landmark className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Bank name + city or ZIP..."
-          className="w-full rounded-full border border-border bg-input-bg py-2 pr-16 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
-        />
-        <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
-          <button
-            type="button"
-            onClick={close}
-            aria-label="Close"
-            title="Close"
-            className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <button
-            type="submit"
-            disabled={!query.trim() || loading}
-            aria-label="Search"
-            title="Search"
-            className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
-          >
-            <Send className="h-4 w-4" />
-          </button>
-        </div>
-      </form>
-      <a
-        href={CUSTOM_GPT_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted hover:text-foreground hover:underline"
+      <Modal
+        open={open}
+        onClose={handleClose}
+        title="Routing Number Genie"
+        maxWidthClassName="max-w-md"
       >
-        <ExternalLink className="h-3 w-3" />
-        Or open the Routing Number Genie GPT directly
-      </a>
-      {(loading || answer || error) && (
-        <div className="absolute top-full left-0 z-20 mt-2 w-full min-w-[320px] rounded-[10px] border border-border bg-surface p-3 text-sm shadow-lg">
-          {loading && <p className="text-muted">Looking it up…</p>}
-          {error && <p className="text-red-light">{error}</p>}
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Looks up a bank&apos;s routing number from a live search — always
+            verify it with the bank directly before using it for a payment or
+            draft.
+          </p>
+
+          <div>
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              Bank Name
+            </label>
+            <Input
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              placeholder="e.g. Wells Fargo"
+            />
+          </div>
+          <div>
+            <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+              City or ZIP
+            </label>
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Houston, TX"
+            />
+          </div>
+
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={ask}
+            disabled={!bankName.trim() || !location.trim() || loading}
+          >
+            {loading ? "Looking it up..." : "Search"}
+          </Button>
+
+          {error && <p className="text-sm text-red-light">{error}</p>}
           {answer && (
-            <>
+            <div className="rounded-[10px] border border-border bg-surface2 p-3 text-sm">
               <p className="whitespace-pre-wrap text-foreground">{answer}</p>
-              <p className="mt-2 text-xs text-muted">
-                AI-generated from a live search — verify directly with the bank
-                before using this for a payment or draft.
-              </p>
-            </>
+            </div>
           )}
         </div>
-      )}
-    </div>
+      </Modal>
+    </>
   );
 }
