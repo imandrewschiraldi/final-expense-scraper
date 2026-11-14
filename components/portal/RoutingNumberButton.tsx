@@ -109,17 +109,11 @@ export function RoutingNumberButton() {
         </form>
       )}
       {(loading || answer || error) && (
-        <div className="absolute top-full left-0 z-20 mt-2 w-72 rounded-[10px] border border-border bg-surface p-3 text-sm shadow-lg">
+        <div className="border-copper-dim-gradient absolute top-full left-0 z-20 mt-2 w-72 rounded-[10px] bg-surface p-3 text-sm shadow-lg">
           {loading && <p className="text-muted">Looking it up…</p>}
           {error && <p className="text-red-light">{error}</p>}
           {answer && (
-            <>
-              <p className="whitespace-pre-wrap text-foreground">{answer}</p>
-              <p className="mt-2 text-xs text-muted">
-                AI-generated from a live search — verify directly with the bank
-                before using this for a payment or draft.
-              </p>
-            </>
+            <p className="whitespace-pre-wrap text-foreground">{answer}</p>
           )}
         </div>
       )}
