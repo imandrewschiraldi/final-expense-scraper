@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Landmark, Send, X } from "lucide-react";
+import { ExternalLink, Landmark, Send, X } from "lucide-react";
+
+// The agency's own Custom GPT, tuned specifically for this lookup — not
+// callable from here (no API for a ChatGPT-builder GPT, and it's gated to
+// whoever's signed into chatgpt.com with access to it), so it's offered as
+// a direct link alongside the built-in answer rather than embedded.
+const CUSTOM_GPT_URL =
+  "https://chatgpt.com/g/g-68e875684a288191b309977ba96716f3-routing-number-genie";
 
 /**
  * Same interaction shape as the header's "Ask Gemini" box — a single free
@@ -120,6 +127,15 @@ export function RoutingNumberButton() {
           </button>
         </div>
       </form>
+      <a
+        href={CUSTOM_GPT_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted hover:text-foreground hover:underline"
+      >
+        <ExternalLink className="h-3 w-3" />
+        Or open the Routing Number Genie GPT directly
+      </a>
       {(loading || answer || error) && (
         <div className="absolute top-full left-0 z-20 mt-2 w-full min-w-[320px] rounded-[10px] border border-border bg-surface p-3 text-sm shadow-lg">
           {loading && <p className="text-muted">Looking it up…</p>}
