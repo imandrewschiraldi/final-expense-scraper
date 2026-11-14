@@ -104,7 +104,7 @@ export function RoutingNumberButton() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Bank name + city or ZIP..."
-          className="w-full rounded-lg border border-border bg-input-bg py-2 pr-16 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+          className="w-full rounded-full border border-border bg-input-bg py-2 pr-16 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
         />
         <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
           <button
