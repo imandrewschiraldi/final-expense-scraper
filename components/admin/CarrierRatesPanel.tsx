@@ -193,12 +193,16 @@ function CarrierName({
   return (
     <div className="group flex items-center gap-2">
       {logoFile && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/carrier-logos/${logoFile}`}
-          alt=""
-          className="h-5 w-auto object-contain"
-        />
+        // White-only artwork needs a fixed dark backdrop to stay visible
+        // on the card's theme-dependent (light-in-light-mode) background.
+        <span className="inline-flex items-center rounded bg-black/85 px-1.5 py-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/carrier-logos/${logoFile}`}
+            alt=""
+            className="h-5 w-auto object-contain"
+          />
+        </span>
       )}
       <CardTitle>{carrier.name}</CardTitle>
       <button

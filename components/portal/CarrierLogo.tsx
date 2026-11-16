@@ -13,9 +13,16 @@ import { getCarrierLogoFile } from "@/lib/carrierLogos";
 export function CarrierLogo({
   name,
   className,
+  chip = false,
 }: {
   name: string;
   className?: string;
+  /** Every logo file is white-only artwork, so it disappears when it lands
+   * directly on a theme-dependent light background (a table row, a plain
+   * sentence). Set this wherever the logo isn't already sitting on a fixed
+   * dark/copper surface, to wrap it in one so it stays visible in light
+   * mode too. */
+  chip?: boolean;
 }) {
   const file = getCarrierLogoFile(name);
   const [failed, setFailed] = useState(false);
@@ -26,7 +33,7 @@ export function CarrierLogo({
 
   // Unknown/varying aspect ratios per carrier, plus the onError fallback
   // above, don't fit next/image's required-dimensions model.
-  return (
+  const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`/carrier-logos/${file}`}
@@ -35,5 +42,13 @@ export function CarrierLogo({
       className={className}
       onError={() => setFailed(true)}
     />
+  );
+
+  if (!chip) return img;
+
+  return (
+    <span className="inline-flex translate-y-[-1px] items-center rounded bg-black/85 px-1.5 py-1 align-middle">
+      {img}
+    </span>
   );
 }

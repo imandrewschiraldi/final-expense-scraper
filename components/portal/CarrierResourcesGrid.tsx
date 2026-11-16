@@ -78,19 +78,22 @@ export function CarrierResourcesGrid() {
             isTrailingOdd(i) && "lg:col-span-2",
           )}
         >
-          <h2 className="font-montserrat mb-3 flex items-center justify-center text-center text-2xl font-black tracking-wide text-white uppercase">
-            <CarrierLogo
-              name={carrier.name}
-              className="h-10 w-auto object-contain"
-            />
-          </h2>
-
           <div
             className={cn(
               "metal-copper-card rounded-lg p-5 transition-shadow",
               highlighted === carrier.id && "ring-2 ring-white",
             )}
           >
+            {/* The logo artwork is white, so it needs the copper card's
+                fixed (theme-independent) background behind it — sitting it
+                on the page background instead washes it out in light mode. */}
+            <h2 className="font-montserrat mb-4 flex items-center justify-center text-center text-2xl font-black tracking-wide text-white uppercase">
+              <CarrierLogo
+                name={carrier.name}
+                className="h-10 w-auto object-contain"
+              />
+            </h2>
+
             {carrier.contacts.length > 0 && (
               <div className="mb-4 space-y-2 text-center">
                 {carrier.contacts.map((contact) => (

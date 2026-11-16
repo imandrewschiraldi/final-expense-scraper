@@ -210,6 +210,7 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                       <CarrierLogo
                         name={p.carrier}
                         className="h-5 w-auto object-contain"
+                        chip
                       />
                     </td>
                     <td className="py-2 pr-4 text-muted">{p.product ?? "—"}</td>

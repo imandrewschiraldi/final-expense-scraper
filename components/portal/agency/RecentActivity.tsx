@@ -35,7 +35,8 @@ export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
                   <span className="text-muted">submitted</span>{" "}
                   <CarrierLogo
                     name={item.carrier}
-                    className="inline-block h-4 w-auto object-contain align-[-3px]"
+                    className="inline-block h-4 w-auto object-contain"
+                    chip
                   />
                   {item.product ? ` · ${item.product}` : ""}
                 </p>
