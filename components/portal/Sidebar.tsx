@@ -305,6 +305,7 @@ function NavLeaf({
   active,
   showDot,
   onNavigate,
+  copper,
 }: {
   href: string;
   label: string;
@@ -313,6 +314,12 @@ function NavLeaf({
   active: boolean;
   showDot: boolean;
   onNavigate?: () => void;
+  // The copper-sidebar beta layout (see AppShell/ProfilePanel) recolors the
+  // whole panel copper, so the usual copper-on-black active/hover treatment
+  // (and the copper accent bar/dot, invisible against its own background)
+  // inverts to white-on-copper instead — independent of light/dark mode,
+  // which only affects the main content area, never the sidebar itself.
+  copper: boolean;
 }) {
   return (
     <Link
@@ -322,27 +329,50 @@ function NavLeaf({
       className={cn(
         "font-condensed relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-all duration-200",
         collapsed && "justify-center px-0",
-        active
-          ? "bg-copper-gradient-12 text-[var(--copper-metal)] shadow-[inset_0_0_0_1px_rgba(172,90,42,0.25)]"
-          : "text-muted hover:bg-copper-gradient-08 hover:text-[var(--copper-metal)] hover:glow-copper-gradient",
+        copper
+          ? active
+            ? "bg-white/15 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.22)]"
+            : "text-white/70 hover:bg-white/10 hover:text-white"
+          : active
+            ? "bg-copper-gradient-12 text-[var(--copper-metal)] shadow-[inset_0_0_0_1px_rgba(172,90,42,0.25)]"
+            : "text-muted hover:bg-copper-gradient-08 hover:text-[var(--copper-metal)] hover:glow-copper-gradient",
       )}
     >
       {active && (
-        <span className="metal-copper-line absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r" />
+        <span
+          className={cn(
+            "absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r",
+            copper ? "bg-white" : "metal-copper-line",
+          )}
+        />
       )}
       <span className="relative shrink-0">
         <Icon className="h-4.5 w-4.5" />
         {showDot && collapsed && (
-          <span className="metal-copper-surface absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-surface" />
+          <span
+            className={cn(
+              "absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2",
+              copper
+                ? "bg-white ring-[#6b3215]"
+                : "metal-copper-surface ring-surface",
+            )}
+          />
         )}
       </span>
       {!collapsed && (
-        <span className={cn("truncate", active && "metal-copper-text")}>
+        <span
+          className={cn("truncate", active && !copper && "metal-copper-text")}
+        >
           {label}
         </span>
       )}
       {showDot && !collapsed && (
-        <span className="metal-copper-surface ml-auto h-2 w-2 shrink-0 rounded-full" />
+        <span
+          className={cn(
+            "ml-auto h-2 w-2 shrink-0 rounded-full",
+            copper ? "bg-white" : "metal-copper-surface",
+          )}
+        />
       )}
     </Link>
   );
@@ -380,6 +410,7 @@ function SidebarSearch({
   value,
   onChange,
   navItems,
+  copper,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -387,6 +418,7 @@ function SidebarSearch({
   // below) — the dropdown does its own "Pages" match independently of the
   // existing inline nav filter, which keeps working exactly as it did.
   navItems: NavItem[];
+  copper: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -466,7 +498,12 @@ function SidebarSearch({
       data-tour="sidebar-search"
       className="relative mb-3 px-0.5"
     >
-      <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+      <Search
+        className={cn(
+          "pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2",
+          copper ? "text-white/60" : "text-muted",
+        )}
+      />
       <input
         ref={inputRef}
         type="text"
@@ -486,9 +523,19 @@ function SidebarSearch({
           }
         }}
         placeholder="Search everything..."
-        className="w-full rounded-lg border border-border bg-input-bg py-1.5 pr-9 pl-8 text-[13px] text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none"
+        className={cn(
+          "w-full rounded-lg border py-1.5 pr-9 pl-8 text-[13px] focus:outline-none",
+          copper
+            ? "border-white/20 bg-black/20 text-white placeholder:text-white/55 focus:border-white/40"
+            : "border-border bg-input-bg text-foreground placeholder:text-muted focus:border-copper-dim-gradient",
+        )}
       />
-      <kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1 py-0.5 text-[10px] text-muted">
+      <kbd
+        className={cn(
+          "pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border px-1 py-0.5 text-[10px]",
+          copper ? "border-white/20 text-white/60" : "border-border text-muted",
+        )}
+      >
         ⌘K
       </kbd>
 
@@ -567,12 +614,14 @@ function NavLinks({
   collapsed,
   onNavigate,
   chatUnread,
+  copper,
 }: {
   items: NavItem[];
   pathname: string;
   collapsed: boolean;
   onNavigate?: () => void;
   chatUnread?: boolean;
+  copper: boolean;
 }) {
   return (
     <>
@@ -588,7 +637,12 @@ function NavLinks({
         return (
           <div key={item.href}>
             {showDivider && (
-              <div className="mx-1 my-1 border-t border-sidebar-divider" />
+              <div
+                className={cn(
+                  "mx-1 my-1 border-t",
+                  copper ? "border-white/[0.14]" : "border-sidebar-divider",
+                )}
+              />
             )}
             <NavLeaf
               href={item.href}
@@ -598,6 +652,7 @@ function NavLinks({
               active={active}
               showDot={showDot}
               onNavigate={onNavigate}
+              copper={copper}
             />
           </div>
         );
@@ -612,15 +667,22 @@ function SidebarFooter({
   name,
   role,
   onNavigate,
+  copper,
 }: {
   collapsed: boolean;
   profile: Profile | null;
   name: string;
   role: Role;
   onNavigate?: () => void;
+  copper: boolean;
 }) {
   return (
-    <div className="shrink-0 border-t border-border px-2.5 py-3">
+    <div
+      className={cn(
+        "shrink-0 border-t px-2.5 py-3",
+        copper ? "border-white/20" : "border-border",
+      )}
+    >
       <ProfileMenu
         profile={profile}
         name={name}
@@ -644,10 +706,11 @@ export function Sidebar({
   name: string;
   mobileOpen: boolean;
   onCloseMobile: () => void;
-  // Admin-only beta toggle (see AppShell) — when on, main renders as a
-  // rounded overlay card instead of a flush panel, so the sidebar's own
-  // border and copper-line segment (which existed to meet main's own
-  // hard edge) no longer have anything to line up against.
+  // Admin-only beta toggle (see AppShell/ProfilePanel's "New Page Layout")
+  // — when on, the sidebar itself recolors to a solid copper panel (white
+  // nav text/icons/accents instead of copper-on-black) rather than
+  // changing the main content area's shape. Independent of light/dark
+  // mode, which only ever affects the main content area.
   cardLayoutEnabled?: boolean;
 }) {
   const pathname = usePathname();
@@ -743,7 +806,10 @@ export function Sidebar({
           the (now-hidden) top bar's. */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col bg-gradient-to-b from-surface to-background transition-transform duration-300 ease-out lg:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col transition-transform duration-300 ease-out lg:hidden",
+          cardLayoutEnabled
+            ? "bg-[linear-gradient(165deg,#8a431e_0%,#6b3215_55%,#44200f_100%)]"
+            : "bg-gradient-to-b from-surface to-background",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -761,7 +827,10 @@ export function Sidebar({
               alt="Tier 1 Financial"
               width={1560}
               height={558}
-              className="h-9 w-auto"
+              className={cn(
+                "h-9 w-auto",
+                cardLayoutEnabled && "brightness-0 invert",
+              )}
               priority
             />
           </Link>
@@ -769,13 +838,23 @@ export function Sidebar({
             type="button"
             onClick={onCloseMobile}
             aria-label="Close menu"
-            className="text-muted transition-colors hover:text-foreground"
+            className={cn(
+              "transition-colors",
+              cardLayoutEnabled
+                ? "text-white/70 hover:text-white"
+                : "text-muted hover:text-foreground",
+            )}
           >
             <X className="h-5 w-5" />
           </button>
         </div>
         <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
-          <SidebarSearch value={search} onChange={setSearch} navItems={items} />
+          <SidebarSearch
+            value={search}
+            onChange={setSearch}
+            navItems={items}
+            copper={cardLayoutEnabled}
+          />
           <div className="flex flex-col gap-1">
             <NavLinks
               items={visibleItems}
@@ -783,6 +862,7 @@ export function Sidebar({
               collapsed={false}
               onNavigate={onCloseMobile}
               chatUnread={chatUnread}
+              copper={cardLayoutEnabled}
             />
           </div>
         </nav>
@@ -792,6 +872,7 @@ export function Sidebar({
           name={name}
           role={role}
           onNavigate={onCloseMobile}
+          copper={cardLayoutEnabled}
         />
       </aside>
 
@@ -799,11 +880,10 @@ export function Sidebar({
       <aside
         data-tour-ui="sidebar"
         className={cn(
-          // Was a surface-to-background gradient — read as a grey cast at
-          // the top against the page's solid black, in both this layout
-          // and the overlay-card one. Solid black everywhere now.
-          "sticky top-0 hidden h-screen shrink-0 flex-col bg-background transition-all duration-300 ease-out lg:flex",
-          !cardLayoutEnabled && "border-r border-white/[0.06]",
+          "sticky top-0 hidden h-screen shrink-0 flex-col transition-all duration-300 ease-out lg:flex",
+          cardLayoutEnabled
+            ? "bg-[linear-gradient(165deg,#8a431e_0%,#6b3215_55%,#44200f_100%)]"
+            : "border-r border-white/[0.06] bg-background",
           collapsed ? "w-[68px]" : "w-60",
         )}
       >
@@ -821,7 +901,10 @@ export function Sidebar({
                 alt="Tier 1 Financial"
                 width={950}
                 height={1112}
-                className="h-auto w-8"
+                className={cn(
+                  "h-auto w-8",
+                  cardLayoutEnabled && "brightness-0 invert",
+                )}
                 priority
               />
             ) : (
@@ -830,7 +913,10 @@ export function Sidebar({
                 alt="Tier 1 Financial"
                 width={1560}
                 height={558}
-                className="h-10 w-auto"
+                className={cn(
+                  "h-10 w-auto",
+                  cardLayoutEnabled && "brightness-0 invert",
+                )}
                 priority
               />
             )}
@@ -851,8 +937,15 @@ export function Sidebar({
                     : "Use wide layout for large monitors"
                 }
                 className={cn(
-                  "transition-colors hover:text-foreground",
-                  wide ? "text-[var(--copper-metal)]" : "text-muted",
+                  "transition-colors",
+                  cardLayoutEnabled
+                    ? wide
+                      ? "text-white hover:text-white"
+                      : "text-white/60 hover:text-white"
+                    : cn(
+                        "hover:text-foreground",
+                        wide ? "text-[var(--copper-metal)]" : "text-muted",
+                      ),
                 )}
               >
                 {wide ? (
@@ -865,7 +958,12 @@ export function Sidebar({
                 type="button"
                 onClick={toggleCollapsed}
                 aria-label="Collapse sidebar"
-                className="text-muted transition-colors hover:text-foreground"
+                className={cn(
+                  "transition-colors",
+                  cardLayoutEnabled
+                    ? "text-white/60 hover:text-white"
+                    : "text-muted hover:text-foreground",
+                )}
               >
                 <ChevronsLeft className="h-4.5 w-4.5" />
               </button>
@@ -876,19 +974,27 @@ export function Sidebar({
             border on it — matches HeaderDivider's own placement exactly
             (a 2px bar starting at top: HEADER_HEIGHT), so the two lines
             land pixel-aligned instead of a border-box border sitting 2px
-            higher, inside the row itself. Dropped in the overlay-card
-            layout: main's own line is confined inside that card now, with
-            nothing at this same height in the sidebar to line up with. */}
-        {!cardLayoutEnabled && (
-          <div className="metal-copper-line h-0.5 shrink-0" />
-        )}
+            higher, inside the row itself. Dropped in copper mode: a copper
+            accent line has no contrast against the sidebar's own copper
+            background, so a plain dark divider takes its place instead. */}
+        <div
+          className={cn(
+            "h-0.5 shrink-0",
+            cardLayoutEnabled ? "bg-black/25" : "metal-copper-line",
+          )}
+        />
 
         {collapsed && (
           <button
             type="button"
             onClick={toggleCollapsed}
             aria-label="Expand sidebar"
-            className="flex shrink-0 items-center justify-center border-b border-border py-2 text-muted transition-colors hover:text-foreground"
+            className={cn(
+              "flex shrink-0 items-center justify-center border-b py-2 transition-colors",
+              cardLayoutEnabled
+                ? "border-white/20 text-white/60 hover:text-white"
+                : "border-border text-muted hover:text-foreground",
+            )}
           >
             <ChevronsRight className="h-4.5 w-4.5" />
           </button>
@@ -900,6 +1006,7 @@ export function Sidebar({
               value={search}
               onChange={setSearch}
               navItems={items}
+              copper={cardLayoutEnabled}
             />
           )}
           <div className="flex flex-col gap-1">
@@ -908,6 +1015,7 @@ export function Sidebar({
               pathname={pathname}
               collapsed={collapsed}
               chatUnread={chatUnread}
+              copper={cardLayoutEnabled}
             />
           </div>
         </nav>
@@ -917,6 +1025,7 @@ export function Sidebar({
           profile={profile}
           name={name}
           role={role}
+          copper={cardLayoutEnabled}
         />
       </aside>
     </>

@@ -10,7 +10,6 @@ import { NotificationToaster } from "@/components/portal/NotificationToaster";
 import { SoundEffects } from "@/components/portal/SoundEffects";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
-import { cn } from "@/lib/cn";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -37,7 +36,9 @@ export function AppShell({
   // so TourProvider/TourOverlay aren't even mounted for that role.
   const showTour = role !== "ADMIN";
 
-  // Admin-only beta toggle (Profile page, "New Page Layout") — fetched
+  // Admin-only beta toggle (Profile page, "New Page Layout") — recolors
+  // the sidebar to copper (see Sidebar.tsx) rather than changing main's
+  // own shape, so flipping it never touches main content at all. Fetched
   // independently here rather than threaded down from the server layout,
   // same pattern Sidebar/TopBarActions already use for their own profile
   // reads, so flipping the toggle takes effect on next load without
@@ -78,21 +79,8 @@ export function AppShell({
         onCloseMobile={() => setMobileOpen(false)}
         cardLayoutEnabled={cardLayoutEnabled}
       />
-      <main
-        className={cn(
-          "relative min-w-0 flex-1 overflow-y-auto",
-          cardLayoutEnabled
-            ? "p-2 sm:p-3 lg:p-4"
-            : "px-4 pt-2 pb-8 sm:px-6 lg:px-10",
-        )}
-      >
-        {cardLayoutEnabled ? (
-          <div className="relative min-h-full rounded-[20px] border border-white/10 bg-gradient-to-b from-[#111111] to-[#0a0a0a] px-4 pt-2 pb-8 shadow-[0_44px_90px_-24px_rgba(0,0,0,0.85),0_16px_32px_-10px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10">
-            {mainContent}
-          </div>
-        ) : (
-          mainContent
-        )}
+      <main className="relative min-w-0 flex-1 overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10">
+        {mainContent}
       </main>
       {showTour && <TourOverlay role={role} />}
     </div>
