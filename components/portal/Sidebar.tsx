@@ -806,13 +806,13 @@ export function Sidebar({
           the (now-hidden) top bar's. */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col transition-transform duration-300 ease-out lg:hidden",
-          cardLayoutEnabled
-            ? "bg-[linear-gradient(165deg,#8a431e_0%,#6b3215_55%,#44200f_100%)]"
-            : "bg-gradient-to-b from-surface to-background",
+          "fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col bg-gradient-to-b from-surface to-background transition-transform duration-300 ease-out lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
+        {/* Header row (logo + close button) always stays the normal
+            theme-colored look and the original logo, copper or not — only
+            the area below the divider becomes the copper panel. */}
         <div
           className="flex shrink-0 items-center justify-between px-3"
           style={{ height: HEADER_HEIGHT }}
@@ -827,10 +827,7 @@ export function Sidebar({
               alt="Tier 1 Financial"
               width={1560}
               height={558}
-              className={cn(
-                "h-9 w-auto",
-                cardLayoutEnabled && "brightness-0 invert",
-              )}
+              className="h-9 w-auto"
               priority
             />
           </Link>
@@ -838,55 +835,65 @@ export function Sidebar({
             type="button"
             onClick={onCloseMobile}
             aria-label="Close menu"
-            className={cn(
-              "transition-colors",
-              cardLayoutEnabled
-                ? "text-white/70 hover:text-white"
-                : "text-muted hover:text-foreground",
-            )}
+            className="text-muted transition-colors hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
-          <SidebarSearch
-            value={search}
-            onChange={setSearch}
-            navItems={items}
-            copper={cardLayoutEnabled}
-          />
-          <div className="flex flex-col gap-1">
-            <NavLinks
-              items={visibleItems}
-              pathname={pathname}
-              collapsed={false}
-              onNavigate={onCloseMobile}
-              chatUnread={chatUnread}
+        <div
+          className={cn(
+            "h-0.5 shrink-0",
+            cardLayoutEnabled ? "bg-black/25" : "metal-copper-line",
+          )}
+        />
+        <div
+          className={cn(
+            "flex flex-1 flex-col overflow-hidden",
+            cardLayoutEnabled &&
+              "bg-[linear-gradient(165deg,#8a431e_0%,#6b3215_55%,#44200f_100%)]",
+          )}
+        >
+          <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
+            <SidebarSearch
+              value={search}
+              onChange={setSearch}
+              navItems={items}
               copper={cardLayoutEnabled}
             />
-          </div>
-        </nav>
-        <SidebarFooter
-          collapsed={false}
-          profile={profile}
-          name={name}
-          role={role}
-          onNavigate={onCloseMobile}
-          copper={cardLayoutEnabled}
-        />
+            <div className="flex flex-col gap-1">
+              <NavLinks
+                items={visibleItems}
+                pathname={pathname}
+                collapsed={false}
+                onNavigate={onCloseMobile}
+                chatUnread={chatUnread}
+                copper={cardLayoutEnabled}
+              />
+            </div>
+          </nav>
+          <SidebarFooter
+            collapsed={false}
+            profile={profile}
+            name={name}
+            role={role}
+            onNavigate={onCloseMobile}
+            copper={cardLayoutEnabled}
+          />
+        </div>
       </aside>
 
       {/* Desktop sidebar — a real layout column, collapsible via the chevron. */}
       <aside
         data-tour-ui="sidebar"
         className={cn(
-          "sticky top-0 hidden h-screen shrink-0 flex-col transition-all duration-300 ease-out lg:flex",
-          cardLayoutEnabled
-            ? "bg-[linear-gradient(165deg,#8a431e_0%,#6b3215_55%,#44200f_100%)]"
-            : "border-r border-white/[0.06] bg-background",
+          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/[0.06] bg-background transition-all duration-300 ease-out lg:flex",
           collapsed ? "w-[68px]" : "w-60",
         )}
       >
+        {/* Header row (logo + wide/collapse buttons) always stays the
+            normal theme-colored look and the original logo, copper beta
+            or not — only the area below the divider line becomes the
+            copper panel. */}
         <div
           className={cn(
             "flex shrink-0 items-center px-3",
@@ -901,10 +908,7 @@ export function Sidebar({
                 alt="Tier 1 Financial"
                 width={950}
                 height={1112}
-                className={cn(
-                  "h-auto w-8",
-                  cardLayoutEnabled && "brightness-0 invert",
-                )}
+                className="h-auto w-8"
                 priority
               />
             ) : (
@@ -913,10 +917,7 @@ export function Sidebar({
                 alt="Tier 1 Financial"
                 width={1560}
                 height={558}
-                className={cn(
-                  "h-10 w-auto",
-                  cardLayoutEnabled && "brightness-0 invert",
-                )}
+                className="h-10 w-auto"
                 priority
               />
             )}
@@ -937,15 +938,8 @@ export function Sidebar({
                     : "Use wide layout for large monitors"
                 }
                 className={cn(
-                  "transition-colors",
-                  cardLayoutEnabled
-                    ? wide
-                      ? "text-white hover:text-white"
-                      : "text-white/60 hover:text-white"
-                    : cn(
-                        "hover:text-foreground",
-                        wide ? "text-[var(--copper-metal)]" : "text-muted",
-                      ),
+                  "transition-colors hover:text-foreground",
+                  wide ? "text-[var(--copper-metal)]" : "text-muted",
                 )}
               >
                 {wide ? (
@@ -958,12 +952,7 @@ export function Sidebar({
                 type="button"
                 onClick={toggleCollapsed}
                 aria-label="Collapse sidebar"
-                className={cn(
-                  "transition-colors",
-                  cardLayoutEnabled
-                    ? "text-white/60 hover:text-white"
-                    : "text-muted hover:text-foreground",
-                )}
+                className="text-muted transition-colors hover:text-foreground"
               >
                 <ChevronsLeft className="h-4.5 w-4.5" />
               </button>
@@ -975,8 +964,9 @@ export function Sidebar({
             (a 2px bar starting at top: HEADER_HEIGHT), so the two lines
             land pixel-aligned instead of a border-box border sitting 2px
             higher, inside the row itself. Dropped in copper mode: a copper
-            accent line has no contrast against the sidebar's own copper
-            background, so a plain dark divider takes its place instead. */}
+            accent line has no contrast against the copper panel starting
+            right below it, so a plain dark divider takes its place
+            instead. */}
         <div
           className={cn(
             "h-0.5 shrink-0",
@@ -984,49 +974,59 @@ export function Sidebar({
           )}
         />
 
-        {collapsed && (
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            aria-label="Expand sidebar"
-            className={cn(
-              "flex shrink-0 items-center justify-center border-b py-2 transition-colors",
-              cardLayoutEnabled
-                ? "border-white/20 text-white/60 hover:text-white"
-                : "border-border text-muted hover:text-foreground",
-            )}
-          >
-            <ChevronsRight className="h-4.5 w-4.5" />
-          </button>
-        )}
-
-        <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
-          {!collapsed && (
-            <SidebarSearch
-              value={search}
-              onChange={setSearch}
-              navItems={items}
-              copper={cardLayoutEnabled}
-            />
+        {/* Everything below the divider — the copper beta only ever
+            recolors this part, never the header row above. */}
+        <div
+          className={cn(
+            "flex flex-1 flex-col overflow-hidden",
+            cardLayoutEnabled &&
+              "bg-[linear-gradient(165deg,#8a431e_0%,#6b3215_55%,#44200f_100%)]",
           )}
-          <div className="flex flex-col gap-1">
-            <NavLinks
-              items={collapsed ? items : visibleItems}
-              pathname={pathname}
-              collapsed={collapsed}
-              chatUnread={chatUnread}
-              copper={cardLayoutEnabled}
-            />
-          </div>
-        </nav>
+        >
+          {collapsed && (
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label="Expand sidebar"
+              className={cn(
+                "flex shrink-0 items-center justify-center border-b py-2 transition-colors",
+                cardLayoutEnabled
+                  ? "border-white/20 text-white/60 hover:text-white"
+                  : "border-border text-muted hover:text-foreground",
+              )}
+            >
+              <ChevronsRight className="h-4.5 w-4.5" />
+            </button>
+          )}
 
-        <SidebarFooter
-          collapsed={collapsed}
-          profile={profile}
-          name={name}
-          role={role}
-          copper={cardLayoutEnabled}
-        />
+          <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 py-4">
+            {!collapsed && (
+              <SidebarSearch
+                value={search}
+                onChange={setSearch}
+                navItems={items}
+                copper={cardLayoutEnabled}
+              />
+            )}
+            <div className="flex flex-col gap-1">
+              <NavLinks
+                items={collapsed ? items : visibleItems}
+                pathname={pathname}
+                collapsed={collapsed}
+                chatUnread={chatUnread}
+                copper={cardLayoutEnabled}
+              />
+            </div>
+          </nav>
+
+          <SidebarFooter
+            collapsed={collapsed}
+            profile={profile}
+            name={name}
+            role={role}
+            copper={cardLayoutEnabled}
+          />
+        </div>
       </aside>
     </>
   );

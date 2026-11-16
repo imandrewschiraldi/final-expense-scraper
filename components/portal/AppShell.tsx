@@ -10,6 +10,7 @@ import { NotificationToaster } from "@/components/portal/NotificationToaster";
 import { SoundEffects } from "@/components/portal/SoundEffects";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
+import { CARD_LAYOUT_CHANGED_EVENT } from "@/lib/cardLayoutEvent";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -41,8 +42,9 @@ export function AppShell({
   // own shape, so flipping it never touches main content at all. Fetched
   // independently here rather than threaded down from the server layout,
   // same pattern Sidebar/TopBarActions already use for their own profile
-  // reads, so flipping the toggle takes effect on next load without
-  // touching the session/JWT.
+  // reads. AppShell itself stays mounted across navigation (it's in the
+  // root layout), so without the event listener below, flipping the
+  // toggle on the Profile page wouldn't show up here until a full reload.
   const [cardLayoutEnabled, setCardLayoutEnabled] = useState(false);
   useEffect(() => {
     if (role !== "ADMIN") return;
@@ -51,6 +53,15 @@ export function AppShell({
       .then((data) => {
         if (data?.profile?.cardLayoutEnabled) setCardLayoutEnabled(true);
       });
+  }, [role]);
+  useEffect(() => {
+    if (role !== "ADMIN") return;
+    function onChange(e: Event) {
+      setCardLayoutEnabled(Boolean((e as CustomEvent<boolean>).detail));
+    }
+    window.addEventListener(CARD_LAYOUT_CHANGED_EVENT, onChange);
+    return () =>
+      window.removeEventListener(CARD_LAYOUT_CHANGED_EVENT, onChange);
   }, [role]);
 
   const mainContent = (

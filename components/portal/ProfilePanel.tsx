@@ -11,6 +11,7 @@ import { optimizableImageUrl } from "@/lib/profileImage";
 import { US_STATES } from "@/lib/usStates";
 import { ROLE_SWITCH_EMAIL, SwitchableRole } from "@/lib/roleSwitch";
 import { ProfileTourButton } from "@/components/portal/ProfileTourButton";
+import { dispatchCardLayoutChanged } from "@/lib/cardLayoutEvent";
 
 type Profile = {
   id: string;
@@ -149,6 +150,7 @@ export function ProfilePanel() {
     if (res.ok) {
       const data = await res.json();
       setProfile(data.profile);
+      dispatchCardLayoutChanged(next);
     } else {
       setError("Failed to toggle the new page layout.");
     }
