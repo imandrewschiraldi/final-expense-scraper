@@ -32,8 +32,7 @@ export function SubmitPolicyPanel({
             <span>Submitted {lastSubmitted.clientName} with</span>
             <CarrierLogo
               name={lastSubmitted.carrier}
-              className="inline-block h-4 w-auto object-contain"
-              chip
+              className="inline-block h-4 w-auto object-contain align-[-3px]"
             />
             <span>
               . View it on{" "}

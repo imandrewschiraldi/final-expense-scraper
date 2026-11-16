@@ -107,7 +107,6 @@ export function ReportsPanel() {
                       <CarrierLogo
                         name={c.carrier}
                         className="h-5 w-auto object-contain"
-                        chip
                       />
                     </td>
                     <td className="py-2 pr-4 text-muted">{c.count}</td>

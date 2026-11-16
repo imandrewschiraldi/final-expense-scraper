@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/cn";
 import { getCarrierLogoFile } from "@/lib/carrierLogos";
 
 /**
@@ -9,20 +10,17 @@ import { getCarrierLogoFile } from "@/lib/carrierLogos";
  * page heading) — falls back to the plain name when there's no matching
  * file, or if the file 404s, so an unmapped/misspelled carrier never shows
  * a broken image.
+ *
+ * The files are white-only artwork, which would disappear on light mode's
+ * light surfaces — the shared `.carrier-logo-img` class (globals.css) flips
+ * it to solid black under `[data-theme="light"]` instead.
  */
 export function CarrierLogo({
   name,
   className,
-  chip = false,
 }: {
   name: string;
   className?: string;
-  /** Every logo file is white-only artwork, so it disappears when it lands
-   * directly on a theme-dependent light background (a table row, a plain
-   * sentence). Set this wherever the logo isn't already sitting on a fixed
-   * dark/copper surface, to wrap it in one so it stays visible in light
-   * mode too. */
-  chip?: boolean;
 }) {
   const file = getCarrierLogoFile(name);
   const [failed, setFailed] = useState(false);
@@ -33,22 +31,14 @@ export function CarrierLogo({
 
   // Unknown/varying aspect ratios per carrier, plus the onError fallback
   // above, don't fit next/image's required-dimensions model.
-  const img = (
+  return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`/carrier-logos/${file}`}
       alt={name}
       title={name}
-      className={className}
+      className={cn("carrier-logo-img", className)}
       onError={() => setFailed(true)}
     />
-  );
-
-  if (!chip) return img;
-
-  return (
-    <span className="inline-flex translate-y-[-1px] items-center rounded bg-black/85 px-1.5 py-1 align-middle">
-      {img}
-    </span>
   );
 }

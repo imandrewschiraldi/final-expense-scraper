@@ -139,6 +139,16 @@
   --sidebar-divider: rgba(0, 0, 0, 0.1);
 }
 
+/* Carrier logo files are white (plus a couple of small color accents),
+   so they go invisible on light mode's light surfaces — rather than
+   propping a dark chip behind every one, flip the artwork itself to
+   solid black, the same "this mark is one color, make it the right
+   one" trick as --white above, just via a filter instead of a CSS var
+   since this is bitmap artwork, not text. */
+:root[data-theme="light"] .carrier-logo-img {
+  filter: brightness(0);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
