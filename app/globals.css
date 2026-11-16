@@ -146,18 +146,22 @@
    forest green instead of a subtle tint — a deliberately more saturated,
    colorful dark mode rather than "dark mode with a hint of green". Same
    7 tokens light mode remaps, nothing else — brand copper/green-status/
-   metal tokens stay untouched here too. */
+   metal tokens stay untouched here too.
+   --background is the brand's actual "Dark green" (#1F3B2C); --surface/
+   --surface2/--input-bg step up from it at the same relative lightening
+   as the rest of this block's siblings (surface +18%, surface2 +33%,
+   input +37% brighter per channel), rather than picked independently. */
 :root[data-theme="green"] {
   color-scheme: dark;
 
-  --background: #0a1f10;
-  --surface: #112b18;
-  --surface2: #15351d;
+  --background: #1f3b2c;
+  --surface: #264734;
+  --surface2: #2a5139;
   --border: rgba(255, 255, 255, 0.16);
   --foreground: #cfe8d2;
   --white: #ffffff;
-  --muted: #6f9775;
-  --input-bg: #163a1e;
+  --muted: #86ac8c;
+  --input-bg: #2b563a;
   --sidebar-divider: rgba(255, 255, 255, 0.16);
 }
 
