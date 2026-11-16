@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { CarrierLogo } from "@/components/portal/CarrierLogo";
 import {
   PolicySubmitForm,
   plansForCarrierName,
@@ -30,7 +31,11 @@ const STATUS_TEXT_COLOR: Record<PolicyStatus, string> = {
 type Policy = SubmittedPolicy;
 
 function formatCurrency(value: string | number) {
-  return Number(value).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  return Number(value).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
 }
 
 export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
@@ -55,7 +60,9 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => null);
-          throw new Error(body?.error ?? `Failed to load policies (${res.status})`);
+          throw new Error(
+            body?.error ?? `Failed to load policies (${res.status})`,
+          );
         }
         return res.json();
       })
@@ -65,7 +72,11 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
         setLoadError(null);
       })
       .catch((err) => {
-        setLoadError(err instanceof Error ? err.message : "Failed to load your book of business.");
+        setLoadError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load your book of business.",
+        );
         setLoading(false);
       });
   }, []);
@@ -80,7 +91,9 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
     setUpdatingId(null);
     if (res.ok) {
       const data = await res.json();
-      setPolicies((prev) => prev.map((p) => (p.id === policy.id ? { ...p, ...data.policy } : p)));
+      setPolicies((prev) =>
+        prev.map((p) => (p.id === policy.id ? { ...p, ...data.policy } : p)),
+      );
     }
   }
 
@@ -99,14 +112,23 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
     setUpdatingRateId(null);
     if (res.ok) {
       const data = await res.json();
-      setPolicies((prev) => prev.map((p) => (p.id === policy.id ? { ...p, ...data.policy } : p)));
+      setPolicies((prev) =>
+        prev.map((p) => (p.id === policy.id ? { ...p, ...data.policy } : p)),
+      );
     }
   }
 
   async function deletePolicy(policy: Policy) {
-    if (!window.confirm(`Permanently delete the policy for ${policy.clientName}? This can't be undone.`)) return;
+    if (
+      !window.confirm(
+        `Permanently delete the policy for ${policy.clientName}? This can't be undone.`,
+      )
+    )
+      return;
     setDeletingId(policy.id);
-    const res = await fetch(`/api/portal/policies/${policy.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/portal/policies/${policy.id}`, {
+      method: "DELETE",
+    });
     setDeletingId(null);
     if (res.ok) {
       setPolicies((prev) => prev.filter((p) => p.id !== policy.id));
@@ -118,7 +140,9 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
       <Card>
         <CardHeader>
           <CardTitle>My Book of Business</CardTitle>
-          <Button onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancel" : "Submit Deal"}</Button>
+          <Button onClick={() => setShowForm((s) => !s)}>
+            {showForm ? "Cancel" : "Submit Deal"}
+          </Button>
         </CardHeader>
 
         {showForm && (
@@ -133,7 +157,9 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
           </div>
         )}
 
-        {loadError && <p className="mb-3 text-sm text-red-light">{loadError}</p>}
+        {loadError && (
+          <p className="mb-3 text-sm text-red-light">{loadError}</p>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -167,82 +193,106 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                 // back to the full grouped list only if the policy's
                 // free-text carrier doesn't match a known Carrier record.
                 const carrierMatch = carriers.find(
-                  (c) => c.name.trim().toLowerCase() === p.carrier.trim().toLowerCase(),
+                  (c) =>
+                    c.name.trim().toLowerCase() ===
+                    p.carrier.trim().toLowerCase(),
                 );
-                const scopedPlans = carrierMatch ? plansForCarrierName(carriers, p.carrier) : null;
+                const scopedPlans = carrierMatch
+                  ? plansForCarrierName(carriers, p.carrier)
+                  : null;
                 return (
-                <tr key={p.id} className="border-b border-border/60 hover:bg-surface2">
-                  <td className="py-2 pr-4 text-white">{p.clientName}</td>
-                  <td className="py-2 pr-4 text-muted">{p.carrier}</td>
-                  <td className="py-2 pr-4 text-muted">{p.product ?? "—"}</td>
-                  <td className="py-2 pr-4 text-muted">{p.state ?? "—"}</td>
-                  <td className="py-2 pr-4 text-white">{formatCurrency(p.annualPremium)}</td>
-                  <td className="py-2 pr-4">
-                    {isDemo ? (
-                      <span className="text-muted">—</span>
-                    ) : (
+                  <tr
+                    key={p.id}
+                    className="border-b border-border/60 hover:bg-surface2"
+                  >
+                    <td className="py-2 pr-4 text-white">{p.clientName}</td>
+                    <td className="py-2 pr-4 text-muted">
+                      <CarrierLogo
+                        name={p.carrier}
+                        className="h-5 w-auto object-contain"
+                      />
+                    </td>
+                    <td className="py-2 pr-4 text-muted">{p.product ?? "—"}</td>
+                    <td className="py-2 pr-4 text-muted">{p.state ?? "—"}</td>
+                    <td className="py-2 pr-4 text-white">
+                      {formatCurrency(p.annualPremium)}
+                    </td>
+                    <td className="py-2 pr-4">
+                      {isDemo ? (
+                        <span className="text-muted">—</span>
+                      ) : (
+                        <Select
+                          value={p.carrierPlanId ?? ""}
+                          disabled={updatingRateId === p.id}
+                          onChange={(e) => changeRatePlan(p, e.target.value)}
+                          className="min-w-[160px] py-1 text-xs"
+                        >
+                          <option value="">— Not rated —</option>
+                          {scopedPlans
+                            ? scopedPlans.map((plan) => (
+                                <option key={plan.id} value={plan.id}>
+                                  {plan.name}
+                                </option>
+                              ))
+                            : carriers.map((c) => (
+                                <optgroup key={c.id} label={c.name}>
+                                  {c.plans.map((plan) => (
+                                    <option key={plan.id} value={plan.id}>
+                                      {c.name} — {plan.name}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              ))}
+                        </Select>
+                      )}
+                    </td>
+                    <td className="py-2 pr-4 text-muted">
+                      {p.commissionAmount
+                        ? formatCurrency(p.commissionAmount)
+                        : "—"}
+                    </td>
+                    <td className="py-2 pr-4">
+                      <span className={STATUS_TEXT_COLOR[p.status]}>
+                        {STATUS_LABELS[p.status]}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 text-muted">
+                      {new Date(
+                        p.status === "ISSUED" && p.issuedAt
+                          ? p.issuedAt
+                          : p.submittedAt,
+                      ).toLocaleDateString()}
+                    </td>
+                    <td className="py-2 pr-4">
                       <Select
-                        value={p.carrierPlanId ?? ""}
-                        disabled={updatingRateId === p.id}
-                        onChange={(e) => changeRatePlan(p, e.target.value)}
-                        className="min-w-[160px] py-1 text-xs"
+                        value={p.status}
+                        disabled={updatingId === p.id}
+                        onChange={(e) =>
+                          changeStatus(p, e.target.value as PolicyStatus)
+                        }
+                        className="min-w-[130px] py-1 text-xs"
                       >
-                        <option value="">— Not rated —</option>
-                        {scopedPlans
-                          ? scopedPlans.map((plan) => (
-                              <option key={plan.id} value={plan.id}>
-                                {plan.name}
-                              </option>
-                            ))
-                          : carriers.map((c) => (
-                              <optgroup key={c.id} label={c.name}>
-                                {c.plans.map((plan) => (
-                                  <option key={plan.id} value={plan.id}>
-                                    {c.name} — {plan.name}
-                                  </option>
-                                ))}
-                              </optgroup>
-                            ))}
+                        {POLICY_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {STATUS_LABELS[s]}
+                          </option>
+                        ))}
                       </Select>
-                    )}
-                  </td>
-                  <td className="py-2 pr-4 text-muted">
-                    {p.commissionAmount ? formatCurrency(p.commissionAmount) : "—"}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <span className={STATUS_TEXT_COLOR[p.status]}>{STATUS_LABELS[p.status]}</span>
-                  </td>
-                  <td className="py-2 pr-4 text-muted">
-                    {new Date(p.status === "ISSUED" && p.issuedAt ? p.issuedAt : p.submittedAt).toLocaleDateString()}
-                  </td>
-                  <td className="py-2 pr-4">
-                    <Select
-                      value={p.status}
-                      disabled={updatingId === p.id}
-                      onChange={(e) => changeStatus(p, e.target.value as PolicyStatus)}
-                      className="min-w-[130px] py-1 text-xs"
-                    >
-                      {POLICY_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {STATUS_LABELS[s]}
-                        </option>
-                      ))}
-                    </Select>
-                  </td>
-                  <td className="py-2 pr-4">
-                    {!isDemo && (
-                      <button
-                        type="button"
-                        onClick={() => deletePolicy(p)}
-                        disabled={deletingId === p.id}
-                        className="text-muted hover:text-red-light disabled:opacity-40"
-                        aria-label={`Delete policy for ${p.clientName}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
+                    </td>
+                    <td className="py-2 pr-4">
+                      {!isDemo && (
+                        <button
+                          type="button"
+                          onClick={() => deletePolicy(p)}
+                          disabled={deletingId === p.id}
+                          className="text-muted hover:text-red-light disabled:opacity-40"
+                          aria-label={`Delete policy for ${p.clientName}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>

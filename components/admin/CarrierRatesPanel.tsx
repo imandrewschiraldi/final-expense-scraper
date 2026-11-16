@@ -4,13 +4,20 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { getCarrierLogoFile } from "@/lib/carrierLogos";
 import { Trash2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
 
 type Rate = { compLevel: number; payoutPercent: string };
-type Plan = { id: string; name: string; payoutMultiplier: string; rates: Rate[] };
+type Plan = {
+  id: string;
+  name: string;
+  payoutMultiplier: string;
+  rates: Rate[];
+};
 type Carrier = { id: string; name: string; plans: Plan[] };
 
-const pct = (fraction: number | string) => `${(Number(fraction) * 100).toFixed(2).replace(/\.?0+$/, "")}%`;
+const pct = (fraction: number | string) =>
+  `${(Number(fraction) * 100).toFixed(2).replace(/\.?0+$/, "")}%`;
 
 /**
  * Parses pasted grid text into {compLevel, payoutPercent} rows. Accepts one row per line in
@@ -19,21 +26,35 @@ const pct = (fraction: number | string) => `${(Number(fraction) * 100).toFixed(2
  * is treated as a fraction (e.g. 0.65) and converted to a percent (65); anything larger is
  * treated as already a percent, so both a raw JSON dump and a copy-pasted rate sheet work.
  */
-function parseGridPaste(text: string): { compLevel: number; payoutPercent: number }[] {
+function parseGridPaste(
+  text: string,
+): { compLevel: number; payoutPercent: number }[] {
   const rows: { compLevel: number; payoutPercent: number }[] = [];
   for (const line of text.split("\n")) {
     const nums = line.match(/\d+(?:\.\d+)?/g);
     if (!nums || nums.length < 2) continue;
     const compLevel = Number(nums[0]);
     let payoutPercent = Number(nums[1]);
-    if (!Number.isFinite(compLevel) || !Number.isFinite(payoutPercent) || compLevel <= 0 || payoutPercent <= 0) continue;
+    if (
+      !Number.isFinite(compLevel) ||
+      !Number.isFinite(payoutPercent) ||
+      compLevel <= 0 ||
+      payoutPercent <= 0
+    )
+      continue;
     if (payoutPercent <= 3) payoutPercent *= 100;
     rows.push({ compLevel, payoutPercent });
   }
   return rows;
 }
 
-function AddPlanForm({ carrierId, onAdded }: { carrierId: string; onAdded: () => void }) {
+function AddPlanForm({
+  carrierId,
+  onAdded,
+}: {
+  carrierId: string;
+  onAdded: () => void;
+}) {
   const [name, setName] = useState("");
   const [payoutPercent, setPayoutPercent] = useState("");
   const [saving, setSaving] = useState(false);
@@ -46,7 +67,10 @@ function AddPlanForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
     const res = await fetch(`/api/admin/carriers/${carrierId}/plans`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), payoutPercent: Number(payoutPercent) }),
+      body: JSON.stringify({
+        name: name.trim(),
+        payoutPercent: Number(payoutPercent),
+      }),
     });
     setSaving(false);
     if (res.ok) {
@@ -67,7 +91,12 @@ function AddPlanForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
         submit();
       }}
     >
-      <Input placeholder="Plan name (e.g. HMS 125)" value={name} onChange={(e) => setName(e.target.value)} className="w-48" />
+      <Input
+        placeholder="Plan name (e.g. HMS 125)"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="w-48"
+      />
       <Input
         placeholder="Payout %"
         type="number"
@@ -78,7 +107,11 @@ function AddPlanForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
         onChange={(e) => setPayoutPercent(e.target.value)}
         className="w-28"
       />
-      <Button type="submit" variant="secondary" disabled={saving || !name.trim() || !payoutPercent}>
+      <Button
+        type="submit"
+        variant="secondary"
+        disabled={saving || !name.trim() || !payoutPercent}
+      >
         {saving ? "Adding..." : "Add Plan"}
       </Button>
       {error && <p className="w-full text-xs text-red-light">{error}</p>}
@@ -86,7 +119,13 @@ function AddPlanForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
   );
 }
 
-function CarrierName({ carrier, onRenamed }: { carrier: Carrier; onRenamed: () => void }) {
+function CarrierName({
+  carrier,
+  onRenamed,
+}: {
+  carrier: Carrier;
+  onRenamed: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(carrier.name);
   const [saving, setSaving] = useState(false);
@@ -134,7 +173,11 @@ function CarrierName({ carrier, onRenamed }: { carrier: Carrier; onRenamed: () =
           autoFocus
           className="w-56"
         />
-        <Button variant="secondary" onClick={save} disabled={saving || !name.trim()}>
+        <Button
+          variant="secondary"
+          onClick={save}
+          disabled={saving || !name.trim()}
+        >
           {saving ? "Saving..." : "Save"}
         </Button>
         <Button variant="ghost" onClick={cancel}>
@@ -145,8 +188,18 @@ function CarrierName({ carrier, onRenamed }: { carrier: Carrier; onRenamed: () =
     );
   }
 
+  const logoFile = getCarrierLogoFile(carrier.name);
+
   return (
     <div className="group flex items-center gap-2">
+      {logoFile && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`/carrier-logos/${logoFile}`}
+          alt=""
+          className="h-5 w-auto object-contain"
+        />
+      )}
       <CardTitle>{carrier.name}</CardTitle>
       <button
         type="button"
@@ -190,8 +243,15 @@ function PlanGrid({ plan, onChanged }: { plan: Plan; onChanged: () => void }) {
   }
 
   async function clearGrid() {
-    if (!window.confirm(`Clear the payout grid for "${plan.name}"? It'll fall back to the flat ${pct(plan.payoutMultiplier)} payout.`)) return;
-    const res = await fetch(`/api/admin/carriers/plans/${plan.id}/rates`, { method: "DELETE" });
+    if (
+      !window.confirm(
+        `Clear the payout grid for "${plan.name}"? It'll fall back to the flat ${pct(plan.payoutMultiplier)} payout.`,
+      )
+    )
+      return;
+    const res = await fetch(`/api/admin/carriers/plans/${plan.id}/rates`, {
+      method: "DELETE",
+    });
     if (res.ok) onChanged();
   }
 
@@ -203,11 +263,17 @@ function PlanGrid({ plan, onChanged }: { plan: Plan; onChanged: () => void }) {
           onClick={() => setOpen((o) => !o)}
           className="flex items-center gap-1.5 text-sm text-white hover:text-primary"
         >
-          {open ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+          {open ? (
+            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+          )}
           {plan.name}
         </button>
         <span className="text-sm text-muted">
-          {plan.rates.length > 0 ? `${plan.rates.length}-level grid · fallback ${pct(plan.payoutMultiplier)}` : `${pct(plan.payoutMultiplier)} flat`}
+          {plan.rates.length > 0
+            ? `${plan.rates.length}-level grid · fallback ${pct(plan.payoutMultiplier)}`
+            : `${pct(plan.payoutMultiplier)} flat`}
         </span>
       </div>
 
@@ -217,7 +283,8 @@ function PlanGrid({ plan, onChanged }: { plan: Plan; onChanged: () => void }) {
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
               {plan.rates.map((r) => (
                 <span key={r.compLevel}>
-                  <span className="text-white">{r.compLevel}</span>: {pct(r.payoutPercent)}
+                  <span className="text-white">{r.compLevel}</span>:{" "}
+                  {pct(r.payoutPercent)}
                 </span>
               ))}
             </div>
@@ -225,12 +292,18 @@ function PlanGrid({ plan, onChanged }: { plan: Plan; onChanged: () => void }) {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={"Paste the carrier's grid, one level per line, e.g.\n80  65.00%\n85  68.00%\n90  70.00%\n..."}
+            placeholder={
+              "Paste the carrier's grid, one level per line, e.g.\n80  65.00%\n85  68.00%\n90  70.00%\n..."
+            }
             rows={4}
             className="w-full rounded-md border border-border bg-black/20 px-3 py-2 text-xs text-white placeholder:text-muted focus:border-primary focus:outline-none"
           />
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={importGrid} disabled={saving || !text.trim()}>
+            <Button
+              variant="secondary"
+              onClick={importGrid}
+              disabled={saving || !text.trim()}
+            >
               {saving ? "Importing..." : "Import Grid"}
             </Button>
             {plan.rates.length > 0 && (
@@ -294,8 +367,15 @@ export function CarrierRatesPanel() {
   }
 
   async function deletePlan(id: string, name: string) {
-    if (!window.confirm(`Delete "${name}"? Policies already sold under it keep their commission amount, they just lose the link.`)) return;
-    const res = await fetch(`/api/admin/carriers/plans/${id}`, { method: "DELETE" });
+    if (
+      !window.confirm(
+        `Delete "${name}"? Policies already sold under it keep their commission amount, they just lose the link.`,
+      )
+    )
+      return;
+    const res = await fetch(`/api/admin/carriers/plans/${id}`, {
+      method: "DELETE",
+    });
     if (res.ok) load();
   }
 
@@ -306,9 +386,11 @@ export function CarrierRatesPanel() {
           <CardTitle>Add Carrier</CardTitle>
         </CardHeader>
         <p className="mb-3 text-sm text-muted">
-          Once a carrier is added, give it one or more rate plans below. A plan&apos;s Payout % is a flat fallback rate;
-          click a plan to paste in its real row-by-row grid (e.g. a comp-level table from 80 to 145) so each level pays
-          exactly what the carrier contracts for. This is what drives the Commissions Paid figure on the Dashboard.
+          Once a carrier is added, give it one or more rate plans below. A
+          plan&apos;s Payout % is a flat fallback rate; click a plan to paste in
+          its real row-by-row grid (e.g. a comp-level table from 80 to 145) so
+          each level pays exactly what the carrier contracts for. This is what
+          drives the Commissions Paid figure on the Dashboard.
         </p>
         <form
           className="flex flex-wrap items-end gap-2"
@@ -333,14 +415,19 @@ export function CarrierRatesPanel() {
       {loading && <p className="text-sm text-muted">Loading...</p>}
 
       {!loading && carriers.length === 0 && (
-        <p className="text-sm text-muted">No carriers yet — add one above to start rating plans.</p>
+        <p className="text-sm text-muted">
+          No carriers yet — add one above to start rating plans.
+        </p>
       )}
 
       {carriers.map((carrier) => (
         <Card key={carrier.id}>
           <CardHeader>
             <CarrierName carrier={carrier} onRenamed={load} />
-            <Button variant="ghost" onClick={() => deleteCarrier(carrier.id, carrier.name)}>
+            <Button
+              variant="ghost"
+              onClick={() => deleteCarrier(carrier.id, carrier.name)}
+            >
               <Trash2 className="h-4 w-4" />
             </Button>
           </CardHeader>

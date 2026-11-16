@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/cn";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
+import { CarrierLogo } from "@/components/portal/CarrierLogo";
 import { RecentActivityItem } from "@/lib/agencyDashboardShared";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -14,25 +15,52 @@ const STATUS_COLOR: Record<string, string> = {
 export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
   return (
     <PremiumPanel className="p-5">
-      <h3 className="font-condensed mb-3 text-base font-extrabold tracking-wide text-white uppercase">Recent Activity</h3>
+      <h3 className="font-condensed mb-3 text-base font-extrabold tracking-wide text-white uppercase">
+        Recent Activity
+      </h3>
       {items.length === 0 ? (
-        <p className="text-sm text-muted">Your organization analytics will populate as agents submit business.</p>
+        <p className="text-sm text-muted">
+          Your organization analytics will populate as agents submit business.
+        </p>
       ) : (
         <div className="space-y-2.5">
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3 text-sm">
+            <div
+              key={item.id}
+              className="flex items-center justify-between gap-3 text-sm"
+            >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-white">
-                  {item.agentName ?? "Unknown"} <span className="text-muted">submitted</span> {item.carrier}
+                  {item.agentName ?? "Unknown"}{" "}
+                  <span className="text-muted">submitted</span>{" "}
+                  <CarrierLogo
+                    name={item.carrier}
+                    className="inline-block h-4 w-auto object-contain align-[-3px]"
+                  />
                   {item.product ? ` · ${item.product}` : ""}
                 </p>
-                <p className="text-xs text-muted">{formatDistanceToNow(new Date(item.submittedAt), { addSuffix: true })}</p>
+                <p className="text-xs text-muted">
+                  {formatDistanceToNow(new Date(item.submittedAt), {
+                    addSuffix: true,
+                  })}
+                </p>
               </div>
               <div className="shrink-0 text-right">
                 <p className="font-semibold text-white">
-                  {item.annualPremium.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}
+                  {item.annualPremium.toLocaleString("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                    maximumFractionDigits: 0,
+                  })}
                 </p>
-                <p className={cn("text-xs", STATUS_COLOR[item.status] ?? "text-muted")}>{item.status}</p>
+                <p
+                  className={cn(
+                    "text-xs",
+                    STATUS_COLOR[item.status] ?? "text-muted",
+                  )}
+                >
+                  {item.status}
+                </p>
               </div>
             </div>
           ))}

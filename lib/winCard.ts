@@ -1,5 +1,6 @@
 /* eslint-disable */
 // @ts-nocheck
+import { getCarrierLogoFile } from "@/lib/carrierLogos";
 /* ===== Tier 1 "BIG WIN" card — canvas PNG generator (v2 metallic palette) =====
  * Self-contained: no DOM, no CSS, no libraries. Matches Commission Calculator Step 4.
  * generateWinCard(data, opts) -> Promise<string> (PNG data URL)
@@ -31,7 +32,20 @@ var WC_COLORS = {
   dim: "#8a8a8a",
   badgeText: "#1a0f07",
 };
-var WC_MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+var WC_MONTHS = [
+  "JAN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DEC",
+];
 
 function wcFmtMoney(n) {
   if (n == null || isNaN(n)) return "N/A";
@@ -39,12 +53,31 @@ function wcFmtMoney(n) {
 }
 
 function wcBuildCells(data) {
-  var c = data.commission != null && !isNaN(data.commission) ? data.commission : null;
+  var c =
+    data.commission != null && !isNaN(data.commission) ? data.commission : null;
   return [
-    { k: "Annual Premium", v: wcFmtMoney(data.annualPremium), big: true, copper: false },
-    { k: "First-Year Earnings", v: c != null ? wcFmtMoney(c) : "N/A", big: true, copper: true },
-    { k: "Advance (75%)", v: c != null ? wcFmtMoney(c * 0.75) : "N/A", copper: true },
-    { k: "Back End (25%)", v: c != null ? wcFmtMoney(c * 0.25) : "N/A", copper: true },
+    {
+      k: "Annual Premium",
+      v: wcFmtMoney(data.annualPremium),
+      big: true,
+      copper: false,
+    },
+    {
+      k: "First-Year Earnings",
+      v: c != null ? wcFmtMoney(c) : "N/A",
+      big: true,
+      copper: true,
+    },
+    {
+      k: "Advance (75%)",
+      v: c != null ? wcFmtMoney(c * 0.75) : "N/A",
+      copper: true,
+    },
+    {
+      k: "Back End (25%)",
+      v: c != null ? wcFmtMoney(c * 0.25) : "N/A",
+      copper: true,
+    },
     { k: "Product", v: data.product || "—" },
     { k: "Carrier", v: data.carrier || "—" },
   ];
@@ -67,7 +100,8 @@ export function generateWinCard(data, opts) {
     h = 297;
 
   function waitForFonts() {
-    if (document.fonts && document.fonts.ready) return document.fonts.ready.catch(function () {});
+    if (document.fonts && document.fonts.ready)
+      return document.fonts.ready.catch(function () {});
     return Promise.resolve();
   }
   function loadLogo() {
@@ -84,121 +118,152 @@ export function generateWinCard(data, opts) {
       img.src = opts.logoUrl;
     });
   }
-
-  return Promise.all([waitForFonts(), loadLogo()]).then(function (r) {
-    var logo = r[1];
-    var canvas = document.createElement("canvas");
-    canvas.width = w * scale;
-    canvas.height = h * scale;
-    var ctx = canvas.getContext("2d");
-    ctx.scale(scale, scale);
-    var C = WC_COLORS,
-      pad = 32;
-
-    var g = ctx.createLinearGradient(0, 0, w * 0.6, h);
-    g.addColorStop(0, C.bg[0]);
-    g.addColorStop(0.55, C.bg[1]);
-    g.addColorStop(1, C.bg[2]);
-    wcRoundRect(ctx, 0, 0, w, h, 22);
-    ctx.fillStyle = g;
-    ctx.fill();
-    var bstroke = ctx.createLinearGradient(0, 0, w, h);
-    bstroke.addColorStop(0, C.copperDk);
-    bstroke.addColorStop(0.25, C.copperHi);
-    bstroke.addColorStop(0.5, C.copperBase);
-    bstroke.addColorStop(0.75, C.copperHi);
-    bstroke.addColorStop(1, C.copperDk);
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = bstroke;
-    ctx.stroke();
-
-    function copperText(x, y, wd, ht) {
-      var t = ctx.createLinearGradient(x, y - ht, x + wd, y);
-      t.addColorStop(0, C.copperHi);
-      t.addColorStop(0.5, C.copperFlat);
-      t.addColorStop(1, C.copperDk);
-      return t;
-    }
-    function silverText(x, y, wd, ht) {
-      var t = ctx.createLinearGradient(x, y - ht, x + wd, y);
-      t.addColorStop(0, C.silver[0]);
-      t.addColorStop(0.5, C.silver[1]);
-      t.addColorStop(1, C.silver[2]);
-      return t;
-    }
-
-    if (logo && logo.naturalWidth) {
-      var lh = 26,
-        lw = logo.naturalWidth * (lh / logo.naturalHeight);
-      ctx.drawImage(logo, pad, 26, lw, lh);
-    }
-
-    ctx.textBaseline = "alphabetic";
-
-    ctx.font = '800 29px "Barlow Condensed",sans-serif';
-    var nm = data.agentName && String(data.agentName).trim() ? String(data.agentName).trim() : "Your Name";
-    var nmW = ctx.measureText(nm).width;
-    ctx.fillStyle = silverText(pad, 92, nmW, 26);
-    ctx.fillText(nm, pad, 92);
-
-    ctx.fillStyle = C.copperFlat;
-    ctx.font = '11px "IBM Plex Mono",monospace';
-    ctx.fillText(data.handle || "@Tier 1 Financial", pad, 110);
-
-    var dg = ctx.createLinearGradient(pad, 0, pad + 220, 0);
-    dg.addColorStop(0, "rgba(202,126,64,0.6)");
-    dg.addColorStop(1, "rgba(202,126,64,0)");
-    ctx.fillStyle = dg;
-    ctx.fillRect(pad, 126, w - pad * 2, 1);
-
-    var cells = wcBuildCells(data);
-    var colW = (w - pad * 2) / 2,
-      topY = 152,
-      rowH = 44;
-    cells.forEach(function (cell, i) {
-      var col = i % 2,
-        row = Math.floor(i / 2);
-      var cx = pad + col * colW,
-        cy = topY + row * rowH;
-      ctx.fillStyle = C.dim;
-      ctx.font = '700 9px "Barlow Condensed",sans-serif';
-      ctx.fillText(cell.k.toUpperCase(), cx, cy);
-      var vSize = cell.big ? 23 : 19;
-      ctx.font = "800 " + vSize + 'px "Barlow Condensed",sans-serif';
-      if (cell.copper) {
-        var vW = ctx.measureText(cell.v).width;
-        ctx.fillStyle = copperText(cx, cy + 22, vW, vSize);
-      } else {
-        ctx.fillStyle = C.white;
-      }
-      ctx.fillText(cell.v, cx, cy + 22);
+  // Same best-effort load as the Tier 1 logo above, but for the carrier's
+  // own logo — drawn in place of the "Carrier" cell's text value below.
+  // Resolves to null (falls back to text, exactly like before) whenever
+  // there's no matching file or it fails to load.
+  function loadCarrierLogo() {
+    var file = data.carrier ? getCarrierLogoFile(data.carrier) : null;
+    if (!file) return Promise.resolve(null);
+    return new Promise(function (res) {
+      var img = new Image();
+      img.onload = function () {
+        res(img);
+      };
+      img.onerror = function () {
+        res(null);
+      };
+      img.src = "/carrier-logos/" + file;
     });
+  }
 
-    var bg = ctx.createLinearGradient(w - pad - 84, 26, w - pad, 50);
-    bg.addColorStop(0, C.copperDk);
-    bg.addColorStop(0.25, C.copperHi);
-    bg.addColorStop(0.5, C.copperBase);
-    bg.addColorStop(0.75, C.copperHi);
-    bg.addColorStop(1, C.copperDk);
-    ctx.fillStyle = bg;
-    wcRoundRect(ctx, w - pad - 84, 26, 84, 24, 6);
-    ctx.fill();
-    ctx.fillStyle = C.badgeText;
-    ctx.font = '700 12px "Barlow Condensed",sans-serif';
-    ctx.textAlign = "center";
-    ctx.fillText(data.badge || "BIG WIN", w - pad - 42, 42);
-    ctx.textAlign = "left";
+  return Promise.all([waitForFonts(), loadLogo(), loadCarrierLogo()]).then(
+    function (r) {
+      var logo = r[1];
+      var carrierLogo = r[2];
+      var canvas = document.createElement("canvas");
+      canvas.width = w * scale;
+      canvas.height = h * scale;
+      var ctx = canvas.getContext("2d");
+      ctx.scale(scale, scale);
+      var C = WC_COLORS,
+        pad = 32;
 
-    var d = data.date instanceof Date ? data.date : new Date();
-    var dt = WC_MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
-    ctx.fillStyle = C.dim;
-    ctx.font = '10px "IBM Plex Mono",monospace';
-    ctx.textAlign = "right";
-    ctx.fillText(dt, w - pad, h - 18);
-    ctx.textAlign = "left";
+      var g = ctx.createLinearGradient(0, 0, w * 0.6, h);
+      g.addColorStop(0, C.bg[0]);
+      g.addColorStop(0.55, C.bg[1]);
+      g.addColorStop(1, C.bg[2]);
+      wcRoundRect(ctx, 0, 0, w, h, 22);
+      ctx.fillStyle = g;
+      ctx.fill();
+      var bstroke = ctx.createLinearGradient(0, 0, w, h);
+      bstroke.addColorStop(0, C.copperDk);
+      bstroke.addColorStop(0.25, C.copperHi);
+      bstroke.addColorStop(0.5, C.copperBase);
+      bstroke.addColorStop(0.75, C.copperHi);
+      bstroke.addColorStop(1, C.copperDk);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = bstroke;
+      ctx.stroke();
 
-    return canvas.toDataURL("image/png");
-  });
+      function copperText(x, y, wd, ht) {
+        var t = ctx.createLinearGradient(x, y - ht, x + wd, y);
+        t.addColorStop(0, C.copperHi);
+        t.addColorStop(0.5, C.copperFlat);
+        t.addColorStop(1, C.copperDk);
+        return t;
+      }
+      function silverText(x, y, wd, ht) {
+        var t = ctx.createLinearGradient(x, y - ht, x + wd, y);
+        t.addColorStop(0, C.silver[0]);
+        t.addColorStop(0.5, C.silver[1]);
+        t.addColorStop(1, C.silver[2]);
+        return t;
+      }
+
+      if (logo && logo.naturalWidth) {
+        var lh = 26,
+          lw = logo.naturalWidth * (lh / logo.naturalHeight);
+        ctx.drawImage(logo, pad, 26, lw, lh);
+      }
+
+      ctx.textBaseline = "alphabetic";
+
+      ctx.font = '800 29px "Barlow Condensed",sans-serif';
+      var nm =
+        data.agentName && String(data.agentName).trim()
+          ? String(data.agentName).trim()
+          : "Your Name";
+      var nmW = ctx.measureText(nm).width;
+      ctx.fillStyle = silverText(pad, 92, nmW, 26);
+      ctx.fillText(nm, pad, 92);
+
+      ctx.fillStyle = C.copperFlat;
+      ctx.font = '11px "IBM Plex Mono",monospace';
+      ctx.fillText(data.handle || "@Tier 1 Financial", pad, 110);
+
+      var dg = ctx.createLinearGradient(pad, 0, pad + 220, 0);
+      dg.addColorStop(0, "rgba(202,126,64,0.6)");
+      dg.addColorStop(1, "rgba(202,126,64,0)");
+      ctx.fillStyle = dg;
+      ctx.fillRect(pad, 126, w - pad * 2, 1);
+
+      var cells = wcBuildCells(data);
+      var colW = (w - pad * 2) / 2,
+        topY = 152,
+        rowH = 44;
+      cells.forEach(function (cell, i) {
+        var col = i % 2,
+          row = Math.floor(i / 2);
+        var cx = pad + col * colW,
+          cy = topY + row * rowH;
+        ctx.fillStyle = C.dim;
+        ctx.font = '700 9px "Barlow Condensed",sans-serif';
+        ctx.fillText(cell.k.toUpperCase(), cx, cy);
+        var vSize = cell.big ? 23 : 19;
+        if (cell.k === "Carrier" && carrierLogo && carrierLogo.naturalWidth) {
+          var clh = vSize,
+            clw = carrierLogo.naturalWidth * (clh / carrierLogo.naturalHeight);
+          ctx.drawImage(carrierLogo, cx, cy + 22 - clh, clw, clh);
+          return;
+        }
+        ctx.font = "800 " + vSize + 'px "Barlow Condensed",sans-serif';
+        if (cell.copper) {
+          var vW = ctx.measureText(cell.v).width;
+          ctx.fillStyle = copperText(cx, cy + 22, vW, vSize);
+        } else {
+          ctx.fillStyle = C.white;
+        }
+        ctx.fillText(cell.v, cx, cy + 22);
+      });
+
+      var bg = ctx.createLinearGradient(w - pad - 84, 26, w - pad, 50);
+      bg.addColorStop(0, C.copperDk);
+      bg.addColorStop(0.25, C.copperHi);
+      bg.addColorStop(0.5, C.copperBase);
+      bg.addColorStop(0.75, C.copperHi);
+      bg.addColorStop(1, C.copperDk);
+      ctx.fillStyle = bg;
+      wcRoundRect(ctx, w - pad - 84, 26, 84, 24, 6);
+      ctx.fill();
+      ctx.fillStyle = C.badgeText;
+      ctx.font = '700 12px "Barlow Condensed",sans-serif';
+      ctx.textAlign = "center";
+      ctx.fillText(data.badge || "BIG WIN", w - pad - 42, 42);
+      ctx.textAlign = "left";
+
+      var d = data.date instanceof Date ? data.date : new Date();
+      var dt =
+        WC_MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+      ctx.fillStyle = C.dim;
+      ctx.font = '10px "IBM Plex Mono",monospace';
+      ctx.textAlign = "right";
+      ctx.fillText(dt, w - pad, h - 18);
+      ctx.textAlign = "left";
+
+      return canvas.toDataURL("image/png");
+    },
+  );
 }
 
 export type WinCardData = {
@@ -224,9 +289,16 @@ export type WinCardOpts = {
  *  never recomputed from the agent's current comp level. */
 export function winCardDataFromPolicy(
   agentName: string | null | undefined,
-  policy: { annualPremium: string; commissionAmount?: string | null; product: string | null; carrier: string; submittedAt: string },
+  policy: {
+    annualPremium: string;
+    commissionAmount?: string | null;
+    product: string | null;
+    carrier: string;
+    submittedAt: string;
+  },
 ): WinCardData {
-  const commission = policy.commissionAmount != null ? Number(policy.commissionAmount) : null;
+  const commission =
+    policy.commissionAmount != null ? Number(policy.commissionAmount) : null;
   return {
     agentName,
     annualPremium: Number(policy.annualPremium),

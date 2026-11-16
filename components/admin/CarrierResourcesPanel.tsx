@@ -4,13 +4,32 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { getCarrierLogoFile } from "@/lib/carrierLogos";
 import { Trash2, ChevronUp, ChevronDown } from "lucide-react";
 
 type Contact = { id: string; label: string; phone: string; order: number };
-type Link = { id: string; label: string; url: string; isAgentPortal: boolean; order: number };
-type Carrier = { id: string; name: string; order: number; contacts: Contact[]; links: Link[] };
+type Link = {
+  id: string;
+  label: string;
+  url: string;
+  isAgentPortal: boolean;
+  order: number;
+};
+type Carrier = {
+  id: string;
+  name: string;
+  order: number;
+  contacts: Contact[];
+  links: Link[];
+};
 
-function AddContactForm({ carrierId, onAdded }: { carrierId: string; onAdded: () => void }) {
+function AddContactForm({
+  carrierId,
+  onAdded,
+}: {
+  carrierId: string;
+  onAdded: () => void;
+}) {
   const [label, setLabel] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -44,9 +63,23 @@ function AddContactForm({ carrierId, onAdded }: { carrierId: string; onAdded: ()
         submit();
       }}
     >
-      <Input placeholder="Label (e.g. Customer Service Number)" value={label} onChange={(e) => setLabel(e.target.value)} className="w-64" />
-      <Input placeholder="Phone (e.g. 800-231-0801)" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-44" />
-      <Button type="submit" variant="secondary" disabled={saving || !label.trim() || !phone.trim()}>
+      <Input
+        placeholder="Label (e.g. Customer Service Number)"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        className="w-64"
+      />
+      <Input
+        placeholder="Phone (e.g. 800-231-0801)"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        className="w-44"
+      />
+      <Button
+        type="submit"
+        variant="secondary"
+        disabled={saving || !label.trim() || !phone.trim()}
+      >
         {saving ? "Adding..." : "Add Contact"}
       </Button>
       {error && <p className="w-full text-xs text-red-light">{error}</p>}
@@ -54,7 +87,13 @@ function AddContactForm({ carrierId, onAdded }: { carrierId: string; onAdded: ()
   );
 }
 
-function AddLinkForm({ carrierId, onAdded }: { carrierId: string; onAdded: () => void }) {
+function AddLinkForm({
+  carrierId,
+  onAdded,
+}: {
+  carrierId: string;
+  onAdded: () => void;
+}) {
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
   const [isAgentPortal, setIsAgentPortal] = useState(false);
@@ -68,7 +107,11 @@ function AddLinkForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
     const res = await fetch(`/api/admin/carriers/${carrierId}/links`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: label.trim(), url: url.trim(), isAgentPortal }),
+      body: JSON.stringify({
+        label: label.trim(),
+        url: url.trim(),
+        isAgentPortal,
+      }),
     });
     setSaving(false);
     if (res.ok) {
@@ -90,13 +133,31 @@ function AddLinkForm({ carrierId, onAdded }: { carrierId: string; onAdded: () =>
         submit();
       }}
     >
-      <Input placeholder="Button label (e.g. Agent Portal)" value={label} onChange={(e) => setLabel(e.target.value)} className="w-56" />
-      <Input placeholder="URL" value={url} onChange={(e) => setUrl(e.target.value)} className="w-64" />
+      <Input
+        placeholder="Button label (e.g. Agent Portal)"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        className="w-56"
+      />
+      <Input
+        placeholder="URL"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        className="w-64"
+      />
       <label className="flex items-center gap-1.5 pb-2 text-xs text-muted">
-        <input type="checkbox" checked={isAgentPortal} onChange={(e) => setIsAgentPortal(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={isAgentPortal}
+          onChange={(e) => setIsAgentPortal(e.target.checked)}
+        />
         This is the Agent Portal
       </label>
-      <Button type="submit" variant="secondary" disabled={saving || !label.trim() || !url.trim()}>
+      <Button
+        type="submit"
+        variant="secondary"
+        disabled={saving || !label.trim() || !url.trim()}
+      >
         {saving ? "Adding..." : "Add Link"}
       </Button>
       {error && <p className="w-full text-xs text-red-light">{error}</p>}
@@ -142,7 +203,9 @@ export function CarrierResourcesPanel() {
 
   async function deleteContact(id: string, label: string) {
     if (!window.confirm(`Delete "${label}"?`)) return;
-    const res = await fetch(`/api/admin/carriers/contacts/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/carriers/contacts/${id}`, {
+      method: "DELETE",
+    });
     if (res.ok) load();
   }
 
@@ -157,7 +220,9 @@ export function CarrierResourcesPanel() {
 
   async function deleteLink(id: string, label: string) {
     if (!window.confirm(`Delete "${label}"?`)) return;
-    const res = await fetch(`/api/admin/carriers/links/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/carriers/links/${id}`, {
+      method: "DELETE",
+    });
     if (res.ok) load();
   }
 
@@ -195,9 +260,11 @@ export function CarrierResourcesPanel() {
           <CardTitle>Add Carrier</CardTitle>
         </CardHeader>
         <p className="mb-3 text-sm text-muted">
-          Same carrier list as Carrier Rates — adding one here (or there) makes it available in both places. Give it
-          phone contacts and link buttons below for the agent-facing Carrier Resources page. New carriers are
-          appended to the end of the grid — use the arrows on each carrier below to reorder them.
+          Same carrier list as Carrier Rates — adding one here (or there) makes
+          it available in both places. Give it phone contacts and link buttons
+          below for the agent-facing Carrier Resources page. New carriers are
+          appended to the end of the grid — use the arrows on each carrier below
+          to reorder them.
         </p>
         <form
           className="flex flex-wrap items-end gap-2"
@@ -222,106 +289,153 @@ export function CarrierResourcesPanel() {
       {loading && <p className="text-sm text-muted">Loading...</p>}
 
       {!loading && carriers.length === 0 && (
-        <p className="text-sm text-muted">No carriers yet — add one above to start building its resources.</p>
+        <p className="text-sm text-muted">
+          No carriers yet — add one above to start building its resources.
+        </p>
       )}
 
-      {carriers.map((carrier, i) => (
-        <Card key={carrier.id}>
-          <CardHeader>
-            <CardTitle>{carrier.name}</CardTitle>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => moveCarrier(carrier.id, "up")}
-                disabled={i === 0}
-                title="Move up in the agent-facing grid"
-                className="text-muted hover:text-foreground disabled:opacity-30"
-              >
-                <ChevronUp className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => moveCarrier(carrier.id, "down")}
-                disabled={i === carriers.length - 1}
-                title="Move down in the agent-facing grid"
-                className="text-muted hover:text-foreground disabled:opacity-30"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </button>
+      {carriers.map((carrier, i) => {
+        const logoFile = getCarrierLogoFile(carrier.name);
+        return (
+          <Card key={carrier.id}>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                {logoFile && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/carrier-logos/${logoFile}`}
+                    alt=""
+                    className="h-5 w-auto object-contain"
+                  />
+                )}
+                <CardTitle>{carrier.name}</CardTitle>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => moveCarrier(carrier.id, "up")}
+                  disabled={i === 0}
+                  title="Move up in the agent-facing grid"
+                  className="text-muted hover:text-foreground disabled:opacity-30"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveCarrier(carrier.id, "down")}
+                  disabled={i === carriers.length - 1}
+                  title="Move down in the agent-facing grid"
+                  className="text-muted hover:text-foreground disabled:opacity-30"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
+            </CardHeader>
+
+            <div className="mb-5">
+              <h3 className="font-condensed mb-2 text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
+                Phone Contacts
+              </h3>
+              {carrier.contacts.length === 0 ? (
+                <p className="text-sm text-muted">No contacts yet.</p>
+              ) : (
+                <div className="space-y-1">
+                  {carrier.contacts.map((contact, i) => (
+                    <div
+                      key={contact.id}
+                      className="flex items-center gap-2 rounded-md border border-border/60 px-3 py-1.5 text-sm"
+                    >
+                      <span className="flex-1 text-white">
+                        {contact.label}{" "}
+                        <span className="text-muted">— {contact.phone}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => moveContact(contact.id, "up")}
+                        disabled={i === 0}
+                        className="text-muted hover:text-foreground disabled:opacity-30"
+                      >
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveContact(contact.id, "down")}
+                        disabled={i === carrier.contacts.length - 1}
+                        className="text-muted hover:text-foreground disabled:opacity-30"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteContact(contact.id, contact.label)}
+                        className="text-muted hover:text-red-light"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <AddContactForm carrierId={carrier.id} onAdded={load} />
             </div>
-          </CardHeader>
 
-          <div className="mb-5">
-            <h3 className="font-condensed mb-2 text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
-              Phone Contacts
-            </h3>
-            {carrier.contacts.length === 0 ? (
-              <p className="text-sm text-muted">No contacts yet.</p>
-            ) : (
-              <div className="space-y-1">
-                {carrier.contacts.map((contact, i) => (
-                  <div key={contact.id} className="flex items-center gap-2 rounded-md border border-border/60 px-3 py-1.5 text-sm">
-                    <span className="flex-1 text-white">
-                      {contact.label} <span className="text-muted">— {contact.phone}</span>
-                    </span>
-                    <button type="button" onClick={() => moveContact(contact.id, "up")} disabled={i === 0} className="text-muted hover:text-foreground disabled:opacity-30">
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveContact(contact.id, "down")}
-                      disabled={i === carrier.contacts.length - 1}
-                      className="text-muted hover:text-foreground disabled:opacity-30"
+            <div>
+              <h3 className="font-condensed mb-2 text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
+                Link Buttons
+              </h3>
+              {carrier.links.length === 0 ? (
+                <p className="text-sm text-muted">No links yet.</p>
+              ) : (
+                <div className="space-y-1">
+                  {carrier.links.map((link, i) => (
+                    <div
+                      key={link.id}
+                      className="flex items-center gap-2 rounded-md border border-border/60 px-3 py-1.5 text-sm"
                     >
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </button>
-                    <button type="button" onClick={() => deleteContact(contact.id, contact.label)} className="text-muted hover:text-red-light">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <AddContactForm carrierId={carrier.id} onAdded={load} />
-          </div>
-
-          <div>
-            <h3 className="font-condensed mb-2 text-[11px] font-bold tracking-[0.1em] text-muted uppercase">Link Buttons</h3>
-            {carrier.links.length === 0 ? (
-              <p className="text-sm text-muted">No links yet.</p>
-            ) : (
-              <div className="space-y-1">
-                {carrier.links.map((link, i) => (
-                  <div key={link.id} className="flex items-center gap-2 rounded-md border border-border/60 px-3 py-1.5 text-sm">
-                    <span className="flex-1 truncate text-white">
-                      {link.label} <span className="text-muted">— {link.url}</span>
-                    </span>
-                    <label className="flex items-center gap-1 text-xs text-muted">
-                      <input type="checkbox" checked={link.isAgentPortal} onChange={() => toggleAgentPortal(link)} />
-                      Portal
-                    </label>
-                    <button type="button" onClick={() => moveLink(link.id, "up")} disabled={i === 0} className="text-muted hover:text-foreground disabled:opacity-30">
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveLink(link.id, "down")}
-                      disabled={i === carrier.links.length - 1}
-                      className="text-muted hover:text-foreground disabled:opacity-30"
-                    >
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </button>
-                    <button type="button" onClick={() => deleteLink(link.id, link.label)} className="text-muted hover:text-red-light">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <AddLinkForm carrierId={carrier.id} onAdded={load} />
-          </div>
-        </Card>
-      ))}
+                      <span className="flex-1 truncate text-white">
+                        {link.label}{" "}
+                        <span className="text-muted">— {link.url}</span>
+                      </span>
+                      <label className="flex items-center gap-1 text-xs text-muted">
+                        <input
+                          type="checkbox"
+                          checked={link.isAgentPortal}
+                          onChange={() => toggleAgentPortal(link)}
+                        />
+                        Portal
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => moveLink(link.id, "up")}
+                        disabled={i === 0}
+                        className="text-muted hover:text-foreground disabled:opacity-30"
+                      >
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveLink(link.id, "down")}
+                        disabled={i === carrier.links.length - 1}
+                        className="text-muted hover:text-foreground disabled:opacity-30"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteLink(link.id, link.label)}
+                        className="text-muted hover:text-red-light"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <AddLinkForm carrierId={carrier.id} onAdded={load} />
+            </div>
+          </Card>
+        );
+      })}
     </div>
   );
 }

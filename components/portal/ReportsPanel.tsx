@@ -6,14 +6,29 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { DashboardRangeSelect } from "@/components/portal/dashboard/DashboardRangeSelect";
 import { DashboardRange } from "@/lib/dashboardRange";
 import { cn } from "@/lib/cn";
+import { CarrierLogo } from "@/components/portal/CarrierLogo";
 
-type CarrierRow = { carrier: string; ap: number; count: number; avgPremium: number };
-type ProductRow = { product: string; ap: number; count: number; avgCaseSize: number };
+type CarrierRow = {
+  carrier: string;
+  ap: number;
+  count: number;
+  avgPremium: number;
+};
+type ProductRow = {
+  product: string;
+  ap: number;
+  count: number;
+  avgCaseSize: number;
+};
 
 type Scope = "personal" | "org";
 
 function formatCurrency(value: number) {
-  return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  return value.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
 }
 
 export function ReportsPanel() {
@@ -88,10 +103,19 @@ export function ReportsPanel() {
               <tbody>
                 {carriers.map((c) => (
                   <tr key={c.carrier} className="border-b border-border/60">
-                    <td className="py-2 pr-4 text-white">{c.carrier}</td>
+                    <td className="py-2 pr-4 text-white">
+                      <CarrierLogo
+                        name={c.carrier}
+                        className="h-5 w-auto object-contain"
+                      />
+                    </td>
                     <td className="py-2 pr-4 text-muted">{c.count}</td>
-                    <td className="py-2 pr-4 text-white">{formatCurrency(c.ap)}</td>
-                    <td className="py-2 pr-4 text-muted">{formatCurrency(c.avgPremium)}</td>
+                    <td className="py-2 pr-4 text-white">
+                      {formatCurrency(c.ap)}
+                    </td>
+                    <td className="py-2 pr-4 text-muted">
+                      {formatCurrency(c.avgPremium)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -119,8 +143,12 @@ export function ReportsPanel() {
                 <tr key={p.product} className="border-b border-border/60">
                   <td className="py-2 pr-4 text-white">{p.product}</td>
                   <td className="py-2 pr-4 text-muted">{p.count}</td>
-                  <td className="py-2 pr-4 text-white">{formatCurrency(p.ap)}</td>
-                  <td className="py-2 pr-4 text-muted">{formatCurrency(p.avgCaseSize)}</td>
+                  <td className="py-2 pr-4 text-white">
+                    {formatCurrency(p.ap)}
+                  </td>
+                  <td className="py-2 pr-4 text-muted">
+                    {formatCurrency(p.avgCaseSize)}
+                  </td>
                 </tr>
               ))}
             </tbody>

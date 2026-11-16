@@ -3,11 +3,23 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { PolicySubmitForm, type SubmittedPolicy } from "@/components/portal/PolicySubmitForm";
+import {
+  PolicySubmitForm,
+  type SubmittedPolicy,
+} from "@/components/portal/PolicySubmitForm";
 import { WinCard } from "@/components/portal/WinCard";
+import { CarrierLogo } from "@/components/portal/CarrierLogo";
 
-export function SubmitPolicyPanel({ isAgent, agentName }: { isAgent: boolean; agentName: string | null | undefined }) {
-  const [lastSubmitted, setLastSubmitted] = useState<SubmittedPolicy | null>(null);
+export function SubmitPolicyPanel({
+  isAgent,
+  agentName,
+}: {
+  isAgent: boolean;
+  agentName: string | null | undefined;
+}) {
+  const [lastSubmitted, setLastSubmitted] = useState<SubmittedPolicy | null>(
+    null,
+  );
 
   return (
     <div className="space-y-6">
@@ -16,12 +28,19 @@ export function SubmitPolicyPanel({ isAgent, agentName }: { isAgent: boolean; ag
           <CardTitle>New Policy</CardTitle>
         </CardHeader>
         {lastSubmitted && (
-          <p className="mb-4 text-sm text-teal-light">
-            Submitted {lastSubmitted.clientName} with {lastSubmitted.carrier}. View it on{" "}
-            <Link href="/book-of-business" className="underline">
-              Book of Business
-            </Link>
-            .
+          <p className="mb-4 flex flex-wrap items-center gap-x-1 text-sm text-teal-light">
+            <span>Submitted {lastSubmitted.clientName} with</span>
+            <CarrierLogo
+              name={lastSubmitted.carrier}
+              className="inline-block h-4 w-auto object-contain align-[-3px]"
+            />
+            <span>
+              . View it on{" "}
+              <Link href="/book-of-business" className="underline">
+                Book of Business
+              </Link>
+              .
+            </span>
           </p>
         )}
         <PolicySubmitForm isAgent={isAgent} onSubmitted={setLastSubmitted} />
@@ -31,7 +50,11 @@ export function SubmitPolicyPanel({ isAgent, agentName }: { isAgent: boolean; ag
           <CardHeader>
             <CardTitle>Win Card</CardTitle>
           </CardHeader>
-          <WinCard key={lastSubmitted.id} policy={lastSubmitted} agentName={agentName} />
+          <WinCard
+            key={lastSubmitted.id}
+            policy={lastSubmitted}
+            agentName={agentName}
+          />
         </Card>
       )}
     </div>

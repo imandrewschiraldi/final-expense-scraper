@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/cn";
+import { CarrierLogo } from "@/components/portal/CarrierLogo";
 
 type Contact = { id: string; label: string; phone: string };
 type Link = { id: string; label: string; url: string; isAgentPortal: boolean };
@@ -50,13 +51,18 @@ export function CarrierResourcesGrid() {
   if (loading) return <p className="text-sm text-muted">Loading...</p>;
   if (error) return <p className="text-sm text-red-light">{error}</p>;
   if (carriers.length === 0) {
-    return <p className="text-sm text-muted">No carrier resources have been added yet.</p>;
+    return (
+      <p className="text-sm text-muted">
+        No carrier resources have been added yet.
+      </p>
+    );
   }
 
   // When the last row has a lone leftover carrier (odd total count), span
   // it across both columns and center it instead of leaving it stuck on
   // the left.
-  const isTrailingOdd = (i: number) => carriers.length % 2 === 1 && i === carriers.length - 1;
+  const isTrailingOdd = (i: number) =>
+    carriers.length % 2 === 1 && i === carriers.length - 1;
 
   return (
     <div className="grid grid-cols-1 justify-center gap-x-14 gap-y-8 lg:grid-cols-[repeat(2,24rem)]">
@@ -67,10 +73,16 @@ export function CarrierResourcesGrid() {
           ref={(el) => {
             refs.current[carrier.id] = el;
           }}
-          className={cn("mx-auto w-full max-w-sm scroll-mt-24", isTrailingOdd(i) && "lg:col-span-2")}
+          className={cn(
+            "mx-auto w-full max-w-sm scroll-mt-24",
+            isTrailingOdd(i) && "lg:col-span-2",
+          )}
         >
-          <h2 className="font-montserrat mb-3 text-center text-2xl font-black tracking-wide text-white uppercase">
-            {carrier.name}
+          <h2 className="font-montserrat mb-3 flex items-center justify-center text-center text-2xl font-black tracking-wide text-white uppercase">
+            <CarrierLogo
+              name={carrier.name}
+              className="h-10 w-auto object-contain"
+            />
           </h2>
 
           <div
