@@ -5,8 +5,8 @@
 // new PNG in never needs a migration.
 const CARRIER_LOGO_FILES: Record<string, string> = {
   athene: "athene.png",
-  "f&g": "fg-color.png",
-  fg: "fg-color.png",
+  "f&g": "fg.png",
+  fg: "fg.png",
   corebridge: "corebridge.png",
   "corebridge financial": "corebridge.png",
   americo: "americo.png",
