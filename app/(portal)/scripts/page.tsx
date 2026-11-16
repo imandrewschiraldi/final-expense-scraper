@@ -2,6 +2,11 @@ import { EmbeddedTool } from "@/components/portal/EmbeddedTool";
 
 export default function ScriptsPage() {
   return (
-    <EmbeddedTool title="Scripts" src="https://tier1financialscripts.org/" lightSrc="/tools/sales-script-light.html" />
+    <EmbeddedTool
+      title="Scripts"
+      src="https://tier1financialscripts.org/"
+      lightSrc="/tools/sales-script-light.html"
+      greenSrc="/tools/sales-script-green.html"
+    />
   );
 }

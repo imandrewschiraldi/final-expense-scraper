@@ -17,33 +17,67 @@ import { useTheme } from "@/lib/useTheme";
  * sits top-left, where the now-hidden logo used to be, since the tool's own
  * header controls occupy the top-right.
  *
- * `lightSrc` — an optional self-hosted light-mode build of the same tool
- * (e.g. /tools/sales-script-light.html), shown instead of `src` whenever the
- * portal itself is in light mode. The tools are otherwise dark-only (hosted
- * externally, no theme awareness of their own), so without this a light-mode
- * visitor would hit a jarring dark iframe inside an otherwise light page.
+ * `lightSrc`/`greenSrc` — optional self-hosted light-mode/green-mode builds
+ * of the same tool (e.g. /tools/sales-script-light.html,
+ * /tools/sales-script-green.html), shown instead of `src` whenever the
+ * portal itself is in that theme. The tools are otherwise dark-only (hosted
+ * externally, no theme awareness of their own), so without these a light-
+ * or green-mode visitor would hit a jarring dark iframe inside an otherwise
+ * themed page.
  *
- * Both iframes mount at once and stay mounted — only a CSS `hidden` toggles
- * which one shows — rather than flipping a single iframe's `src` between
- * them. Changing an iframe's `src` throws away and fully reloads whatever
- * was in it (every script re-parses, any in-progress calculator inputs are
- * lost), which is what made the theme toggle feel laggy specifically on
- * these two pages: every flip reloaded the whole embedded tool from
- * scratch. This way each one loads once, in parallel, right when the page
- * mounts, and toggling is an instant visibility swap from then on. */
-export function EmbeddedTool({ title, src, lightSrc }: { title: string; src: string; lightSrc?: string }) {
+ * All three iframes mount at once and stay mounted — only a CSS `hidden`
+ * toggles which one shows — rather than flipping a single iframe's `src`
+ * between them. Changing an iframe's `src` throws away and fully reloads
+ * whatever was in it (every script re-parses, any in-progress calculator
+ * inputs are lost), which is what made the theme toggle feel laggy
+ * specifically on these two pages: every flip reloaded the whole embedded
+ * tool from scratch. This way each one loads once, in parallel, right when
+ * the page mounts, and toggling is an instant visibility swap from then
+ * on. */
+export function EmbeddedTool({
+  title,
+  src,
+  lightSrc,
+  greenSrc,
+}: {
+  title: string;
+  src: string;
+  lightSrc?: string;
+  greenSrc?: string;
+}) {
   const [theme] = useTheme();
   const showLight = theme === "light" && !!lightSrc;
-  const activeSrc = showLight ? lightSrc! : src;
+  const showGreen = !showLight && theme === "green" && !!greenSrc;
+  const activeSrc = showLight ? lightSrc! : showGreen ? greenSrc! : src;
 
   function embed(url: string) {
     return `${url}${url.includes("?") ? "&" : "?"}embed=1`;
   }
 
   return (
-    <div data-tour="embedded-tool" className="relative -mx-4 -mb-8 h-[calc(100dvh-74px)] sm:-mx-6 lg:-mx-10 lg:-mt-2 lg:h-screen">
-      <iframe src={embed(src)} title={title} className={`h-full w-full border-0 ${showLight ? "hidden" : ""}`} />
-      {lightSrc && <iframe src={embed(lightSrc)} title={title} className={`h-full w-full border-0 ${showLight ? "" : "hidden"}`} />}
+    <div
+      data-tour="embedded-tool"
+      className="relative -mx-4 -mb-8 h-[calc(100dvh-74px)] sm:-mx-6 lg:-mx-10 lg:-mt-2 lg:h-screen"
+    >
+      <iframe
+        src={embed(src)}
+        title={title}
+        className={`h-full w-full border-0 ${showLight || showGreen ? "hidden" : ""}`}
+      />
+      {lightSrc && (
+        <iframe
+          src={embed(lightSrc)}
+          title={title}
+          className={`h-full w-full border-0 ${showLight ? "" : "hidden"}`}
+        />
+      )}
+      {greenSrc && (
+        <iframe
+          src={embed(greenSrc)}
+          title={title}
+          className={`h-full w-full border-0 ${showGreen ? "" : "hidden"}`}
+        />
+      )}
       <a
         href={activeSrc}
         target="_blank"
