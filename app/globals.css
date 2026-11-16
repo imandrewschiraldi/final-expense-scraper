@@ -139,6 +139,28 @@
   --sidebar-divider: rgba(0, 0, 0, 0.1);
 }
 
+/* Green mode — a third, dark-family theme: same structure as the default
+   dark theme above (light foreground/text on a dark surface, same --white/
+   --border/--sidebar-divider as dark since text contrast works the same
+   way), just with the neutral black/gray backgrounds swapped for a richer
+   forest green instead of a subtle tint — a deliberately more saturated,
+   colorful dark mode rather than "dark mode with a hint of green". Same
+   7 tokens light mode remaps, nothing else — brand copper/green-status/
+   metal tokens stay untouched here too. */
+:root[data-theme="green"] {
+  color-scheme: dark;
+
+  --background: #0a1f10;
+  --surface: #112b18;
+  --surface2: #15351d;
+  --border: rgba(255, 255, 255, 0.16);
+  --foreground: #cfe8d2;
+  --white: #ffffff;
+  --muted: #6f9775;
+  --input-bg: #163a1e;
+  --sidebar-divider: rgba(255, 255, 255, 0.16);
+}
+
 /* Carrier logo files are white (plus a couple of small color accents),
    so they go invisible on light mode's light surfaces — rather than
    propping a dark chip behind every one, flip the artwork itself to

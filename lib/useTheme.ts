@@ -8,28 +8,40 @@ const STORAGE_KEY = "portal-theme";
 // in sync the instant it changes, without a shared React context.
 const EVENT_NAME = "portal-theme-change";
 
-export type Theme = "dark" | "light";
+export type Theme = "dark" | "light" | "green";
+const THEMES: Theme[] = ["dark", "light", "green"];
 
 function readStored(): Theme {
   if (typeof window === "undefined") return "dark";
-  return localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark";
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return (THEMES as string[]).includes(stored ?? "")
+    ? (stored as Theme)
+    : "dark";
+}
+
+/** The theme a click switches TO, given the current one — dark → light →
+ *  green → dark. Shared with TopBarActions so the cycle order lives in one
+ *  place alongside the theme list itself. */
+export function nextTheme(theme: Theme): Theme {
+  return THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
 }
 
 function applyTheme(theme: Theme) {
-  if (theme === "light") {
-    document.documentElement.setAttribute("data-theme", "light");
-  } else {
+  if (theme === "dark") {
     document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", theme);
   }
 }
 
-/** Per-device dark/light preference — dark by default (today's look,
- *  unchanged for everyone who hasn't touched it), flipped from
+/** Per-device theme preference, one of three: dark (today's look, the
+ *  default for everyone who hasn't touched it), light, or green (a richer
+ *  forest-green dark mode) — cycled dark → light → green → dark from
  *  TopBarActions' header row. The actual theme CSS lives in globals.css
- *  under `:root[data-theme="light"]`; this hook only ever sets or clears
- *  that attribute on <html> and persists the choice. See the inline
- *  script in app/layout.tsx for the no-flash-on-load version of this same
- *  read, which runs before React hydrates. */
+ *  under `:root[data-theme="light"]` / `:root[data-theme="green"]`; this
+ *  hook only ever sets or clears that attribute on <html> and persists the
+ *  choice. See the inline script in app/layout.tsx for the no-flash-on-load
+ *  version of this same read, which runs before React hydrates. */
 export function useTheme(): [Theme, (next: Theme) => void] {
   // Starts "dark" to match SSR (no access to localStorage there) and
   // syncs from persisted state right after mount, same pattern Sidebar's

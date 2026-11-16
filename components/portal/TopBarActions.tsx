@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Bot, Mic, Moon, Send, Sun, X } from "lucide-react";
+import { Bot, Leaf, Mic, Moon, Send, Sun, X } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { ProfileMenu } from "@/components/portal/ProfileMenu";
 import { QuickLinksMenu } from "@/components/portal/QuickLinksMenu";
-import { useTheme } from "@/lib/useTheme";
+import { nextTheme, useTheme } from "@/lib/useTheme";
+
+const THEME_LABEL = { dark: "dark", light: "light", green: "green" } as const;
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 type Profile = { name: string; profileImageUrl: string | null };
@@ -515,23 +517,17 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
       <QuickLinksMenu />
       <button
         type="button"
-        onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-        aria-label={
-          theme === "light" ? "Switch to dark mode" : "Switch to light mode"
-        }
-        title={
-          theme === "light" ? "Switch to dark mode" : "Switch to light mode"
-        }
+        onClick={() => setTheme(nextTheme(theme))}
+        aria-label={`Switch to ${THEME_LABEL[nextTheme(theme)]} mode`}
+        title={`Switch to ${THEME_LABEL[nextTheme(theme)]} mode`}
         className="flex h-9 w-9 shrink-0 items-center justify-center text-muted transition-colors hover:text-foreground"
       >
         {/* Shows the icon for what clicking it switches TO, not the
-            current theme — dark mode shows the sun (tap for light),
-            light mode shows the moon (tap for dark). */}
-        {theme === "light" ? (
-          <Moon className="h-5 w-5" />
-        ) : (
-          <Sun className="h-5 w-5" />
-        )}
+            current theme — cycles dark (sun, tap for light) → light
+            (leaf, tap for green) → green (moon, tap for dark). */}
+        {nextTheme(theme) === "light" && <Sun className="h-5 w-5" />}
+        {nextTheme(theme) === "green" && <Leaf className="h-5 w-5" />}
+        {nextTheme(theme) === "dark" && <Moon className="h-5 w-5" />}
       </button>
       <NotificationBell />
       <ProfileMenu
