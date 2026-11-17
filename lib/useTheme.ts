@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_KEY = "portal-theme";
 // Mirrors useWideLayout's localStorage + custom-event pattern so every
-// mounted consumer (just the toggle button in TopBarActions today) stays
-// in sync the instant it changes, without a shared React context.
+// mounted consumer (just ThemeMenu today) stays in sync the instant it
+// changes, without a shared React context.
 const EVENT_NAME = "portal-theme-change";
 
 export type Theme = "dark" | "light" | "green";
@@ -19,13 +19,6 @@ function readStored(): Theme {
     : "dark";
 }
 
-/** The theme a click switches TO, given the current one — dark → light →
- *  green → dark. Shared with TopBarActions so the cycle order lives in one
- *  place alongside the theme list itself. */
-export function nextTheme(theme: Theme): Theme {
-  return THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
-}
-
 function applyTheme(theme: Theme) {
   if (theme === "dark") {
     document.documentElement.removeAttribute("data-theme");
@@ -36,10 +29,10 @@ function applyTheme(theme: Theme) {
 
 /** Per-device theme preference, one of three: dark (today's look, the
  *  default for everyone who hasn't touched it), light, or green (a richer
- *  forest-green dark mode) — cycled dark → light → green → dark from
- *  TopBarActions' header row. The actual theme CSS lives in globals.css
- *  under `:root[data-theme="light"]` / `:root[data-theme="green"]`; this
- *  hook only ever sets or clears that attribute on <html> and persists the
+ *  forest-green dark mode) — picked from ThemeMenu's dropdown in the
+ *  header row. The actual theme CSS lives in globals.css under
+ *  `:root[data-theme="light"]` / `:root[data-theme="green"]`; this hook
+ *  only ever sets or clears that attribute on <html> and persists the
  *  choice. See the inline script in app/layout.tsx for the no-flash-on-load
  *  version of this same read, which runs before React hydrates. */
 export function useTheme(): [Theme, (next: Theme) => void] {
