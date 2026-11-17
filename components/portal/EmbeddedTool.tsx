@@ -25,15 +25,28 @@ import { useTheme } from "@/lib/useTheme";
  * or green-mode visitor would hit a jarring dark iframe inside an otherwise
  * themed page.
  *
- * All three iframes mount at once and stay mounted — only a CSS `hidden`
- * toggles which one shows — rather than flipping a single iframe's `src`
- * between them. Changing an iframe's `src` throws away and fully reloads
- * whatever was in it (every script re-parses, any in-progress calculator
- * inputs are lost), which is what made the theme toggle feel laggy
- * specifically on these two pages: every flip reloaded the whole embedded
- * tool from scratch. This way each one loads once, in parallel, right when
- * the page mounts, and toggling is an instant visibility swap from then
- * on. */
+ * All three iframes mount at once and stay mounted — only CSS toggles
+ * which one shows — rather than flipping a single iframe's `src` between
+ * them. Changing an iframe's `src` throws away and fully reloads whatever
+ * was in it (every script re-parses, any in-progress calculator inputs are
+ * lost), which is what made the theme toggle feel laggy specifically on
+ * these two pages: every flip reloaded the whole embedded tool from
+ * scratch. This way each one loads once, in parallel, right when the page
+ * mounts, and toggling is an instant visibility swap from then on.
+ *
+ * Which one shows is driven by the `.tool-iframe-{dark,light,green}`
+ * rules in globals.css, keyed off the `data-theme` attribute on <html> —
+ * NOT by a className computed from `theme` here. That attribute is set by
+ * the no-flash inline script in layout.tsx before React ever hydrates;
+ * `theme` from useTheme() only updates once its effect runs afterward.
+ * Using React state to pick which iframe is hidden left a visible window
+ * on every hard reload where the un-hidden default (dark, the slower-to-
+ * load externally-hosted tool, with its own black background painting as
+ * soon as its document starts streaming) sat fully visible until
+ * hydration caught up — a real flash-to-black, not just a cosmetic one.
+ * Plain CSS has no such gap: it applies in the same pass as the attribute
+ * that's already correct pre-paint. `theme` is still read below, just for
+ * the "Open in New Tab" link's href, which doesn't need to be flash-safe. */
 export function EmbeddedTool({
   title,
   src,
@@ -62,20 +75,20 @@ export function EmbeddedTool({
       <iframe
         src={embed(src)}
         title={title}
-        className={`h-full w-full border-0 ${showLight || showGreen ? "hidden" : ""}`}
+        className="tool-iframe-dark h-full w-full border-0"
       />
       {lightSrc && (
         <iframe
           src={embed(lightSrc)}
           title={title}
-          className={`h-full w-full border-0 ${showLight ? "" : "hidden"}`}
+          className="tool-iframe-light h-full w-full border-0"
         />
       )}
       {greenSrc && (
         <iframe
           src={embed(greenSrc)}
           title={title}
-          className={`h-full w-full border-0 ${showGreen ? "" : "hidden"}`}
+          className="tool-iframe-green h-full w-full border-0"
         />
       )}
       <a

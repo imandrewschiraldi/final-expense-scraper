@@ -175,6 +175,34 @@
   filter: brightness(0);
 }
 
+/* EmbeddedTool's three stacked iframes (Scripts/Commission Calculator's
+   dark/light/green variants) pick which one shows via these rules, keyed
+   off the same data-theme attribute the inline script in layout.tsx sets
+   on <html> before first paint — see the comment on EmbeddedTool itself
+   for why this has to be plain CSS rather than a React-state-driven
+   className (a JS-driven toggle only takes effect post-hydration, which
+   left the default/un-hidden dark iframe — the slower-to-load, externally
+   hosted one, with its own black background — visibly painted on every
+   hard reload until React caught up). */
+.tool-iframe-light,
+.tool-iframe-green {
+  display: none;
+}
+:root[data-theme="light"] .tool-iframe-dark,
+:root[data-theme="light"] .tool-iframe-green {
+  display: none;
+}
+:root[data-theme="light"] .tool-iframe-light {
+  display: block;
+}
+:root[data-theme="green"] .tool-iframe-dark,
+:root[data-theme="green"] .tool-iframe-light {
+  display: none;
+}
+:root[data-theme="green"] .tool-iframe-green {
+  display: block;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
