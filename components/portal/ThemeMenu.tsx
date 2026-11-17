@@ -28,7 +28,10 @@ export function ThemeMenu() {
   useEffect(() => {
     if (!open) return;
     function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -36,7 +39,8 @@ export function ThemeMenu() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  const CurrentIcon = THEME_OPTIONS.find((t) => t.value === theme)?.icon ?? Moon;
+  const CurrentIcon =
+    THEME_OPTIONS.find((t) => t.value === theme)?.icon ?? Moon;
 
   return (
     <div ref={containerRef} className="relative">
@@ -60,10 +64,19 @@ export function ThemeMenu() {
                 setTheme(value);
                 setOpen(false);
               }}
-              className={cn(ITEM_CLASS, value === theme && "metal-copper-text")}
+              className={ITEM_CLASS}
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="flex-1">{label}</span>
+              <Icon
+                className={cn(
+                  "h-4 w-4 shrink-0",
+                  value === theme && "text-[var(--copper-metal)]",
+                )}
+              />
+              <span
+                className={cn("flex-1", value === theme && "metal-copper-text")}
+              >
+                {label}
+              </span>
               {value === theme && (
                 <Check className="h-4 w-4 shrink-0 text-[var(--copper-metal)]" />
               )}
