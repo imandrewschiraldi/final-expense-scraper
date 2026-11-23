@@ -814,7 +814,7 @@ export function Sidebar({
             theme-colored look and the original logo, copper or not — only
             the area below the divider becomes the copper panel. */}
         <div
-          className="flex shrink-0 items-center justify-between px-3"
+          className="flex shrink-0 items-center justify-between px-4"
           style={{ height: HEADER_HEIGHT }}
         >
           <Link
@@ -827,7 +827,7 @@ export function Sidebar({
               alt="Tier 1 Financial"
               width={1560}
               height={558}
-              className="h-9 w-auto"
+              className="h-12 w-auto"
               priority
             />
           </Link>
@@ -896,7 +896,7 @@ export function Sidebar({
             copper panel. */}
         <div
           className={cn(
-            "flex shrink-0 items-center px-3",
+            "flex shrink-0 items-center px-4",
             collapsed ? "justify-center" : "justify-between",
           )}
           style={{ height: HEADER_HEIGHT }}
@@ -908,7 +908,7 @@ export function Sidebar({
                 alt="Tier 1 Financial"
                 width={950}
                 height={1112}
-                className="h-auto w-8"
+                className="h-auto w-10"
                 priority
               />
             ) : (
@@ -917,7 +917,7 @@ export function Sidebar({
                 alt="Tier 1 Financial"
                 width={1560}
                 height={558}
-                className="h-10 w-auto"
+                className="h-12 w-auto"
                 priority
               />
             )}
