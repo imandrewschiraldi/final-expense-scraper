@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
@@ -30,6 +31,17 @@ const ITEM_CLASS =
  * useTour() throws without a TourProvider ancestor, which only wraps the
  * shell when showTour is true, so the Tour item is skipped for Admin
  * entirely rather than calling the hook and crashing.
+ *
+ * The dropdown itself portals to document.body instead of rendering
+ * in place (same reasoning as Modal.tsx): the collapsed desktop sidebar
+ * wraps this trigger in an `overflow-hidden` flex column (added so the
+ * copper beta's gradient background and the nav's width-transition don't
+ * spill past the sidebar's own edge), which clipped the menu down to
+ * roughly its leftmost 70px — unreadable, barely clickable — since a
+ * CSS-positioned popup can never escape an ancestor's overflow:hidden.
+ * Portaling escapes that; position is computed from the trigger's own
+ * getBoundingClientRect() instead of CSS anchoring, and kept in sync on
+ * resize while open (the trigger doesn't otherwise move while open).
  */
 export function ProfileMenu({
   profile,
@@ -53,17 +65,56 @@ export function ProfileMenu({
   menuAlign?: "up" | "down";
 }) {
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [coords, setCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // document.body isn't available during SSR/the first client render —
+  // the portal target only exists once mounted (same as Modal.tsx).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  function updateCoords() {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setCoords(
+      menuAlign === "up"
+        ? { bottom: window.innerHeight - rect.top + 8, left: rect.left }
+        : { top: rect.bottom + 8, right: window.innerWidth - rect.right },
+    );
+  }
 
   useEffect(() => {
     if (!open) return;
+    updateCoords();
     function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        triggerRef.current &&
+        !triggerRef.current.contains(target) &&
+        menuRef.current &&
+        !menuRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     }
+    // The trigger doesn't move while the menu is open (it isn't inside a
+    // scrolling container of its own), but the viewport can still resize.
     document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    window.addEventListener("resize", updateCoords);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      window.removeEventListener("resize", updateCoords);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const displayName = role === "ADMIN" ? "Admin" : (profile?.name ?? name);
@@ -72,9 +123,50 @@ export function ProfileMenu({
     setOpen(false);
   }
 
-  return (
-    <div ref={containerRef} className="relative">
+  const menu = open && mounted && coords && (
+    // z-[60]: once portaled to document.body, this is a sibling of the
+    // mobile sidebar's own backdrop/drawer (z-40/z-50 in Sidebar.tsx) —
+    // needs to beat both to actually show up on top of the open drawer.
+    <div
+      ref={menuRef}
+      style={coords}
+      className="fixed z-[60] w-64 rounded-[10px] border border-border bg-surface p-2 shadow-lg"
+    >
+      <div className="flex items-center gap-2.5 rounded-lg p-2">
+        <Avatar profile={profile} displayName={displayName} size={9} />
+        <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+      </div>
+      <div className="my-1 border-t border-border" />
+      <MenuLink
+        href="/profile"
+        icon={User}
+        label="Profile"
+        onClick={() => {
+          close();
+          onNavigate?.();
+        }}
+      />
+      <SoundMenuItem />
+      {showTour && <TourMenuItem onClose={close} />}
+      <div className="my-1 border-t border-border" />
       <button
+        type="button"
+        onClick={() => {
+          close();
+          signOut({ callbackUrl: "/login" });
+        }}
+        className={cn(ITEM_CLASS, "hover:bg-red/10 hover:text-red-light")}
+      >
+        <LogOut className="h-4 w-4 shrink-0" />
+        Log Out
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="relative">
+      <button
+        ref={triggerRef}
         type="button"
         data-tour="sidebar-profile-link"
         onClick={() => setOpen((o) => !o)}
@@ -91,43 +183,7 @@ export function ProfileMenu({
         )}
       </button>
 
-      {open && (
-        <div
-          className={cn(
-            "absolute z-20 w-64 rounded-[10px] border border-border bg-surface p-2 shadow-lg",
-            menuAlign === "up" ? "bottom-full left-0 mb-2" : "top-full right-0 mt-2",
-          )}
-        >
-          <div className="flex items-center gap-2.5 rounded-lg p-2">
-            <Avatar profile={profile} displayName={displayName} size={9} />
-            <p className="truncate text-sm font-semibold text-white">{displayName}</p>
-          </div>
-          <div className="my-1 border-t border-border" />
-          <MenuLink
-            href="/profile"
-            icon={User}
-            label="Profile"
-            onClick={() => {
-              close();
-              onNavigate?.();
-            }}
-          />
-          <SoundMenuItem />
-          {showTour && <TourMenuItem onClose={close} />}
-          <div className="my-1 border-t border-border" />
-          <button
-            type="button"
-            onClick={() => {
-              close();
-              signOut({ callbackUrl: "/login" });
-            }}
-            className={cn(ITEM_CLASS, "hover:bg-red/10 hover:text-red-light")}
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            Log Out
-          </button>
-        </div>
-      )}
+      {menu && createPortal(menu, document.body)}
     </div>
   );
 }
