@@ -814,7 +814,7 @@ export function Sidebar({
             theme-colored look and the original logo, copper or not — only
             the area below the divider becomes the copper panel. */}
         <div
-          className="flex shrink-0 items-center justify-between px-4"
+          className="flex shrink-0 items-center justify-between pr-3 pl-7"
           style={{ height: HEADER_HEIGHT }}
         >
           <Link
@@ -896,8 +896,8 @@ export function Sidebar({
             copper panel. */}
         <div
           className={cn(
-            "flex shrink-0 items-center px-4",
-            collapsed ? "justify-center" : "justify-between",
+            "flex shrink-0 items-center",
+            collapsed ? "justify-center px-4" : "justify-between pr-3 pl-7",
           )}
           style={{ height: HEADER_HEIGHT }}
         >
