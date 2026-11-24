@@ -12,15 +12,15 @@ export function ProductionTimeline({ data }: { data: { label: string; ap: number
           <AreaChart data={data}>
             <defs>
               <linearGradient id="timelineFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-copper)" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="var(--color-copper)" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--color-green)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="var(--color-green)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
             <XAxis dataKey="label" stroke="var(--color-muted)" fontSize={11} tickLine={false} axisLine={false} />
             <YAxis stroke="var(--color-muted)" fontSize={11} tickLine={false} axisLine={false} width={48} />
             <Tooltip
-              cursor={{ stroke: "var(--color-copper-dim)", strokeWidth: 1 }}
+              cursor={{ stroke: "var(--color-green)", strokeWidth: 1 }}
               contentStyle={{ background: "var(--color-surface2)", border: "1px solid var(--color-border)", borderRadius: 8 }}
               formatter={(value: unknown, name: unknown): [string, string] =>
                 name === "ap"
@@ -31,11 +31,11 @@ export function ProductionTimeline({ data }: { data: { label: string; ap: number
             <Area
               type="linear"
               dataKey="ap"
-              stroke="var(--color-copper)"
+              stroke="var(--color-green)"
               strokeWidth={3}
               fill="url(#timelineFill)"
-              dot={{ r: 3, stroke: "var(--color-copper)", strokeWidth: 2, fill: "var(--color-surface)" }}
-              activeDot={{ r: 5, stroke: "var(--color-copper)", strokeWidth: 2, fill: "var(--color-copper)" }}
+              dot={false}
+              activeDot={{ r: 5, stroke: "var(--color-green)", strokeWidth: 2, fill: "var(--color-green)" }}
             />
           </AreaChart>
         </ResponsiveContainer>
