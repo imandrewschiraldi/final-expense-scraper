@@ -12,8 +12,6 @@ import {
   demoCarrierAnalytics,
   demoProductAnalytics,
   demoPolicyStatusAnalytics,
-  demoGoals,
-  demoRecentWins,
 } from "@/lib/demoData";
 
 export async function GET(req: NextRequest) {
@@ -28,6 +26,13 @@ export async function GET(req: NextRequest) {
     : "monthly";
 
   try {
+    // The Dashboard's own Goals section always shows this viewer's real
+    // goals, Demo Mode or not — unlike the Overview page's Goals widget
+    // (served by /api/portal/goals), which does fake them. Fetched
+    // unconditionally, before the demo-mode branch below, so both branches
+    // return the same real goals/recentWins.
+    const [goals, recentWins] = await Promise.all([activeGoalsFor(userId), recentWinsFor(userId)]);
+
     // Demo Mode is a per-viewer read-time overlay: checked fresh against
     // this user's own row, and only ever changes what this one request
     // returns to them — never writes anything, never touches another
@@ -42,15 +47,12 @@ export async function GET(req: NextRequest) {
       // Goal Completion / Goal Remaining (the KpiGrid tiles) still come
       // from the real computePersonalKpis, which derives them from this
       // user's own actual goals internally — only demoPersonalKpis' own
-      // AP-derived tiles are faked, layered on top. The Goals section
-      // itself (goals/recentWins below) is faked like everything else, so
-      // a viewer with no goals set doesn't see it sitting empty next to a
-      // page full of fake production numbers.
+      // AP-derived tiles are faked, layered on top.
       const realKpis = await computePersonalKpis(userId, range);
       return NextResponse.json({
         kpis: { ...realKpis, ...demoPersonalKpis(demoPolicies, range) },
-        goals: demoGoals(),
-        recentWins: demoRecentWins(),
+        goals,
+        recentWins,
         analytics: {
           timeline: demoProductionTimeline(demoPolicies, range),
           carriers: demoCarrierAnalytics(demoPolicies, range),
@@ -61,15 +63,13 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const [kpis, timeline, carriers, products, statusAnalytics, commissionsPaid, goals, recentWins] = await Promise.all([
+    const [kpis, timeline, carriers, products, statusAnalytics, commissionsPaid] = await Promise.all([
       computePersonalKpis(userId, range),
       computeProductionTimeline(userId, range),
       computeCarrierAnalytics(userId, range),
       computeProductAnalytics(userId, range),
       computePolicyStatusAnalytics(userId, range),
       computeCommissionsPaidCard(userId, range),
-      activeGoalsFor(userId),
-      recentWinsFor(userId),
     ]);
 
     return NextResponse.json({
