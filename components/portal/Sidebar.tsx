@@ -823,19 +823,11 @@ export function Sidebar({
             onClick={onCloseMobile}
           >
             <Image
-              src="/tier1-logo.jpg"
-              alt="Tier 1 Financial"
-              width={1560}
-              height={558}
-              className="sidebar-logo-plain h-12 w-auto"
-              priority
-            />
-            <Image
               src="/tier1-logo-transparent.png"
               alt="Tier 1 Financial"
               width={1560}
               height={558}
-              className="sidebar-logo-cutout h-12 w-auto"
+              className="h-12 w-auto"
               priority
             />
           </Link>
@@ -920,24 +912,14 @@ export function Sidebar({
                 priority
               />
             ) : (
-              <>
-                <Image
-                  src="/tier1-logo.jpg"
-                  alt="Tier 1 Financial"
-                  width={1560}
-                  height={558}
-                  className="sidebar-logo-plain h-12 w-auto"
-                  priority
-                />
-                <Image
-                  src="/tier1-logo-transparent.png"
-                  alt="Tier 1 Financial"
-                  width={1560}
-                  height={558}
-                  className="sidebar-logo-cutout h-12 w-auto"
-                  priority
-                />
-              </>
+              <Image
+                src="/tier1-logo-transparent.png"
+                alt="Tier 1 Financial"
+                width={1560}
+                height={558}
+                className="h-12 w-auto"
+                priority
+              />
             )}
           </Link>
           {!collapsed && (
