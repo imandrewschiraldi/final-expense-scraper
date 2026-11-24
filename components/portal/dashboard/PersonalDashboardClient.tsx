@@ -71,7 +71,7 @@ export function PersonalDashboardClient() {
   }
 
   return (
-    <div className="cards-elevated space-y-6">
+    <div className="space-y-6">
       <PageHeading slug="dashboard" alt="Dashboard" />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">Your production at a glance, derived from submitted policies.</p>

@@ -252,7 +252,7 @@ export function OverviewClient() {
   }
 
   return (
-    <div className="cards-elevated">
+    <div>
       <PageHeading slug="agent-accelerator" alt="Agent Accelerator" />
 
       <div className="mb-4 flex items-start justify-between gap-3">
