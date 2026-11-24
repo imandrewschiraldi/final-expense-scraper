@@ -7,6 +7,7 @@ export type OverviewWidgetDef = { id: string; label: string };
 export const OVERVIEW_WIDGET_REGISTRY: OverviewWidgetDef[] = [
   { id: "hallOfFame", label: "Hall of Fame" },
   { id: "bonusVolume", label: "Bonus Volume" },
+  { id: "goals", label: "Goals" },
   { id: "teamChat", label: "Team Chat" },
   { id: "leaderboard", label: "Leaderboard" },
   { id: "newTraining", label: "New Training" },

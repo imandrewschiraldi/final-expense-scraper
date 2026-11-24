@@ -32,6 +32,7 @@ import { RoutingNumberButton } from "@/components/portal/RoutingNumberButton";
 import { AnnouncementsCarousel } from "@/components/portal/overview/AnnouncementsCarousel";
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
 import { BonusVolumeCard } from "@/components/portal/overview/BonusVolumeCard";
+import { GoalsMiniWidget } from "@/components/portal/overview/GoalsMiniWidget";
 import { TeamChatWidget } from "@/components/portal/overview/TeamChatWidget";
 import { MiniLeaderboard } from "@/components/portal/overview/MiniLeaderboard";
 import { NewTrainingWidget } from "@/components/portal/overview/NewTrainingWidget";
@@ -99,6 +100,8 @@ function WidgetContent({
       );
     case "bonusVolume":
       return <BonusVolumeCard issuedAP={data.bonusVolume.issuedAP} />;
+    case "goals":
+      return <GoalsMiniWidget />;
     case "teamChat":
       return <TeamChatWidget messages={data.messages} />;
     case "leaderboard":

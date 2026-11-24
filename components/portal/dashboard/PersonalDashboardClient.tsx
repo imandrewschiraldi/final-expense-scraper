@@ -88,7 +88,9 @@ export function PersonalDashboardClient() {
 
           <KpiGrid data={overview.kpis} />
 
-          <GoalsSection goals={overview.goals} recentWins={overview.recentWins} onChanged={refresh} />
+          <div id="goals" className="scroll-mt-20">
+            <GoalsSection goals={overview.goals} recentWins={overview.recentWins} onChanged={refresh} />
+          </div>
 
           <div>
             <h2 className="mb-3 text-lg font-bold text-white">Production Analytics</h2>

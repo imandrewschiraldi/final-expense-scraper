@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { format } from "date-fns";
-import { Plus, Trash2, Trophy, X } from "lucide-react";
+import { CalendarRange, LineChart, Plus, Receipt, Target, Trash2, Trophy, UserPlus, Wallet, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { PremiumPanel } from "@/components/portal/dashboard/PremiumPanel";
@@ -15,6 +15,15 @@ import {
   GoalWithProgress,
   GoalCategoryKey,
 } from "@/lib/personalDashboardShared";
+
+const GOAL_CATEGORY_ICONS: Record<string, LucideIcon> = {
+  MONTHLY_AP: LineChart,
+  ANNUAL_AP: CalendarRange,
+  ISSUED_PREMIUM: Receipt,
+  POLICY_COUNT: Target,
+  INCOME: Wallet,
+  RECRUITING: UserPlus,
+};
 
 function formatGoalValue(category: string, value: number) {
   const fmt = GOAL_CATEGORY_FORMAT[category] ?? "currency";
@@ -135,6 +144,9 @@ function GoalCreateModal({ onClose, onCreated }: { onClose: () => void; onCreate
 }
 
 function GoalCard({ goal, index, onDeleted }: { goal: GoalWithProgress; index: number; onDeleted: () => void }) {
+  const complete = goal.percent >= 100;
+  const Icon = GOAL_CATEGORY_ICONS[goal.category] ?? Target;
+
   async function remove() {
     await fetch(`/api/portal/goals/${goal.id}`, { method: "DELETE" });
     onDeleted();
@@ -144,21 +156,52 @@ function GoalCard({ goal, index, onDeleted }: { goal: GoalWithProgress; index: n
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
     >
-      <PremiumPanel className="flex items-center gap-4 p-4">
+      <PremiumPanel
+        className={
+          complete
+            ? "flex items-center gap-4 border-[rgba(125,255,125,0.3)] p-4 transition-colors duration-200"
+            : "flex items-center gap-4 p-4 transition-colors duration-200 hover:border-copper-dim-gradient"
+        }
+      >
         <GoalProgressRing percent={goal.percent} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between">
-            <p className="font-condensed text-sm font-bold tracking-wide text-white uppercase">
-              {GOAL_CATEGORY_LABELS[goal.category] ?? goal.category}
-            </p>
-            <button onClick={remove} className="text-muted hover:text-red-light" aria-label="Delete goal">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className={
+                  complete
+                    ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                    : "metal-copper-surface flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                }
+                style={
+                  complete
+                    ? { background: "linear-gradient(135deg, var(--green-metal-hi) 0%, var(--green-metal-dk) 100%)" }
+                    : undefined
+                }
+              >
+                <Icon className="h-3.5 w-3.5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)]" />
+              </span>
+              <p className="font-condensed truncate text-sm font-bold tracking-wide text-white uppercase">
+                {GOAL_CATEGORY_LABELS[goal.category] ?? goal.category}
+              </p>
+            </div>
+            <button onClick={remove} className="shrink-0 text-muted hover:text-red-light" aria-label="Delete goal">
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
-          <p className="mt-0.5 text-xs text-muted">
-            {formatGoalValue(goal.category, goal.remaining)} remaining of {formatGoalValue(goal.category, goal.targetValue)}
+          <p className="mt-1.5 text-xs text-muted">
+            {complete ? (
+              <span className="font-semibold" style={{ color: "var(--green-light)" }}>
+                Goal hit — {formatGoalValue(goal.category, goal.targetValue)}
+              </span>
+            ) : (
+              <>
+                {formatGoalValue(goal.category, goal.remaining)} remaining of {formatGoalValue(goal.category, goal.targetValue)}
+              </>
+            )}
           </p>
         </div>
       </PremiumPanel>
@@ -187,8 +230,17 @@ export function GoalsSection({
       </div>
 
       {goals.length === 0 ? (
-        <PremiumPanel className="p-6 text-center">
-          <p className="text-sm text-muted">No active goals yet. Set one to start tracking your pace toward it.</p>
+        <PremiumPanel className="flex flex-col items-center gap-3 p-8 text-center">
+          <span className="metal-copper-surface flex h-12 w-12 items-center justify-center rounded-full">
+            <Target className="h-5 w-5 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)]" />
+          </span>
+          <div>
+            <p className="font-condensed text-sm font-bold tracking-wide text-white uppercase">No active goals yet</p>
+            <p className="mt-1 text-sm text-muted">Set one to start tracking your pace toward it.</p>
+          </div>
+          <Button variant="secondary" onClick={() => setShowModal(true)}>
+            <Plus className="mr-1 h-4 w-4" /> New Goal
+          </Button>
         </PremiumPanel>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
