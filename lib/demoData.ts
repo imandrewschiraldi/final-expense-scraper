@@ -3,7 +3,7 @@ import { DashboardRange, rangeSince, previousRangeWindow } from "@/lib/dashboard
 import { PRODUCTS } from "@/lib/products";
 import { windowFor, bucketKey, POLICY_STATUSES } from "@/lib/productionAnalytics";
 import { computeCommissionAmount } from "@/lib/commission";
-import { PersonalKpiData, CommissionsPaidCardData } from "@/lib/personalDashboardShared";
+import { PersonalKpiData, CommissionsPaidCardData, GoalWithProgress } from "@/lib/personalDashboardShared";
 import { RecentActivityItem } from "@/lib/agencyDashboardShared";
 
 /**
@@ -428,4 +428,45 @@ export function demoPoliciesAsApiRows(policies: DemoPolicy[], agentName: string)
     issuedAt: p.issuedAt ? p.issuedAt.toISOString() : null,
     agent: { name: agentName },
   }));
+}
+
+/** Goals weren't part of Demo Mode's overlay — a viewer with no goals of
+ *  their own set would see the Dashboard's Goals section (and the
+ *  Overview's Goals tile) sitting empty while everything else around them
+ *  was full of fake production numbers. Three in-progress goals plus one
+ *  already-hit one, so both sections demo the same way the rest of the
+ *  page does. requiredDailyPace isn't rendered anywhere these flow into,
+ *  so it's left at 0 rather than reimplementing withPace's math for a
+ *  number nothing shows. */
+export function demoGoals(now: Date = new Date()): GoalWithProgress[] {
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const goal = (id: string, category: string, targetValue: number, currentValue: number): GoalWithProgress => {
+    const percent = Math.round((currentValue / targetValue) * 100);
+    return {
+      id,
+      category,
+      targetValue,
+      periodStart: monthStart.toISOString(),
+      periodEnd: monthEnd.toISOString(),
+      achievedAt: null,
+      currentValue,
+      percent,
+      remaining: Math.max(0, targetValue - currentValue),
+      requiredDailyPace: 0,
+      requiredWeeklyPace: 0,
+      projectedCompletionDate: null,
+    };
+  };
+  return [
+    goal("demo-goal-1", "MONTHLY_AP", 50000, 34000),
+    goal("demo-goal-2", "POLICY_COUNT", 15, 8),
+    goal("demo-goal-3", "RECRUITING", 5, 4),
+  ];
+}
+
+/** Demo Mode's recentWinsFor equivalent — one goal already hit this month, for the same celebratory trophy chip real wins get. */
+export function demoRecentWins(now: Date = new Date()) {
+  const achievedAt = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 6));
+  return [{ id: "demo-win-1", category: "ISSUED_PREMIUM", achievedAt: achievedAt.toISOString() }];
 }

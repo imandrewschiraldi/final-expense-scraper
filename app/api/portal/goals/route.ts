@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { activeGoalsFor, recentWinsFor } from "@/lib/personalDashboard";
+import { demoGoals, demoRecentWins } from "@/lib/demoData";
 import { GoalCategory } from "@prisma/client";
 
 const GOAL_CATEGORIES: GoalCategory[] = ["MONTHLY_AP", "ANNUAL_AP", "ISSUED_PREMIUM", "POLICY_COUNT", "INCOME", "RECRUITING"];
@@ -10,10 +11,17 @@ export async function GET() {
   const guard = await requireAnyRole();
   if ("error" in guard) return guard.error;
 
-  const [active, recentWins] = await Promise.all([
-    activeGoalsFor(guard.session.user.id),
-    recentWinsFor(guard.session.user.id),
-  ]);
+  const userId = guard.session.user.id;
+  // Same per-viewer Demo Mode overlay the dashboard overview endpoint
+  // applies to these same fields — the Overview page's Goals tile calls
+  // this endpoint directly, so it needs the same check rather than only
+  // the Dashboard page's Goals section getting faked data.
+  const user = await db.user.findUnique({ where: { id: userId }, select: { demoModeEnabled: true } });
+  if (user?.demoModeEnabled) {
+    return NextResponse.json({ active: demoGoals(), recentWins: demoRecentWins() });
+  }
+
+  const [active, recentWins] = await Promise.all([activeGoalsFor(userId), recentWinsFor(userId)]);
 
   return NextResponse.json({ active, recentWins });
 }
