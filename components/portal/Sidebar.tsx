@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useWideLayout } from "@/lib/useWideLayout";
+import { useTheme } from "@/lib/useTheme";
 import { ProfileMenu } from "@/components/portal/ProfileMenu";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
@@ -722,6 +723,17 @@ export function Sidebar({
   const [chatUnread, setChatUnread] = useState(false);
   const [wide, setWide] = useWideLayout();
   const [search, setSearch] = useState("");
+  const [theme] = useTheme();
+  // The plain transparent cutout has visibly rough/noisy edges (left over
+  // from how it was matted off its original black backdrop) — barely
+  // visible against dark theme's near-identical #000 background, but
+  // obvious against light/green. Dark theme's sidebar background is an
+  // exact #000 match for tier1-logo.jpg's own backdrop, so using that
+  // (uncut, clean) asset there instead avoids the rough edges entirely;
+  // light/green still need the real cutout since their background isn't
+  // black.
+  const logoSrc =
+    theme === "dark" ? "/tier1-logo.jpg" : "/tier1-logo-transparent.png";
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -823,7 +835,7 @@ export function Sidebar({
             onClick={onCloseMobile}
           >
             <Image
-              src="/tier1-logo-transparent.png"
+              src={logoSrc}
               alt="Tier 1 Financial"
               width={1560}
               height={558}
@@ -913,7 +925,7 @@ export function Sidebar({
               />
             ) : (
               <Image
-                src="/tier1-logo-transparent.png"
+                src={logoSrc}
                 alt="Tier 1 Financial"
                 width={1560}
                 height={558}

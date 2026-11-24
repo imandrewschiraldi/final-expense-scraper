@@ -8,7 +8,12 @@ import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 /** Mobile-only top bar (hamburger + logo) shown in place of the desktop
  * sidebar's own logo, which the mobile drawer doesn't have room for. Desktop
  * is untouched — the sidebar keeps its logo exactly as before, and this
- * renders nothing at the lg breakpoint and up. */
+ * renders nothing at the lg breakpoint and up.
+ *
+ * Uses tier1-logo.jpg (the plain, uncut artwork on its own black backdrop)
+ * rather than the transparent cutout — this bar's background is a fixed
+ * `bg-black`, an exact match for the jpg's own backdrop, so there's no
+ * reason to pay for the cutout's rough/noisy matted edges here. */
 export function PageHeader({ onOpenMenu }: { onOpenMenu: () => void }) {
   return (
     <div
@@ -24,7 +29,7 @@ export function PageHeader({ onOpenMenu }: { onOpenMenu: () => void }) {
         <Menu className="h-6 w-6" />
       </button>
       <Link href="/overview" className="block shrink-0">
-        <Image src="/tier1-logo-transparent.png" alt="Tier 1 Financial" width={1560} height={558} className="h-12 w-auto" priority />
+        <Image src="/tier1-logo.jpg" alt="Tier 1 Financial" width={1560} height={558} className="h-12 w-auto" priority />
       </Link>
     </div>
   );
