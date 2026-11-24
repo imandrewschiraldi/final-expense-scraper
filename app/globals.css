@@ -205,14 +205,18 @@
 
 /* Dashboard/Overview-only bump: their cards (Card/AccentCard/PremiumPanel,
    all themed via bg-surface) sat at dark theme's --surface (#0d0d0d) on a
-   --background (#000000) page — only 13 of 255 apart, so they read as one
-   flat black field instead of separated panels. Overriding --surface
-   inside this wrapper cascades to every bg-surface user nested in it with
-   no per-component changes. Scoped to these two pages (not every page's
-   cards) and to dark theme only (:not([data-theme=...])) — light/green
-   already have clear card/page separation and don't need this. */
+   --background (#000000) page — only 13 of 255 apart, barely
+   distinguishable on a real monitor. Overrides --surface itself — the
+   generated .bg-surface utility reads var(--surface) directly (the
+   `@theme inline` block's --color-surface token is a separate, unrelated
+   indirection nothing here actually uses). Reuses --input-bg's own value
+   rather than inventing a new one — it's already dark theme's established
+   "needs to stand out against the page" shade (see --input-bg above).
+   Scoped to these two pages (not every page's cards) and to dark theme
+   only (:not([data-theme=...])) — light/green already have clear
+   card/page separation and don't need this. */
 :root:not([data-theme="light"]):not([data-theme="green"]) .cards-elevated {
-  --surface: #161616;
+  --surface: #1a1a1a;
 }
 
 @theme inline {
