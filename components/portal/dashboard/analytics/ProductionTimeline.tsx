@@ -12,7 +12,7 @@ export function ProductionTimeline({ data }: { data: { label: string; ap: number
           <AreaChart data={data}>
             <defs>
               <linearGradient id="timelineFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-copper)" stopOpacity={0.28} />
+                <stop offset="0%" stopColor="var(--color-copper)" stopOpacity={0.4} />
                 <stop offset="100%" stopColor="var(--color-copper)" stopOpacity={0} />
               </linearGradient>
             </defs>
@@ -28,7 +28,15 @@ export function ProductionTimeline({ data }: { data: { label: string; ap: number
                   : [String(value), "Policies"]
               }
             />
-            <Area type="monotone" dataKey="ap" stroke="var(--color-copper)" strokeWidth={2.5} fill="url(#timelineFill)" dot={false} />
+            <Area
+              type="linear"
+              dataKey="ap"
+              stroke="var(--color-copper)"
+              strokeWidth={3}
+              fill="url(#timelineFill)"
+              dot={{ r: 3, stroke: "var(--color-copper)", strokeWidth: 2, fill: "var(--color-surface)" }}
+              activeDot={{ r: 5, stroke: "var(--color-copper)", strokeWidth: 2, fill: "var(--color-copper)" }}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>
