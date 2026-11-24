@@ -203,6 +203,33 @@
   display: block;
 }
 
+/* Same reasoning and pattern as .tool-iframe-* above, for the sidebar's
+   Tier 1 logo: dark theme uses the plain uncut artwork (tier1-logo.jpg —
+   its own background is an exact match for dark theme's #000, so there's
+   no cutout-edge roughness to pay for), light/green need the real
+   transparent cutout since their background isn't black. Switching this
+   by a React-read theme value swapped the <img>'s src itself, which made
+   every theme change force a fresh network fetch of the other file before
+   it could paint — visibly lagging behind every other (instant, CSS-driven)
+   color change on the page. Rendering both and toggling display in plain
+   CSS, keyed off the same pre-hydration data-theme attribute as the
+   iframes, makes the swap exactly as instant as the rest of the theme
+   change — nothing to fetch, nothing waiting on React. */
+.sidebar-logo-plain {
+  display: block;
+}
+.sidebar-logo-cutout {
+  display: none;
+}
+:root[data-theme="light"] .sidebar-logo-plain,
+:root[data-theme="green"] .sidebar-logo-plain {
+  display: none;
+}
+:root[data-theme="light"] .sidebar-logo-cutout,
+:root[data-theme="green"] .sidebar-logo-cutout {
+  display: block;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
