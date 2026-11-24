@@ -20,10 +20,10 @@ import { useTheme } from "@/lib/useTheme";
  * `lightSrc`/`greenSrc` — optional self-hosted light-mode/green-mode builds
  * of the same tool (e.g. /tools/sales-script-light.html,
  * /tools/sales-script-green.html), shown instead of `src` whenever the
- * portal itself is in that theme. The tools are otherwise dark-only (hosted
- * externally, no theme awareness of their own), so without these a light-
- * or green-mode visitor would hit a jarring dark iframe inside an otherwise
- * themed page.
+ * portal itself is in that theme. `src` itself is a self-hosted dark-mode
+ * build with no theme awareness of its own (e.g. /tools/sales-script-dark.html),
+ * so without lightSrc/greenSrc a light- or green-mode visitor would hit a
+ * jarring dark iframe inside an otherwise themed page.
  *
  * All three iframes mount at once and stay mounted — only CSS toggles
  * which one shows — rather than flipping a single iframe's `src` between
@@ -40,10 +40,10 @@ import { useTheme } from "@/lib/useTheme";
  * the no-flash inline script in layout.tsx before React ever hydrates;
  * `theme` from useTheme() only updates once its effect runs afterward.
  * Using React state to pick which iframe is hidden left a visible window
- * on every hard reload where the un-hidden default (dark, the slower-to-
- * load externally-hosted tool, with its own black background painting as
- * soon as its document starts streaming) sat fully visible until
- * hydration caught up — a real flash-to-black, not just a cosmetic one.
+ * on every hard reload where the un-hidden default (dark, with its own
+ * black background painting as soon as its document starts streaming)
+ * sat fully visible until hydration caught up — a real flash-to-black,
+ * not just a cosmetic one.
  * Plain CSS has no such gap: it applies in the same pass as the attribute
  * that's already correct pre-paint. `theme` is still read below, just for
  * the "Open in New Tab" link's href, which doesn't need to be flash-safe. */

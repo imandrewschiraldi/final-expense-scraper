@@ -4,7 +4,7 @@ export default function ScriptsPage() {
   return (
     <EmbeddedTool
       title="Scripts"
-      src="https://tier1financialscripts.org/"
+      src="/tools/sales-script-dark.html"
       lightSrc="/tools/sales-script-light.html"
       greenSrc="/tools/sales-script-green.html"
     />
