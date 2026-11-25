@@ -12,6 +12,7 @@ import { US_STATES } from "@/lib/usStates";
 import { ROLE_SWITCH_EMAIL, SwitchableRole } from "@/lib/roleSwitch";
 import { ProfileTourButton } from "@/components/portal/ProfileTourButton";
 import { dispatchCardLayoutChanged } from "@/lib/cardLayoutEvent";
+import { togglePageLayoutBetaAction } from "@/lib/actions/pageLayoutBeta";
 
 type Profile = {
   id: string;
@@ -47,7 +48,7 @@ export function ProfilePanel() {
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
 
   const [togglingDemoMode, setTogglingDemoMode] = useState(false);
-  // Agency-wide now (see /api/admin/page-layout-beta), not part of this
+  // Agency-wide now (see lib/actions/pageLayoutBeta.ts), not part of this
   // admin's own Profile row — read off the same /api/profile payload
   // AppShell itself polls, rather than a second fetch for the same value.
   const [pageLayoutBetaEnabled, setPageLayoutBetaEnabled] = useState(false);
@@ -143,24 +144,27 @@ export function ProfilePanel() {
   async function togglePageLayoutBeta() {
     const next = !pageLayoutBetaEnabled;
     // Optimistic: flip the switch and the whole shell (this tab included,
-    // via the event below) immediately rather than waiting on the PATCH
-    // round-trip first — the save almost never fails, so waiting on it
-    // before the UI reacts was pure added lag for the common case. Rolled
-    // back below on the rare failure.
+    // via the event below) immediately rather than waiting on the save to
+    // round-trip first — it almost never fails, so waiting on it before the
+    // UI reacts was pure added lag for the common case. Rolled back below on
+    // the rare failure.
     setPageLayoutBetaEnabled(next);
     dispatchCardLayoutChanged(next);
     setTogglingPageLayoutBeta(true);
     setError(null);
-    const res = await fetch("/api/admin/page-layout-beta", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pageLayoutBetaEnabled: next }),
-    });
-    setTogglingPageLayoutBeta(false);
-    if (!res.ok) {
+    try {
+      // A Server Function, not a fetch()-based PATCH — see its own doc
+      // comment for why that's what actually gets every other already-open
+      // or already-prefetched page to pick up the new value instead of
+      // being stuck on whatever this flag was the moment that page's nav
+      // link was first prefetched.
+      await togglePageLayoutBetaAction(next);
+    } catch {
       setPageLayoutBetaEnabled(!next);
       dispatchCardLayoutChanged(!next);
       setError("Failed to toggle the new page layout.");
+    } finally {
+      setTogglingPageLayoutBeta(false);
     }
   }
 

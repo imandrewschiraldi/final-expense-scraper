@@ -44,7 +44,7 @@ export async function GET() {
         vaultAccessStartedAt,
       }),
       leaderboardEnabled,
-      // Agency-wide now (see /api/admin/page-layout-beta), not a per-user
+      // Agency-wide now (see lib/actions/pageLayoutBeta.ts), not a per-user
       // field — carried in the same /api/profile payload AppShell already
       // polls on mount, so every role (not just the admin who can change
       // it) picks up the current value without its own dedicated fetch.
@@ -67,7 +67,7 @@ export async function PATCH(req: NextRequest) {
 
   // Comp level and role are admin-only (set via /api/admin/agents/[id]) and
   // deliberately not accepted here. The page-layout beta toggle is set
-  // agency-wide via /api/admin/page-layout-beta, not per profile.
+  // agency-wide via togglePageLayoutBetaAction, not per profile.
   const user = await db.user.update({
     where: { id: guard.session.user.id },
     data: {

@@ -44,7 +44,7 @@ export function AppShell({
   const showTour = role !== "ADMIN";
 
   // Agency-wide beta toggle (Profile page, admin-only control, applies to
-  // every agent at once — see /api/admin/page-layout-beta) — swaps main's
+  // every agent at once — see lib/actions/pageLayoutBeta.ts) — swaps main's
   // full-bleed column for a rounded, shadowed, slightly inset card instead,
   // with the sidebar dropping its own border/copper-line to match (see
   // Sidebar.tsx). Both the card and the sidebar/page behind it are built
