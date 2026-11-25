@@ -253,7 +253,14 @@
 .heading-img-light {
   display: none;
 }
-:root[data-theme="light"] .heading-img-dark {
+/* Only hides the dark wordmark where a light one actually exists to take
+   its place — a slug missing from HEADINGS_LIGHT (see PageHeading.tsx)
+   renders no .heading-img-light element at all, so hiding the dark one
+   unconditionally left the heading blank in light mode instead of falling
+   through to the dark PNG the way the component's own doc comment says it
+   should. The :has() scopes this to wrappers that actually contain both
+   images. */
+:root[data-theme="light"] div:has(> .heading-img-light) > .heading-img-dark {
   display: none;
 }
 :root[data-theme="light"] .heading-img-light {

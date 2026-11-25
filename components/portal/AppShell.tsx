@@ -138,7 +138,16 @@ export function AppShell({
             invisible on its own with nothing else jumping around it. */}
         <div
           className={cn(
-            "relative transition-[border-radius,background-color,box-shadow] duration-200 ease-out",
+            // No `relative` here — main (the parent) is already the
+            // positioned ancestor HeaderDivider's `absolute` line binds to
+            // (see HeaderDivider.tsx). Adding one on this wrapper too would
+            // put it closer in the ancestor chain and hijack that
+            // positioning: the line would inset to THIS div's edges
+            // instead of main's, and its `top: HEADER_HEIGHT` would
+            // measure from this div's top instead of main's — exactly the
+            // "doesn't reach the edge, sits over the subtitle text"
+            // breakage this comment is here to prevent a repeat of.
+            "transition-[border-radius,background-color,box-shadow] duration-200 ease-out",
             cardLayoutEnabled
               ? "h-full overflow-y-auto rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10"
               : "overflow-visible rounded-none border-0 bg-transparent shadow-none",
