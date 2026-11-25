@@ -29,9 +29,11 @@ const currency = (n: number) =>
 /**
  * The dashboard's hero stat — deliberately its own card, not a KpiGrid
  * tile, since it's meant to be photogenic enough to screenshot on its own.
- * The number uses the shared .metal-copper-text gradient (app/globals.css,
- * sampled from the real logo) so it reads as the exact same copper the
- * rest of the app uses.
+ * The card itself is a solid metallic-copper surface (.metal-copper-card,
+ * app/globals.css — the same bevel gradient used for icon tiles, scaled up
+ * for a full card), with the headline label and number set in the current
+ * theme's own --background color so they read as debossed/engraved text
+ * rather than needing their own gradient on top of an already-metal fill.
  */
 export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCardData; range: DashboardRange }) {
   // Off by default: the headline number is the full commission the
@@ -48,7 +50,7 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
   const DeltaIcon = isUp ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <div className="relative mb-5 overflow-hidden rounded-[20px] border-copper-gradient bg-surface p-[18px_28px]">
+    <div className="metal-copper-card relative mb-5 overflow-hidden rounded-[20px] p-[18px_28px]">
       <div className="relative">
         <div className="mb-2.5 flex items-center justify-between gap-2">
           <button
@@ -66,13 +68,11 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
           </span>
         </div>
 
-        <p className="font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] uppercase">
-          <span className="metal-copper-text">
-            Commissions Paid{showAdvance ? " · 75% Advance" : ""}
-          </span>
+        <p className="font-condensed mb-1.5 text-base font-extrabold tracking-[0.18em] text-[var(--background)] uppercase">
+          Commissions Paid{showAdvance ? " · 75% Advance" : ""}
         </p>
-        <p className="font-scoreboard text-[68px] leading-none font-black tracking-tight">
-          <span className="metal-copper-text">{currency(animated ?? value)}</span>
+        <p className="font-scoreboard text-[68px] leading-none font-black tracking-tight text-[var(--background)]">
+          {currency(animated ?? value)}
         </p>
 
         <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
