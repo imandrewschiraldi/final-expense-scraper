@@ -140,7 +140,11 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --background: #f5f3ef;
+  /* Darkened from #f5f3ef — at only 10/255 below pure-white --surface,
+     white cards barely registered as a separate panel against the page
+     (same "doesn't stand out" problem dark mode had, just at the top of
+     the range instead of the bottom). */
+  --background: #e2ded2;
   --surface: #ffffff;
   --surface2: #f2f0ea;
   --border: rgba(0, 0, 0, 0.18);
@@ -161,19 +165,21 @@
    metal tokens stay untouched here too.
    --background is the brand's actual "Dark green" (#1F3B2C); --surface/
    --surface2/--input-bg step up from it at the same relative lightening
-   as the rest of this block's siblings (surface +18%, surface2 +33%,
-   input +37% brighter per channel), rather than picked independently. */
+   as the rest of this block's siblings — bumped from the original +18%/
+   +33%/+37% per channel to +45%/+65%/+75% after the same "cards barely
+   stand out from the page" report that hit dark mode turned out to apply
+   here too, just less severely. */
 :root[data-theme="green"] {
   color-scheme: dark;
 
   --background: #1f3b2c;
-  --surface: #264734;
-  --surface2: #2a5139;
+  --surface: #2d5440;
+  --surface2: #336148;
   --border: rgba(255, 255, 255, 0.16);
   --foreground: #cfe8d2;
   --white: #ffffff;
   --muted: #86ac8c;
-  --input-bg: #2b563a;
+  --input-bg: #37694c;
   --sidebar-divider: rgba(255, 255, 255, 0.16);
 }
 
