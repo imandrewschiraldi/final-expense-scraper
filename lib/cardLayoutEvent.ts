@@ -1,4 +1,4 @@
-// AppShell fetches the admin-only "overlay card" beta flag once on mount
+// AppShell fetches the agency-wide "overlay card" beta flag once on mount
 // (see AppShell.tsx) rather than subscribing to it live, so flipping the
 // toggle on the Profile page had no visible effect until the next full page
 // load. This custom event lets ProfilePanel push the new value straight to

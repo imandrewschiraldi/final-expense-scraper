@@ -21,7 +21,6 @@ export async function GET() {
       npn: true,
       residentState: true,
       demoModeEnabled: true,
-      cardLayoutEnabled: true,
       createdAt: true,
       vaultEnabled: true,
       vaultAccessStartedAt: true,
@@ -34,7 +33,8 @@ export async function GET() {
   if (!user) return NextResponse.json({ profile: null });
 
   const { createdAt, vaultEnabled, vaultAccessStartedAt, ...profile } = user;
-  const { leaderboardEnabled } = await getAgencySettings();
+  const { leaderboardEnabled, pageLayoutBetaEnabled } =
+    await getAgencySettings();
   return NextResponse.json({
     profile: {
       ...profile,
@@ -44,6 +44,11 @@ export async function GET() {
         vaultAccessStartedAt,
       }),
       leaderboardEnabled,
+      // Agency-wide now (see /api/admin/page-layout-beta), not a per-user
+      // field — carried in the same /api/profile payload AppShell already
+      // polls on mount, so every role (not just the admin who can change
+      // it) picks up the current value without its own dedicated fetch.
+      pageLayoutBetaEnabled,
     },
   });
 }
@@ -53,23 +58,16 @@ export async function PATCH(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const {
-    licensedStates,
-    npn,
-    residentState,
-    demoModeEnabled,
-    cardLayoutEnabled,
-  } = body as {
+  const { licensedStates, npn, residentState, demoModeEnabled } = body as {
     licensedStates?: string[];
     npn?: string | null;
     residentState?: string | null;
     demoModeEnabled?: boolean;
-    cardLayoutEnabled?: boolean;
   };
 
   // Comp level and role are admin-only (set via /api/admin/agents/[id]) and
-  // deliberately not accepted here. cardLayoutEnabled is a beta toggle for
-  // admins to try on their own account — not accepted from anyone else.
+  // deliberately not accepted here. The page-layout beta toggle is set
+  // agency-wide via /api/admin/page-layout-beta, not per profile.
   const user = await db.user.update({
     where: { id: guard.session.user.id },
     data: {
@@ -81,9 +79,6 @@ export async function PATCH(req: NextRequest) {
         ? { residentState: residentState?.trim().toUpperCase() || null }
         : {}),
       ...(demoModeEnabled !== undefined ? { demoModeEnabled } : {}),
-      ...(cardLayoutEnabled !== undefined && guard.session.user.role === "ADMIN"
-        ? { cardLayoutEnabled }
-        : {}),
     },
     select: {
       id: true,
@@ -96,7 +91,6 @@ export async function PATCH(req: NextRequest) {
       npn: true,
       residentState: true,
       demoModeEnabled: true,
-      cardLayoutEnabled: true,
       agencyDashboardEnabled: true,
       recruitingRadarEnabled: true,
     },

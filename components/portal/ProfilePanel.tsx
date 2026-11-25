@@ -24,7 +24,6 @@ type Profile = {
   npn: string | null;
   residentState: string | null;
   demoModeEnabled: boolean;
-  cardLayoutEnabled: boolean;
 };
 
 export function ProfilePanel() {
@@ -48,7 +47,11 @@ export function ProfilePanel() {
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
 
   const [togglingDemoMode, setTogglingDemoMode] = useState(false);
-  const [togglingCardLayout, setTogglingCardLayout] = useState(false);
+  // Agency-wide now (see /api/admin/page-layout-beta), not part of this
+  // admin's own Profile row — read off the same /api/profile payload
+  // AppShell itself polls, rather than a second fetch for the same value.
+  const [pageLayoutBetaEnabled, setPageLayoutBetaEnabled] = useState(false);
+  const [togglingPageLayoutBeta, setTogglingPageLayoutBeta] = useState(false);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -58,6 +61,7 @@ export function ProfilePanel() {
         setEditStates(data.profile?.licensedStates ?? []);
         setEditNpn(data.profile?.npn ?? "");
         setEditResidentState(data.profile?.residentState ?? "");
+        setPageLayoutBetaEnabled(Boolean(data.profile?.pageLayoutBetaEnabled));
       });
   }, []);
 
@@ -136,20 +140,18 @@ export function ProfilePanel() {
     }
   }
 
-  async function toggleCardLayout() {
-    if (!profile) return;
-    const next = !profile.cardLayoutEnabled;
-    setTogglingCardLayout(true);
+  async function togglePageLayoutBeta() {
+    const next = !pageLayoutBetaEnabled;
+    setTogglingPageLayoutBeta(true);
     setError(null);
-    const res = await fetch("/api/profile", {
+    const res = await fetch("/api/admin/page-layout-beta", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardLayoutEnabled: next }),
+      body: JSON.stringify({ pageLayoutBetaEnabled: next }),
     });
-    setTogglingCardLayout(false);
+    setTogglingPageLayoutBeta(false);
     if (res.ok) {
-      const data = await res.json();
-      setProfile(data.profile);
+      setPageLayoutBetaEnabled(next);
       dispatchCardLayoutChanged(next);
     } else {
       setError("Failed to toggle the new page layout.");
@@ -354,19 +356,20 @@ export function ProfilePanel() {
           </CardHeader>
           <div className="flex items-start justify-between gap-4">
             <p className="max-w-md text-sm text-muted">
-              Tries the rounded &ldquo;overlay card&rdquo; page shell instead of
-              today&apos;s full-bleed layout, in dark, light, and green mode
-              alike — only on your own account, so you can switch straight back
-              if you don&apos;t like it. No one else&apos;s view changes.
+              Switches every agent to the rounded &ldquo;overlay card&rdquo;
+              page shell instead of today&apos;s full-bleed layout, in dark,
+              light, and green mode alike — applies account-wide the moment you
+              flip it, for every agent, not just your own view. Flip it back any
+              time.
             </p>
             <Button
-              variant={profile.cardLayoutEnabled ? "ghost" : "secondary"}
-              onClick={toggleCardLayout}
-              disabled={togglingCardLayout}
+              variant={pageLayoutBetaEnabled ? "ghost" : "secondary"}
+              onClick={togglePageLayoutBeta}
+              disabled={togglingPageLayoutBeta}
             >
-              {togglingCardLayout
+              {togglingPageLayoutBeta
                 ? "Saving..."
-                : profile.cardLayoutEnabled
+                : pageLayoutBetaEnabled
                   ? "On — Turn Off"
                   : "Off — Turn On"}
             </Button>

@@ -31,6 +31,14 @@ export async function setLeaderboardAllTimeEnabled(enabled: boolean) {
   });
 }
 
+export async function setPageLayoutBetaEnabled(enabled: boolean) {
+  return db.agencySettings.upsert({
+    where: { id: SINGLETON_ID },
+    update: { pageLayoutBetaEnabled: enabled },
+    create: { id: SINGLETON_ID, pageLayoutBetaEnabled: enabled },
+  });
+}
+
 export async function setOverviewSubtitle(data: {
   text: string;
   color: OverviewSubtitleColor;

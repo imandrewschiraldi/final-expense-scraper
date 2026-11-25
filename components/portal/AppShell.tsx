@@ -43,15 +43,15 @@ export function AppShell({
   // so TourProvider/TourOverlay aren't even mounted for that role.
   const showTour = role !== "ADMIN";
 
-  // Admin-only beta toggle (Profile page, "New Page Layout") — swaps
-  // main's full-bleed column for a rounded, shadowed, slightly inset card
-  // instead, with the sidebar dropping its own border/copper-line to
-  // match (see Sidebar.tsx). Both the card and the sidebar/page behind it
-  // are built from theme CSS variables (--overlay-card-surface/
-  // --background/--border — see globals.css), so the card reads as a
-  // clearly different shade from the matching sidebar/page color behind
-  // it in dark, light, and green alike, rather than needing its own
-  // per-theme logic here.
+  // Agency-wide beta toggle (Profile page, admin-only control, applies to
+  // every agent at once — see /api/admin/page-layout-beta) — swaps main's
+  // full-bleed column for a rounded, shadowed, slightly inset card instead,
+  // with the sidebar dropping its own border/copper-line to match (see
+  // Sidebar.tsx). Both the card and the sidebar/page behind it are built
+  // from theme CSS variables (--overlay-card-surface/--background/
+  // --border — see globals.css), so the card reads as a clearly different
+  // shade from the matching sidebar/page color behind it in dark, light,
+  // and green alike, rather than needing its own per-theme logic here.
   // Seeded from initialSidebarProfile (fetched server-side, same object
   // Sidebar's own nav-gating flags ride in on) rather than starting false
   // and waiting on the client-side fetch below — this toggle changes the
@@ -59,28 +59,28 @@ export function AppShell({
   // starting false on every refresh meant briefly rendering the old
   // full-bleed layout, border and all, before snapping into the overlay
   // card a beat later. The fetch and event listener below still run after
-  // mount, to pick up a flag flipped on the Profile page in this same
-  // session without a full reload.
+  // mount (for every role, not just admins — everyone needs to see the
+  // same shell), to pick up a flag the admin flipped on the Profile page
+  // in this same session without a full reload.
   const [cardLayoutEnabled, setCardLayoutEnabled] = useState(
     initialSidebarProfile?.cardLayoutEnabled ?? false,
   );
   useEffect(() => {
-    if (role !== "ADMIN") return;
     fetch("/api/profile")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.profile?.cardLayoutEnabled) setCardLayoutEnabled(true);
+        if (data)
+          setCardLayoutEnabled(Boolean(data.profile?.pageLayoutBetaEnabled));
       });
-  }, [role]);
+  }, []);
   useEffect(() => {
-    if (role !== "ADMIN") return;
     function onChange(e: Event) {
       setCardLayoutEnabled(Boolean((e as CustomEvent<boolean>).detail));
     }
     window.addEventListener(CARD_LAYOUT_CHANGED_EVENT, onChange);
     return () =>
       window.removeEventListener(CARD_LAYOUT_CHANGED_EVENT, onChange);
-  }, [role]);
+  }, []);
 
   const mainContent = (
     <>
