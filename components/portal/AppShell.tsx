@@ -109,14 +109,19 @@ export function AppShell({
       />
       <main
         className={cn(
-          "relative min-w-0 flex-1 overflow-y-auto",
+          "relative min-w-0 flex-1",
+          // The card itself is the thing that should stay put as a fixed
+          // overlay frame — only the page inside it scrolls. That needs
+          // main pinned to exactly one viewport tall with nothing escaping
+          // it (no scrolling of its own), so the card's own h-full +
+          // overflow-y-auto below is what actually moves, not this.
           cardLayoutEnabled
-            ? "p-2 sm:p-3 lg:p-4"
-            : "px-4 pt-2 pb-8 sm:px-6 lg:px-10",
+            ? "h-screen overflow-hidden p-2 sm:p-3 lg:p-4"
+            : "overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10",
         )}
       >
         {cardLayoutEnabled ? (
-          <div className="relative min-h-full rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[0_44px_90px_-24px_rgba(0,0,0,0.55),0_16px_32px_-10px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10">
+          <div className="relative h-full overflow-y-auto rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[0_44px_90px_-24px_rgba(0,0,0,0.55),0_16px_32px_-10px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10">
             {mainContent}
           </div>
         ) : (
