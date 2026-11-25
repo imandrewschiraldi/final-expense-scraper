@@ -287,6 +287,11 @@ export type SidebarProfile = {
   agencyDashboardEnabled?: boolean;
   recruitingRadarEnabled?: boolean;
   leaderboardEnabled?: boolean;
+  // Not a nav-gating flag like the others above — AppShell reads this one
+  // off the same server-fetched object to seed its own overlay-card beta
+  // state. See getInitialSidebarProfile's doc for why it has to come from
+  // here rather than AppShell's own client-side fetch alone.
+  cardLayoutEnabled?: boolean;
 };
 type Profile = SidebarProfile;
 

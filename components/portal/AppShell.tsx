@@ -52,16 +52,18 @@ export function AppShell({
   // clearly different shade from the matching sidebar/page color behind
   // it in dark, light, and green alike, rather than needing its own
   // per-theme logic here.
-  // Fetched independently here rather than threaded down from the server
-  // layout the way initialSidebarProfile below is — this is a pure visual
-  // toggle with nothing else gated behind it, so there's nothing to
-  // visibly pop in or reflow if it arrives a beat late, and threading it
-  // through would only add it to every other page's layout query for no
-  // visible gain. AppShell itself stays mounted across navigation (it's
-  // in the root layout), so without the event listener below, flipping
-  // the toggle on the Profile page wouldn't show up here until a full
-  // reload.
-  const [cardLayoutEnabled, setCardLayoutEnabled] = useState(false);
+  // Seeded from initialSidebarProfile (fetched server-side, same object
+  // Sidebar's own nav-gating flags ride in on) rather than starting false
+  // and waiting on the client-side fetch below — this toggle changes the
+  // WHOLE page shell (main's height/overflow, the sidebar's border), so
+  // starting false on every refresh meant briefly rendering the old
+  // full-bleed layout, border and all, before snapping into the overlay
+  // card a beat later. The fetch and event listener below still run after
+  // mount, to pick up a flag flipped on the Profile page in this same
+  // session without a full reload.
+  const [cardLayoutEnabled, setCardLayoutEnabled] = useState(
+    initialSidebarProfile?.cardLayoutEnabled ?? false,
+  );
   useEffect(() => {
     if (role !== "ADMIN") return;
     fetch("/api/profile")

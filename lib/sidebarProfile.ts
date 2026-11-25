@@ -13,6 +13,11 @@ import { SidebarProfile } from "@/components/portal/Sidebar";
  * once that fetch resolves, visibly reflowing every row under them — the
  * sidebar "glitching and moving" on refresh. Sidebar's own fetch still runs
  * after mount too, to pick up a flag flipped elsewhere in the same session.
+ *
+ * Also carries cardLayoutEnabled, for the exact same reason — AppShell used
+ * to start it false and only flip it true once its own client-side fetch
+ * resolved, so every refresh briefly rendered the old full-bleed layout
+ * (sidebar border and all) before snapping into the overlay-card one.
  */
 export async function getInitialSidebarProfile(
   userId: string,
@@ -29,6 +34,7 @@ export async function getInitialSidebarProfile(
         vaultAccessStartedAt: true,
         agencyDashboardEnabled: true,
         recruitingRadarEnabled: true,
+        cardLayoutEnabled: true,
       },
     }),
     getAgencySettings(),
@@ -44,5 +50,6 @@ export async function getInitialSidebarProfile(
     agencyDashboardEnabled: user.agencyDashboardEnabled,
     recruitingRadarEnabled: user.recruitingRadarEnabled,
     leaderboardEnabled,
+    cardLayoutEnabled: user.cardLayoutEnabled,
   };
 }
