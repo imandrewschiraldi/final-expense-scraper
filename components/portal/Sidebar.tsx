@@ -279,7 +279,7 @@ function isItemActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
-type Profile = {
+export type SidebarProfile = {
   name: string;
   profileImageUrl: string | null;
   compLevel: string | null;
@@ -288,6 +288,7 @@ type Profile = {
   recruitingRadarEnabled?: boolean;
   leaderboardEnabled?: boolean;
 };
+type Profile = SidebarProfile;
 
 function NavLeaf({
   href,
@@ -693,6 +694,7 @@ export function Sidebar({
   mobileOpen,
   onCloseMobile,
   cardLayoutEnabled = false,
+  initialProfile = null,
 }: {
   role: Role;
   name: string;
@@ -704,13 +706,25 @@ export function Sidebar({
   // changing the main content area's shape. Independent of light/dark
   // mode, which only ever affects the main content area.
   cardLayoutEnabled?: boolean;
+  // Fetched server-side in the portal layout and passed straight through
+  // AppShell, so the nav list's feature-gated items (Vault, Agency
+  // Dashboard, Recruiting Radar, Leaderboard) are already correct on the
+  // very first paint — without this, `profile` would start null on every
+  // single page load (client and server can't agree on anything read
+  // client-only, so starting non-null here would be a hydration mismatch)
+  // and those items would pop into the list a beat later once the
+  // useEffect fetch below resolves, visibly reflowing every row under
+  // them. The effect still runs after mount to pick up any change made
+  // elsewhere in the same session (e.g. an admin flips a flag on Profile),
+  // this just removes the guaranteed flash on every load.
+  initialProfile?: Profile | null;
 }) {
   const pathname = usePathname();
   // Starts false (matching SSR, which has no access to localStorage) and
   // syncs from persisted state right after mount — an effect+setState is
   // unavoidable here since the real value can only be read client-side.
   const [collapsed, setCollapsed] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(initialProfile);
   const [chatUnread, setChatUnread] = useState(false);
   const [wide, setWide] = useWideLayout();
   const [search, setSearch] = useState("");

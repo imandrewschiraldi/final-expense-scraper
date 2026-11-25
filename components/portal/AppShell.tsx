@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sidebar } from "@/components/portal/Sidebar";
+import { Sidebar, type SidebarProfile } from "@/components/portal/Sidebar";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { HeaderDivider } from "@/components/portal/HeaderDivider";
 import { TopBarActions } from "@/components/portal/TopBarActions";
@@ -21,10 +21,15 @@ type Role = "ADMIN" | "MANAGER" | "AGENT";
 export function AppShell({
   role,
   name,
+  initialSidebarProfile,
   children,
 }: {
   role: Role;
   name: string;
+  // Fetched server-side (see app/(portal)/layout.tsx) and passed straight
+  // through to Sidebar — see its own prop doc for why this needs to come
+  // from the server instead of Sidebar's own client-side fetch alone.
+  initialSidebarProfile?: SidebarProfile | null;
   children: React.ReactNode;
 }) {
   // Lives here (not inside Sidebar) because PageHeader's mobile menu button
@@ -40,11 +45,14 @@ export function AppShell({
   // Admin-only beta toggle (Profile page, "New Page Layout") — recolors
   // the sidebar to copper (see Sidebar.tsx) rather than changing main's
   // own shape, so flipping it never touches main content at all. Fetched
-  // independently here rather than threaded down from the server layout,
-  // same pattern Sidebar/TopBarActions already use for their own profile
-  // reads. AppShell itself stays mounted across navigation (it's in the
-  // root layout), so without the event listener below, flipping the
-  // toggle on the Profile page wouldn't show up here until a full reload.
+  // independently here rather than threaded down from the server layout
+  // the way initialSidebarProfile below is — this one doesn't gate which
+  // nav items exist (just a color), so there's nothing to visibly pop in
+  // or reflow if it arrives a beat late, and threading it through would
+  // only add it to every other page's layout query for no visible gain.
+  // AppShell itself stays mounted across navigation (it's in the root
+  // layout), so without the event listener below, flipping the toggle on
+  // the Profile page wouldn't show up here until a full reload.
   const [cardLayoutEnabled, setCardLayoutEnabled] = useState(false);
   useEffect(() => {
     if (role !== "ADMIN") return;
@@ -89,6 +97,7 @@ export function AppShell({
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
         cardLayoutEnabled={cardLayoutEnabled}
+        initialProfile={initialSidebarProfile}
       />
       <main className="relative min-w-0 flex-1 overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10">
         {mainContent}
