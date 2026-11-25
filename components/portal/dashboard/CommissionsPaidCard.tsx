@@ -48,7 +48,7 @@ export function CommissionsPaidCard({ data, range }: { data: CommissionsPaidCard
   const DeltaIcon = isUp ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <div className="relative mb-5 overflow-hidden rounded-[20px] border-copper-gradient bg-surface p-[18px_28px] shadow-[0_24px_48px_-28px_rgba(0,0,0,0.5)]">
+    <div className="relative mb-5 overflow-hidden rounded-[20px] border-copper-gradient bg-surface p-[18px_28px]">
       <div className="relative">
         <div className="mb-2.5 flex items-center justify-between gap-2">
           <button
