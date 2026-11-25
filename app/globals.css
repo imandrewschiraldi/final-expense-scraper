@@ -140,25 +140,14 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  /* Page is pure white — requested over the tan/cream #e2ded2 tried
-     right before this. With the page now at the very top of the range,
-     --surface moves off white instead (a light gray card) so the two
-     still read as separate panels rather than both pinning to #fff and
-     blending again. --surface2 stays close to --background (its
-     established light-mode role: "subtle panel backgrounds" elsewhere
-     that are meant to nearly disappear into the page) while still
-     landing lighter than the new gray --surface, so a badge/nested
-     element inside a card still reads as raised above it. --input-bg
-     moves the opposite direction (darker, not lighter) since an input
-     needs to stand out against a now-white page. */
-  --background: #ffffff;
-  --surface: #ececec;
-  --surface2: #f5f5f4;
+  --background: #f5f3ef;
+  --surface: #ffffff;
+  --surface2: #f2f0ea;
   --border: rgba(0, 0, 0, 0.18);
   --foreground: #2a2622;
   --white: #17140f;
   --muted: #746f67;
-  --input-bg: #e3e3e1;
+  --input-bg: #e7e3da;
   --sidebar-divider: rgba(0, 0, 0, 0.1);
 }
 
@@ -172,21 +161,19 @@
    metal tokens stay untouched here too.
    --background is the brand's actual "Dark green" (#1F3B2C); --surface/
    --surface2/--input-bg step up from it at the same relative lightening
-   as the rest of this block's siblings — bumped from the original +18%/
-   +33%/+37% per channel to +45%/+65%/+75% after the same "cards barely
-   stand out from the page" report that hit dark mode turned out to apply
-   here too, just less severely. */
+   as the rest of this block's siblings (surface +18%, surface2 +33%,
+   input +37% brighter per channel), rather than picked independently. */
 :root[data-theme="green"] {
   color-scheme: dark;
 
   --background: #1f3b2c;
-  --surface: #2d5440;
-  --surface2: #336148;
+  --surface: #264734;
+  --surface2: #2a5139;
   --border: rgba(255, 255, 255, 0.16);
   --foreground: #cfe8d2;
   --white: #ffffff;
   --muted: #86ac8c;
-  --input-bg: #37694c;
+  --input-bg: #2b563a;
   --sidebar-divider: rgba(255, 255, 255, 0.16);
 }
 
