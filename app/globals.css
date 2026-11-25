@@ -39,11 +39,17 @@
   --copper: #c87941;
   --copper-dim: #7a4a26;
   --copper-glow: rgba(200, 121, 65, 0.12);
-  --teal: #20b2aa;
-  --teal-light: #7fdbda;
-  --teal-lighter: #a8efee;
+  /* --teal-* is royal blue now, and --green-light is pine green — swapped
+     by request (Overview/Dashboard "View All" links + positive deltas,
+     Book of Business's ISSUED status, DistributionAnalytics' chart bars).
+     Token names kept as-is rather than renamed sitewide; --green (the
+     separate, already-moderate brand green used elsewhere, e.g. the
+     Production Timeline line) is untouched. */
+  --teal: #4169e1;
+  --teal-light: #7c94f0;
+  --teal-lighter: #b9c6f7;
   --green: #27ae60;
-  --green-light: #7dff7d;
+  --green-light: #4fae7a;
   --red: #c0392b;
   --red-light: #ff6b6b;
   --red-lighter: #ff9090;
@@ -90,12 +96,12 @@
      above), so each gets its own hi/dk pair derived at the same ratios
      rather than reusing a button color. Copper reuses --copper-metal-*
      above since it's literally the same brand copper. */
-  --teal-light-metal-hi: #b0e9e8;
-  --teal-light-metal-dk: #467878;
+  --teal-light-metal-hi: #c7d2fb;
+  --teal-light-metal-dk: #2d3f8f;
   --blue-light-metal-hi: #a9d4ff;
   --blue-light-metal-dk: #40668c;
-  --green-light-metal-hi: #aeffae;
-  --green-light-metal-dk: #458c45;
+  --green-light-metal-hi: #8fd4ab;
+  --green-light-metal-dk: #1f5c3a;
   --red-light-metal-hi: #ffa3a3;
   --red-light-metal-dk: #8c3b3b;
   --copper-dim-metal-hi: #ad8f78;
