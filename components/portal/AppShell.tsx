@@ -85,7 +85,11 @@ export function AppShell({
   const mainContent = (
     <>
       <PageHeader onOpenMenu={() => setMobileOpen(true)} />
-      <TopBarActions role={role} name={name} />
+      <TopBarActions
+        role={role}
+        name={name}
+        initialProfile={initialSidebarProfile}
+      />
       {/* Continues the logo header's bottom edge across the content area
           with a copper accent. Lives inside the scrollable region (not
           viewport-fixed) so it scrolls away with the rest of the page

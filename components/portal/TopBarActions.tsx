@@ -474,9 +474,28 @@ function AiSearchBox() {
  * tool's own header instead, for the same reason — it needs to scroll
  * away with that header, not hover above it.
  */
-export function TopBarActions({ role, name }: { role: Role; name: string }) {
+export function TopBarActions({
+  role,
+  name,
+  initialProfile,
+}: {
+  role: Role;
+  name: string;
+  // Seeded server-side (see app/(portal)/layout.tsx and friends, which
+  // already fetch this same name/profileImageUrl pair for Sidebar) instead
+  // of starting null and waiting on this component's own client-side fetch
+  // below — without it, every cross-layout-group navigation (Portal <->
+  // Admin <-> Agent are separate layout.tsx files, each mounting a fresh
+  // AppShell/TopBarActions) remounted this with profile null again, so the
+  // real picture briefly reverted to ProfileMenu's plain-initial fallback
+  // before this fetch resolved a beat later. The fetch still runs after
+  // mount too, to pick up a picture changed elsewhere in the same session.
+  initialProfile?: Profile | null;
+}) {
   const pathname = usePathname();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(
+    initialProfile ?? null,
+  );
 
   useEffect(() => {
     fetch("/api/profile")
