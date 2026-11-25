@@ -121,7 +121,13 @@ export function AppShell({
         )}
       >
         {cardLayoutEnabled ? (
-          <div className="relative h-full overflow-y-auto rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[0_44px_90px_-24px_rgba(0,0,0,0.55),0_16px_32px_-10px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10">
+          // No outer drop shadow — its blur bled past the small gap into
+          // the sidebar, reading as a dividing line between the sidebar
+          // and the matching page color behind the card, exactly what this
+          // layout is trying not to have. Only an inset top highlight,
+          // which (unlike a drop shadow) is clipped to the card's own box
+          // and can never bleed outside it.
+          <div className="relative h-full overflow-y-auto rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10">
             {mainContent}
           </div>
         ) : (
