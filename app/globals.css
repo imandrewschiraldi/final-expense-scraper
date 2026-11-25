@@ -140,18 +140,25 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  /* Darkened from #f5f3ef — at only 10/255 below pure-white --surface,
-     white cards barely registered as a separate panel against the page
-     (same "doesn't stand out" problem dark mode had, just at the top of
-     the range instead of the bottom). */
-  --background: #e2ded2;
-  --surface: #ffffff;
-  --surface2: #f2f0ea;
+  /* Page is pure white — requested over the tan/cream #e2ded2 tried
+     right before this. With the page now at the very top of the range,
+     --surface moves off white instead (a light gray card) so the two
+     still read as separate panels rather than both pinning to #fff and
+     blending again. --surface2 stays close to --background (its
+     established light-mode role: "subtle panel backgrounds" elsewhere
+     that are meant to nearly disappear into the page) while still
+     landing lighter than the new gray --surface, so a badge/nested
+     element inside a card still reads as raised above it. --input-bg
+     moves the opposite direction (darker, not lighter) since an input
+     needs to stand out against a now-white page. */
+  --background: #ffffff;
+  --surface: #ececec;
+  --surface2: #f5f5f4;
   --border: rgba(0, 0, 0, 0.18);
   --foreground: #2a2622;
   --white: #17140f;
   --muted: #746f67;
-  --input-bg: #e7e3da;
+  --input-bg: #e3e3e1;
   --sidebar-divider: rgba(0, 0, 0, 0.1);
 }
 
