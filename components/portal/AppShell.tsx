@@ -111,7 +111,7 @@ export function AppShell({
       />
       <main
         className={cn(
-          "relative min-w-0 flex-1",
+          "relative min-w-0 flex-1 transition-[padding] duration-200 ease-out",
           // The card itself is the thing that should stay put as a fixed
           // overlay frame — only the page inside it scrolls. That needs
           // main pinned to exactly one viewport tall with nothing escaping
@@ -122,19 +122,30 @@ export function AppShell({
             : "overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10",
         )}
       >
-        {cardLayoutEnabled ? (
-          // No outer drop shadow — its blur bled past the small gap into
-          // the sidebar, reading as a dividing line between the sidebar
-          // and the matching page color behind the card, exactly what this
-          // layout is trying not to have. Only an inset top highlight,
-          // which (unlike a drop shadow) is clipped to the card's own box
-          // and can never bleed outside it.
-          <div className="relative h-full overflow-y-auto rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10">
-            {mainContent}
-          </div>
-        ) : (
-          mainContent
-        )}
+        {/* Always the same wrapping element — toggling cardLayoutEnabled
+            only ever changes its className below, never whether it exists.
+            An earlier version rendered this div only when cardLayoutEnabled
+            was on (mainContent passed bare the rest of the time), which put
+            mainContent at a different position in the tree on each toggle
+            (wrapped vs. not) — React can't match that up across a render,
+            so it tore down and remounted every widget underneath, refiring
+            all their data fetches and flashing every loading state back in,
+            each time an admin flipped the switch. Keeping one stable node
+            here means the toggle only ever restyles it — border-radius,
+            background, and shadow all transition smoothly, and the inner
+            overflow/height swap (main-scrolls vs. card-scrolls — see above)
+            is the one thing that can't be animated, but it's instant and
+            invisible on its own with nothing else jumping around it. */}
+        <div
+          className={cn(
+            "relative transition-[border-radius,background-color,box-shadow] duration-200 ease-out",
+            cardLayoutEnabled
+              ? "h-full overflow-y-auto rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10"
+              : "overflow-visible rounded-none border-0 bg-transparent shadow-none",
+          )}
+        >
+          {mainContent}
+        </div>
       </main>
       {showTour && <TourOverlay role={role} />}
     </div>

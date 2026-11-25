@@ -142,6 +142,13 @@ export function ProfilePanel() {
 
   async function togglePageLayoutBeta() {
     const next = !pageLayoutBetaEnabled;
+    // Optimistic: flip the switch and the whole shell (this tab included,
+    // via the event below) immediately rather than waiting on the PATCH
+    // round-trip first — the save almost never fails, so waiting on it
+    // before the UI reacts was pure added lag for the common case. Rolled
+    // back below on the rare failure.
+    setPageLayoutBetaEnabled(next);
+    dispatchCardLayoutChanged(next);
     setTogglingPageLayoutBeta(true);
     setError(null);
     const res = await fetch("/api/admin/page-layout-beta", {
@@ -150,10 +157,9 @@ export function ProfilePanel() {
       body: JSON.stringify({ pageLayoutBetaEnabled: next }),
     });
     setTogglingPageLayoutBeta(false);
-    if (res.ok) {
-      setPageLayoutBetaEnabled(next);
-      dispatchCardLayoutChanged(next);
-    } else {
+    if (!res.ok) {
+      setPageLayoutBetaEnabled(!next);
+      dispatchCardLayoutChanged(!next);
       setError("Failed to toggle the new page layout.");
     }
   }
