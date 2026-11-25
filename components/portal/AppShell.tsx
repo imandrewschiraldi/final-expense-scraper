@@ -138,18 +138,27 @@ export function AppShell({
             invisible on its own with nothing else jumping around it. */}
         <div
           className={cn(
-            // No `relative` here — main (the parent) is already the
-            // positioned ancestor HeaderDivider's `absolute` line binds to
-            // (see HeaderDivider.tsx). Adding one on this wrapper too would
-            // put it closer in the ancestor chain and hijack that
-            // positioning: the line would inset to THIS div's edges
-            // instead of main's, and its `top: HEADER_HEIGHT` would
-            // measure from this div's top instead of main's — exactly the
-            // "doesn't reach the edge, sits over the subtitle text"
-            // breakage this comment is here to prevent a repeat of.
+            // `relative` has to track which element actually scrolls.
+            // HeaderDivider's line and TopBarActions' icons are all
+            // `position: absolute`, binding to the nearest positioned
+            // ancestor — whichever one that is has to be the SAME element
+            // whose overflow actually scrolls, or they end up visually
+            // fixed while real content scrolls underneath them instead of
+            // scrolling away with it.
+            // - cardLayoutEnabled off: main itself scrolls (overflow-y-auto
+            //   above), so main has to stay the positioned ancestor — this
+            //   wrapper deliberately has no `relative` of its own, or it'd
+            //   hijack that (the line would inset to its edges instead of
+            //   main's, landing short of the page edge and over page
+            //   subtitles instead of below them).
+            // - cardLayoutEnabled on: main is pinned non-scrolling (see its
+            //   own comment above) and THIS div is what scrolls instead —
+            //   so this is the one that needs to be `relative`, or the
+            //   line/icons bind to non-scrolling main and sit frozen on
+            //   screen while the card's real content scrolls past them.
             "transition-[border-radius,background-color,box-shadow] duration-200 ease-out",
             cardLayoutEnabled
-              ? "h-full overflow-y-auto rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10"
+              ? "relative h-full overflow-y-auto rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10"
               : "overflow-visible rounded-none border-0 bg-transparent shadow-none",
           )}
         >
