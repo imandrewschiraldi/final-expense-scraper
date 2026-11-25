@@ -16,6 +16,18 @@
      (badges, inputs, progress tracks) that are meant to read as raised
      above the card, not sunken below it. */
   --surface2: #202020;
+  /* The "New Page Layout" beta's overlay-card page shell wants a clearly
+     different shade from --background, the same way this dark theme's own
+     --surface already reads as a distinct step up from pure black — not
+     the same thing for every theme below, since --surface itself is tuned
+     per-theme for everyday subtle panels, and green mode's version in
+     particular is only ~18% brighter than its background (barely visible
+     at this larger scale) where this theme's is already a solid jump. A
+     dedicated token, used nowhere but that one card, so its sibling blocks
+     below are free to pick their own stronger value without touching
+     --surface everywhere else it's already used. Same value as --surface
+     here since this theme's existing jump is already the right amount. */
+  --overlay-card-surface: #1f1f1f;
   /* Bumped from 0.08 — at that strength, card outlines and dividers barely
      registered against the near-black background and the whole page read
      as flat rather than separated into distinct panels. */
@@ -152,6 +164,10 @@
   --muted: #746f67;
   --input-bg: #e3e3e1;
   --sidebar-divider: rgba(0, 0, 0, 0.1);
+  /* See the dark theme's own comment above — this theme's --surface is
+     already a visible step down from pure white, so the beta overlay
+     card reuses it as-is. */
+  --overlay-card-surface: #e3e3e1;
 }
 
 /* Green mode — a third, dark-family theme: same structure as the default
@@ -178,6 +194,13 @@
   --muted: #86ac8c;
   --input-bg: #2b563a;
   --sidebar-divider: rgba(255, 255, 255, 0.16);
+  /* See the dark theme's own comment above — this theme's regular
+     --surface is only +18% over --background (tuned for everyday subtle
+     panels), which barely reads as a different shade at the overlay
+     card's much larger scale. A stronger, dedicated jump just for that
+     one card — same ~30-point per-channel lift dark mode's --surface
+     already gets over its own pure-black --background. */
+  --overlay-card-surface: #3d5c4a;
 }
 
 /* Carrier logo files are white (plus a couple of small color accents),

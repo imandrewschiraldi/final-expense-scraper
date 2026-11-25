@@ -46,9 +46,12 @@ export function AppShell({
   // Admin-only beta toggle (Profile page, "New Page Layout") — swaps
   // main's full-bleed column for a rounded, shadowed, slightly inset card
   // instead, with the sidebar dropping its own border/copper-line to
-  // match (see Sidebar.tsx). Built entirely from theme CSS variables
-  // (--surface/--background/--border), so it reads correctly in dark,
-  // light, and green alike rather than needing its own per-theme logic.
+  // match (see Sidebar.tsx). Both the card and the sidebar/page behind it
+  // are built from theme CSS variables (--overlay-card-surface/
+  // --background/--border — see globals.css), so the card reads as a
+  // clearly different shade from the matching sidebar/page color behind
+  // it in dark, light, and green alike, rather than needing its own
+  // per-theme logic here.
   // Fetched independently here rather than threaded down from the server
   // layout the way initialSidebarProfile below is — this is a pure visual
   // toggle with nothing else gated behind it, so there's nothing to
@@ -113,7 +116,7 @@ export function AppShell({
         )}
       >
         {cardLayoutEnabled ? (
-          <div className="relative min-h-full rounded-[20px] border border-border bg-gradient-to-b from-surface to-background px-4 pt-2 pb-8 shadow-[0_44px_90px_-24px_rgba(0,0,0,0.55),0_16px_32px_-10px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10">
+          <div className="relative min-h-full rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[0_44px_90px_-24px_rgba(0,0,0,0.55),0_16px_32px_-10px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10">
             {mainContent}
           </div>
         ) : (
