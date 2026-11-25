@@ -350,14 +350,14 @@ export function ProfilePanel() {
       {profile.role === "ADMIN" && (
         <Card>
           <CardHeader>
-            <CardTitle>Copper Sidebar (Beta)</CardTitle>
+            <CardTitle>New Page Layout (Beta)</CardTitle>
           </CardHeader>
           <div className="flex items-start justify-between gap-4">
             <p className="max-w-md text-sm text-muted">
-              Recolors the sidebar to copper, with white nav text and icons
-              instead of today&apos;s black sidebar with copper accents — only
-              on your own account, so you can switch straight back if you
-              don&apos;t like it. No one else&apos;s view changes.
+              Tries the rounded &ldquo;overlay card&rdquo; page shell instead of
+              today&apos;s full-bleed layout, in dark, light, and green mode
+              alike — only on your own account, so you can switch straight back
+              if you don&apos;t like it. No one else&apos;s view changes.
             </p>
             <Button
               variant={profile.cardLayoutEnabled ? "ghost" : "secondary"}

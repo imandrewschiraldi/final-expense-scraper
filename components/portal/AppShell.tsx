@@ -11,6 +11,7 @@ import { SoundEffects } from "@/components/portal/SoundEffects";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
 import { CARD_LAYOUT_CHANGED_EVENT } from "@/lib/cardLayoutEvent";
+import { cn } from "@/lib/cn";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 
@@ -42,17 +43,21 @@ export function AppShell({
   // so TourProvider/TourOverlay aren't even mounted for that role.
   const showTour = role !== "ADMIN";
 
-  // Admin-only beta toggle (Profile page, "New Page Layout") — recolors
-  // the sidebar to copper (see Sidebar.tsx) rather than changing main's
-  // own shape, so flipping it never touches main content at all. Fetched
-  // independently here rather than threaded down from the server layout
-  // the way initialSidebarProfile below is — this one doesn't gate which
-  // nav items exist (just a color), so there's nothing to visibly pop in
-  // or reflow if it arrives a beat late, and threading it through would
-  // only add it to every other page's layout query for no visible gain.
-  // AppShell itself stays mounted across navigation (it's in the root
-  // layout), so without the event listener below, flipping the toggle on
-  // the Profile page wouldn't show up here until a full reload.
+  // Admin-only beta toggle (Profile page, "New Page Layout") — swaps
+  // main's full-bleed column for a rounded, shadowed, slightly inset card
+  // instead, with the sidebar dropping its own border/copper-line to
+  // match (see Sidebar.tsx). Built entirely from theme CSS variables
+  // (--surface/--background/--border), so it reads correctly in dark,
+  // light, and green alike rather than needing its own per-theme logic.
+  // Fetched independently here rather than threaded down from the server
+  // layout the way initialSidebarProfile below is — this is a pure visual
+  // toggle with nothing else gated behind it, so there's nothing to
+  // visibly pop in or reflow if it arrives a beat late, and threading it
+  // through would only add it to every other page's layout query for no
+  // visible gain. AppShell itself stays mounted across navigation (it's
+  // in the root layout), so without the event listener below, flipping
+  // the toggle on the Profile page wouldn't show up here until a full
+  // reload.
   const [cardLayoutEnabled, setCardLayoutEnabled] = useState(false);
   useEffect(() => {
     if (role !== "ADMIN") return;
@@ -99,8 +104,21 @@ export function AppShell({
         cardLayoutEnabled={cardLayoutEnabled}
         initialProfile={initialSidebarProfile}
       />
-      <main className="relative min-w-0 flex-1 overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10">
-        {mainContent}
+      <main
+        className={cn(
+          "relative min-w-0 flex-1 overflow-y-auto",
+          cardLayoutEnabled
+            ? "p-2 sm:p-3 lg:p-4"
+            : "px-4 pt-2 pb-8 sm:px-6 lg:px-10",
+        )}
+      >
+        {cardLayoutEnabled ? (
+          <div className="relative min-h-full rounded-[20px] border border-border bg-gradient-to-b from-surface to-background px-4 pt-2 pb-8 shadow-[0_44px_90px_-24px_rgba(0,0,0,0.55),0_16px_32px_-10px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10">
+            {mainContent}
+          </div>
+        ) : (
+          mainContent
+        )}
       </main>
       {showTour && <TourOverlay role={role} />}
     </div>
