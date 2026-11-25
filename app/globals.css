@@ -8,9 +8,10 @@
   color-scheme: dark;
 
   --background: #000000;
-  /* Matches --input-bg — cards now use the same fill as the search/input
-     fields rather than their own shade. */
-  --surface: #262626;
+  /* Toned down slightly from #262626 (which matches --input-bg) — the
+     search/input fields keep that brighter shade, cards sit a touch
+     darker. */
+  --surface: #1f1f1f;
   /* A step above the new --surface — used for nested/secondary elements
      (badges, inputs, progress tracks) that are meant to read as raised
      above the card, not sunken below it. */
