@@ -261,9 +261,10 @@ function demoMetricsForWindow(policies: DemoPolicy[], window: { gte?: Date; lt?:
 
 /**
  * The AP/count/case-size KPI tiles, faked. Goal Completion / Goal Remaining
- * are deliberately left out here — Demo Mode fakes production, not a
- * person's own goal-tracking, so those two tiles keep showing real data
- * (the caller merges them in from the real activeGoalsFor result).
+ * are deliberately left out here — they come from the caller's own
+ * computePersonalKpis result instead, which (when the caller passes demo
+ * policies through) already tracks the viewer's real goals against this
+ * same fake production, so there's nothing left for this function to add.
  */
 export function demoPersonalKpis(policies: DemoPolicy[], range: DashboardRange, now: Date = new Date()): PersonalKpiData {
   const since = rangeSince(range, now);
@@ -428,6 +429,38 @@ export function demoPoliciesAsApiRows(policies: DemoPolicy[], agentName: string)
     issuedAt: p.issuedAt ? p.issuedAt.toISOString() : null,
     agent: { name: agentName },
   }));
+}
+
+/**
+ * Mirrors personalDashboard.ts's `currentGoalValue`, but aggregates an
+ * in-memory demo policy array instead of querying Prisma — so a viewer's
+ * own real goal (e.g. "15 policies this month") can track Demo Mode's fake
+ * production instead of their real, often near-empty, numbers. Same
+ * per-category rules as the real version: AP goals count every policy
+ * submitted in the window regardless of status, ISSUED_PREMIUM/INCOME only
+ * count policies issued within the window, POLICY_COUNT counts all
+ * submissions, RECRUITING isn't tracked from policies at all.
+ */
+export function demoGoalValueFor(policies: DemoPolicy[], category: string, periodStart: Date, periodEnd: Date): number {
+  const submittedInWindow = policies.filter((p) => p.submittedAt >= periodStart && p.submittedAt <= periodEnd);
+  const issuedInWindow = policies.filter(
+    (p) => p.status === "ISSUED" && p.issuedAt && p.issuedAt >= periodStart && p.issuedAt <= periodEnd,
+  );
+
+  switch (category) {
+    case "MONTHLY_AP":
+    case "ANNUAL_AP":
+      return submittedInWindow.reduce((sum, p) => sum + p.annualPremium, 0);
+    case "ISSUED_PREMIUM":
+      return issuedInWindow.reduce((sum, p) => sum + p.annualPremium, 0);
+    case "POLICY_COUNT":
+      return submittedInWindow.length;
+    case "INCOME":
+      return issuedInWindow.reduce((sum, p) => sum + p.annualPremium, 0) * DEMO_COMP_LEVEL_PERCENT;
+    case "RECRUITING":
+    default:
+      return 0;
+  }
 }
 
 /** Goals weren't part of Demo Mode's overlay — a viewer with no goals of

@@ -9,6 +9,7 @@ import {
   CommissionsPaidCardData,
 } from "@/lib/personalDashboardShared";
 import { parseCompLevelPercent } from "@/lib/commission";
+import { DemoPolicy, demoGoalValueFor } from "@/lib/demoData";
 
 export * from "@/lib/personalDashboardShared";
 
@@ -88,14 +89,19 @@ export async function computeCommissionsPaidCard(
 }
 
 /** Batches every Personal KPI card into a small, parallel set of indexed queries, all scoped to the one selected range. */
-export async function computePersonalKpis(userId: string, range: DashboardRange, now: Date = new Date()): Promise<PersonalKpiData> {
+export async function computePersonalKpis(
+  userId: string,
+  range: DashboardRange,
+  now: Date = new Date(),
+  demoPolicies?: DemoPolicy[],
+): Promise<PersonalKpiData> {
   const since = rangeSince(range, now);
   const prev = previousRangeWindow(range, now);
 
   const [current, previous, activeGoals] = await Promise.all([
     metricsForWindow(userId, since ? { gte: since } : {}),
     prev ? metricsForWindow(userId, { gte: prev.start, lt: prev.end }) : Promise.resolve(null),
-    activeGoalsFor(userId, now),
+    activeGoalsFor(userId, now, demoPolicies),
   ]);
 
   const goalCompletion =
@@ -225,7 +231,18 @@ function withPace(goal: {
   return { ...goal, percent, remaining, requiredDailyPace, requiredWeeklyPace, projectedCompletionDate };
 }
 
-export async function activeGoalsFor(userId: string, now: Date = new Date()): Promise<GoalProgressInternal[]> {
+/**
+ * `demoPolicies`, when passed, is Demo Mode's fake production set — each
+ * goal's progress is then aggregated from that in-memory array instead of
+ * this user's real policies, while the goals themselves (category, target,
+ * period) stay the viewer's own, exactly as created. Omitted for every
+ * caller outside Demo Mode.
+ */
+export async function activeGoalsFor(
+  userId: string,
+  now: Date = new Date(),
+  demoPolicies?: DemoPolicy[],
+): Promise<GoalProgressInternal[]> {
   const goals = await db.goal.findMany({
     where: { userId, achievedAt: null, periodEnd: { gte: startOfDay(now) } },
     orderBy: { periodEnd: "asc" },
@@ -233,7 +250,9 @@ export async function activeGoalsFor(userId: string, now: Date = new Date()): Pr
 
   return Promise.all(
     goals.map(async (g) => {
-      const { value } = await currentGoalValue(userId, g.category, g.periodStart, g.periodEnd);
+      const value = demoPolicies
+        ? demoGoalValueFor(demoPolicies, g.category, g.periodStart, g.periodEnd)
+        : (await currentGoalValue(userId, g.category, g.periodStart, g.periodEnd)).value;
       return withPace(
         {
           id: g.id,

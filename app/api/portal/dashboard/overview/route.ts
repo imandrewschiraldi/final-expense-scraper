@@ -26,13 +26,6 @@ export async function GET(req: NextRequest) {
     : "monthly";
 
   try {
-    // The Dashboard's own Goals section always shows this viewer's real
-    // goals, Demo Mode or not — unlike the Overview page's Goals widget
-    // (served by /api/portal/goals), which does fake them. Fetched
-    // unconditionally, before the demo-mode branch below, so both branches
-    // return the same real goals/recentWins.
-    const [goals, recentWins] = await Promise.all([activeGoalsFor(userId), recentWinsFor(userId)]);
-
     // Demo Mode is a per-viewer read-time overlay: checked fresh against
     // this user's own row, and only ever changes what this one request
     // returns to them — never writes anything, never touches another
@@ -44,11 +37,21 @@ export async function GET(req: NextRequest) {
 
     if (user?.demoModeEnabled) {
       const demoPolicies = generateDemoPolicies();
-      // Goal Completion / Goal Remaining (the KpiGrid tiles) still come
-      // from the real computePersonalKpis, which derives them from this
-      // user's own actual goals internally — only demoPersonalKpis' own
-      // AP-derived tiles are faked, layered on top.
-      const realKpis = await computePersonalKpis(userId, range);
+      // The Dashboard's own Goals section always shows this viewer's own
+      // real goal definitions (category/target/period), never the Overview
+      // widget's 3 fake demo goals — but in Demo Mode their progress is
+      // computed against this same fake production, so a real goal like
+      // "sell 15 policies this month" tracks the demo numbers instead of
+      // sitting frozen at the viewer's real, often near-empty, count.
+      // computePersonalKpis is given the same demoPolicies so its Goal
+      // Completion / Goal Remaining KpiGrid tiles agree with the Goals
+      // section below — only its AP-derived tiles are then overridden by
+      // demoPersonalKpis' own fake totals.
+      const [goals, recentWins, realKpis] = await Promise.all([
+        activeGoalsFor(userId, new Date(), demoPolicies),
+        recentWinsFor(userId),
+        computePersonalKpis(userId, range, new Date(), demoPolicies),
+      ]);
       return NextResponse.json({
         kpis: { ...realKpis, ...demoPersonalKpis(demoPolicies, range) },
         goals,
@@ -63,7 +66,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const [kpis, timeline, carriers, products, statusAnalytics, commissionsPaid] = await Promise.all([
+    const [goals, recentWins, kpis, timeline, carriers, products, statusAnalytics, commissionsPaid] = await Promise.all([
+      activeGoalsFor(userId),
+      recentWinsFor(userId),
       computePersonalKpis(userId, range),
       computeProductionTimeline(userId, range),
       computeCarrierAnalytics(userId, range),
