@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useTheme } from "@/lib/useTheme";
 
 // Intrinsic pixel size of each cropped wordmark in public/headings/ — needed
 // by next/image to reserve layout space before the file loads. Add an entry
@@ -90,7 +89,22 @@ export type PageHeadingSlug = keyof typeof HEADINGS;
  * real content (whatever follows PageHeading) starts there, not at the
  * image's own bottom edge, so it needs enough room that it visibly starts
  * below the line instead of butting up against it.
- */
+ *
+ * Both the dark and light wordmarks render unconditionally (when a light
+ * one exists for this slug) and the `.heading-img-dark`/`.heading-img-light`
+ * rules in globals.css pick which one is actually visible, keyed off the
+ * `data-theme` attribute on <html> — NOT a `theme` value read from
+ * useTheme()'s React state. That state starts at "dark" on every mount
+ * (true on first paint, and again on every client-side navigation, since
+ * each page's PageHeading is a fresh mount) and only updates once its own
+ * effect runs after hydration, so a light-theme viewer would see the dark
+ * wordmark at the dark crop's dimensions flash onto screen first, then
+ * swap to the light one at a different size, on every single page load —
+ * the same flash-then-swap bug fixed on the Sidebar logo, just far more
+ * pervasive here since this renders on ~20 pages instead of one sidebar.
+ * The CSS attribute selector has no such gap: it resolves in the same
+ * pass as the attribute itself, which the no-flash inline script in
+ * layout.tsx sets before React ever hydrates. */
 export function PageHeading({
   slug,
   alt,
@@ -102,14 +116,12 @@ export function PageHeading({
   // default, without changing every other page's heading.
   wrapperClassName?: string;
 }) {
-  const [theme] = useTheme();
-  const lightSize = (
+  const dark = HEADINGS[slug];
+  const light = (
     HEADINGS_LIGHT as Partial<
       Record<PageHeadingSlug, { width: number; height: number }>
     >
   )[slug];
-  const useLight = theme === "light" && !!lightSize;
-  const { width, height } = useLight ? lightSize! : HEADINGS[slug];
   return (
     <div
       className={
@@ -117,13 +129,23 @@ export function PageHeading({
       }
     >
       <Image
-        src={`/headings/${slug}${useLight ? "-light" : ""}.png`}
+        src={`/headings/${slug}.png`}
         alt={alt}
-        width={width}
-        height={height}
-        className="h-[17px] w-auto lg:h-[26px]"
+        width={dark.width}
+        height={dark.height}
+        className="heading-img-dark h-[17px] w-auto lg:h-[26px]"
         priority
       />
+      {light && (
+        <Image
+          src={`/headings/${slug}-light.png`}
+          alt={alt}
+          width={light.width}
+          height={light.height}
+          className="heading-img-light h-[17px] w-auto lg:h-[26px]"
+          priority
+        />
+      )}
     </div>
   );
 }

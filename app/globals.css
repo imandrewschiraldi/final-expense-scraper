@@ -218,6 +218,25 @@
   display: block;
 }
 
+/* PageHeading's dark/light wordmark pair — same reasoning and the same
+   data-theme-attribute mechanism as the tool iframes just above: picking
+   the visible one from a `theme` value read via useTheme() only resolves
+   post-hydration, so every navigation (PageHeading remounts fresh on each
+   page) would flash the dark wordmark at the dark crop's dimensions before
+   swapping to the light one at a different size, for every light-theme
+   viewer. Green theme has no green wordmark of its own, so it (like the
+   default, attribute-less dark theme) just falls through to the dark one
+   below, same as .tool-iframe-dark needs no theme-specific rule either. */
+.heading-img-light {
+  display: none;
+}
+:root[data-theme="light"] .heading-img-dark {
+  display: none;
+}
+:root[data-theme="light"] .heading-img-light {
+  display: block;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
