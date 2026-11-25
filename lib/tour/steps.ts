@@ -242,13 +242,6 @@ export const TOUR_SECTIONS: TourSection[] = [
         roles: ["MANAGER", "AGENT"],
       },
       {
-        id: "ask-integrity",
-        path: "/ask-integrity",
-        selector: 'a[href="/ask-integrity"]',
-        title: "Ask Integrity",
-        body: "An AI sales coach — it runs a demo call with you, rebuttals included, then grades the call and tells you exactly how to improve.",
-      },
-      {
         id: "carrier-resources-agent",
         path: "/carrier-resources",
         selector: 'a[href="/carrier-resources"]',

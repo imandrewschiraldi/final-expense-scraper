@@ -22,7 +22,6 @@ import {
   UsersRound,
   Percent,
   Landmark,
-  Bot,
   Radar,
   Stethoscope,
   ShoppingCart,
@@ -210,13 +209,6 @@ const NAV_ITEMS: NavItem[] = [
     label: "Commission Calculator",
     icon: Calculator,
     roles: ["MANAGER", "AGENT"],
-    section: "sell",
-  },
-  {
-    href: "/ask-integrity",
-    label: "Ask Integrity",
-    icon: Bot,
-    roles: ["ADMIN", "MANAGER", "AGENT"],
     section: "sell",
   },
   {
