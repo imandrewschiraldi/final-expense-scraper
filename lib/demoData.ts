@@ -31,10 +31,23 @@ export type DemoPolicy = {
 };
 
 const DEMO_POLICY_COUNT = 350;
+// Tuned (see generateDemoPolicies) so this viewer's own YTD issued life
+// premium — Hall of Fame's "Personal" track — lands around $227K, an
+// organic, non-round figure rather than a clean $225K/$230K.
+const DEMO_PREMIUM_MIN = 820;
+const DEMO_PREMIUM_RANGE = 870;
 // Purely for shaping the fake commissionAmount figures — not a real comp
 // level or rate, just plausible-looking inputs to the same real formula.
 const DEMO_COMP_LEVEL_PERCENT = 0.8;
 const DEMO_PAYOUT_MULTIPLIER = 0.9;
+// The whole rest of the team's combined all-time issued AP lands in this
+// band (see generateDemoAgencyPolicies) — picked so Hall of Fame's
+// "Agency" track (this viewer's own production + the team's) reads around
+// $473K total, regardless of how many real active agents this account
+// actually has.
+const DEMO_TEAM_TOTAL_MIN = 170_000;
+const DEMO_TEAM_TOTAL_RANGE = 45_000;
+const DEMO_TEAM_SEED = 20261125;
 
 const DEMO_CARRIERS = ["Americo", "Aetna", "Foresters", "Mutual of Omaha", "Royal Neighbors", "Transamerica"];
 const DEMO_STATES = ["FL", "GA", "TX", "OH", "NC", "TN", "AL", "SC", "MI", "PA"];
@@ -91,7 +104,7 @@ export function generateDemoPolicies(now: Date = new Date()): DemoPolicy[] {
           ? submittedAt
           : null;
 
-    const annualPremium = Math.round(900 + random() * 1700);
+    const annualPremium = Math.round(DEMO_PREMIUM_MIN + random() * DEMO_PREMIUM_RANGE);
     // Computed for every policy regardless of status — demoMetricsForWindow
     // is what excludes Chargebacks from the Commissions Paid total, same as
     // the real aggregation does.
@@ -140,20 +153,37 @@ export type DemoAgencyPolicy = DemoPolicy & { agentId: string; agentName: string
  * Deterministic per agent id (hashToSeed), so it's stable across requests
  * and page refreshes rather than reshuffling every poll.
  *
- * Most agents (~80%) land with $100k-$345k in issued premium, reading as an
- * established, successful book; the rest (~20%) land at $2k-$15k, reading
- * as a newer rep still ramping up — same spread the Leaderboard's "a few
- * agents look newer" needs, just picked per agent instead of hand-placed.
+ * The team's combined total (DEMO_TEAM_TOTAL_MIN/RANGE) is rolled ONCE,
+ * from its own fixed seed — not per agent — and then split across however
+ * many agents actually exist, by a skewed per-agent weight (so a few read
+ * as established producers and the rest as newer/ramping, same flavor the
+ * old isNewer split gave). Splitting a shared pool instead of giving each
+ * agent its own independent $100k-$345k target keeps Hall of Fame's
+ * "Agency" total landing in the same organic ballpark regardless of
+ * whether this account has 3 active agents or 30 — the old per-agent
+ * range let the total balloon into the millions on any account with more
+ * than a handful of real users.
  */
 export function generateDemoAgencyPolicies(agents: DemoAgent[], now: Date = new Date()): DemoAgencyPolicy[] {
+  if (agents.length === 0) return [];
+
+  const teamRandom = mulberry32(DEMO_TEAM_SEED);
+  const teamTotalTarget = DEMO_TEAM_TOTAL_MIN + teamRandom() * DEMO_TEAM_TOTAL_RANGE;
+
+  const agentRandoms = agents.map((agent) => mulberry32(hashToSeed(agent.id)));
+  // Squaring skews most weights small with a few large ones, the same
+  // "mostly modest, a couple of standouts" shape isNewer used to give
+  // directly — floored so no one's target rounds all the way down to $0.
+  const weights = agentRandoms.map((random) => Math.pow(random(), 2) + 0.05);
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
   const policies: DemoAgencyPolicy[] = [];
   const msPerDay = 24 * 60 * 60 * 1000;
   const spreadDays = 365;
 
-  for (const agent of agents) {
-    const random = mulberry32(hashToSeed(agent.id));
-    const isNewer = random() < 0.2;
-    const targetIssuedAP = isNewer ? 2000 + random() * 13000 : 100000 + random() * 245000;
+  agents.forEach((agent, index) => {
+    const random = agentRandoms[index];
+    const targetIssuedAP = teamTotalTarget * (weights[index] / totalWeight);
 
     let issuedAP = 0;
     let guard = 0;
@@ -171,7 +201,7 @@ export function generateDemoAgencyPolicies(agents: DemoAgent[], now: Date = new 
             ? submittedAt
             : null;
 
-      const annualPremium = Math.round(900 + random() * 1700);
+      const annualPremium = Math.round(DEMO_PREMIUM_MIN + random() * DEMO_PREMIUM_RANGE);
       const commissionAmount = computeCommissionAmount({
         annualPremium,
         compLevelPercent: DEMO_COMP_LEVEL_PERCENT,
@@ -197,7 +227,7 @@ export function generateDemoAgencyPolicies(agents: DemoAgent[], now: Date = new 
         agentProfileImageUrl: agent.profileImageUrl,
       });
     }
-  }
+  });
 
   return policies.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
 }
@@ -492,7 +522,11 @@ export function demoGoals(now: Date = new Date()): GoalWithProgress[] {
     };
   };
   return [
-    goal("demo-goal-1", "MONTHLY_AP", 50000, 34000),
+    // Target kept a clean, human-picked-looking number — only the
+    // in-progress current value needs to look organic — and scaled down
+    // from the old 50000/34000 pair to track the smaller production scale
+    // above (same ~69% progress either way).
+    goal("demo-goal-1", "MONTHLY_AP", 35000, 24145),
     goal("demo-goal-2", "POLICY_COUNT", 15, 8),
     goal("demo-goal-3", "RECRUITING", 5, 4),
   ];
