@@ -8,17 +8,16 @@
   color-scheme: dark;
 
   --background: #000000;
-  /* Bumped from #0d0d0d — only 13 of 255 apart from --background, so
-     every bg-surface card (Card/AccentCard/PremiumPanel, used sitewide)
-     read as one flat black field instead of a separated panel. Light and
-     green already give their own --surface a value visibly apart from
-     their --background; dark theme's was the one that didn't. */
-  --surface: #1a1a1a;
-  /* Bumped from #141414 to stay a step above the new --surface — it's
-     used for nested/secondary elements (badges, inputs, progress tracks)
-     that are meant to read as raised above the card, not sunken below
-     it. */
-  --surface2: #202020;
+  /* Originally #0d0d0d — only 13 of 255 apart from --background, so every
+     bg-surface card (Card/AccentCard/PremiumPanel, used sitewide) read as
+     one flat black field instead of a separated panel. #1a1a1a (26) fixed
+     that but read as too bright/gray; settled here, keeping it clearly
+     separated from the page without looking washed out. */
+  --surface: #141414;
+  /* A step above the new --surface — used for nested/secondary elements
+     (badges, inputs, progress tracks) that are meant to read as raised
+     above the card, not sunken below it. */
+  --surface2: #1a1a1a;
   /* Bumped from 0.08 — at that strength, card outlines and dividers barely
      registered against the near-black background and the whole page read
      as flat rather than separated into distinct panels. */
@@ -36,10 +35,9 @@
   /* A dedicated step for search/input fields — deliberately not --surface2
      (tuned for subtle panel backgrounds, so it barely reads against
      --background in light mode) — needs to stand out against the page
-     behind it in both themes. Bumped from #1a1a1a (which is now
-     --surface's own value) to stay a step above cards — an input sitting
+     behind it in both themes. A step above --surface2 — an input sitting
      inside a card should read as raised above it, not the same shade. */
-  --input-bg: #262626;
+  --input-bg: #202020;
 
   --copper: #c87941;
   --copper-dim: #7a4a26;
