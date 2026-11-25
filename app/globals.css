@@ -140,14 +140,18 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --background: #f5f3ef;
-  --surface: #ffffff;
-  --surface2: #f2f0ea;
+  /* Page is pure white, matching dark mode's page being pure black — the
+     page itself never carries the contrast; the card (--surface) is what's
+     a different shade from it, same as dark mode's black page / #1a1a1a
+     card pairing. */
+  --background: #ffffff;
+  --surface: #ececec;
+  --surface2: #f5f5f4;
   --border: rgba(0, 0, 0, 0.18);
   --foreground: #2a2622;
   --white: #17140f;
   --muted: #746f67;
-  --input-bg: #e7e3da;
+  --input-bg: #e3e3e1;
   --sidebar-divider: rgba(0, 0, 0, 0.1);
 }
 
