@@ -1,8 +1,3 @@
-"use client";
-
-import { ExternalLink } from "lucide-react";
-import { useTheme } from "@/lib/useTheme";
-
 /** Renders a third-party tool directly on the page via iframe — no card/
  * border, no page title, and the frame stretches past the page's own
  * padding on every side so the tool itself is the very first thing on the
@@ -12,10 +7,15 @@ import { useTheme } from "@/lib/useTheme";
  * (?embed=1), which hides just its Tier 1 logo and copper line (its other
  * header controls, like Scripts' New Call button, stay visible) so our own
  * logo — the sidebar's on desktop, PageHeader's on mobile — is the only one
- * on screen. "Open in New Tab" links to the plain URL instead, so a
- * standalone visit still shows the tool's full branded header. The link
- * sits top-left, where the now-hidden logo used to be, since the tool's own
- * header controls occupy the top-right.
+ * on screen.
+ *
+ * "Open in New Tab" and the rest of the page's header controls are
+ * deliberately NOT drawn out here as an outer overlay (see TopBarActions,
+ * which renders nothing at all on these two routes) — an overlay sitting
+ * outside the iframe can't scroll away with the tool's own content the way
+ * everything inside the iframe does. "Open in New Tab" instead lives inside
+ * each tool's own header (the 4 self-hosted HTML files under public/tools/),
+ * shown only in embed mode, so it scrolls away in sync with that header.
  *
  * `lightSrc`/`greenSrc` — optional self-hosted light-mode/green-mode builds
  * of the same tool (e.g. /tools/sales-script-light.html,
@@ -35,18 +35,7 @@ import { useTheme } from "@/lib/useTheme";
  * mounts, and toggling is an instant visibility swap from then on.
  *
  * Which one shows is driven by the `.tool-iframe-{dark,light,green}`
- * rules in globals.css, keyed off the `data-theme` attribute on <html> —
- * NOT by a className computed from `theme` here. That attribute is set by
- * the no-flash inline script in layout.tsx before React ever hydrates;
- * `theme` from useTheme() only updates once its effect runs afterward.
- * Using React state to pick which iframe is hidden left a visible window
- * on every hard reload where the un-hidden default (dark, with its own
- * black background painting as soon as its document starts streaming)
- * sat fully visible until hydration caught up — a real flash-to-black,
- * not just a cosmetic one.
- * Plain CSS has no such gap: it applies in the same pass as the attribute
- * that's already correct pre-paint. `theme` is still read below, just for
- * the "Open in New Tab" link's href, which doesn't need to be flash-safe. */
+ * rules in globals.css, keyed off the `data-theme` attribute on <html>. */
 export function EmbeddedTool({
   title,
   src,
@@ -58,11 +47,6 @@ export function EmbeddedTool({
   lightSrc?: string;
   greenSrc?: string;
 }) {
-  const [theme] = useTheme();
-  const showLight = theme === "light" && !!lightSrc;
-  const showGreen = !showLight && theme === "green" && !!greenSrc;
-  const activeSrc = showLight ? lightSrc! : showGreen ? greenSrc! : src;
-
   function embed(url: string) {
     return `${url}${url.includes("?") ? "&" : "?"}embed=1`;
   }
@@ -91,15 +75,6 @@ export function EmbeddedTool({
           className="tool-iframe-green h-full w-full border-0"
         />
       )}
-      <a
-        href={activeSrc}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="absolute top-3 left-3 flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-semibold text-muted backdrop-blur-sm transition-colors hover:text-white"
-      >
-        <ExternalLink className="h-3.5 w-3.5" />
-        Open in New Tab
-      </a>
     </div>
   );
 }

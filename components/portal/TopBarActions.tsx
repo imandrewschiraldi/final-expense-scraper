@@ -466,13 +466,13 @@ function AiSearchBox() {
  * (see HeaderDivider's own note on this), so it has to be replicated here to
  * land in the same place normal content's edges do.
  *
- * Omitted entirely on Scripts — the embedded tool there draws its own
- * Notifications-equivalent control (and a busy New Call header of its own)
- * in its own header, so our outer copy would render right on top of it.
- * Commission Calculator's own header has no such controls (just a centered
- * title, see its light-mode build), so it keeps the icon cluster — just
- * without the search box, which isn't part of this request and would sit
- * awkwardly with nothing to its left.
+ * Omitted entirely on both Scripts and Commission Calculator — each
+ * embedded tool's own content scrolls away beneath this outer row (see
+ * EmbeddedTool.tsx), so a persistent icon cluster floating on top of it
+ * would never scroll away with it, just sit stranded over whatever
+ * happened to scroll underneath. "Open in New Tab" lives inside each
+ * tool's own header instead, for the same reason — it needs to scroll
+ * away with that header, not hover above it.
  */
 export function TopBarActions({ role, name }: { role: Role; name: string }) {
   const pathname = usePathname();
@@ -484,8 +484,7 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
       .then((data) => data?.profile && setProfile(data.profile));
   }, []);
 
-  if (pathname.startsWith("/scripts")) return null;
-  const iconsOnly = pathname.startsWith("/commission-calculator");
+  if (pathname.startsWith("/scripts") || pathname.startsWith("/commission-calculator")) return null;
   // The Vault's own header already has its own PREV/NEXT lead navigation
   // and a bell/avatar-free layout by design — the profile picture,
   // notifications, theme toggle, and quick links would just be clutter
@@ -530,9 +529,8 @@ export function TopBarActions({ role, name }: { role: Role; name: string }) {
       {/* Desktop: search box (left) and utility icon cluster (right) are
           two independently-anchored containers, not two flex children of
           one "justify-between" row — each keeps its own fixed anchor so
-          neither depends on the other being present. Commission Calculator
-          just skips the search box entirely — nothing to its left there. */}
-      {!iconsOnly && !hideAskGemini && (
+          neither depends on the other being present. */}
+      {!hideAskGemini && (
         <div
           className="absolute top-0 left-4 z-40 hidden items-center sm:left-6 lg:left-10 lg:flex"
           style={{ height: HEADER_HEIGHT }}
