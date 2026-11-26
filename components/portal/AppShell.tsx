@@ -47,7 +47,13 @@ export function AppShell({
   // every agent at once — see lib/actions/pageLayoutBeta.ts) — swaps main's
   // full-bleed column for a rounded, shadowed, slightly inset card instead,
   // with the sidebar dropping its own border/copper-line to match (see
-  // Sidebar.tsx). Both the card and the sidebar/page behind it are built
+  // Sidebar.tsx). Desktop-browser-only by design: a phone-width screen, or
+  // the installed "Add to Home Screen" web app at any width, always gets
+  // the original full-bleed layout regardless of this flag — see the `lg`
+  // + `not (display-mode: standalone)` media variant on main's own
+  // className below, which is what actually enforces that (plain CSS, not
+  // this boolean, so there's no flash while a JS device check runs after
+  // hydration). Both the card and the sidebar/page behind it are built
   // from theme CSS variables (--overlay-card-surface/--background/
   // --border — see globals.css), so the card reads as a clearly different
   // shade from the matching sidebar/page color behind it in dark, light,
@@ -116,14 +122,30 @@ export function AppShell({
       <main
         className={cn(
           "relative min-w-0 flex-1 transition-[padding] duration-200 ease-out",
+          // Base = the original full-bleed layout, unconditionally. The
+          // overlay-card beta is a desktop-browser-only treatment — on a
+          // phone-width screen, or inside the installed "Add to Home
+          // Screen" web app regardless of its width (that's what the
+          // `not (display-mode: standalone)` half of the override below
+          // excludes), every agent gets this base layout no matter what
+          // the agency-wide toggle below says. Plain CSS media features,
+          // not a JS screen-size check — this can't know the viewport or
+          // display-mode until after hydration, which would mean either
+          // flashing into the card layout on phones or flashing into the
+          // full-bleed one on desktop while that check runs, the exact
+          // flash bug the SSR-seeding above this component exists to
+          // avoid in the first place.
+          "overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10",
           // The card itself is the thing that should stay put as a fixed
           // overlay frame — only the page inside it scrolls. That needs
           // main pinned to exactly one viewport tall with nothing escaping
           // it (no scrolling of its own), so the card's own h-full +
-          // overflow-y-auto below is what actually moves, not this.
-          cardLayoutEnabled
-            ? "h-screen overflow-hidden p-2 sm:p-3 lg:p-4"
-            : "overflow-y-auto px-4 pt-2 pb-8 sm:px-6 lg:px-10",
+          // overflow-y-auto below is what actually moves, not this. Only
+          // takes effect once the `lg` width is already guaranteed by the
+          // variant below, so there's no need for the base's own sm/lg
+          // progressive steps here — just the one final value.
+          cardLayoutEnabled &&
+            "lg:[@media_not_(display-mode:standalone)]:h-screen lg:[@media_not_(display-mode:standalone)]:overflow-hidden lg:[@media_not_(display-mode:standalone)]:p-4",
         )}
       >
         {/* Always the same wrapping element — toggling cardLayoutEnabled
@@ -149,21 +171,31 @@ export function AppShell({
             // whose overflow actually scrolls, or they end up visually
             // fixed while real content scrolls underneath them instead of
             // scrolling away with it.
-            // - cardLayoutEnabled off: main itself scrolls (overflow-y-auto
-            //   above), so main has to stay the positioned ancestor — this
-            //   wrapper deliberately has no `relative` of its own, or it'd
-            //   hijack that (the line would inset to its edges instead of
-            //   main's, landing short of the page edge and over page
-            //   subtitles instead of below them).
-            // - cardLayoutEnabled on: main is pinned non-scrolling (see its
-            //   own comment above) and THIS div is what scrolls instead —
-            //   so this is the one that needs to be `relative`, or the
-            //   line/icons bind to non-scrolling main and sit frozen on
-            //   screen while the card's real content scrolls past them.
+            // - Card mode NOT actually in effect (off, or on but overridden
+            //   to the base layout below `lg`/inside the installed web app
+            //   — see main's own comment above): main itself scrolls
+            //   (overflow-y-auto above), so main has to stay the positioned
+            //   ancestor — this wrapper deliberately has no `relative` of
+            //   its own there, or it'd hijack that (the line would inset to
+            //   its edges instead of main's, landing short of the page edge
+            //   and over page subtitles instead of below them).
+            // - Card mode actually in effect: main is pinned non-scrolling
+            //   (see its own comment above) and THIS div is what scrolls
+            //   instead — so this is the one that needs to be `relative`
+            //   there, or the line/icons bind to non-scrolling main and sit
+            //   frozen on screen while the card's real content scrolls past
+            //   them.
             "transition-[border-radius,background-color,box-shadow] duration-200 ease-out",
-            cardLayoutEnabled
-              ? "relative h-full overflow-y-auto rounded-[20px] border border-border bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] px-4 pt-2 pb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-6 lg:px-10"
-              : "overflow-visible rounded-none border-0 bg-transparent shadow-none",
+            // Base = the card's non-existence — a plain transparent
+            // pass-through, same reasoning and same desktop-browser-only
+            // gating as main's own base/override split above. Every class
+            // in the override below only ever takes effect once `lg` is
+            // already guaranteed, so (unlike the pre-this-fix version) it
+            // only needs each property's final value, not a progressive
+            // sm/lg step-up.
+            "overflow-visible rounded-none border-0 bg-transparent shadow-none",
+            cardLayoutEnabled &&
+              "lg:[@media_not_(display-mode:standalone)]:relative lg:[@media_not_(display-mode:standalone)]:h-full lg:[@media_not_(display-mode:standalone)]:overflow-y-auto lg:[@media_not_(display-mode:standalone)]:rounded-[20px] lg:[@media_not_(display-mode:standalone)]:border lg:[@media_not_(display-mode:standalone)]:border-border lg:[@media_not_(display-mode:standalone)]:bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] lg:[@media_not_(display-mode:standalone)]:px-10 lg:[@media_not_(display-mode:standalone)]:pt-2 lg:[@media_not_(display-mode:standalone)]:pb-8 lg:[@media_not_(display-mode:standalone)]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
           )}
         >
           {mainContent}

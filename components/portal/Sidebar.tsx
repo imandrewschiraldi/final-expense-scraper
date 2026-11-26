@@ -812,7 +812,15 @@ export function Sidebar({
         data-tour-ui="sidebar"
         className={cn(
           "sticky top-0 hidden h-screen shrink-0 flex-col bg-background transition-all duration-300 ease-out lg:flex",
-          !cardLayoutEnabled && "border-r border-white/[0.06]",
+          // Base = always bordered, same as the rest of this file's
+          // desktop-browser-only gating for the overlay-card beta (see
+          // AppShell's own comment on cardLayoutEnabled) — a phone-width
+          // screen or the installed web app keeps this border regardless
+          // of the flag, since main there is still the original full-bleed
+          // layout it exists to line up against.
+          "border-r border-white/[0.06]",
+          cardLayoutEnabled &&
+            "lg:[@media_not_(display-mode:standalone)]:border-r-0",
           collapsed ? "w-[68px]" : "w-60",
         )}
       >
@@ -887,10 +895,18 @@ export function Sidebar({
             land pixel-aligned instead of a border-box border sitting 2px
             higher, inside the row itself. Dropped in the overlay-card
             layout: main's own line is confined inside that card now, with
-            nothing at this same height in the sidebar to line up with. */}
-        {!cardLayoutEnabled && (
-          <div className="metal-copper-line h-0.5 shrink-0" />
-        )}
+            nothing at this same height in the sidebar to line up with.
+            Always rendered, same media-gated hide as the border above it —
+            never actually dropped on a phone-width screen or inside the
+            installed web app, where this sidebar's line is always what
+            lines up with main's. */}
+        <div
+          className={cn(
+            "metal-copper-line h-0.5 shrink-0",
+            cardLayoutEnabled &&
+              "lg:[@media_not_(display-mode:standalone)]:hidden",
+          )}
+        />
 
         {collapsed && (
           <button
