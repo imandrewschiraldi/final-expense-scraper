@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   List as ListIcon,
   Plus,
+  Search,
   Settings2,
   StickyNote,
   Trash2,
@@ -22,14 +23,10 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Input";
+import { Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/cn";
 import { LEAD_TYPES, LEAD_TYPE_LABELS, type LeadType } from "@/lib/leadType";
-import {
-  PIPELINE_STAGE_COLOR_CLASSES,
-  type PipelineStageColorToken,
-} from "@/lib/pipelineStageColors";
 import {
   FIELD_OPTIONS,
   loadFieldPrefs,
@@ -51,7 +48,6 @@ import { PolicyEditForm } from "@/components/portal/PolicyEditForm";
 const DEFAULT_LEAD_VALUE = 1200;
 
 type Phase = "LEAD" | "CLIENT";
-type Role = "ADMIN" | "MANAGER" | "AGENT";
 type ViewMode = "board" | "list";
 
 type Stage = {
@@ -59,7 +55,6 @@ type Stage = {
   phase: Phase;
   name: string;
   order: number;
-  colorToken: string;
   systemKey: string | null;
 };
 
@@ -83,13 +78,6 @@ type OpportunityPolicy = SubmittedPolicy & {
   followUpAt?: string | null;
 };
 
-function stageColors(token: string) {
-  return (
-    PIPELINE_STAGE_COLOR_CLASSES[token as PipelineStageColorToken] ??
-    PIPELINE_STAGE_COLOR_CLASSES.muted
-  );
-}
-
 function formatCurrency(value: string | number) {
   return Number(value).toLocaleString("en-US", {
     style: "currency",
@@ -100,14 +88,10 @@ function formatCurrency(value: string | number) {
 
 function LeadCard({
   lead,
-  stage,
-  showAgent,
   fields,
   onOpen,
 }: {
   lead: OpportunityLead;
-  stage: Stage | undefined;
-  showAgent: boolean;
   fields: string[];
   onOpen?: () => void;
 }) {
@@ -119,7 +103,6 @@ function LeadCard({
         zIndex: 10,
       }
     : undefined;
-  const colors = stageColors(stage?.colorToken ?? "muted");
   const name = `${lead.firstName} ${lead.lastName}`.trim();
 
   return (
@@ -130,8 +113,7 @@ function LeadCard({
       {...listeners}
       onClick={onOpen}
       className={cn(
-        "cursor-grab touch-none rounded-lg border-l-4 bg-surface p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing",
-        colors.border,
+        "cursor-grab touch-none rounded-lg border border-border bg-surface p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing",
         isDragging && "opacity-40",
       )}
     >
@@ -154,25 +136,16 @@ function LeadCard({
             .join(" · ")}
         </p>
       )}
-      {showAgent && lead.assignedAgent && (
-        <p className="mt-1 truncate text-[11px] text-muted">
-          {lead.assignedAgent.name}
-        </p>
-      )}
     </div>
   );
 }
 
 function PolicyCard({
   policy,
-  stage,
-  showAgent,
   fields,
   onOpen,
 }: {
   policy: OpportunityPolicy;
-  stage: Stage | undefined;
-  showAgent: boolean;
   fields: string[];
   onOpen: () => void;
 }) {
@@ -184,7 +157,6 @@ function PolicyCard({
         zIndex: 10,
       }
     : undefined;
-  const colors = stageColors(stage?.colorToken ?? "muted");
   const hasFollowUp = Boolean(policy.followUpAt);
   const hasNotes = Boolean(policy.notes?.trim());
 
@@ -196,8 +168,7 @@ function PolicyCard({
       {...listeners}
       onClick={onOpen}
       className={cn(
-        "cursor-grab touch-none rounded-lg border-l-4 bg-surface p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing",
-        colors.border,
+        "cursor-grab touch-none rounded-lg border border-border bg-surface p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing",
         isDragging && "opacity-40",
       )}
     >
@@ -235,11 +206,6 @@ function PolicyCard({
             : "Notes"}
         </p>
       )}
-      {showAgent && policy.agent && (
-        <p className="mt-1 truncate text-[11px] text-muted">
-          {policy.agent.name}
-        </p>
-      )}
     </div>
   );
 }
@@ -256,17 +222,15 @@ function BoardColumn({
   children: React.ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
-  const colors = stageColors(stage.colorToken);
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-72 shrink-0 flex-col overflow-hidden rounded-[10px] border border-border bg-surface2/40 transition-colors",
+        "flex w-72 shrink-0 flex-col overflow-visible rounded-[10px] border border-border bg-surface2/40 transition-colors",
         isOver && "border-copper-dim-gradient bg-surface2",
       )}
     >
-      <div className={cn("h-1 w-full shrink-0", colors.bar)} />
       <div className="border-b border-border/60 px-3 py-2.5">
         <div className="flex items-center justify-between gap-2">
           <h3 className="font-condensed truncate text-xs font-extrabold tracking-[0.08em] text-white uppercase">
@@ -289,13 +253,7 @@ function BoardColumn({
   );
 }
 
-export function BookOfBusinessPanel({
-  isAgent,
-  role,
-}: {
-  isAgent: boolean;
-  role: Role;
-}) {
+export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
   const [phase, setPhase] = useState<Phase>("LEAD");
   const [leadType, setLeadType] = useState<LeadType>(LEAD_TYPES[0]);
   const [view, setView] = useState<ViewMode>("board");
@@ -315,9 +273,9 @@ export function BookOfBusinessPanel({
   const [carriers, setCarriers] = useState<CarrierWithPlans[]>([]);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const router = useRouter();
-  const showAgentColumn = role !== "AGENT";
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor),
@@ -372,8 +330,25 @@ export function BookOfBusinessPanel({
     () => new Map(stages.map((s) => [s.id, s])),
     [stages],
   );
-  const items: (OpportunityLead | OpportunityPolicy)[] =
+  // "Search Opportunities" just matches on contact/client name — opportunity
+  // here means the same thing GoHighLevel means by it: a lead (unsold) or a
+  // client (sold), so this one search box covers both phases.
+  const query = search.trim().toLowerCase();
+  const allItems: (OpportunityLead | OpportunityPolicy)[] =
     phase === "LEAD" ? leads : policies;
+  const items = query
+    ? allItems.filter((item) =>
+        (phase === "LEAD"
+          ? `${(item as OpportunityLead).firstName} ${(item as OpportunityLead).lastName}`
+          : (item as OpportunityPolicy).clientName
+        )
+          .toLowerCase()
+          .includes(query),
+      )
+    : allItems;
+  const visibleLeads = phase === "LEAD" ? (items as OpportunityLead[]) : [];
+  const visiblePolicies =
+    phase === "CLIENT" ? (items as OpportunityPolicy[]) : [];
 
   const columns = useMemo(() => {
     const grouped = new Map<string, (OpportunityLead | OpportunityPolicy)[]>();
@@ -531,14 +506,6 @@ export function BookOfBusinessPanel({
             {items.length}{" "}
             {items.length === 1 ? "opportunity" : "opportunities"}
           </p>
-          <button
-            type="button"
-            onClick={() => setShowManageFields(true)}
-            className="flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-foreground"
-          >
-            <Settings2 className="h-4 w-4" />
-            Manage Fields
-          </button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -574,8 +541,28 @@ export function BookOfBusinessPanel({
           </div>
           <Button variant="primary" onClick={() => setShowAddForm(true)}>
             <Plus className="size-4" />
-            Add Opportunity
+            {phase === "CLIENT" ? "Submit Policy" : "Add Opportunity"}
           </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setShowManageFields(true)}
+          className="flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-foreground"
+        >
+          <Settings2 className="h-4 w-4" />
+          Manage Fields
+        </button>
+        <div className="relative w-full max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search Opportunities"
+            className="pl-9"
+          />
         </div>
       </div>
 
@@ -609,21 +596,13 @@ export function BookOfBusinessPanel({
                       <LeadCard
                         key={item.id}
                         lead={item as OpportunityLead}
-                        stage={stage}
-                        showAgent={showAgentColumn}
                         fields={fields}
-                        onOpen={
-                          showAgentColumn
-                            ? undefined
-                            : () => router.push(`/agent/leads/${item.id}`)
-                        }
+                        onOpen={() => router.push(`/agent/leads/${item.id}`)}
                       />
                     ) : (
                       <PolicyCard
                         key={item.id}
                         policy={item as OpportunityPolicy}
-                        stage={stage}
-                        showAgent={showAgentColumn}
                         fields={fields}
                         onOpen={() =>
                           setEditingPolicy(item as OpportunityPolicy)
@@ -653,49 +632,33 @@ export function BookOfBusinessPanel({
                 {fields.includes("dateOfBirth") && (
                   <th className="px-4 py-3">Date of Birth</th>
                 )}
-                {showAgentColumn && <th className="px-4 py-3">Agent</th>}
                 <th className="px-4 py-3">Created</th>
               </tr>
             </thead>
             <tbody>
-              {leads.length === 0 && (
+              {visibleLeads.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-muted">
+                  <td colSpan={7} className="px-4 py-6 text-center text-muted">
                     No opportunities in this pipeline yet.
                   </td>
                 </tr>
               )}
-              {leads.map((lead) => (
+              {visibleLeads.map((lead) => (
                 <tr
                   key={lead.id}
                   className="border-b border-border/60 hover:bg-surface2"
                 >
                   <td className="px-4 py-3">
-                    {showAgentColumn ? (
-                      <span className="text-white">
-                        {lead.firstName} {lead.lastName}
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/agent/leads/${lead.id}`)}
-                        className="font-semibold text-white hover:metal-copper-text hover:underline"
-                      >
-                        {lead.firstName} {lead.lastName}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/agent/leads/${lead.id}`)}
+                      className="font-semibold text-white hover:metal-copper-text hover:underline"
+                    >
+                      {lead.firstName} {lead.lastName}
+                    </button>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "h-2 w-2 shrink-0 rounded-full",
-                          stageColors(
-                            stagesById.get(lead.pipelineStageId ?? "")
-                              ?.colorToken ?? "muted",
-                          ).dot,
-                        )}
-                      />
                       <Select
                         value={lead.pipelineStageId ?? ""}
                         disabled={updatingId === lead.id}
@@ -726,11 +689,6 @@ export function BookOfBusinessPanel({
                         : "—"}
                     </td>
                   )}
-                  {showAgentColumn && (
-                    <td className="px-4 py-3 text-muted">
-                      {lead.assignedAgent?.name ?? "—"}
-                    </td>
-                  )}
                   <td className="px-4 py-3 text-muted">
                     {new Date(lead.createdAt).toLocaleDateString()}
                   </td>
@@ -756,21 +714,20 @@ export function BookOfBusinessPanel({
                 {fields.includes("phone") && (
                   <th className="px-4 py-3">Phone</th>
                 )}
-                {showAgentColumn && <th className="px-4 py-3">Agent</th>}
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Notes</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
-              {policies.length === 0 && (
+              {visiblePolicies.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-6 text-center text-muted">
+                  <td colSpan={9} className="px-4 py-6 text-center text-muted">
                     No opportunities in this pipeline yet.
                   </td>
                 </tr>
               )}
-              {policies.map((p) => {
+              {visiblePolicies.map((p) => {
                 const isDemo = p.id.startsWith("demo-");
                 return (
                   <tr
@@ -788,15 +745,6 @@ export function BookOfBusinessPanel({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "h-2 w-2 shrink-0 rounded-full",
-                            stageColors(
-                              stagesById.get(p.pipelineStageId ?? "")
-                                ?.colorToken ?? "muted",
-                            ).dot,
-                          )}
-                        />
                         <Select
                           value={p.pipelineStageId ?? ""}
                           disabled={updatingId === p.id}
@@ -823,11 +771,6 @@ export function BookOfBusinessPanel({
                     {fields.includes("phone") && (
                       <td className="px-4 py-3 text-muted">
                         {p.clientPhone ?? "—"}
-                      </td>
-                    )}
-                    {showAgentColumn && (
-                      <td className="px-4 py-3 text-muted">
-                        {p.agent?.name ?? "—"}
                       </td>
                     )}
                     <td className="px-4 py-3 text-muted">
@@ -888,7 +831,7 @@ export function BookOfBusinessPanel({
         <Modal
           open
           onClose={() => setShowAddForm(false)}
-          title="Add Opportunity"
+          title="Submit Policy"
           maxWidthClassName="max-w-lg"
         >
           <PolicySubmitForm

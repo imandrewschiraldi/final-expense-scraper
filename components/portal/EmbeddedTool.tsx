@@ -1,3 +1,8 @@
+"use client";
+
+import { useCardLayout } from "@/lib/cardLayoutContext";
+import { cn } from "@/lib/cn";
+
 /** Renders a third-party tool directly on the page via iframe — no card/
  * border, no page title, and the frame stretches past the page's own
  * padding on every side so the tool itself is the very first thing on the
@@ -35,7 +40,18 @@
  * mounts, and toggling is an instant visibility swap from then on.
  *
  * Which one shows is driven by the `.tool-iframe-{dark,light,green}`
- * rules in globals.css, keyed off the `data-theme` attribute on <html>. */
+ * rules in globals.css, keyed off the `data-theme` attribute on <html>.
+ *
+ * `useCardLayout()` reports whether AppShell is currently wrapping this
+ * route in the overlay-card beta's rounded frame (true only for
+ * Scripts/Commission Calculator, and only once that beta is on). The
+ * card's own content area has no padding of its own on these routes (see
+ * AppShell), so there's nothing for the usual negative margins below to
+ * cancel — bleeding past it with the same offsets would overshoot past the
+ * card's rounded edges instead of filling them. In that mode the wrapper
+ * just fills the card's interior at h-full/w-full; the card's own
+ * `overflow-y-auto` + `rounded-[20px]` combination clips the iframe's
+ * square corners to match automatically. */
 export function EmbeddedTool({
   title,
   src,
@@ -47,6 +63,8 @@ export function EmbeddedTool({
   lightSrc?: string;
   greenSrc?: string;
 }) {
+  const inCard = useCardLayout();
+
   function embed(url: string) {
     return `${url}${url.includes("?") ? "&" : "?"}embed=1`;
   }
@@ -54,7 +72,12 @@ export function EmbeddedTool({
   return (
     <div
       data-tour="embedded-tool"
-      className="relative -mx-4 -mb-8 h-[calc(100dvh-74px)] sm:-mx-6 lg:-mx-10 lg:-mt-2 lg:h-screen"
+      className={cn(
+        "relative",
+        inCard
+          ? "h-full w-full"
+          : "-mx-4 -mb-8 h-[calc(100dvh-74px)] sm:-mx-6 lg:-mx-10 lg:-mt-2 lg:h-screen",
+      )}
     >
       <iframe
         src={embed(src)}

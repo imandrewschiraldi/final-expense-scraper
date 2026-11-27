@@ -12,6 +12,7 @@ import { SoundEffects } from "@/components/portal/SoundEffects";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
 import { CARD_LAYOUT_CHANGED_EVENT } from "@/lib/cardLayoutEvent";
+import { CardLayoutProvider } from "@/lib/cardLayoutContext";
 import { isFullBleedRoute } from "@/lib/fullBleedRoutes";
 import { cn } from "@/lib/cn";
 
@@ -73,13 +74,14 @@ export function AppShell({
   const [cardLayoutEnabled, setCardLayoutEnabled] = useState(
     initialSidebarProfile?.cardLayoutEnabled ?? false,
   );
-  // Scripts/Commission Calculator's full-bleed iframe is sized to cancel
-  // out exactly one gutter around it (see EmbeddedTool) — the overlay
-  // card's own border/background and the second padded layer it puts
-  // around `children` would leave a gutter nothing cancels, so those two
-  // pages always get the plain full-bleed shell regardless of this toggle.
+  // Scripts/Commission Calculator still get the same card frame as every
+  // other page — border, rounded corners, the same floating inset — but
+  // not the card's own internal content padding: EmbeddedTool fills flush
+  // to the card's edges instead (reading that via CardLayoutProvider
+  // below), the same way it fills flush to the browser window's edges
+  // when the card beta is off entirely.
   const pathname = usePathname();
-  const showCardLayout = cardLayoutEnabled && !isFullBleedRoute(pathname);
+  const showCardPadding = cardLayoutEnabled && !isFullBleedRoute(pathname);
   useEffect(() => {
     fetch("/api/profile")
       .then((res) => (res.ok ? res.json() : null))
@@ -112,7 +114,11 @@ export function AppShell({
           underneath it. Omitted on Scripts/Commission Calculator — see
           HeaderDivider. */}
       <HeaderDivider />
-      <ContentContainer>{children}</ContentContainer>
+      <CardLayoutProvider
+        enabled={cardLayoutEnabled && isFullBleedRoute(pathname)}
+      >
+        <ContentContainer>{children}</ContentContainer>
+      </CardLayoutProvider>
     </>
   );
 
@@ -153,7 +159,7 @@ export function AppShell({
           // takes effect once the `lg` width is already guaranteed by the
           // variant below, so there's no need for the base's own sm/lg
           // progressive steps here — just the one final value.
-          showCardLayout &&
+          cardLayoutEnabled &&
             "lg:[@media_not_(display-mode:standalone)]:h-screen lg:[@media_not_(display-mode:standalone)]:overflow-hidden lg:[@media_not_(display-mode:standalone)]:p-4",
         )}
       >
@@ -203,8 +209,18 @@ export function AppShell({
             // only needs each property's final value, not a progressive
             // sm/lg step-up.
             "overflow-visible rounded-none border-0 bg-transparent shadow-none",
-            showCardLayout &&
-              "lg:[@media_not_(display-mode:standalone)]:relative lg:[@media_not_(display-mode:standalone)]:h-full lg:[@media_not_(display-mode:standalone)]:overflow-y-auto lg:[@media_not_(display-mode:standalone)]:rounded-[20px] lg:[@media_not_(display-mode:standalone)]:border lg:[@media_not_(display-mode:standalone)]:border-border lg:[@media_not_(display-mode:standalone)]:bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] lg:[@media_not_(display-mode:standalone)]:px-10 lg:[@media_not_(display-mode:standalone)]:pt-2 lg:[@media_not_(display-mode:standalone)]:pb-8 lg:[@media_not_(display-mode:standalone)]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+            // The card's shape — border, rounded corners, background,
+            // shadow — shows on every page alike once the beta is on,
+            // Scripts/Commission Calculator included.
+            cardLayoutEnabled &&
+              "lg:[@media_not_(display-mode:standalone)]:relative lg:[@media_not_(display-mode:standalone)]:h-full lg:[@media_not_(display-mode:standalone)]:overflow-y-auto lg:[@media_not_(display-mode:standalone)]:rounded-[20px] lg:[@media_not_(display-mode:standalone)]:border lg:[@media_not_(display-mode:standalone)]:border-border lg:[@media_not_(display-mode:standalone)]:bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] lg:[@media_not_(display-mode:standalone)]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+            // The card's own content inset, though, is skipped on
+            // Scripts/Commission Calculator — EmbeddedTool fills flush to
+            // the card's edges instead (see CardLayoutProvider above),
+            // same as it fills flush to the browser window when the beta
+            // is off entirely.
+            showCardPadding &&
+              "lg:[@media_not_(display-mode:standalone)]:px-10 lg:[@media_not_(display-mode:standalone)]:pt-2 lg:[@media_not_(display-mode:standalone)]:pb-8",
           )}
         >
           {mainContent}

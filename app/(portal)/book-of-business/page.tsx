@@ -11,7 +11,7 @@ export default async function PortalBookOfBusinessPage() {
   return (
     <div>
       <PageHeading slug="book-of-business" alt="Book of Business" />
-      <BookOfBusinessPanel isAgent={role === "AGENT"} role={role} />
+      <BookOfBusinessPanel isAgent={role === "AGENT"} />
     </div>
   );
 }

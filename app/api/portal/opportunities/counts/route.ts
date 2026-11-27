@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { LEAD_TYPES } from "@/lib/leadType";
@@ -6,27 +6,23 @@ import { LEAD_TYPES } from "@/lib/leadType";
 // Powers the pipeline dropdown's live "N opportunities" counts across all
 // ten pipelines (5 products x Lead/Client) in one call, scoped the same way
 // /api/portal/opportunities is.
-export async function GET(req: NextRequest) {
+export async function GET() {
   const guard = await requireAnyRole();
   if ("error" in guard) return guard.error;
 
-  const { searchParams } = new URL(req.url);
-  const mine = searchParams.get("mine") === "true";
-  const scopeToOwn = mine || guard.session.user.role === "AGENT";
+  // Book of Business is always the viewing agent's own book — see
+  // /api/portal/opportunities for the full reasoning.
   const agentId = guard.session.user.id;
 
   const [leadCounts, policyCounts] = await Promise.all([
     db.lead.groupBy({
       by: ["leadType"],
-      where: {
-        isArchived: false,
-        ...(scopeToOwn ? { assignedAgentId: agentId } : {}),
-      },
+      where: { isArchived: false, assignedAgentId: agentId },
       _count: { _all: true },
     }),
     db.policy.groupBy({
       by: ["leadType"],
-      where: { ...(scopeToOwn ? { agentId } : {}) },
+      where: { agentId },
       _count: { _all: true },
     }),
   ]);

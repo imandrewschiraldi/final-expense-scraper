@@ -6,13 +6,6 @@ import { PipelinePhase, Prisma } from "@prisma/client";
 
 const PHASES: PipelinePhase[] = ["LEAD", "CLIENT"];
 
-// Mirrors /api/portal/policies' own scoping: an AGENT only ever sees their
-// own book; ADMIN/MANAGER see the whole org unless they explicitly ask for
-// just their own (`mine=true`).
-function ownScopeOnly(role: string, mine: boolean) {
-  return mine || role === "AGENT";
-}
-
 export async function GET(req: NextRequest) {
   const guard = await requireAnyRole();
   if ("error" in guard) return guard.error;
@@ -20,7 +13,6 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const phase = searchParams.get("phase") as PipelinePhase | null;
   const leadType = searchParams.get("leadType");
-  const mine = searchParams.get("mine") === "true";
 
   if (!phase || !PHASES.includes(phase)) {
     return NextResponse.json(
@@ -35,14 +27,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const scopeToOwn = ownScopeOnly(guard.session.user.role, mine);
+  // Book of Business is always the viewing agent's own book — whoever's
+  // account this is, admin and manager roles included, only ever sees
+  // leads/policies assigned to them here. A shared/unclaimed Vault lead
+  // (no assignedAgentId yet) never matches this filter, so it only shows
+  // up in a pipeline once that agent actually claims it.
   const agentId = guard.session.user.id;
 
   if (phase === "LEAD") {
     const where: Prisma.LeadWhereInput = {
       leadType,
       isArchived: false,
-      ...(scopeToOwn ? { assignedAgentId: agentId } : {}),
+      assignedAgentId: agentId,
     };
     const leads = await db.lead.findMany({
       where,
@@ -55,10 +51,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ phase, leads });
   }
 
-  const where: Prisma.PolicyWhereInput = {
-    leadType,
-    ...(scopeToOwn ? { agentId } : {}),
-  };
+  const where: Prisma.PolicyWhereInput = { leadType, agentId };
   const policies = await db.policy.findMany({
     where,
     orderBy: { updatedAt: "desc" },
