@@ -34,6 +34,7 @@ import {
   type BookOfBusinessPhase,
 } from "@/lib/bookOfBusinessFieldPrefs";
 import { AddOpportunityForm } from "@/components/portal/AddOpportunityForm";
+import { BookAppointmentForm } from "@/components/portal/BookAppointmentForm";
 import {
   PolicySubmitForm,
   type SubmittedPolicy,
@@ -280,6 +281,14 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
   const [soldLeadPrompt, setSoldLeadPrompt] = useState<OpportunityLead | null>(
     null,
   );
+  // Set instead of ever patching a Lead straight to the Appointment Booked
+  // stage — see isAppointmentStage above.
+  const [appointmentPrompt, setAppointmentPrompt] = useState<{
+    lead: OpportunityLead;
+    targetStageId: string;
+  } | null>(null);
+  const [bookingAppointment, setBookingAppointment] = useState(false);
+  const [appointmentError, setAppointmentError] = useState<string | null>(null);
 
   const router = useRouter();
   const sensors = useSensors(
@@ -346,6 +355,12 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
   function isSoldStage(stageId: string) {
     return stagesById.get(stageId)?.systemKey === "SOLD";
   }
+  // Moving a Lead onto "Appointment Booked" needs an actual date/time
+  // before it can go on the agent's calendar, which a bare stage change
+  // doesn't carry — see appointmentPrompt below.
+  function isAppointmentStage(stageId: string) {
+    return stagesById.get(stageId)?.systemKey === "APPOINTMENT_BOOKING";
+  }
   // "Search Opportunities" just matches on contact/client name — opportunity
   // here means the same thing GoHighLevel means by it: a lead (unsold) or a
   // client (sold), so this one search box covers both phases.
@@ -392,6 +407,13 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
     if (phase === "LEAD") {
       if (isSoldStage(targetStageId)) {
         setSoldLeadPrompt(current as OpportunityLead);
+        return;
+      }
+      if (isAppointmentStage(targetStageId)) {
+        setAppointmentPrompt({
+          lead: current as OpportunityLead,
+          targetStageId,
+        });
         return;
       }
       setLeads((prev) =>
@@ -443,6 +465,10 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
       setSoldLeadPrompt(lead);
       return;
     }
+    if (isAppointmentStage(pipelineStageId)) {
+      setAppointmentPrompt({ lead, targetStageId: pipelineStageId });
+      return;
+    }
     setUpdatingId(lead.id);
     const res = await fetch(`/api/agent/leads/${lead.id}`, {
       method: "PATCH",
@@ -456,6 +482,37 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
         prev.map((l) => (l.id === lead.id ? { ...l, ...data.lead } : l)),
       );
     }
+  }
+
+  async function bookAppointment(startAt: string, endAt: string) {
+    if (!appointmentPrompt) return;
+    const { lead, targetStageId } = appointmentPrompt;
+    setAppointmentError(null);
+    setBookingAppointment(true);
+    const stageRes = await fetch(`/api/agent/leads/${lead.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pipelineStageId: targetStageId }),
+    });
+    if (!stageRes.ok) {
+      setBookingAppointment(false);
+      const data = await stageRes.json().catch(() => null);
+      setAppointmentError(data?.error ?? "Failed to update the lead's stage.");
+      return;
+    }
+    const apptRes = await fetch(`/api/agent/leads/${lead.id}/appointment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startAt, endAt }),
+    });
+    setBookingAppointment(false);
+    if (!apptRes.ok) {
+      const data = await apptRes.json().catch(() => null);
+      setAppointmentError(data?.error ?? "Failed to book the appointment.");
+      return;
+    }
+    setAppointmentPrompt(null);
+    loadOpportunities();
   }
 
   async function changePolicyStage(
@@ -941,6 +998,23 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
               loadOpportunities();
               loadCounts();
             }}
+          />
+        </Modal>
+      )}
+
+      {appointmentPrompt && (
+        <Modal
+          open
+          onClose={() => setAppointmentPrompt(null)}
+          title="Book Appointment"
+          maxWidthClassName="max-w-md"
+        >
+          <BookAppointmentForm
+            contactName={`${appointmentPrompt.lead.firstName} ${appointmentPrompt.lead.lastName}`.trim()}
+            onCancel={() => setAppointmentPrompt(null)}
+            onBook={bookAppointment}
+            saving={bookingAppointment}
+            error={appointmentError}
           />
         </Modal>
       )}

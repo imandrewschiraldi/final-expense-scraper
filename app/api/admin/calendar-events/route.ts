@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/apiAuth";
 import {
-  createCalendarEvent,
+  createAgencyCalendarEvent,
   parseCalendarEventInput,
 } from "@/lib/calendarEvents";
 
@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  const event = await createCalendarEvent(parsed.data, guard.session.user.id);
+  const event = await createAgencyCalendarEvent(
+    parsed.data,
+    guard.session.user.id,
+  );
   return NextResponse.json({ event });
 }

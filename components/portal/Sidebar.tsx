@@ -27,6 +27,7 @@ import {
   ShoppingCart,
   Kanban,
   Gauge,
+  CalendarDays,
   ChevronsLeft,
   ChevronsRight,
   Search,
@@ -77,6 +78,13 @@ const NAV_ITEMS: NavItem[] = [
     href: "/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    section: "overview",
+  },
+  {
+    href: "/calendar",
+    label: "Calendar",
+    icon: CalendarDays,
     roles: ["ADMIN", "MANAGER", "AGENT"],
     section: "overview",
   },
@@ -676,9 +684,10 @@ export function Sidebar({
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true")
+    if (localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCollapsed(true);
+    }
 
     fetch("/api/profile")
       .then((res) => (res.ok ? res.json() : null))

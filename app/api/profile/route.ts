@@ -20,6 +20,7 @@ export async function GET() {
       compLevel: true,
       npn: true,
       residentState: true,
+      timeZone: true,
       demoModeEnabled: true,
       createdAt: true,
       vaultEnabled: true,
@@ -58,12 +59,24 @@ export async function PATCH(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { licensedStates, npn, residentState, demoModeEnabled } = body as {
-    licensedStates?: string[];
-    npn?: string | null;
-    residentState?: string | null;
-    demoModeEnabled?: boolean;
-  };
+  const { licensedStates, npn, residentState, timeZone, demoModeEnabled } =
+    body as {
+      licensedStates?: string[];
+      npn?: string | null;
+      residentState?: string | null;
+      timeZone?: string | null;
+      demoModeEnabled?: boolean;
+    };
+
+  if (timeZone) {
+    try {
+      // Intl throws RangeError for a string that isn't a real IANA zone —
+      // cheapest way to validate one without shipping a static zone list.
+      Intl.DateTimeFormat(undefined, { timeZone });
+    } catch {
+      return NextResponse.json({ error: "Invalid time zone" }, { status: 400 });
+    }
+  }
 
   // Comp level and role are admin-only (set via /api/admin/agents/[id]) and
   // deliberately not accepted here. The page-layout beta toggle is set
@@ -78,6 +91,7 @@ export async function PATCH(req: NextRequest) {
       ...(residentState !== undefined
         ? { residentState: residentState?.trim().toUpperCase() || null }
         : {}),
+      ...(timeZone !== undefined ? { timeZone: timeZone || null } : {}),
       ...(demoModeEnabled !== undefined ? { demoModeEnabled } : {}),
     },
     select: {
@@ -90,6 +104,7 @@ export async function PATCH(req: NextRequest) {
       compLevel: true,
       npn: true,
       residentState: true,
+      timeZone: true,
       demoModeEnabled: true,
       agencyDashboardEnabled: true,
       recruitingRadarEnabled: true,

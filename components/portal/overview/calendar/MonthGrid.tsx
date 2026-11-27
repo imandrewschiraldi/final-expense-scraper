@@ -8,6 +8,15 @@ import {
   MONTH_GRID_WEEKS,
   type CalendarOccurrence,
 } from "@/lib/calendarRecurrence";
+import { PIPELINE_STAGE_COLOR_CLASSES } from "@/lib/pipelineStageColors";
+
+function dotClass(color: string): string {
+  return (
+    PIPELINE_STAGE_COLOR_CLASSES[
+      color as keyof typeof PIPELINE_STAGE_COLOR_CLASSES
+    ]?.dot ?? PIPELINE_STAGE_COLOR_CLASSES.copper.dot
+  );
+}
 
 const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 // However many events actually fit on a line or two before the cell would
@@ -40,11 +49,13 @@ export function MonthGrid({
   occurrences,
   onDayClick,
   onEventClick,
+  timeZone,
 }: {
   monthAnchor: Date;
   occurrences: CalendarOccurrence[];
   onDayClick: (date: Date) => void;
   onEventClick: (occurrence: CalendarOccurrence) => void;
+  timeZone?: string;
 }) {
   const { start } = monthGridRange(monthAnchor);
   const days = Array.from({ length: MONTH_GRID_WEEKS * 7 }, (_, i) =>
@@ -104,10 +115,14 @@ export function MonthGrid({
                   className="flex min-w-0 items-center gap-1 text-left text-[11px] text-foreground hover:text-white"
                   title={occ.title}
                 >
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--copper-metal-hi)]" />
-                  <span className="shrink-0 text-muted">
-                    {formatTime(occ.occurrenceStart)}
-                  </span>
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass(occ.color)}`}
+                  />
+                  {!occ.allDay && (
+                    <span className="shrink-0 text-muted">
+                      {formatTime(occ.occurrenceStart, timeZone)}
+                    </span>
+                  )}
                   <span className="truncate">{occ.title}</span>
                 </button>
               ))}

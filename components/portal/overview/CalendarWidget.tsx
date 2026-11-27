@@ -23,6 +23,20 @@ import {
 } from "@/lib/calendarRecurrence";
 
 type View = "month" | "week" | "day";
+// Which endpoint a create/edit/delete goes to — an agency event is always
+// admin-only; a personal one always belongs to (and is only editable by)
+// whoever owns it. Tracked alongside formTarget/detailsOccurrence rather
+// than re-derived from them everywhere, since "creating a brand new
+// personal event" has no occurrence to derive it from yet.
+type EventScope = "AGENCY" | "PERSONAL";
+
+function eventUrl(scope: EventScope, id?: string): string {
+  const base =
+    scope === "AGENCY"
+      ? "/api/admin/calendar-events"
+      : "/api/portal/calendar-events";
+  return id ? `${base}/${id}` : base;
+}
 
 function parseEvent(raw: {
   id: string;
@@ -33,7 +47,11 @@ function parseEvent(raw: {
   location: string | null;
   startAt: string;
   endAt: string;
-  recurring: boolean;
+  allDay: boolean;
+  color: string;
+  scope: "AGENCY" | "PERSONAL";
+  ownerId: string | null;
+  recurrenceRule: CalendarEventRecord["recurrenceRule"];
   recurrenceEndAt: string | null;
 }): CalendarEventRecord {
   return {
@@ -44,15 +62,17 @@ function parseEvent(raw: {
   };
 }
 
-/** Full-width card under the Overview page's top three (Hall of Fame, Bonus,
- *  Goals) — visible to everyone, admin-editable. Modeled on Google
- *  Calendar's own month/week/day views: month defaults, click through to
- *  week or day for the full time-grid, built for an admin posting the
- *  agency's 10-15 weekly trainings once (as repeating events) rather than
- *  re-adding them every week. */
-export function CalendarWidget() {
+/** Modeled on Google Calendar's own month/week/day views: month defaults,
+ *  click through to week or day for the full time-grid. Shows every
+ *  agency-wide event (admin-created training, company events) plus the
+ *  viewer's own personal ones (their own additions, and anything Book of
+ *  Business created for them — an appointment, a policy follow-up, an
+ *  Annual Review). Used both as the Overview page's compact widget and as
+ *  the full `/calendar` page (see `heading`/`defaultAddScope`). */
+export function CalendarWidget({ heading = "Calendar" }: { heading?: string }) {
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
+  const userId = session?.user.id;
 
   const [events, setEvents] = useState<CalendarEventRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,12 +82,16 @@ export function CalendarWidget() {
   const [detailsOccurrence, setDetailsOccurrence] =
     useState<CalendarOccurrence | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [formScope, setFormScope] = useState<EventScope>("PERSONAL");
   const [formTarget, setFormTarget] = useState<CalendarEventRecord | null>(
     null,
   );
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // Undefined (not set on Profile) falls through to every formatter's own
+  // browser-local default — see lib/calendarRecurrence.ts.
+  const [timeZone, setTimeZone] = useState<string | undefined>(undefined);
 
   function loadEvents() {
     fetch("/api/portal/calendar-events")
@@ -80,6 +104,10 @@ export function CalendarWidget() {
 
   useEffect(() => {
     loadEvents();
+    fetch("/api/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setTimeZone(data?.profile?.timeZone || undefined))
+      .catch(() => {});
   }, []);
 
   const range = useMemo(() => {
@@ -122,14 +150,23 @@ export function CalendarWidget() {
     setDetailsOccurrence(occurrence);
   }
 
-  function openCreateForm() {
+  // Can the viewer manage (edit/delete) this occurrence at all? An admin
+  // managing an agency event, or anyone managing their own personal one —
+  // never another agent's personal event, never an agency event as a
+  // non-admin.
+  const canManageOccurrence = (occ: CalendarOccurrence) =>
+    occ.scope === "AGENCY" ? isAdmin : occ.ownerId === userId;
+
+  function openCreateForm(scope: EventScope) {
+    setFormScope(scope);
     setFormTarget(null);
     setFormError(null);
     setFormOpen(true);
   }
 
   function openEditForm() {
-    if (!detailsOccurrence) return;
+    if (!detailsOccurrence || !canManageOccurrence(detailsOccurrence)) return;
+    setFormScope(detailsOccurrence.scope);
     setFormTarget(detailsOccurrence);
     setDetailsOccurrence(null);
     setFormError(null);
@@ -137,7 +174,7 @@ export function CalendarWidget() {
   }
 
   async function handleDelete() {
-    if (!detailsOccurrence) return;
+    if (!detailsOccurrence || !canManageOccurrence(detailsOccurrence)) return;
     if (
       !window.confirm(
         `Delete "${detailsOccurrence.title}"? This removes every upcoming occurrence.`,
@@ -147,10 +184,8 @@ export function CalendarWidget() {
     }
     setDeleting(true);
     const res = await fetch(
-      `/api/admin/calendar-events/${detailsOccurrence.id}`,
-      {
-        method: "DELETE",
-      },
+      eventUrl(detailsOccurrence.scope, detailsOccurrence.id),
+      { method: "DELETE" },
     );
     setDeleting(false);
     if (res.ok) {
@@ -162,10 +197,7 @@ export function CalendarWidget() {
   async function handleSubmit(values: CalendarEventFormValues) {
     setSaving(true);
     setFormError(null);
-    const url = formTarget
-      ? `/api/admin/calendar-events/${formTarget.id}`
-      : "/api/admin/calendar-events";
-    const res = await fetch(url, {
+    const res = await fetch(eventUrl(formScope, formTarget?.id), {
       method: formTarget ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
@@ -210,15 +242,23 @@ export function CalendarWidget() {
             className="h-[18px] w-[18px]"
             style={{ color: "var(--copper-metal-hi)" }}
           />
-          <CardTitle className="text-[15.5px]">Training Calendar</CardTitle>
+          <CardTitle className="text-[15.5px]">{heading}</CardTitle>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {isAdmin && (
-            <Button type="button" onClick={openCreateForm}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => openCreateForm("AGENCY")}
+            >
               <Plus className="h-3.5 w-3.5" />
-              Add Event
+              Add Agency Event
             </Button>
           )}
+          <Button type="button" onClick={() => openCreateForm("PERSONAL")}>
+            <Plus className="h-3.5 w-3.5" />
+            Add My Event
+          </Button>
           <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
             {(["month", "week", "day"] as const).map((v) => (
               <button
@@ -277,35 +317,38 @@ export function CalendarWidget() {
           occurrences={occurrences}
           onDayClick={goToDay}
           onEventClick={openOccurrence}
+          timeZone={timeZone}
         />
       ) : (
         <TimeGrid
           days={days}
           occurrences={occurrences}
           onEventClick={openOccurrence}
+          timeZone={timeZone}
         />
       )}
 
       <EventDetailsModal
         occurrence={detailsOccurrence}
         onClose={() => setDetailsOccurrence(null)}
-        isAdmin={!!isAdmin}
+        timeZone={timeZone}
+        canManage={
+          !!detailsOccurrence && canManageOccurrence(detailsOccurrence)
+        }
         onEdit={openEditForm}
         onDelete={handleDelete}
         deleting={deleting}
       />
 
-      {isAdmin && (
-        <EventFormModal
-          open={formOpen}
-          onClose={() => setFormOpen(false)}
-          event={formTarget}
-          initialDate={anchor}
-          onSubmit={handleSubmit}
-          saving={saving}
-          error={formError}
-        />
-      )}
+      <EventFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        event={formTarget}
+        initialDate={anchor}
+        onSubmit={handleSubmit}
+        saving={saving}
+        error={formError}
+      />
     </Card>
   );
 }

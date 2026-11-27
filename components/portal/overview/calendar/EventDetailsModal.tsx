@@ -1,39 +1,38 @@
 "use client";
 
-import {
-  Calendar,
-  Link as LinkIcon,
-  MapPin,
-  Phone,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { Link as LinkIcon, MapPin, Phone, Pencil, Trash2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { PIPELINE_STAGE_COLOR_CLASSES } from "@/lib/pipelineStageColors";
 import {
+  RECURRENCE_RULE_LABELS,
   formatEventRange,
   type CalendarOccurrence,
 } from "@/lib/calendarRecurrence";
 
 /** Read-only view of one occurrence — opened by clicking an event pill/block
  *  in either the month grid or the week/day time grid. Editing or deleting
- *  (admin only) always acts on the whole series, not just this occurrence —
- *  there's no per-occurrence override in this schema, matching the simple
- *  "repeats every week" recurrence this calendar supports. */
+ *  always acts on the whole series, not just this occurrence — there's no
+ *  per-occurrence override in this schema. `canManage` is true for an admin
+ *  looking at an agency-wide event, or anyone looking at their own personal
+ *  one — never another agent's personal event, and never an agency event
+ *  for a non-admin. */
 export function EventDetailsModal({
   occurrence,
   onClose,
-  isAdmin,
+  canManage,
   onEdit,
   onDelete,
   deleting,
+  timeZone,
 }: {
   occurrence: CalendarOccurrence | null;
   onClose: () => void;
-  isAdmin: boolean;
+  canManage: boolean;
   onEdit: () => void;
   onDelete: () => void;
   deleting: boolean;
+  timeZone?: string;
 }) {
   return (
     <Modal
@@ -45,7 +44,9 @@ export function EventDetailsModal({
       {occurrence && (
         <div className="space-y-4">
           <div className="flex items-start gap-2.5 text-sm text-foreground">
-            <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
+            <span
+              className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${PIPELINE_STAGE_COLOR_CLASSES[occurrence.color as keyof typeof PIPELINE_STAGE_COLOR_CLASSES]?.dot ?? PIPELINE_STAGE_COLOR_CLASSES.copper.dot}`}
+            />
             <div>
               <p>
                 {occurrence.occurrenceStart.toLocaleDateString("en-US", {
@@ -55,11 +56,15 @@ export function EventDetailsModal({
                 })}
               </p>
               <p className="text-muted">
-                {formatEventRange(
-                  occurrence.occurrenceStart,
-                  occurrence.occurrenceEnd,
-                )}
-                {occurrence.recurring && " · Repeats weekly"}
+                {occurrence.allDay
+                  ? "All day"
+                  : formatEventRange(
+                      occurrence.occurrenceStart,
+                      occurrence.occurrenceEnd,
+                      timeZone,
+                    )}
+                {occurrence.recurrenceRule &&
+                  ` · ${RECURRENCE_RULE_LABELS[occurrence.recurrenceRule]}`}
               </p>
             </div>
           </div>
@@ -114,7 +119,7 @@ export function EventDetailsModal({
                 Join
               </Button>
             )}
-            {isAdmin && (
+            {canManage && (
               <>
                 <Button variant="ghost" onClick={onEdit}>
                   <Pencil className="h-3.5 w-3.5" />

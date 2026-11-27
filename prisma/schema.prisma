@@ -120,6 +120,10 @@ model User {
   recruitingRadarEnabled Boolean   @default(false)
   npn                    String?
   residentState          String?
+  /// IANA zone name (e.g. "America/New_York") — null means "use the
+  /// viewer's own browser/device time zone," the original behavior for
+  /// everyone until they explicitly set one on Profile.
+  timeZone               String?
   /// When on, this user's own Dashboard/Book of Business/Leaderboard views
   /// are swapped for deterministic fake production data — for demoing the
   /// system. Purely a per-viewer read-time overlay: never writes fake rows
@@ -161,7 +165,8 @@ model User {
   chatGroupMeBridgesMade ChatGroupMeBridge[]
   pushSubscriptions      PushSubscription[]
   announcementItems      AnnouncementItem[]
-  calendarEvents         CalendarEvent[]
+  calendarEventsCreated  CalendarEvent[]               @relation("CalendarEventsCreated")
+  calendarEventsOwned    CalendarEvent[]               @relation("CalendarEventsOwned")
 
   @@map("users")
 }
@@ -270,6 +275,7 @@ model Lead {
   notes             LeadNote[]
   contactLogEntries ContactLogEntry[]
   policies          Policy[]
+  calendarEvents    CalendarEvent[]
 
   @@index([state])
   @@index([status])
@@ -590,7 +596,8 @@ model Policy {
   /// agent themselves wants reminding about, on whatever date they pick.
   followUpAt DateTime?
 
-  statusHistory PolicyStatusHistory[]
+  statusHistory  PolicyStatusHistory[]
+  calendarEvents CalendarEvent[]
 
   @@index([agentId])
   @@index([status])
@@ -1137,8 +1144,27 @@ model OverviewWidget {
 /// its individual occurrences on read, for whatever date range is being
 /// viewed, rather than materializing (and having to keep generating) one
 /// row per future week.
+enum RecurrenceRule {
+  DAILY
+  WEEKDAYS
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  YEARLY
+}
+
+/// AGENCY = admin-created, visible to every agent (training, company
+/// events) — the only kind this feature originally had. PERSONAL = an
+/// agent's own event (including ones auto-created from Book of Business —
+/// an appointment booked, a policy's follow-up date, an Annual Review
+/// reminder), visible only to its owner.
+enum CalendarEventScope {
+  AGENCY
+  PERSONAL
+}
+
 model CalendarEvent {
-  id              String    @id @default(cuid())
+  id              String             @id @default(cuid())
   title           String
   description     String?
   /// A join/registration/recording link — Zoom, a video call, a signup
@@ -1149,16 +1175,44 @@ model CalendarEvent {
   location        String?
   startAt         DateTime
   endAt           DateTime
-  recurring       Boolean   @default(false)
-  /// Only meaningful when `recurring` is true. Null means "repeats
-  /// forever."
+  /// All-day events store startAt as midnight and endAt as the following
+  /// midnight — this flag is what actually drives the UI not showing a
+  /// time for them, not the midnight-to-midnight span alone (a genuine
+  /// midnight-to-midnight timed event is vanishingly unlikely, but treating
+  /// the span itself as the signal would misrender one if it ever happened).
+  allDay          Boolean            @default(false)
+  /// A PIPELINE_STAGE_COLOR_TOKENS value (copper/teal/gold/green/red/blue/
+  /// amber/muted) — the same fixed palette already used for pipeline
+  /// stages, so a calendar event never introduces a color outside the
+  /// existing design system.
+  color           String             @default("copper")
+  scope           CalendarEventScope @default(AGENCY)
+  /// Set only for a PERSONAL event — whose calendar it belongs to. Null for
+  /// every AGENCY event (those belong to everyone, not one agent).
+  ownerId         String?
+  owner           User?              @relation("CalendarEventsOwned", fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Traceability for an event Book of Business created automatically (an
+  /// appointment, a follow-up, an Annual Review) — null for anything
+  /// created directly on the calendar itself. Not used to drive any
+  /// behavior beyond letting that originating Lead/Policy keep its own
+  /// date in sync with the event it spawned.
+  leadId          String?
+  lead            Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  policyId        String?
+  policy          Policy?            @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  /// Null = a one-off event. Set = repeats on this pattern from `startAt`
+  /// until `recurrenceEndAt` (or forever, if that's also null).
+  recurrenceRule  RecurrenceRule?
   recurrenceEndAt DateTime?
   createdById     String?
-  createdBy       User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdBy       User?              @relation("CalendarEventsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@index([startAt])
+  @@index([ownerId])
+  @@index([leadId])
+  @@index([policyId])
   @@map("calendar_events")
 }
 

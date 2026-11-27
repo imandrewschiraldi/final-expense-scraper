@@ -9,6 +9,7 @@ import { Input, Select } from "@/components/ui/Input";
 import { StateMultiSelect } from "@/components/shared/StateMultiSelect";
 import { optimizableImageUrl } from "@/lib/profileImage";
 import { US_STATES } from "@/lib/usStates";
+import { TIME_ZONES } from "@/lib/timeZones";
 import { ROLE_SWITCH_EMAIL, SwitchableRole } from "@/lib/roleSwitch";
 import { ProfileTourButton } from "@/components/portal/ProfileTourButton";
 import { dispatchCardLayoutChanged } from "@/lib/cardLayoutEvent";
@@ -24,6 +25,7 @@ type Profile = {
   compLevel: string | null;
   npn: string | null;
   residentState: string | null;
+  timeZone: string | null;
   demoModeEnabled: boolean;
 };
 
@@ -33,6 +35,8 @@ export function ProfilePanel() {
   const [editStates, setEditStates] = useState<string[]>([]);
   const [editNpn, setEditNpn] = useState("");
   const [editResidentState, setEditResidentState] = useState("");
+  const [editTimeZone, setEditTimeZone] = useState("");
+  const [savingTimeZone, setSavingTimeZone] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [switching, setSwitching] = useState(false);
@@ -62,6 +66,7 @@ export function ProfilePanel() {
         setEditStates(data.profile?.licensedStates ?? []);
         setEditNpn(data.profile?.npn ?? "");
         setEditResidentState(data.profile?.residentState ?? "");
+        setEditTimeZone(data.profile?.timeZone ?? "");
         setPageLayoutBetaEnabled(Boolean(data.profile?.pageLayoutBetaEnabled));
       });
   }, []);
@@ -119,6 +124,24 @@ export function ProfilePanel() {
       setConfirmPassword("");
     } else {
       setPasswordError(data?.error ?? "Failed to update password.");
+    }
+  }
+
+  async function saveTimeZone(value: string) {
+    setEditTimeZone(value);
+    setSavingTimeZone(true);
+    setError(null);
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ timeZone: value || null }),
+    });
+    setSavingTimeZone(false);
+    if (res.ok) {
+      const data = await res.json();
+      setProfile(data.profile);
+    } else {
+      setError("Failed to save time zone.");
     }
   }
 
@@ -327,6 +350,29 @@ export function ProfilePanel() {
             </div>
           )}
         </div>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Time Zone</CardTitle>
+        </CardHeader>
+        <p className="mb-3 max-w-md text-sm text-muted">
+          Your Calendar shows every time in this zone instead of whatever your
+          browser happens to be set to.
+        </p>
+        <Select
+          value={editTimeZone}
+          onChange={(e) => saveTimeZone(e.target.value)}
+          disabled={savingTimeZone}
+          className="max-w-xs"
+        >
+          <option value="">Use my browser&apos;s time zone</option>
+          {TIME_ZONES.map((tz) => (
+            <option key={tz.value} value={tz.value}>
+              {tz.label}
+            </option>
+          ))}
+        </Select>
       </Card>
 
       {(profile.role === "AGENT" || profile.role === "MANAGER") && (

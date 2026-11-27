@@ -7,6 +7,7 @@ import { resolveCommissionAmount } from "@/lib/commissionServer";
 import { generateDemoPolicies, demoPoliciesAsApiRows } from "@/lib/demoData";
 import { stageIdForSystemKey } from "@/lib/pipelineSync";
 import { computeVaultAwareStatusUpdate } from "@/lib/vault";
+import { createAnnualReviewEvent } from "@/lib/calendarEvents";
 import { isLeadType } from "@/lib/leadType";
 import { PolicyLine, PolicyStatus } from "@prisma/client";
 
@@ -160,6 +161,15 @@ export async function POST(req: NextRequest) {
         ...computeVaultAwareStatusUpdate("SOLD", lead, guard.session.user.id),
         ...(leadStageId ? { pipelineStageId: leadStageId } : {}),
       },
+    });
+  }
+
+  if (guard.session.user.id) {
+    await createAnnualReviewEvent({
+      ownerId: guard.session.user.id,
+      policyId: policy.id,
+      clientName: policy.clientName,
+      submittedAt: policy.submittedAt,
     });
   }
 

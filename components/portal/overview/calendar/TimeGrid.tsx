@@ -8,6 +8,15 @@ import {
   startOfDay,
   type CalendarOccurrence,
 } from "@/lib/calendarRecurrence";
+import { PIPELINE_STAGE_COLOR_CLASSES } from "@/lib/pipelineStageColors";
+
+function barClass(color: string): string {
+  return (
+    PIPELINE_STAGE_COLOR_CLASSES[
+      color as keyof typeof PIPELINE_STAGE_COLOR_CLASSES
+    ]?.bar ?? PIPELINE_STAGE_COLOR_CLASSES.copper.bar
+  );
+}
 
 const HOUR_HEIGHT = 48; // px
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -61,17 +70,34 @@ function layoutDay(dayOccurrences: CalendarOccurrence[]): LaidOutOccurrence[] {
   }));
 }
 
-function minutesSinceMidnight(date: Date): number {
-  return date.getHours() * 60 + date.getMinutes();
+/** Hour/minute of `date` as they'd read in `timeZone` (the viewer's own
+ *  Profile setting) — omitted, falls back to the browser's own zone via
+ *  plain getHours()/getMinutes(). Positions an event block by the same
+ *  zone its time label uses (see EventBlock below), so the two always
+ *  agree — the one thing this can't fix is a block landing in the
+ *  "wrong" day's column right around midnight, when the series' own day
+ *  (bucketed by the browser's local midnight, see TimeGrid's own caller)
+ *  and the chosen zone's day briefly disagree. */
+function minutesSinceMidnight(date: Date, timeZone?: string): number {
+  if (!timeZone) return date.getHours() * 60 + date.getMinutes();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  return hour * 60 + minute;
 }
 
 /** "GMT-5"/"GMT+1" — matches the reference screenshots' own corner label
- *  exactly (Intl's "shortOffset" form), computed from the viewer's own
- *  browser rather than hardcoded, so it's correct wherever an agent
- *  actually is. */
-function gmtOffsetLabel(): string {
+ *  exactly (Intl's "shortOffset" form), computed from the viewer's chosen
+ *  zone when they've set one, their own browser otherwise. */
+function gmtOffsetLabel(timeZone?: string): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZoneName: "shortOffset",
+    ...(timeZone ? { timeZone } : {}),
   }).formatToParts(new Date());
   return parts.find((p) => p.type === "timeZoneName")?.value ?? "";
 }
@@ -85,14 +111,17 @@ function EventBlock({
   // (truncated title, time only when the block's tall enough for a second
   // line).
   detailed,
+  timeZone,
 }: {
   laid: LaidOutOccurrence;
   onClick: () => void;
   detailed: boolean;
+  timeZone?: string;
 }) {
   const { occurrence, column, columnCount } = laid;
   const top =
-    (minutesSinceMidnight(occurrence.occurrenceStart) / 60) * HOUR_HEIGHT;
+    (minutesSinceMidnight(occurrence.occurrenceStart, timeZone) / 60) *
+    HOUR_HEIGHT;
   const durationMinutes = Math.max(
     15,
     (occurrence.occurrenceEnd.getTime() -
@@ -106,7 +135,7 @@ function EventBlock({
     <button
       type="button"
       onClick={onClick}
-      className="absolute overflow-hidden rounded-md bg-[var(--copper-metal)] px-1.5 py-0.5 text-left text-[11px] leading-tight text-white shadow-sm transition-[filter] hover:brightness-110"
+      className={`absolute overflow-hidden rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight text-white shadow-sm transition-[filter] hover:brightness-110 ${barClass(occurrence.color)}`}
       style={{
         top,
         height,
@@ -118,7 +147,7 @@ function EventBlock({
       {detailed ? (
         <span className="block truncate">
           <span className="font-bold">{occurrence.title}, </span>
-          {formatTime(occurrence.occurrenceStart)}
+          {formatTime(occurrence.occurrenceStart, timeZone)}
           {occurrence.link && <>, {occurrence.link}</>}
         </span>
       ) : (
@@ -129,6 +158,7 @@ function EventBlock({
               {formatEventRange(
                 occurrence.occurrenceStart,
                 occurrence.occurrenceEnd,
+                timeZone,
               )}
             </span>
           )}
@@ -145,10 +175,12 @@ export function TimeGrid({
   days,
   occurrences,
   onEventClick,
+  timeZone,
 }: {
   days: Date[];
   occurrences: CalendarOccurrence[];
   onEventClick: (occurrence: CalendarOccurrence) => void;
+  timeZone?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const today = new Date();
@@ -165,7 +197,7 @@ export function TimeGrid({
     <div className="flex flex-col overflow-hidden rounded-[10px] border border-border">
       <div className="flex border-b border-border bg-surface2">
         <div className="flex w-14 shrink-0 items-end justify-start pb-1 pl-1.5 text-[10px] text-muted">
-          {gmtOffsetLabel()}
+          {gmtOffsetLabel(timeZone)}
         </div>
         {days.map((day) => (
           <div
@@ -187,6 +219,40 @@ export function TimeGrid({
           </div>
         ))}
       </div>
+
+      {occurrences.some((occ) => occ.allDay) && (
+        <div className="flex border-b border-border">
+          <div className="w-14 shrink-0" />
+          {days.map((day) => {
+            const dayStart = startOfDay(day);
+            const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+            const allDayOccurrences = occurrences.filter(
+              (occ) =>
+                occ.allDay &&
+                occ.occurrenceStart < dayEnd &&
+                occ.occurrenceEnd > dayStart,
+            );
+            return (
+              <div
+                key={day.toISOString()}
+                className="flex-1 space-y-0.5 border-l border-border p-1"
+              >
+                {allDayOccurrences.map((occ) => (
+                  <button
+                    key={occ.occurrenceKey}
+                    type="button"
+                    onClick={() => onEventClick(occ)}
+                    className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-bold text-white hover:brightness-110 ${barClass(occ.color)}`}
+                    title={occ.title}
+                  >
+                    {occ.title}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div
         ref={scrollRef}
@@ -220,7 +286,9 @@ export function TimeGrid({
             const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
             const dayOccurrences = occurrences.filter(
               (occ) =>
-                occ.occurrenceStart < dayEnd && occ.occurrenceEnd > dayStart,
+                !occ.allDay &&
+                occ.occurrenceStart < dayEnd &&
+                occ.occurrenceEnd > dayStart,
             );
             const laidOut = layoutDay(dayOccurrences);
 
@@ -242,6 +310,7 @@ export function TimeGrid({
                     laid={laid}
                     onClick={() => onEventClick(laid.occurrence)}
                     detailed={days.length === 1}
+                    timeZone={timeZone}
                   />
                 ))}
               </div>

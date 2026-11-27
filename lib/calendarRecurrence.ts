@@ -4,6 +4,32 @@
 // is currently being viewed, rather than round-tripping to the server
 // every time the admin clicks "next week."
 
+export type RecurrenceRule =
+  | "DAILY"
+  | "WEEKDAYS"
+  | "WEEKLY"
+  | "BIWEEKLY"
+  | "MONTHLY"
+  | "YEARLY";
+
+export const RECURRENCE_RULES: RecurrenceRule[] = [
+  "DAILY",
+  "WEEKDAYS",
+  "WEEKLY",
+  "BIWEEKLY",
+  "MONTHLY",
+  "YEARLY",
+];
+
+export const RECURRENCE_RULE_LABELS: Record<RecurrenceRule, string> = {
+  DAILY: "Daily",
+  WEEKDAYS: "Every weekday",
+  WEEKLY: "Weekly",
+  BIWEEKLY: "Every other week",
+  MONTHLY: "Monthly",
+  YEARLY: "Annually",
+};
+
 export type CalendarEventRecord = {
   id: string;
   title: string;
@@ -13,7 +39,11 @@ export type CalendarEventRecord = {
   location: string | null;
   startAt: Date;
   endAt: Date;
-  recurring: boolean;
+  allDay: boolean;
+  color: string;
+  scope: "AGENCY" | "PERSONAL";
+  ownerId: string | null;
+  recurrenceRule: RecurrenceRule | null;
   recurrenceEndAt: Date | null;
 };
 
@@ -26,17 +56,65 @@ export type CalendarOccurrence = CalendarEventRecord & {
   occurrenceKey: string;
 };
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+/** One step forward along `rule` from `date`, keeping its time-of-day.
+ *  `anchorDay` is the series' own original day-of-month (from its very
+ *  first occurrence) — Monthly/Yearly always clamp back to that day, not
+ *  whatever day the previous (possibly already-clamped) occurrence landed
+ *  on, so "the 31st of every month" is Jan 31 -> Feb 28 -> Mar 31, not
+ *  Jan 31 -> Feb 28 -> Mar 28. A month with no such day (Feb 30th) lands on
+ *  that month's last day instead of being skipped — simplest reasonable
+ *  behavior, no universal right answer for this case. */
+function stepDate(date: Date, rule: RecurrenceRule, anchorDay: number): Date {
+  const d = new Date(date);
+  switch (rule) {
+    case "DAILY":
+      d.setDate(d.getDate() + 1);
+      return d;
+    case "WEEKDAYS":
+      do {
+        d.setDate(d.getDate() + 1);
+      } while (d.getDay() === 0 || d.getDay() === 6);
+      return d;
+    case "WEEKLY":
+      d.setDate(d.getDate() + 7);
+      return d;
+    case "BIWEEKLY":
+      d.setDate(d.getDate() + 14);
+      return d;
+    case "MONTHLY": {
+      d.setDate(1);
+      d.setMonth(d.getMonth() + 1);
+      const daysInTarget = new Date(
+        d.getFullYear(),
+        d.getMonth() + 1,
+        0,
+      ).getDate();
+      d.setDate(Math.min(anchorDay, daysInTarget));
+      return d;
+    }
+    case "YEARLY": {
+      d.setDate(1);
+      d.setFullYear(d.getFullYear() + 1);
+      const daysInTarget = new Date(
+        d.getFullYear(),
+        d.getMonth() + 1,
+        0,
+      ).getDate();
+      d.setDate(Math.min(anchorDay, daysInTarget));
+      return d;
+    }
+  }
+}
 
 /** Expands every event into the occurrence(s) of it that overlap
- *  [rangeStart, rangeEnd) — a non-recurring event is either in range or
- *  it isn't; a recurring one repeats weekly from its own `startAt`
- *  (same weekday and time of day) until `recurrenceEndAt`, or forever if
- *  that's null. Operates in UTC throughout (exactly 7*24h per step) rather
- *  than a viewer-local calendar — the one practical effect is a recurring
- *  event can land an hour off its usual wall-clock time for US viewers in
- *  the first week either side of a DST change, same simplification an
- *  admin manually re-adding a weekly event by eye would also live with. */
+ *  [rangeStart, rangeEnd) — a non-recurring event is either in range or it
+ *  isn't; a recurring one repeats on its own rule from `startAt` (same
+ *  time of day, and day-of-week/month where the rule cares) until
+ *  `recurrenceEndAt`, or forever if that's null. Steps with the viewer's
+ *  own local calendar (setDate/setMonth/setFullYear), not fixed millisecond
+ *  jumps, so Monthly/Yearly land on the right calendar date and Daily/
+ *  Weekly/Biweekly stay on their original time-of-day across a DST change
+ *  instead of drifting an hour. */
 export function expandOccurrences(
   events: CalendarEventRecord[],
   rangeStart: Date,
@@ -47,7 +125,7 @@ export function expandOccurrences(
   for (const event of events) {
     const duration = event.endAt.getTime() - event.startAt.getTime();
 
-    if (!event.recurring) {
+    if (!event.recurrenceRule) {
       if (event.startAt < rangeEnd && event.endAt > rangeStart) {
         result.push({
           ...event,
@@ -59,20 +137,32 @@ export function expandOccurrences(
       continue;
     }
 
-    // Fast-forward to the first candidate occurrence at or after
-    // rangeStart, in whole-week steps from the series' own anchor date
-    // (never before it, even if rangeStart precedes the series' start).
-    let cursor = event.startAt.getTime();
-    if (cursor < rangeStart.getTime()) {
-      const weeksToSkip = Math.floor((rangeStart.getTime() - cursor) / WEEK_MS);
-      cursor += weeksToSkip * WEEK_MS;
-      while (cursor < rangeStart.getTime()) cursor += WEEK_MS;
+    const anchorDay = event.startAt.getDate();
+    const seriesEndMs = event.recurrenceEndAt?.getTime() ?? Infinity;
+
+    // Fast-forward to the first candidate occurrence that could still
+    // overlap rangeStart (never before the series' own start, even if
+    // rangeStart precedes it) — bounded by realistic calendar spans, so a
+    // plain step loop (rather than a closed-form jump, which Monthly/
+    // Yearly can't express as a fixed millisecond stride anyway) stays
+    // cheap enough to run on every month/week navigation.
+    let occurrenceStart = event.startAt;
+    while (
+      occurrenceStart.getTime() + duration <= rangeStart.getTime() &&
+      occurrenceStart.getTime() <= seriesEndMs
+    ) {
+      occurrenceStart = stepDate(
+        occurrenceStart,
+        event.recurrenceRule,
+        anchorDay,
+      );
     }
 
-    const seriesEndMs = event.recurrenceEndAt?.getTime() ?? Infinity;
-    while (cursor < rangeEnd.getTime() && cursor <= seriesEndMs) {
-      const occurrenceStart = new Date(cursor);
-      const occurrenceEnd = new Date(cursor + duration);
+    while (
+      occurrenceStart.getTime() < rangeEnd.getTime() &&
+      occurrenceStart.getTime() <= seriesEndMs
+    ) {
+      const occurrenceEnd = new Date(occurrenceStart.getTime() + duration);
       if (occurrenceStart < rangeEnd && occurrenceEnd > rangeStart) {
         result.push({
           ...event,
@@ -81,7 +171,11 @@ export function expandOccurrences(
           occurrenceKey: `${event.id}:${occurrenceStart.toISOString()}`,
         });
       }
-      cursor += WEEK_MS;
+      occurrenceStart = stepDate(
+        occurrenceStart,
+        event.recurrenceRule,
+        anchorDay,
+      );
     }
   }
 
@@ -117,15 +211,28 @@ export function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
-export function formatTime(date: Date): string {
+// `timeZone` is the viewer's own Profile setting (see lib/timeZones.ts),
+// threaded down from CalendarWidget — omitted, these fall back to the
+// browser's own zone, the original behavior for everyone who hasn't set
+// one. Display-only: which calendar day an occurrence is grouped under
+// still goes by the browser's local day (see expandOccurrences/
+// startOfWeek/startOfDay above), not this override — rethinking day
+// bucketing itself around an arbitrary zone is a deeper change than a
+// label format.
+export function formatTime(date: Date, timeZone?: string): string {
   return date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    ...(timeZone ? { timeZone } : {}),
   });
 }
 
-export function formatEventRange(start: Date, end: Date): string {
-  return `${formatTime(start)} – ${formatTime(end)}`;
+export function formatEventRange(
+  start: Date,
+  end: Date,
+  timeZone?: string,
+): string {
+  return `${formatTime(start, timeZone)} – ${formatTime(end, timeZone)}`;
 }
 
 // A 31-day month starting on a Friday, Saturday, or Sunday needs a full 6
