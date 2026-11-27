@@ -128,16 +128,16 @@ export function formatEventRange(start: Date, end: Date): string {
   return `${formatTime(start)} – ${formatTime(end)}`;
 }
 
-// Fixed at 5 weeks (not 6) so the month view fits without scrolling — a
-// month whose last few days fall past this window (e.g. a 31-day month
-// starting on a Friday/Saturday/Sunday) simply doesn't show them in the
-// grid; the month's next/prev arrows still reach them via the following
-// month's own leading days.
-export const MONTH_GRID_WEEKS = 5;
+// A 31-day month starting on a Friday, Saturday, or Sunday needs a full 6
+// rows to show its last day or two (e.g. the 1st on a Sunday puts the 30th
+// and 31st in the 6th row's Mon/Tue) — 5 isn't enough to guarantee the
+// whole month is ever visible, so this stays at 6 despite the extra row of
+// scrolling that costs on months that don't need it.
+export const MONTH_GRID_WEEKS = 6;
 
-/** The 5-row grid a month view actually renders — Monday of the week
- *  containing the 1st, padded to a full 5*7 days so every month renders
- *  the same fixed-height grid. */
+/** The 6-row grid a month view actually renders — Monday of the week
+ *  containing the 1st, padded to a full 6*7 days so every month renders
+ *  the same fixed-height grid regardless of how many weeks it spans. */
 export function monthGridRange(monthAnchor: Date): { start: Date; end: Date } {
   const firstOfMonth = new Date(
     monthAnchor.getFullYear(),
