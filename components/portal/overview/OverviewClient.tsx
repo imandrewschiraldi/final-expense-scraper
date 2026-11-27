@@ -65,13 +65,10 @@ type OverviewTodo =
   | { kind: "annualReview"; text: string; href: string }
   | { kind: "meeting"; text: string; href: string; startAt: string };
 
-// followUp/annualReview read as a call to action (copper, bold); a plain
-// next-meeting line is informational, not something to act on, so it
-// stays styled like the agency subtitle it's standing in for.
 function todoClassName(kind: OverviewTodo["kind"]) {
-  return kind === "meeting"
-    ? "text-muted"
-    : "font-bold text-[var(--copper-metal-hi)]";
+  // Same copper gradient as the Hall of Fame / Bonus Volume bars
+  // (--copper-metal-dk/-metal/-hi), as gradient text.
+  return kind === "meeting" ? "metal-copper-text" : "metal-copper-text font-bold";
 }
 
 function formatMeetingTime(iso: string, timeZone?: string) {
@@ -314,7 +311,7 @@ export function OverviewClient() {
 
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="font-condensed mb-1.5 text-[11px] font-bold tracking-[0.18em] text-muted uppercase">
+          <p className="font-condensed metal-copper-text mb-1.5 text-[11px] font-bold tracking-[0.18em] uppercase">
             {today}
           </p>
           <h1 className="font-condensed text-[28px] font-extrabold tracking-wide text-white uppercase sm:text-[32px]">
