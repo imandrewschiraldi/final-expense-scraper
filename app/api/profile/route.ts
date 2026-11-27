@@ -27,18 +27,20 @@ export async function GET() {
       vaultAccessStartedAt: true,
       agencyDashboardEnabled: true,
       recruitingRadarEnabled: true,
+      f90EnrolledAt: true,
       tourCompletedAt: true,
     },
   });
 
   if (!user) return NextResponse.json({ profile: null });
 
-  const { createdAt, vaultEnabled, vaultAccessStartedAt, ...profile } = user;
+  const { createdAt, vaultEnabled, vaultAccessStartedAt, f90EnrolledAt, ...profile } = user;
   const { leaderboardEnabled, pageLayoutBetaEnabled } =
     await getAgencySettings();
   return NextResponse.json({
     profile: {
       ...profile,
+      f90Enrolled: f90EnrolledAt !== null,
       hasVaultAccess: hasVaultAccess({
         createdAt,
         vaultEnabled,

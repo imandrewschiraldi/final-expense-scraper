@@ -18,6 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     assignmentEnabled,
     agencyDashboardEnabled,
     recruitingRadarEnabled,
+    f90Enroll,
   } = body as {
     name?: string;
     licensedStates?: string[];
@@ -31,6 +32,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     assignmentEnabled?: boolean;
     agencyDashboardEnabled?: boolean;
     recruitingRadarEnabled?: boolean;
+    // true enrolls (server sets f90EnrolledAt to now, same reasoning as
+    // restartVaultAccess above), false un-enrolls (clears it, hiding the
+    // F90 tab) — f90CompletedSteps is left alone either way, so
+    // re-enrolling later doesn't lose prior progress.
+    f90Enroll?: boolean;
   };
 
   // Deactivating yourself would lock you out immediately (login rejects
@@ -52,6 +58,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(assignmentEnabled !== undefined ? { assignmentEnabled } : {}),
       ...(agencyDashboardEnabled !== undefined ? { agencyDashboardEnabled } : {}),
       ...(recruitingRadarEnabled !== undefined ? { recruitingRadarEnabled } : {}),
+      ...(f90Enroll === true ? { f90EnrolledAt: new Date() } : {}),
+      ...(f90Enroll === false ? { f90EnrolledAt: null } : {}),
     },
     select: {
       id: true,
@@ -65,6 +73,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       assignmentEnabled: true,
       agencyDashboardEnabled: true,
       recruitingRadarEnabled: true,
+      f90EnrolledAt: true,
+      f90CompletedSteps: true,
     },
   });
 

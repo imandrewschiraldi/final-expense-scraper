@@ -28,6 +28,7 @@ import {
   Kanban,
   Gauge,
   CalendarDays,
+  ListChecks,
   ChevronsLeft,
   ChevronsRight,
   Search,
@@ -56,6 +57,11 @@ type NavItem = {
   requiresAgencyDashboard?: boolean;
   requiresRecruitingRadar?: boolean;
   requiresLeaderboard?: boolean;
+  // Only the agent's own F90 tab (not the admin one) needs this — it's
+  // only ever useful once an admin has actually enrolled them (see
+  // User.f90EnrolledAt), unlike the admin tab, which is always there to
+  // enroll someone in the first place.
+  requiresF90Enrollment?: boolean;
 };
 
 // One shared sidebar for the entire platform — Agent Accelerator (leads,
@@ -109,6 +115,21 @@ const NAV_ITEMS: NavItem[] = [
     section: "overview",
   },
 
+  {
+    href: "/f90",
+    label: "F90",
+    icon: ListChecks,
+    roles: ["MANAGER", "AGENT"],
+    section: "team",
+    requiresF90Enrollment: true,
+  },
+  {
+    href: "/admin/f90",
+    label: "F90",
+    icon: ListChecks,
+    roles: ["ADMIN"],
+    section: "team",
+  },
   {
     href: "/agent/training",
     label: "Training",
@@ -300,6 +321,7 @@ export type SidebarProfile = {
   agencyDashboardEnabled?: boolean;
   recruitingRadarEnabled?: boolean;
   leaderboardEnabled?: boolean;
+  f90Enrolled?: boolean;
   // Not a nav-gating flag like the others above — AppShell reads this one
   // off the same server-fetched object to seed its own overlay-card beta
   // state. See getInitialSidebarProfile's doc for why it has to come from
@@ -742,7 +764,8 @@ export function Sidebar({
       // reach the page to flip it back on.
       (!item.requiresLeaderboard ||
         role === "ADMIN" ||
-        profile?.leaderboardEnabled),
+        profile?.leaderboardEnabled) &&
+      (!item.requiresF90Enrollment || profile?.f90Enrolled),
   );
 
   const query = search.trim().toLowerCase();

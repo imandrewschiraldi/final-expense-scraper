@@ -37,6 +37,7 @@ export async function getInitialSidebarProfile(
           vaultAccessStartedAt: true,
           agencyDashboardEnabled: true,
           recruitingRadarEnabled: true,
+          f90EnrolledAt: true,
         },
       }),
       getAgencySettings(),
@@ -53,5 +54,6 @@ export async function getInitialSidebarProfile(
     recruitingRadarEnabled: user.recruitingRadarEnabled,
     leaderboardEnabled,
     cardLayoutEnabled: pageLayoutBetaEnabled,
+    f90Enrolled: user.f90EnrolledAt !== null,
   };
 }

@@ -118,6 +118,18 @@ model User {
   /// regardless of this flag, enforced server-side on both the page and its
   /// API routes, not just a hidden nav link.
   recruitingRadarEnabled Boolean   @default(false)
+  /// Admin-set start of this agent's First 90 Days (F90) onboarding
+  /// program (see lib/f90Content.ts) — null means not enrolled at all,
+  /// which both hides the F90 sidebar tab and 404s its page/API routes.
+  /// Doubles as the enroll/un-enroll flag, same as how
+  /// vaultAccessStartedAt pairs with vaultEnabled above, just without a
+  /// separate boolean since F90 has no "enabled but not started" state.
+  f90EnrolledAt          DateTime?
+  /// Step keys (see lib/f90Content.ts's F90_PHASES) this agent has
+  /// checked off on their F90 tab — a fixed, code-defined step list, not
+  /// admin-editable, so a plain string array is enough; no separate step
+  /// table needed.
+  f90CompletedSteps      String[]  @default([])
   npn                    String?
   residentState          String?
   /// IANA zone name (e.g. "America/New_York") — null means "use the

@@ -23,6 +23,8 @@ export async function GET() {
       assignmentEnabled: true,
       agencyDashboardEnabled: true,
       recruitingRadarEnabled: true,
+      f90EnrolledAt: true,
+      f90CompletedSteps: true,
       passwordHash: true,
       createdAt: true,
       _count: { select: { assignedLeads: true } },
