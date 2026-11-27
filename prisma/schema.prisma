@@ -31,6 +31,18 @@ enum LeadType {
   MORTGAGE_PROTECTION
   FINAL_EXPENSE
   IUL
+  ANNUITY
+}
+
+/// Which shared, universal stage set a PipelineStage belongs to — every
+/// Lead-phase pipeline (My Leads, Vault, every "X Leads" board) reads the
+/// same LEAD stage list; every Client-phase pipeline (every "X Client"
+/// board) reads the same CLIENT stage list. A pipeline is a filtered view
+/// over one of these two lists (by leadType), not its own independent
+/// stage set.
+enum PipelinePhase {
+  LEAD
+  CLIENT
 }
 
 enum PolicyStatus {
@@ -154,8 +166,47 @@ model User {
   @@map("users")
 }
 
+/// A stage in the Opportunity pipeline board (Book of Business) — one
+/// shared, admin-editable list per phase. Every Lead-phase pipeline board
+/// (and My Leads, and the Vault) reads the same LEAD stage list; every
+/// Client-phase pipeline board reads the same CLIENT stage list. A
+/// pipeline itself (e.g. "Mortgage Protection Leads") is just that shared
+/// list filtered to one leadType — it has no stage list of its own —
+/// so a stage an admin adds anywhere shows up in every pipeline, My
+/// Leads, and the Vault at once.
+///
+/// `systemKey`, when set, ties this row to one of the fixed LeadStatus/
+/// PolicyStatus enum values existing business logic (the Vault state
+/// machine in lib/vault.ts, Hall of Fame, the Leaderboard, both
+/// dashboards) depends on reading by exact spelling — those rows are
+/// seeded once by migration and can be relabeled/recolored/reordered but
+/// never deleted or have their systemKey changed, so that logic keeps
+/// working untouched by anything this feature adds. A row with no
+/// systemKey is a purely organizational stage an admin added on top of
+/// those (e.g. "Callback Later", "Annual Review Ready", "Lapsed") —
+/// moving a Lead/Policy onto one only ever updates its pipelineStageId,
+/// never the legacy status enum, so none of that existing business logic
+/// has to know these stages exist.
+model PipelineStage {
+  id         String        @id @default(cuid())
+  phase      PipelinePhase
+  name       String
+  order      Int           @default(0)
+  colorToken String        @default("gray")
+  systemKey  String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  leads    Lead[]   @relation("LeadStage")
+  policies Policy[] @relation("PolicyStage")
+
+  @@unique([phase, systemKey])
+  @@index([phase, order])
+  @@map("pipeline_stages")
+}
+
 model Lead {
-  id              String     @id @default(cuid())
+  id              String         @id @default(cuid())
   firstName       String
   lastName        String
   phone           String
@@ -164,25 +215,34 @@ model Lead {
   // (import or manual entry) actually provides.
   dateOfBirth     DateTime?
   state           String
-  leadType        LeadType   @default(VETERANS_FINAL_EXPENSE)
-  status          LeadStatus @default(NEW)
-  isArchived      Boolean    @default(false)
-  isVaulted       Boolean    @default(false)
-  vaultOrigin     Boolean    @default(false)
-  wasRecycled     Boolean    @default(false)
+  leadType        LeadType       @default(VETERANS_FINAL_EXPENSE)
+  status          LeadStatus     @default(NEW)
+  /// The Opportunity board's own stage pointer — richer and admin-
+  /// extensible, unlike `status` above (which stays exactly as-is so the
+  /// Vault state machine and every status-driven report keep working
+  /// unmodified). Null until the Opportunity pipeline feature's migration
+  /// backfills every lead from its current `status`; kept in sync with
+  /// `status` going forward only when the stage has a systemKey — see
+  /// PipelineStage's own doc comment.
+  pipelineStageId String?
+  pipelineStage   PipelineStage? @relation("LeadStage", fields: [pipelineStageId], references: [id], onDelete: SetNull)
+  isArchived      Boolean        @default(false)
+  isVaulted       Boolean        @default(false)
+  vaultOrigin     Boolean        @default(false)
+  wasRecycled     Boolean        @default(false)
   assignedAgentId String?
-  assignedAgent   User?      @relation("AssignedLeads", fields: [assignedAgentId], references: [id])
+  assignedAgent   User?          @relation("AssignedLeads", fields: [assignedAgentId], references: [id])
   assignedAt      DateTime?
   sourceImportId  String?
-  sourceImport    Import?    @relation(fields: [sourceImportId], references: [id])
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  sourceImport    Import?        @relation(fields: [sourceImportId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   /// A short reference code ("VL00" + 6 digits) shown anywhere a human
   /// needs to point at one specific lead — nullable only because the
   /// one-time admin backfill (see /api/admin/leads/backfill-lead-numbers)
   /// fills it in for leads that existed before this field did; every lead
   /// created from here on gets one at insert time (see lib/leadNumber.ts).
-  leadNumber      String?    @unique
+  leadNumber      String?        @unique
 
   /// Everything below is optional supplemental info a lead source may or
   /// may not provide — never required to create or import a lead.
@@ -225,6 +285,7 @@ model Lead {
   @@index([isVaulted, createdAt])
   @@index([vaultOrigin, status])
   @@index([wasRecycled])
+  @@index([pipelineStageId])
   @@map("leads")
 }
 
@@ -469,11 +530,11 @@ model KpiEntry {
 // the client fields are always stored directly on the Policy rather than only
 // derived from the linked Lead.
 model Policy {
-  id               String       @id @default(cuid())
+  id               String         @id @default(cuid())
   agentId          String?
-  agent            User?        @relation("AgentPolicies", fields: [agentId], references: [id], onDelete: SetNull)
+  agent            User?          @relation("AgentPolicies", fields: [agentId], references: [id], onDelete: SetNull)
   leadId           String?
-  lead             Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  lead             Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
   clientName       String
   clientPhone      String?
   state            String?
@@ -483,14 +544,27 @@ model Policy {
   /// a sale counts toward. Defaults to LIFE since that's the vast majority
   /// of existing and new business; set explicitly on the submit form when
   /// the product sold is an annuity.
-  line             PolicyLine   @default(LIFE)
-  annualPremium    Decimal      @db.Decimal(10, 2)
-  status           PolicyStatus @default(SUBMITTED)
-  submittedAt      DateTime     @default(now())
+  line             PolicyLine     @default(LIFE)
+  /// Which Client pipeline this policy belongs to (Mortgage Protection
+  /// Client, Annuity Client, etc.) — a separate field from `line` above
+  /// (which only distinguishes Life vs Annuity for Hall of Fame purposes)
+  /// since a pipeline exists per product line, not per that narrower
+  /// split. Copied from the originating lead's own leadType at submit
+  /// time when there is one; set directly on the submit form otherwise
+  /// (a policy can be submitted without ever having had a Lead row).
+  leadType         LeadType?
+  annualPremium    Decimal        @db.Decimal(10, 2)
+  status           PolicyStatus   @default(SUBMITTED)
+  /// The Opportunity board's own stage pointer, same reasoning as
+  /// Lead.pipelineStageId — `status` above is untouched and keeps driving
+  /// Hall of Fame/Leaderboard/the dashboards exactly as today.
+  pipelineStageId  String?
+  pipelineStage    PipelineStage? @relation("PolicyStage", fields: [pipelineStageId], references: [id], onDelete: SetNull)
+  submittedAt      DateTime       @default(now())
   issuedAt         DateTime?
-  discordMessageId String?      @unique
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  discordMessageId String?        @unique
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   /// Optional link to a rated Carrier/CarrierPlan so commissionAmount can be
   /// computed automatically. Free-text `carrier`/`product` above are kept
@@ -507,6 +581,15 @@ model Policy {
   /// plan is attached.
   commissionAmount Decimal?     @db.Decimal(12, 2)
 
+  /// Free-form working notes on this opportunity — mirrors LeadNote's own
+  /// shape/reasoning, just for the post-submit side of the pipeline.
+  notes      String?
+  /// When set, surfaces as a to-do on the owning agent's Overview page
+  /// once this date arrives. Independent of the Annual Review cron's own
+  /// automatic transition (see PipelineStage) — this is whatever the
+  /// agent themselves wants reminding about, on whatever date they pick.
+  followUpAt DateTime?
+
   statusHistory PolicyStatusHistory[]
 
   @@index([agentId])
@@ -514,6 +597,8 @@ model Policy {
   @@index([submittedAt])
   @@index([issuedAt])
   @@index([carrierPlanId])
+  @@index([pipelineStageId])
+  @@index([followUpAt])
   @@map("policies")
 }
 

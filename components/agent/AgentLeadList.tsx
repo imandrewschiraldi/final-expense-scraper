@@ -28,6 +28,7 @@ const LEAD_TYPE_SHORT_LABELS: Record<LeadType, string> = {
   MORTGAGE_PROTECTION: "MP",
   FINAL_EXPENSE: "FE",
   IUL: "IUL",
+  ANNUITY: "ANN",
 };
 
 const ACTIVE_TABS: { value: LeadStatus | "ALL"; label: string }[] = [

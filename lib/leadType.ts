@@ -1,4 +1,10 @@
-export const LEAD_TYPES = ["VETERANS_FINAL_EXPENSE", "MORTGAGE_PROTECTION", "FINAL_EXPENSE", "IUL"] as const;
+export const LEAD_TYPES = [
+  "VETERANS_FINAL_EXPENSE",
+  "MORTGAGE_PROTECTION",
+  "FINAL_EXPENSE",
+  "IUL",
+  "ANNUITY",
+] as const;
 
 export type LeadType = (typeof LEAD_TYPES)[number];
 
@@ -7,6 +13,7 @@ export const LEAD_TYPE_LABELS: Record<LeadType, string> = {
   MORTGAGE_PROTECTION: "Mortgage Protection",
   FINAL_EXPENSE: "Final Expense",
   IUL: "IUL",
+  ANNUITY: "Annuity",
 };
 
 export function isLeadType(value: string | null | undefined): value is LeadType {
