@@ -21,6 +21,7 @@ import {
   type CalendarEventRecord,
   type CalendarOccurrence,
 } from "@/lib/calendarRecurrence";
+import { shiftToZone } from "@/lib/timeZoneMath";
 
 type View = "month" | "week" | "day";
 // Which endpoint a create/edit/delete goes to — an agency event is always
@@ -62,6 +63,28 @@ function parseEvent(raw: {
   };
 }
 
+/** The display copy of a fetched event — its time fields shifted into the
+ *  viewer's chosen zone (see lib/timeZoneMath.ts) so every bit of grid
+ *  math downstream (which day it lands on, where in a day column, its
+ *  shown time) reads correctly with no zone-awareness of its own. Never
+ *  used for editing — an edit needs the real, un-shifted event (see
+ *  openEditForm below), since the create/edit form always works in the
+ *  browser's own local time, independent of this viewing preference. */
+function shiftEventToZone(
+  event: CalendarEventRecord,
+  timeZone?: string,
+): CalendarEventRecord {
+  if (!timeZone) return event;
+  return {
+    ...event,
+    startAt: shiftToZone(event.startAt, timeZone),
+    endAt: shiftToZone(event.endAt, timeZone),
+    recurrenceEndAt: event.recurrenceEndAt
+      ? shiftToZone(event.recurrenceEndAt, timeZone)
+      : null,
+  };
+}
+
 /** Modeled on Google Calendar's own month/week/day views: month defaults,
  *  click through to week or day for the full time-grid. Shows every
  *  agency-wide event (admin-created training, company events) plus the
@@ -89,8 +112,9 @@ export function CalendarWidget({ heading = "Calendar" }: { heading?: string }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  // Undefined (not set on Profile) falls through to every formatter's own
-  // browser-local default — see lib/calendarRecurrence.ts.
+  // Undefined (not set on Profile) means every shift below is a no-op —
+  // the original, unchanged behavior (browser-local throughout) for anyone
+  // without a Profile zone set.
   const [timeZone, setTimeZone] = useState<string | undefined>(undefined);
 
   function loadEvents() {
@@ -109,6 +133,32 @@ export function CalendarWidget({ heading = "Calendar" }: { heading?: string }) {
       .then((data) => setTimeZone(data?.profile?.timeZone || undefined))
       .catch(() => {});
   }, []);
+  // `anchor` starts as a real "now" (set above, before Profile has loaded)
+  // — once timeZone actually comes in, re-anchor to the shifted equivalent
+  // of wherever it currently points (initially "now," or wherever the
+  // viewer already navigated to in the brief window before this ran).
+  // Only ever fires once, on the transition from no zone known yet to
+  // whatever Profile has; timeZone never changes again within this
+  // component's lifetime otherwise.
+  useEffect(() => {
+    if (timeZone) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAnchor((prev) => shiftToZone(prev, timeZone));
+    }
+  }, [timeZone]);
+
+  // Every other date this component and everything under it deals with —
+  // `anchor`, `range`, `days`, `today` — lives in this same "shifted"
+  // space once timeZone is known (see lib/timeZoneMath.ts), which is what
+  // makes startOfWeek/startOfDay/addDays/monthGridRange/expandOccurrences
+  // below, and every day/time read in MonthGrid and TimeGrid, correctly
+  // zone-aware with no changes of their own — they only ever need to read
+  // a Date's own local fields, and those fields are already right.
+  const shiftedEvents = useMemo(
+    () => events?.map((e) => shiftEventToZone(e, timeZone)) ?? null,
+    [events, timeZone],
+  );
+  const today = useMemo(() => shiftToZone(new Date(), timeZone), [timeZone]);
 
   const range = useMemo(() => {
     if (view === "month") return monthGridRange(anchor);
@@ -121,8 +171,11 @@ export function CalendarWidget({ heading = "Calendar" }: { heading?: string }) {
   }, [view, anchor]);
 
   const occurrences = useMemo(
-    () => (events ? expandOccurrences(events, range.start, range.end) : []),
-    [events, range],
+    () =>
+      shiftedEvents
+        ? expandOccurrences(shiftedEvents, range.start, range.end)
+        : [],
+    [shiftedEvents, range],
   );
 
   const days = useMemo(() => {
@@ -167,7 +220,12 @@ export function CalendarWidget({ heading = "Calendar" }: { heading?: string }) {
   function openEditForm() {
     if (!detailsOccurrence || !canManageOccurrence(detailsOccurrence)) return;
     setFormScope(detailsOccurrence.scope);
-    setFormTarget(detailsOccurrence);
+    // The raw (un-shifted) record, not detailsOccurrence itself — editing
+    // always works in the browser's own local time (same as creating
+    // always has), independent of the viewing-zone preference that
+    // detailsOccurrence's times have already been shifted through.
+    const raw = events?.find((e) => e.id === detailsOccurrence.id);
+    setFormTarget(raw ?? detailsOccurrence);
     setDetailsOccurrence(null);
     setFormError(null);
     setFormOpen(true);
@@ -286,7 +344,7 @@ export function CalendarWidget({ heading = "Calendar" }: { heading?: string }) {
             </button>
             <button
               type="button"
-              onClick={() => setAnchor(new Date())}
+              onClick={() => setAnchor(shiftToZone(new Date(), timeZone))}
               className="font-condensed rounded-md border border-border px-2.5 py-1 text-[11px] font-bold tracking-[0.06em] text-muted uppercase transition-colors hover:text-foreground"
             >
               Today
@@ -317,13 +375,14 @@ export function CalendarWidget({ heading = "Calendar" }: { heading?: string }) {
           occurrences={occurrences}
           onDayClick={goToDay}
           onEventClick={openOccurrence}
-          timeZone={timeZone}
+          today={today}
         />
       ) : (
         <TimeGrid
           days={days}
           occurrences={occurrences}
           onEventClick={openOccurrence}
+          today={today}
           timeZone={timeZone}
         />
       )}
@@ -331,7 +390,6 @@ export function CalendarWidget({ heading = "Calendar" }: { heading?: string }) {
       <EventDetailsModal
         occurrence={detailsOccurrence}
         onClose={() => setDetailsOccurrence(null)}
-        timeZone={timeZone}
         canManage={
           !!detailsOccurrence && canManageOccurrence(detailsOccurrence)
         }

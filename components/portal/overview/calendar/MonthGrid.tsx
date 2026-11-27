@@ -49,20 +49,24 @@ export function MonthGrid({
   occurrences,
   onDayClick,
   onEventClick,
-  timeZone,
+  today,
 }: {
   monthAnchor: Date;
   occurrences: CalendarOccurrence[];
   onDayClick: (date: Date) => void;
   onEventClick: (occurrence: CalendarOccurrence) => void;
-  timeZone?: string;
+  // Passed down from CalendarWidget (already shifted into the viewer's
+  // chosen zone, see lib/timeZoneMath.ts) rather than computed locally as
+  // `new Date()` — this and `monthAnchor`/`occurrences` need to agree on
+  // which zone they're all reading "today" in, or the wrong cell gets the
+  // "today" highlight.
+  today: Date;
 }) {
   const { start } = monthGridRange(monthAnchor);
   const days = Array.from({ length: MONTH_GRID_WEEKS * 7 }, (_, i) =>
     addDays(start, i),
   );
   const byDay = groupOccurrencesByDay(occurrences);
-  const today = new Date();
   const monthIndex = monthAnchor.getMonth();
 
   return (
@@ -120,7 +124,7 @@ export function MonthGrid({
                   />
                   {!occ.allDay && (
                     <span className="shrink-0 text-muted">
-                      {formatTime(occ.occurrenceStart, timeZone)}
+                      {formatTime(occ.occurrenceStart)}
                     </span>
                   )}
                   <span className="truncate">{occ.title}</span>

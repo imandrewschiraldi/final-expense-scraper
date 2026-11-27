@@ -24,7 +24,6 @@ export function EventDetailsModal({
   onEdit,
   onDelete,
   deleting,
-  timeZone,
 }: {
   occurrence: CalendarOccurrence | null;
   onClose: () => void;
@@ -32,7 +31,6 @@ export function EventDetailsModal({
   onEdit: () => void;
   onDelete: () => void;
   deleting: boolean;
-  timeZone?: string;
 }) {
   return (
     <Modal
@@ -61,7 +59,6 @@ export function EventDetailsModal({
                   : formatEventRange(
                       occurrence.occurrenceStart,
                       occurrence.occurrenceEnd,
-                      timeZone,
                     )}
                 {occurrence.recurrenceRule &&
                   ` · ${RECURRENCE_RULE_LABELS[occurrence.recurrenceRule]}`}

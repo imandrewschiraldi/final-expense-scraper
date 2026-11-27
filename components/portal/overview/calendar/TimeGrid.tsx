@@ -70,25 +70,11 @@ function layoutDay(dayOccurrences: CalendarOccurrence[]): LaidOutOccurrence[] {
   }));
 }
 
-/** Hour/minute of `date` as they'd read in `timeZone` (the viewer's own
- *  Profile setting) — omitted, falls back to the browser's own zone via
- *  plain getHours()/getMinutes(). Positions an event block by the same
- *  zone its time label uses (see EventBlock below), so the two always
- *  agree — the one thing this can't fix is a block landing in the
- *  "wrong" day's column right around midnight, when the series' own day
- *  (bucketed by the browser's local midnight, see TimeGrid's own caller)
- *  and the chosen zone's day briefly disagree. */
-function minutesSinceMidnight(date: Date, timeZone?: string): number {
-  if (!timeZone) return date.getHours() * 60 + date.getMinutes();
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hour: "numeric",
-    minute: "numeric",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
-  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
-  return hour * 60 + minute;
+// No timeZone parameter here — `date` has already been shifted into the
+// viewer's chosen zone once, upstream (see lib/timeZoneMath.ts), so its
+// own local fields are already correct.
+function minutesSinceMidnight(date: Date): number {
+  return date.getHours() * 60 + date.getMinutes();
 }
 
 /** "GMT-5"/"GMT+1" — matches the reference screenshots' own corner label
@@ -111,17 +97,14 @@ function EventBlock({
   // (truncated title, time only when the block's tall enough for a second
   // line).
   detailed,
-  timeZone,
 }: {
   laid: LaidOutOccurrence;
   onClick: () => void;
   detailed: boolean;
-  timeZone?: string;
 }) {
   const { occurrence, column, columnCount } = laid;
   const top =
-    (minutesSinceMidnight(occurrence.occurrenceStart, timeZone) / 60) *
-    HOUR_HEIGHT;
+    (minutesSinceMidnight(occurrence.occurrenceStart) / 60) * HOUR_HEIGHT;
   const durationMinutes = Math.max(
     15,
     (occurrence.occurrenceEnd.getTime() -
@@ -147,7 +130,7 @@ function EventBlock({
       {detailed ? (
         <span className="block truncate">
           <span className="font-bold">{occurrence.title}, </span>
-          {formatTime(occurrence.occurrenceStart, timeZone)}
+          {formatTime(occurrence.occurrenceStart)}
           {occurrence.link && <>, {occurrence.link}</>}
         </span>
       ) : (
@@ -158,7 +141,6 @@ function EventBlock({
               {formatEventRange(
                 occurrence.occurrenceStart,
                 occurrence.occurrenceEnd,
-                timeZone,
               )}
             </span>
           )}
@@ -175,15 +157,22 @@ export function TimeGrid({
   days,
   occurrences,
   onEventClick,
+  today,
   timeZone,
 }: {
   days: Date[];
   occurrences: CalendarOccurrence[];
   onEventClick: (occurrence: CalendarOccurrence) => void;
+  // Passed down from CalendarWidget (already shifted into the viewer's
+  // chosen zone, see lib/timeZoneMath.ts) rather than computed locally —
+  // see MonthGrid's identical prop for why.
+  today: Date;
+  // Only used for the corner "GMT-5" offset label below, which legitimately
+  // needs the real zone name (not a shifted Date) to ask "what offset does
+  // this zone have right now."
   timeZone?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const today = new Date();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: VISIBLE_START_HOUR * HOUR_HEIGHT });
@@ -310,7 +299,6 @@ export function TimeGrid({
                     laid={laid}
                     onClick={() => onEventClick(laid.occurrence)}
                     detailed={days.length === 1}
-                    timeZone={timeZone}
                   />
                 ))}
               </div>

@@ -211,28 +211,22 @@ export function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
-// `timeZone` is the viewer's own Profile setting (see lib/timeZones.ts),
-// threaded down from CalendarWidget — omitted, these fall back to the
-// browser's own zone, the original behavior for everyone who hasn't set
-// one. Display-only: which calendar day an occurrence is grouped under
-// still goes by the browser's local day (see expandOccurrences/
-// startOfWeek/startOfDay above), not this override — rethinking day
-// bucketing itself around an arbitrary zone is a deeper change than a
-// label format.
-export function formatTime(date: Date, timeZone?: string): string {
+// No timeZone parameter here on purpose — every Date this module's
+// functions ever receive has already been shifted into the viewer's
+// chosen zone once, at the one point real instants enter the Calendar
+// (see lib/timeZoneMath.ts's shiftToZone, used in CalendarWidget).
+// Reading `date`'s own local fields, same as always, is what's actually
+// correct post-shift; threading a second timeZone through here would
+// double-convert it.
+export function formatTime(date: Date): string {
   return date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
-    ...(timeZone ? { timeZone } : {}),
   });
 }
 
-export function formatEventRange(
-  start: Date,
-  end: Date,
-  timeZone?: string,
-): string {
-  return `${formatTime(start, timeZone)} – ${formatTime(end, timeZone)}`;
+export function formatEventRange(start: Date, end: Date): string {
+  return `${formatTime(start)} – ${formatTime(end)}`;
 }
 
 // A 31-day month starting on a Friday, Saturday, or Sunday needs a full 6
