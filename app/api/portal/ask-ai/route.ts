@@ -149,6 +149,13 @@ export async function POST(req: NextRequest) {
 
   const history = parseHistory(body?.history);
 
+  // What page/record the agent is currently looking at (see
+  // TopBarActions.tsx's useAtlasContext) — a single descriptive line, not
+  // raw data, so a question like "what's her DOB?" without naming anyone
+  // still resolves to whoever's lead page is open.
+  const contextLine =
+    typeof body?.context?.line === "string" ? body.context.line.trim() : "";
+
   // Ground on everything the user has asked so far in this conversation, not
   // just the latest message — a follow-up like "what if they also smoke?"
   // needs the condition named in an earlier turn to still pull the right
@@ -158,6 +165,7 @@ export async function POST(req: NextRequest) {
   const searchResult = await liveSearch(question);
 
   const parts: string[] = [];
+  if (contextLine) parts.push(contextLine);
   if (guideContext) parts.push(guideContext);
   if (searchResult) parts.push(`Live web search findings for this question:\n${searchResult.contextText}`);
   parts.push(`Question: ${question}`);

@@ -39,28 +39,33 @@ type SpeechRecognitionWindow = typeof window & {
 };
 
 /**
- * The header's search box — not a platform search (that's the sidebar's
- * own search, which filters the nav), this asks Gemini as an open
- * conversation: a follow-up question reuses the thread above it instead of
- * starting over. Scope is broad (not just insurance/underwriting — general
- * work topics too, live-searched), with one narrow exception: a specific
- * person's carrier eligibility routes to the agency's own underwriting
- * guide instead. Server-side key, the actual system prompt, and the "not
- * your actual lead data" disclaimer all live in the API route, not here.
+ * Ask A.T.L.A.S. — a global assistant drawer, opened from a small floating
+ * trigger pill or Cmd/Ctrl+K from anywhere in the app (the shortcut used to
+ * focus the sidebar's own nav search instead — see Sidebar.tsx — A.T.L.A.S.
+ * owns it now, and the nav search is still reachable by just clicking it).
+ * Not a platform search; this asks Gemini as an open conversation, with a
+ * follow-up reusing the thread above it instead of starting over. Scope is
+ * broad (not just insurance/underwriting — general work topics too, live-
+ * searched), with one narrow exception: a specific person's carrier
+ * eligibility routes to the agency's own underwriting guide instead.
+ * Server-side key, the actual system prompt, and the "not your actual lead
+ * data" disclaimer all live in the API route, not here.
+ *
+ * A small, fixed-position pill (not a wide text input sitting in the
+ * header's own flow) is what lets this render on every page, every role,
+ * with nothing to collide with — the previous inline search box had to be
+ * hidden entirely on several admin/agent pages whose own plain-text
+ * headings shared its exact screen position.
  *
  * The thread is intentionally NOT kept once you step away from it — closing
  * it (clicking outside, or the clear button) wipes the conversation, so
- * reopening the box always starts a fresh search instead of resurfacing a
+ * reopening the panel always starts a fresh search instead of resurfacing a
  * stale answer from an unrelated question asked earlier.
  *
- * Fixed at its default top-left header spot — not draggable. Pages that need
- * clearance for it (e.g. a centered PageHeading) handle that themselves
- * rather than this box moving out of the way.
- *
- * The open chat panel is also resizable from its bottom-right corner (plain
- * CSS `resize`, not custom drag logic) — `min-width`/`min-height` are
- * pinned to its own default `w-96`/`max-h-[480px]` size, so it can only be
- * dragged bigger, never smaller than what you'd see without touching it.
+ * The open panel is also resizable from its bottom-right corner (plain CSS
+ * `resize`, not custom drag logic) — `min-width`/`min-height` are pinned to
+ * its own default `w-96`/`max-h-[480px]` size, so it can only be dragged
+ * bigger, never smaller than what you'd see without touching it.
  */
 const CHAT_PANEL_MIN_WIDTH = 384; // matches the default w-96
 const CHAT_PANEL_MIN_HEIGHT = 480; // matches the default max-h-[480px]
@@ -73,7 +78,46 @@ const SILENCE_AUTO_SEND_MS = 4000;
 // then scrolls internally rather than eating the whole panel.
 const FOLLOWUP_MAX_HEIGHT = 160;
 
-function AiSearchBox() {
+// Derives the "Context: John Smith" badge (and the matching line folded
+// into the prompt server-side) from the current URL alone — no page-level
+// context provider needed. Covers the one case that's both common and
+// cheap to resolve from a URL: a lead's own detail page, via the same
+// GET-by-id route My Leads/Vault detail pages already use (which already
+// authorizes a vault lead the viewer has access to, not just their own).
+function useAtlasContext() {
+  const pathname = usePathname();
+  const [label, setLabel] = useState<string | null>(null);
+  const [line, setLine] = useState<string | null>(null);
+
+  useEffect(() => {
+    const match = pathname.match(/^\/agent\/(?:leads|vault)\/([^/?]+)/);
+    if (!match) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLabel(null);
+      setLine(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/agent/leads/${match[1]}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.lead) return;
+        const name = `${data.lead.firstName} ${data.lead.lastName}`.trim();
+        setLabel(name);
+        setLine(
+          `The agent asking is currently viewing this lead's detail page: ${name} (lead id ${match[1]}).`,
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  return { pathname, label, line };
+}
+
+function AtlasAssistant() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -83,12 +127,13 @@ function AiSearchBox() {
   const [speechSupported, setSpeechSupported] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
-  const followUpRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   // What was already typed when dictation started — spoken words are
   // appended after it rather than overwriting it.
   const listenBaseRef = useRef("");
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const atlasContext = useAtlasContext();
 
   function clearSilenceTimer() {
     if (silenceTimerRef.current) {
@@ -105,6 +150,25 @@ function AiSearchBox() {
     setError(null);
     setQuestion("");
   }
+
+  function openPanel() {
+    setOpen(true);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  // Global Cmd/Ctrl+K opens (or focuses, if already open) this panel from
+  // anywhere in the app — takes over the shortcut the sidebar's own nav
+  // search used to own.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        openPanel();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // Shared by the form's Enter/Send submit and dictation's own auto-send —
   // takes the text explicitly rather than reading `question` state, since
@@ -123,7 +187,11 @@ function AiSearchBox() {
       const res = await fetch("/api/portal/ask-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmed, history }),
+        body: JSON.stringify({
+          question: trimmed,
+          history,
+          context: { pathname: atlasContext.pathname, line: atlasContext.line },
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -135,7 +203,7 @@ function AiSearchBox() {
         ]);
       }
     } catch {
-      setError("Couldn't reach the AI assistant.");
+      setError("Couldn't reach A.T.L.A.S.");
     } finally {
       setLoading(false);
     }
@@ -205,7 +273,7 @@ function AiSearchBox() {
     };
     recognitionRef.current = recognition;
     recognition.start();
-    setOpen(true);
+    openPanel();
     setListening(true);
     // Armed immediately too, in case nothing is ever said at all — covers
     // both "clicked mic and stayed silent" and the gap before the first
@@ -239,21 +307,20 @@ function AiSearchBox() {
     threadEndRef.current?.scrollIntoView({ block: "end" });
   }, [messages, loading]);
 
-  // Grows the follow-up textarea to fit what's typed (up to a cap, then it
-  // scrolls internally) — a plain single-line input scrolls text sideways
-  // out of view once it's wider than the box; wrapping onto new lines
-  // instead means everything typed stays visible.
+  // Grows the input to fit what's typed (up to a cap, then it scrolls
+  // internally) — a plain single-line input scrolls text sideways out of
+  // view once it's wider than the box; wrapping onto new lines instead
+  // means everything typed stays visible.
   useEffect(() => {
-    const el = followUpRef.current;
+    const el = inputRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, FOLLOWUP_MAX_HEIGHT)}px`;
   }, [question]);
 
   // Takes any SyntheticEvent (a real form submit, or a keydown for
-  // Enter-to-send on the follow-up textarea) rather than specifically
-  // FormEvent, since both need the same preventDefault/stop-dictation/
-  // submit sequence.
+  // Enter-to-send) rather than specifically FormEvent, since both need the
+  // same preventDefault/stop-dictation/submit sequence.
   async function ask(e?: React.SyntheticEvent) {
     e?.preventDefault();
     recognitionRef.current?.stop();
@@ -263,105 +330,25 @@ function AiSearchBox() {
 
   const hasThread = messages.length > 0;
 
-  const botIcon = (
-    <span className="pointer-events-none absolute top-1/2 left-1.5 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-muted">
-      <Bot className="h-4 w-4" />
-    </span>
-  );
-
-  // Mic ("talk to type" — only where the browser actually implements
-  // SpeechRecognition, feature-detected above; appends to whatever's
-  // already typed rather than replacing it) and Send share one small
-  // rounded-icon-button treatment in a single flex group, instead of each
-  // being its own independently-offset absolute element — reads as one
-  // cohesive control built into the pill rather than two floating icons
-  // guessed into alignment. Enter still submits too; Send is just a
-  // visible click target, same as this platform's own chat input.
-  //
-  // `align="bottom"` for the follow-up textarea, which grows taller as you
-  // type — vertically centering the icons there would leave them stranded
-  // in the middle of a multi-line box, so they pin to the bottom-right
-  // (where the cursor/send action naturally is) instead, same as any
-  // auto-growing chat composer.
-  function micSendGroup(align: "center" | "bottom" = "center") {
-    return (
-      <div
-        className={`absolute right-1.5 flex items-center gap-0.5 ${
-          align === "bottom" ? "bottom-1.5" : "top-1/2 -translate-y-1/2"
-        }`}
-      >
-        {speechSupported && (
-          <button
-            type="button"
-            onClick={toggleListening}
-            aria-label={
-              listening ? "Stop dictation" : "Dictate with your microphone"
-            }
-            title={
-              listening ? "Stop dictation" : "Dictate with your microphone"
-            }
-            className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
-              listening
-                ? "bg-red-light/15 text-red-light"
-                : "text-muted hover:bg-surface2 hover:text-foreground"
-            }`}
-          >
-            <Mic className={`h-4 w-4 ${listening ? "animate-pulse" : ""}`} />
-          </button>
-        )}
-        <button
-          type="submit"
-          disabled={!question.trim() || loading}
-          aria-label="Send"
-          title="Send"
-          className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
-        >
-          <Send className="h-4 w-4" />
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div
-      ref={containerRef}
-      data-tour="ask-gemini-box"
-      className="relative w-full max-w-[290px]"
-    >
-      {/* Before a conversation starts, the header pill itself is the input.
-          Once there's a thread, it becomes a non-editable trigger — typing
-          happens in the chat panel's own input, docked at the bottom of the
-          thread like any chat window, not back up here. */}
-      {!hasThread ? (
-        <form onSubmit={ask}>
-          {botIcon}
-          <input
-            type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onFocus={() => setOpen(true)}
-            placeholder="Ask Gemini — insurance, underwriting..."
-            className={`w-full rounded-lg border border-border bg-input-bg py-2 pl-9 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none ${speechSupported ? "pr-16" : "pr-9"}`}
-          />
-          {micSendGroup("center")}
-        </form>
-      ) : (
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setOpen(true)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") setOpen(true);
-          }}
-          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-border bg-input-bg py-2 pr-3 pl-9 text-left text-sm text-muted hover:text-foreground"
-        >
-          {botIcon}
-          <span className="truncate">
-            Gemini conversation — click to continue
-          </span>
-        </div>
-      )}
-      {open && (loading || hasThread || error) && (
+    <div ref={containerRef} data-tour="ask-gemini-box" className="relative">
+      {/* Closed state: a small fixed-size trigger pill, never a wide text
+          input sitting in the header's own flow — this is what lets
+          A.T.L.A.S. render on every page/role without colliding with any
+          page's own heading. */}
+      <button
+        type="button"
+        onClick={openPanel}
+        aria-label="Ask A.T.L.A.S."
+        title="Ask A.T.L.A.S. (⌘K)"
+        className="flex items-center gap-1.5 rounded-full border border-border bg-input-bg px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:border-copper-dim-gradient hover:text-foreground"
+      >
+        <Bot className="h-3.5 w-3.5" />
+        <span>Ask A.T.L.A.S.</span>
+        <span className="hidden text-[10px] text-muted/70 sm:inline">⌘K</span>
+      </button>
+
+      {open && (
         <div
           className="resize absolute top-full left-0 z-20 mt-2 flex w-96 flex-col overflow-hidden rounded-[10px] border border-border bg-surface shadow-lg"
           style={{
@@ -376,19 +363,32 @@ function AiSearchBox() {
               hides this panel now, it doesn't wipe the thread. This is the
               one deliberate way to clear it all at once. */}
           <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5">
-            <span className="font-condensed text-[10px] font-bold tracking-[0.1em] text-muted uppercase">
-              Gemini conversation
-            </span>
+            <div className="flex items-center gap-2 overflow-hidden">
+              <span className="font-condensed shrink-0 text-[10px] font-bold tracking-[0.1em] text-muted uppercase">
+                A.T.L.A.S.
+              </span>
+              {atlasContext.label && (
+                <span className="metal-copper-text truncate text-[10px] font-bold">
+                  Context: {atlasContext.label}
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={reset}
               aria-label="Clear conversation"
-              className="text-muted hover:text-foreground"
+              className="shrink-0 text-muted hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3 text-sm">
+            {!hasThread && !loading && !error && (
+              <p className="text-muted">
+                Ask about a lead, a carrier&apos;s underwriting rules, or
+                anything else — press ⌘K to come back here from any page.
+              </p>
+            )}
             {messages.map((m, i) => (
               <div key={i} className={i > 0 ? "mt-3" : ""}>
                 <p
@@ -396,7 +396,7 @@ function AiSearchBox() {
                     m.role === "user" ? "text-muted" : "metal-copper-text"
                   }`}
                 >
-                  {m.role === "user" ? "You" : "Gemini"}
+                  {m.role === "user" ? "You" : "A.T.L.A.S."}
                 </p>
                 <p className="whitespace-pre-wrap text-foreground">{m.text}</p>
               </div>
@@ -413,8 +413,7 @@ function AiSearchBox() {
             )}
             <div ref={threadEndRef} />
           </div>
-          {/* The follow-up input, fixed at the bottom of the conversation —
-              keep asking without losing the thread above it. A growing
+          {/* The input, fixed at the bottom of the conversation — a growing
               textarea (not a single-line input) so typed text wraps onto a
               new line and stays visible instead of scrolling sideways out
               of view once it's wider than the box; Enter sends, Shift+Enter
@@ -422,7 +421,7 @@ function AiSearchBox() {
           <form onSubmit={ask} className="shrink-0 border-t border-border p-2">
             <div className="relative">
               <textarea
-                ref={followUpRef}
+                ref={inputRef}
                 rows={1}
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
@@ -432,13 +431,42 @@ function AiSearchBox() {
                     void ask(e);
                   }
                 }}
-                placeholder="Ask a follow-up..."
+                placeholder={hasThread ? "Ask a follow-up..." : "Ask A.T.L.A.S..."}
                 autoFocus
                 disabled={loading}
                 style={{ maxHeight: FOLLOWUP_MAX_HEIGHT }}
                 className={`w-full resize-none overflow-y-auto rounded-lg border border-border bg-input-bg py-2 pl-3 text-sm text-foreground placeholder:text-muted focus:border-copper-dim-gradient focus:outline-none disabled:opacity-60 ${speechSupported ? "pr-16" : "pr-9"}`}
               />
-              {micSendGroup("bottom")}
+              <div className="absolute right-1.5 bottom-1.5 flex items-center gap-0.5">
+                {speechSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleListening}
+                    aria-label={
+                      listening ? "Stop dictation" : "Dictate with your microphone"
+                    }
+                    title={
+                      listening ? "Stop dictation" : "Dictate with your microphone"
+                    }
+                    className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
+                      listening
+                        ? "bg-red-light/15 text-red-light"
+                        : "text-muted hover:bg-surface2 hover:text-foreground"
+                    }`}
+                  >
+                    <Mic className={`h-4 w-4 ${listening ? "animate-pulse" : ""}`} />
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={!question.trim() || loading}
+                  aria-label="Send"
+                  title="Send"
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -508,24 +536,11 @@ export function TopBarActions({
   // and a bell/avatar-free layout by design — the profile picture,
   // notifications, theme toggle, and quick links would just be clutter
   // competing with it, so this is the one page that hides the whole icon
-  // cluster (the search box stays).
+  // cluster (A.T.L.A.S.'s own small pill stays — it no longer competes for
+  // the same space a wide search input used to).
   const isVault =
     pathname.startsWith("/agent/vault") ||
     pathname.startsWith("/admin/leads/vault");
-  // Several admin pages' own plain-text headings sit too close to this
-  // box to share the row (KPI Tracker, Carrier Resources, Agents, Carrier
-  // rates, Lead Vendors) — rather than special-case each one, Ask Gemini
-  // is dropped for the admin account entirely; the icon cluster (theme/
-  // bell/avatar) stays, the opposite of Vault. Same overlap on the
-  // agent/manager side's own KPI Tracker, Buy Leads ("Trusted Lead
-  // Vendors"), and Carrier Resources headings — those three are hidden by
-  // path instead, since agents/managers still want Ask Gemini everywhere
-  // else.
-  const hideAskGemini =
-    role === "ADMIN" ||
-    pathname.startsWith("/agent/kpi-tracker") ||
-    pathname.startsWith("/agent/buy-leads") ||
-    pathname.startsWith("/carrier-resources");
 
   const iconCluster = (
     <div className="flex items-center gap-3">
@@ -545,18 +560,18 @@ export function TopBarActions({
 
   return (
     <>
-      {/* Desktop: search box (left) and utility icon cluster (right) are
-          two independently-anchored containers, not two flex children of
-          one "justify-between" row — each keeps its own fixed anchor so
-          neither depends on the other being present. */}
-      {!hideAskGemini && (
-        <div
-          className="absolute top-0 left-4 z-40 hidden items-center sm:left-6 lg:left-10 lg:flex"
-          style={{ height: HEADER_HEIGHT }}
-        >
-          <AiSearchBox />
-        </div>
-      )}
+      {/* Desktop: A.T.L.A.S.'s pill (left) and utility icon cluster (right)
+          are two independently-anchored containers, not two flex children
+          of one "justify-between" row — each keeps its own fixed anchor so
+          neither depends on the other being present. Now shown for every
+          role and every page (the small pill never collides with a page's
+          own heading the way the old wide search input sometimes did). */}
+      <div
+        className="absolute top-0 left-4 z-40 hidden items-center sm:left-6 lg:left-10 lg:flex"
+        style={{ height: HEADER_HEIGHT }}
+      >
+        <AtlasAssistant />
+      </div>
       {!isVault && (
         <div
           className="absolute top-0 right-4 z-40 hidden items-center sm:right-6 lg:right-10 lg:flex"

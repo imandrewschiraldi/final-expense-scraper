@@ -60,14 +60,14 @@ export const TOUR_SECTIONS: TourSection[] = [
         path: "/overview",
         selector: '[data-tour="sidebar-search"]',
         title: "Search Everything",
-        body: "One search box for the whole platform — leads/contacts, carriers, training lessons, and lead vendors, plus any page by name. Press ⌘K (Ctrl+K on Windows) to jump to it from anywhere.",
+        body: "One search box for the whole platform — leads/contacts, carriers, training lessons, and lead vendors, plus any page by name.",
       },
       {
         id: "ask-gemini",
         path: "/overview",
         selector: '[data-tour="ask-gemini-box"]',
-        title: "Ask Gemini",
-        body: "Type or dictate a question — underwriting/carrier-eligibility questions pull from the agency's own guidelines, everything else (industry terms, markets, lead vendors, and more) gets a live web search. Drag it anywhere on the page, and resize it from the bottom-right corner once a conversation's open.",
+        title: "Ask A.T.L.A.S.",
+        body: "Type or dictate a question — underwriting/carrier-eligibility questions pull from the agency's own guidelines, everything else (industry terms, markets, lead vendors, and more) gets a live web search. Press ⌘K (Ctrl+K on Windows) to open it from anywhere, and resize it from the bottom-right corner once a conversation's open.",
       },
       {
         id: "notification-bell",

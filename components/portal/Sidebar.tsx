@@ -428,20 +428,8 @@ function SidebarSearch({
   const [remoteResults, setRemoteResults] = useState<RemoteResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // ⌘K/Ctrl+K jumps to whichever copy of this is actually visible — mobile
-  // drawer and desktop sidebar both render one, but only one is ever
-  // on-screen at a time (the other's display:none, so .focus() on it is a
-  // no-op), so both listeners existing at once is harmless.
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  // ⌘K/Ctrl+K now opens Ask A.T.L.A.S. instead (see TopBarActions.tsx) —
+  // this box is still reachable by clicking it directly, same as before.
 
   // Real cross-platform search (leads/contacts, carriers, training, lead
   // vendors) — debounced so it's not firing on every keystroke. The

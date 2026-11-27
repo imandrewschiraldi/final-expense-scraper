@@ -6,8 +6,8 @@ import { Landmark, Send } from "lucide-react";
 // Locked to the button's own natural rendered width (measured, not a
 // guess) so swapping its content for an input never changes its footprint
 // — the whole point being this never grows, shrinks, or changes color the
-// way the header's "Ask Gemini" box (and this component's own earlier
-// versions) did.
+// way the header's Ask A.T.L.A.S. panel (and this component's own earlier
+// versions) does once it's open.
 const BUBBLE_WIDTH = "w-[188px]";
 
 /**
