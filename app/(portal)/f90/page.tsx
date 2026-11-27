@@ -12,7 +12,7 @@ export default async function F90Page() {
   const session = await auth();
   if (!session) redirect("/login");
 
-  const [user, salesCount] = await Promise.all([
+  const [user, salesCount, issuedPolicies] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
       select: { f90EnrolledAt: true, f90CompletedSteps: true },
@@ -22,11 +22,20 @@ export default async function F90Page() {
     // unlocking Phase 5, distinct from the $20,000 Issued AP graduation
     // standard, which is about issued premium specifically.
     db.policy.count({ where: { agentId: session.user.id } }),
+    db.policy.findMany({
+      where: { agentId: session.user.id, status: "ISSUED" },
+      select: { annualPremium: true },
+    }),
   ]);
 
   if (!user?.f90EnrolledAt) {
     redirect("/overview");
   }
+
+  const issuedAP = issuedPolicies.reduce(
+    (sum, p) => sum + Number(p.annualPremium),
+    0,
+  );
 
   return (
     <div className="pt-10 lg:pt-24">
@@ -34,6 +43,7 @@ export default async function F90Page() {
         enrolledAt={user.f90EnrolledAt.toISOString()}
         initialCompletedSteps={user.f90CompletedSteps}
         salesCount={salesCount}
+        issuedAP={issuedAP}
       />
     </div>
   );

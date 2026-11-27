@@ -39,6 +39,14 @@ export async function setPageLayoutBetaEnabled(enabled: boolean) {
   });
 }
 
+export async function setF90SignatureName(name: string | null) {
+  return db.agencySettings.upsert({
+    where: { id: SINGLETON_ID },
+    update: { f90SignatureName: name },
+    create: { id: SINGLETON_ID, f90SignatureName: name },
+  });
+}
+
 export async function setOverviewSubtitle(data: {
   text: string;
   color: OverviewSubtitleColor;

@@ -1101,6 +1101,11 @@ model AgencySettings {
   overviewSubtitleText      String                @default("Here's what's new across the agency since you last logged in.")
   overviewSubtitleColor     OverviewSubtitleColor @default(GRAY)
   overviewSubtitleBold      Boolean               @default(false)
+  /// Printed in cursive on the F90 Graduation Certificate (see
+  /// lib/certificate.ts) as "your digital signature as Agency Owner" —
+  /// null until an admin sets it on the Admin > F90 page, in which case
+  /// the certificate signs as the agency's own name instead of a person.
+  f90SignatureName          String?
   /// Master on/off for the rounded "overlay card" page shell (vs. today's
   /// full-bleed main column) — applies to every agent at once, same
   /// reasoning as leaderboardEnabled, rather than the old per-account

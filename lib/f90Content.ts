@@ -196,6 +196,27 @@ export function isF90StepKey(key: string): boolean {
   return F90_ALL_STEP_KEYS.includes(key);
 }
 
+// The Graduation Certificate's own trigger — $20,000+ Issued AP AND every
+// Phase 1-4 step checked off. Phase 5 is deliberately excluded: it's
+// already gated separately (5 sales or Day 90) and isn't part of what the
+// certificate itself certifies.
+export const F90_GRADUATION_AP = 20000;
+
+export function f90Phases1to4StepKeys(): string[] {
+  return F90_PHASES.filter((p) => p.key !== "P5").flatMap((p) =>
+    p.steps.map((s) => s.key),
+  );
+}
+
+export function f90IsEligibleForCertificate(
+  completedSteps: string[],
+  issuedAP: number,
+): boolean {
+  if (issuedAP < F90_GRADUATION_AP) return false;
+  const completedSet = new Set(completedSteps);
+  return f90Phases1to4StepKeys().every((k) => completedSet.has(k));
+}
+
 /** Calendar day the agent is currently on, 1-indexed from enrollment —
  *  Day 1 is the day they were enrolled. Never negative/zero. */
 export function f90DayNumber(enrolledAt: Date, now: Date = new Date()): number {

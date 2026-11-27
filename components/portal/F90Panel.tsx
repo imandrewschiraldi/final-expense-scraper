@@ -2,36 +2,69 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { Lock, GraduationCap } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import {
   F90_PHASES,
   F90_TOTAL_STEPS,
   F90_DAYS,
+  F90_GRADUATION_AP,
   f90DayNumber,
   f90IsGraduated,
   f90Phase5Unlocked,
+  f90IsEligibleForCertificate,
 } from "@/lib/f90Content";
 
 export function F90Panel({
   enrolledAt,
   initialCompletedSteps,
   salesCount,
+  issuedAP,
 }: {
   enrolledAt: string;
   initialCompletedSteps: string[];
   salesCount: number;
+  issuedAP: number;
 }) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(
     new Set(initialCompletedSteps),
   );
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [certError, setCertError] = useState<string | null>(null);
+  const [downloadingCert, setDownloadingCert] = useState(false);
 
   const enrolledDate = new Date(enrolledAt);
   const dayNumber = f90DayNumber(enrolledDate);
-  const graduated = f90IsGraduated(enrolledDate);
+  const pastDay90 = f90IsGraduated(enrolledDate);
   const pct = Math.round((completedSteps.size / F90_TOTAL_STEPS) * 100);
   const phase5Unlocked = f90Phase5Unlocked(salesCount, enrolledDate);
+  const certificateEligible = f90IsEligibleForCertificate(
+    [...completedSteps],
+    issuedAP,
+  );
+
+  async function downloadCertificate() {
+    setDownloadingCert(true);
+    setCertError(null);
+    try {
+      const res = await fetch("/api/portal/f90/certificate");
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setCertError(data?.error ?? "Couldn't generate the certificate.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "F90-Certificate.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingCert(false);
+    }
+  }
 
   async function toggleStep(stepKey: string, completed: boolean) {
     setSavingKey(stepKey);
@@ -72,10 +105,33 @@ export function F90Panel({
         automatically.
       </p>
 
+      {certificateEligible && (
+        <Card className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <GraduationCap className="metal-copper-text h-8 w-8 shrink-0" />
+            <div>
+              <p className="font-condensed text-sm font-extrabold tracking-wide text-white uppercase">
+                You&apos;ve graduated F90 University
+              </p>
+              <p className="text-sm text-muted">
+                ${Math.round(issuedAP).toLocaleString()} Issued AP, every Phase
+                1–4 step complete. Download your certificate.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {certError && <p className="text-sm text-red-light">{certError}</p>}
+            <Button onClick={downloadCertificate} disabled={downloadingCert}>
+              {downloadingCert ? "Generating…" : "Download Certificate"}
+            </Button>
+          </div>
+        </Card>
+      )}
+
       <Card className="mb-8">
         <div className="mb-2 flex items-center justify-between">
           <span className="font-condensed text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
-            {graduated ? "Graduated" : `Day ${dayNumber} of ${F90_DAYS}`}
+            {pastDay90 ? "Day 90+" : `Day ${dayNumber} of ${F90_DAYS}`}
           </span>
           <span className="metal-copper-text text-sm font-bold">
             {completedSteps.size}/{F90_TOTAL_STEPS} steps · {pct}%
@@ -91,6 +147,10 @@ export function F90Panel({
             }}
           />
         </div>
+        <p className="mt-2 text-xs text-muted">
+          Issued AP: ${Math.round(issuedAP).toLocaleString()} / $
+          {F90_GRADUATION_AP.toLocaleString()} toward graduation
+        </p>
       </Card>
 
       <div className="space-y-6">

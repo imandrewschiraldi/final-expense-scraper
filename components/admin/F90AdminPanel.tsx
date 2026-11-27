@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
 import { F90_TOTAL_STEPS, f90DayNumber, f90IsGraduated } from "@/lib/f90Content";
 
@@ -18,10 +19,34 @@ type Agent = {
  *  program — see lib/f90Content.ts for the curriculum itself and
  *  components/portal/F90Panel.tsx for the agent-facing interactive tab
  *  this enrollment unlocks. */
-export function F90AdminPanel({ initialAgents }: { initialAgents: Agent[] }) {
+export function F90AdminPanel({
+  initialAgents,
+  initialSignatureName,
+}: {
+  initialAgents: Agent[];
+  initialSignatureName: string | null;
+}) {
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [signatureName, setSignatureName] = useState(initialSignatureName ?? "");
+  const [savingSignature, setSavingSignature] = useState(false);
+  const [signatureSaved, setSignatureSaved] = useState(false);
+
+  async function saveSignatureName() {
+    setSavingSignature(true);
+    setSignatureSaved(false);
+    try {
+      const res = await fetch("/api/admin/f90/signature", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: signatureName }),
+      });
+      if (res.ok) setSignatureSaved(true);
+    } finally {
+      setSavingSignature(false);
+    }
+  }
 
   async function setEnrolled(agent: Agent, enroll: boolean) {
     setPendingId(agent.id);
@@ -56,6 +81,35 @@ export function F90AdminPanel({ initialAgents }: { initialAgents: Agent[] }) {
         own sidebar — the step-by-step licensing-to-production curriculum
         they work through and check off over their first 90 days.
       </p>
+
+      <Card className="mb-6 max-w-md">
+        <label className="font-condensed mb-1.5 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+          Certificate Signature Name
+        </label>
+        <p className="mb-2 text-xs text-muted">
+          Printed in cursive on the Graduation Certificate as your signature.
+          Left blank, the certificate signs as &quot;Tier 1 Financial&quot;
+          instead of a person.
+        </p>
+        <div className="flex items-center gap-2">
+          <Input
+            value={signatureName}
+            onChange={(e) => {
+              setSignatureName(e.target.value);
+              setSignatureSaved(false);
+            }}
+            placeholder="e.g. Jane Smith"
+          />
+          <Button
+            variant="secondary"
+            onClick={saveSignatureName}
+            disabled={savingSignature}
+          >
+            {savingSignature ? "Saving…" : signatureSaved ? "Saved" : "Save"}
+          </Button>
+        </div>
+      </Card>
+
       {error && <p className="mb-4 text-sm text-red-light">{error}</p>}
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-left text-sm">
@@ -87,7 +141,7 @@ export function F90AdminPanel({ initialAgents }: { initialAgents: Agent[] }) {
                     {!enrolledAt
                       ? "Not enrolled"
                       : f90IsGraduated(enrolledAt)
-                        ? "Graduated"
+                        ? "Day 90+"
                         : `Day ${f90DayNumber(enrolledAt)} of 90`}
                   </td>
                   <td className="px-4 py-3 text-muted">

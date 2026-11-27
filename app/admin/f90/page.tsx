@@ -1,20 +1,24 @@
 import { db } from "@/lib/db";
 import { F90AdminPanel } from "@/components/admin/F90AdminPanel";
+import { getAgencySettings } from "@/lib/agencySettings";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminF90Page() {
-  const agents = await db.user.findMany({
-    where: { role: { in: ["AGENT", "ADMIN"] }, active: true },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      f90EnrolledAt: true,
-      f90CompletedSteps: true,
-    },
-    orderBy: { name: "asc" },
-  });
+  const [agents, settings] = await Promise.all([
+    db.user.findMany({
+      where: { role: { in: ["AGENT", "ADMIN"] }, active: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        f90EnrolledAt: true,
+        f90CompletedSteps: true,
+      },
+      orderBy: { name: "asc" },
+    }),
+    getAgencySettings(),
+  ]);
 
   return (
     <div>
@@ -26,6 +30,7 @@ export default async function AdminF90Page() {
           ...a,
           f90EnrolledAt: a.f90EnrolledAt ? a.f90EnrolledAt.toISOString() : null,
         }))}
+        initialSignatureName={settings.f90SignatureName}
       />
     </div>
   );
