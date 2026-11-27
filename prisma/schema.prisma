@@ -253,8 +253,21 @@ model Lead {
   /// may not provide — never required to create or import a lead.
   email                   String?
   address                 String?
-  zip                     String?
+  city                    String?
   county                  String?
+  /// Two-letter or full country name, free text — this org's own leads
+  /// are overwhelmingly US-based, so this stays optional rather than a
+  /// required field defaulted to "US" everywhere.
+  country                 String?
+  zip                     String?
+  /// Only meaningful when `dateOfBirth` isn't known — a source that only
+  /// ever provides an age (not a full date of birth) still needs somewhere
+  /// to put it. Age is computed from `dateOfBirth` instead, wherever one
+  /// exists, rather than trusting this to stay in sync with it.
+  age                     Int?
+  employer                String?
+  mortgageLender          String?
+  mortgageAmount          String?
   beneficiary             String?
   beneficiaryRelationship String?
   gender                  String?

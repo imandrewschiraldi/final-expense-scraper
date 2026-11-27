@@ -13,8 +13,14 @@ export type ParsedLeadRow = {
   state: string;
   email?: string;
   address?: string;
-  zip?: string;
+  city?: string;
   county?: string;
+  country?: string;
+  zip?: string;
+  age?: number;
+  employer?: string;
+  mortgageLender?: string;
+  mortgageAmount?: string;
   beneficiary?: string;
   beneficiaryRelationship?: string;
   gender?: string;
@@ -201,8 +207,15 @@ export function parseLeadsCsv(
       record["address"] ??
       record["street address"] ??
       record["mailing address"];
-    const zip = record["zip"] ?? record["zip code"] ?? record["postal code"];
+    const city = record["city"];
     const county = record["county"];
+    const country = record["country"];
+    const zip = record["zip"] ?? record["zip code"] ?? record["postal code"];
+    const ageRaw = record["age"];
+    const employer = record["employer"];
+    const mortgageLender = record["mortgage lender"] ?? record["lender"];
+    const mortgageAmount =
+      record["mortgage amount"] ?? record["mortgage balance"];
     const beneficiary = record["beneficiary"] ?? record["beneficiary name"];
     const beneficiaryRelationship =
       record["beneficiary relationship"] ??
@@ -213,8 +226,7 @@ export function parseLeadsCsv(
     const weight = record["weight"];
     const tobaccoRaw =
       record["tobacco"] ?? record["tobacco use"] ?? record["smoker"];
-    const occupation =
-      record["occupation"] ?? record["job"] ?? record["employer"];
+    const occupation = record["occupation"] ?? record["job"];
     const income = record["income"] ?? record["annual income"];
     const existingCoverage =
       record["existing coverage"] ?? record["current coverage"];
@@ -275,6 +287,14 @@ export function parseLeadsCsv(
         ? /^(y|yes|true|1)$/i.test(tobaccoRaw.trim())
         : undefined;
 
+    // Only meaningful when dateOfBirth is absent (see the Lead model's own
+    // note on this field) — an unparseable value is just dropped rather
+    // than rejecting an otherwise-good row over it.
+    const parsedAge =
+      ageRaw && ageRaw.trim() && /^\d{1,3}$/.test(ageRaw.trim())
+        ? Number(ageRaw.trim())
+        : undefined;
+
     rows.push({
       line,
       firstName,
@@ -284,8 +304,14 @@ export function parseLeadsCsv(
       state,
       email: email?.trim() || undefined,
       address: address?.trim() || undefined,
-      zip: zip?.trim() || undefined,
+      city: city?.trim() || undefined,
       county: county?.trim() || undefined,
+      country: country?.trim() || undefined,
+      zip: zip?.trim() || undefined,
+      age: parsedAge,
+      employer: employer?.trim() || undefined,
+      mortgageLender: mortgageLender?.trim() || undefined,
+      mortgageAmount: mortgageAmount?.trim() || undefined,
       beneficiary: beneficiary?.trim() || undefined,
       beneficiaryRelationship: beneficiaryRelationship?.trim() || undefined,
       gender: gender?.trim() || undefined,
@@ -419,8 +445,14 @@ export async function importLeadsFromCsv(
         sourceImportId: importRecord.id,
         email: row.email,
         address: row.address,
-        zip: row.zip,
+        city: row.city,
         county: row.county,
+        country: row.country,
+        zip: row.zip,
+        age: row.age,
+        employer: row.employer,
+        mortgageLender: row.mortgageLender,
+        mortgageAmount: row.mortgageAmount,
         beneficiary: row.beneficiary,
         beneficiaryRelationship: row.beneficiaryRelationship,
         gender: row.gender,

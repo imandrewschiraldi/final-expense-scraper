@@ -71,6 +71,48 @@ type OpportunityLead = {
   assignedAgent: { name: string } | null;
   dateOfBirth: string | null;
   createdAt: string;
+  leadType: LeadType;
+  address: string | null;
+  city: string | null;
+  county: string | null;
+  country: string | null;
+  zip: string | null;
+  age: number | null;
+  employer: string | null;
+  mortgageLender: string | null;
+  mortgageAmount: string | null;
+};
+
+function leadAge(lead: OpportunityLead): string | null {
+  if (lead.dateOfBirth) {
+    const diffMs = Date.now() - new Date(lead.dateOfBirth).getTime();
+    return String(Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000)));
+  }
+  return lead.age != null ? String(lead.age) : null;
+}
+
+// One value-getter per toggleable field in FIELD_OPTIONS.LEAD (see
+// lib/bookOfBusinessFieldPrefs.ts) — shared by LeadCard's compact line and
+// the list view's own columns below, so adding a field only ever means
+// adding it in two places (there and here) instead of four.
+const LEAD_FIELD_VALUES: Record<
+  string,
+  (lead: OpportunityLead) => string | null
+> = {
+  leadType: (lead) => LEAD_TYPE_LABELS[lead.leadType],
+  phone: (lead) => lead.phone || null,
+  dateOfBirth: (lead) =>
+    lead.dateOfBirth ? new Date(lead.dateOfBirth).toLocaleDateString() : null,
+  age: leadAge,
+  address: (lead) => lead.address,
+  city: (lead) => lead.city,
+  state: (lead) => lead.state || null,
+  zip: (lead) => lead.zip,
+  county: (lead) => lead.county,
+  country: (lead) => lead.country,
+  employer: (lead) => lead.employer,
+  mortgageLender: (lead) => lead.mortgageLender,
+  mortgageAmount: (lead) => lead.mortgageAmount,
 };
 
 type OpportunityPolicy = SubmittedPolicy & {
@@ -123,21 +165,18 @@ function LeadCard({
       <p className="mt-1 text-sm font-semibold text-foreground">
         {formatCurrency(DEFAULT_LEAD_VALUE)}
       </p>
-      {(fields.includes("phone") ||
-        fields.includes("state") ||
-        fields.includes("dateOfBirth")) && (
-        <p className="mt-1.5 truncate text-xs text-muted">
-          {[
-            fields.includes("phone") && lead.phone,
-            fields.includes("state") && lead.state,
-            fields.includes("dateOfBirth") &&
-              lead.dateOfBirth &&
-              new Date(lead.dateOfBirth).toLocaleDateString(),
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
-      )}
+      {(() => {
+        const values = FIELD_OPTIONS.LEAD.filter((f) => fields.includes(f.key))
+          .map((f) => LEAD_FIELD_VALUES[f.key]?.(lead))
+          .filter((v): v is string => !!v);
+        return (
+          values.length > 0 && (
+            <p className="mt-1.5 truncate text-xs text-muted">
+              {values.join(" · ")}
+            </p>
+          )
+        );
+      })()}
     </div>
   );
 }
@@ -380,6 +419,11 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
   const visibleLeads = phase === "LEAD" ? (items as OpportunityLead[]) : [];
   const visiblePolicies =
     phase === "CLIENT" ? (items as OpportunityPolicy[]) : [];
+  // Which of the LEAD field toggles are on, in their canonical order — the
+  // list view's own set of optional columns (see LEAD_FIELD_VALUES above).
+  const leadListFields = FIELD_OPTIONS.LEAD.filter((f) =>
+    fields.includes(f.key),
+  );
 
   const columns = useMemo(() => {
     const grouped = new Map<string, (OpportunityLead | OpportunityPolicy)[]>();
@@ -704,22 +748,21 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Stage</th>
                 <th className="px-4 py-3">Value</th>
-                {fields.includes("phone") && (
-                  <th className="px-4 py-3">Phone</th>
-                )}
-                {fields.includes("state") && (
-                  <th className="px-4 py-3">State</th>
-                )}
-                {fields.includes("dateOfBirth") && (
-                  <th className="px-4 py-3">Date of Birth</th>
-                )}
+                {leadListFields.map((f) => (
+                  <th key={f.key} className="px-4 py-3">
+                    {f.label}
+                  </th>
+                ))}
                 <th className="px-4 py-3">Created</th>
               </tr>
             </thead>
             <tbody>
               {visibleLeads.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-muted">
+                  <td
+                    colSpan={4 + leadListFields.length}
+                    className="px-4 py-6 text-center text-muted"
+                  >
                     No opportunities in this pipeline yet.
                   </td>
                 </tr>
@@ -757,19 +800,11 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                   <td className="px-4 py-3 text-foreground">
                     {formatCurrency(DEFAULT_LEAD_VALUE)}
                   </td>
-                  {fields.includes("phone") && (
-                    <td className="px-4 py-3 text-muted">{lead.phone}</td>
-                  )}
-                  {fields.includes("state") && (
-                    <td className="px-4 py-3 text-muted">{lead.state}</td>
-                  )}
-                  {fields.includes("dateOfBirth") && (
-                    <td className="px-4 py-3 text-muted">
-                      {lead.dateOfBirth
-                        ? new Date(lead.dateOfBirth).toLocaleDateString()
-                        : "—"}
+                  {leadListFields.map((f) => (
+                    <td key={f.key} className="px-4 py-3 text-muted">
+                      {LEAD_FIELD_VALUES[f.key]?.(lead) ?? "—"}
                     </td>
-                  )}
+                  ))}
                   <td className="px-4 py-3 text-muted">
                     {new Date(lead.createdAt).toLocaleDateString()}
                   </td>

@@ -10,9 +10,19 @@ export const FIELD_OPTIONS: Record<
   { key: string; label: string }[]
 > = {
   LEAD: [
+    { key: "leadType", label: "Lead Type" },
     { key: "phone", label: "Phone" },
-    { key: "state", label: "State" },
     { key: "dateOfBirth", label: "Date of Birth" },
+    { key: "age", label: "Age" },
+    { key: "address", label: "Address" },
+    { key: "city", label: "City" },
+    { key: "state", label: "State" },
+    { key: "zip", label: "ZIP Code" },
+    { key: "county", label: "County" },
+    { key: "country", label: "Country" },
+    { key: "employer", label: "Employer" },
+    { key: "mortgageLender", label: "Mortgage Lender" },
+    { key: "mortgageAmount", label: "Mortgage Amount" },
   ],
   CLIENT: [
     { key: "phone", label: "Phone" },
