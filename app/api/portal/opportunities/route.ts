@@ -35,9 +35,14 @@ export async function GET(req: NextRequest) {
   const agentId = guard.session.user.id;
 
   if (phase === "LEAD") {
+    // Not isArchived: false — a Sold lead is the one case that flips
+    // isArchived true (see lib/vault.ts), and it should still sit in this
+    // pipeline's Sold stage rather than vanish from it. Selling it also
+    // adds a Policy to the matching Client pipeline (see
+    // /api/portal/policies' leadId handling) — the lead stays visible in
+    // both at once, same as the rest of the Lead statuses already do.
     const where: Prisma.LeadWhereInput = {
       leadType,
-      isArchived: false,
       assignedAgentId: agentId,
     };
     const leads = await db.lead.findMany({

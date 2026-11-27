@@ -933,10 +933,12 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
             defaultLeadType={leadType}
             prefillLead={soldLeadPrompt}
             onSubmitted={() => {
-              setLeads((prev) =>
-                prev.filter((l) => l.id !== soldLeadPrompt.id),
-              );
+              // The lead stays in this Lead pipeline (now sitting in its
+              // Sold stage) as well as showing up in the Client pipeline
+              // as its own new Policy — refetch rather than removing it
+              // locally, since the server just moved its stage/status.
               setSoldLeadPrompt(null);
+              loadOpportunities();
               loadCounts();
             }}
           />

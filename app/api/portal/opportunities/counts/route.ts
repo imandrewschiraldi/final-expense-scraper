@@ -17,7 +17,9 @@ export async function GET() {
   const [leadCounts, policyCounts] = await Promise.all([
     db.lead.groupBy({
       by: ["leadType"],
-      where: { isArchived: false, assignedAgentId: agentId },
+      // Not isArchived: false — see /api/portal/opportunities for why a
+      // Sold lead still counts here.
+      where: { assignedAgentId: agentId },
       _count: { _all: true },
     }),
     db.policy.groupBy({
