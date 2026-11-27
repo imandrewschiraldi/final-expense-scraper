@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { isF90StepKey } from "@/lib/f90Content";
+import { isF90StepKey, isF90ChannelKey } from "@/lib/f90Content";
 
 // Toggles one SOP step on/off for the current user's own F90 progress —
 // the page itself (app/(portal)/f90/page.tsx) already redirects away
@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const stepKey = typeof body?.stepKey === "string" ? body.stepKey : "";
   const completed = body?.completed === true;
-  if (!isF90StepKey(stepKey)) {
+  if (!isF90StepKey(stepKey) && !isF90ChannelKey(stepKey)) {
     return NextResponse.json({ error: "Invalid step" }, { status: 400 });
   }
 

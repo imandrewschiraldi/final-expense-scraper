@@ -1045,6 +1045,32 @@ h4,
     40px 150px;
 }
 
+/* F90 roadmap: the detail panel "zooming in" when a road stop is clicked,
+   and confetti pieces falling across the graduation view. */
+@keyframes f90-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-f90-panel-in {
+  animation: f90-panel-in 0.22s ease-out;
+}
+@keyframes f90-confetti-fall {
+  from {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(110vh) rotate(540deg);
+    opacity: 0.9;
+  }
+}
+
 .animate-lead-card-next {
   animation: lead-card-slide-from-right 0.16s ease-out;
 }

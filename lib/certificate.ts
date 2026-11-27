@@ -76,14 +76,18 @@ export async function generateF90Certificate(params: {
   const logoImage = await pdfDoc.embedPng(logoBytes);
   const logoWidth = 220;
   const logoHeight = logoWidth * (logoImage.height / logoImage.width);
+  // The inner border line sits at y = PAGE_HEIGHT - 34 = 578 — the logo used
+  // to span up past it (517 to ~596), so the border was drawn right through
+  // the top of the logo. Lower here clears both border lines with margin.
+  const logoY = PAGE_HEIGHT - 152;
   page.drawImage(logoImage, {
     x: centerX(PAGE_WIDTH, logoWidth),
-    y: PAGE_HEIGHT - 95,
+    y: logoY,
     width: logoWidth,
     height: logoHeight,
   });
 
-  let y = PAGE_HEIGHT - 150;
+  let y = logoY - 40;
 
   function line(
     text: string,

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { generateF90Certificate } from "@/lib/certificate";
@@ -8,7 +8,11 @@ import { getAgencySettings } from "@/lib/agencySettings";
 // Re-checks eligibility itself rather than trusting the client's own
 // computed state — the download link is just a plain GET, so anyone
 // signed in could otherwise hit this directly before actually qualifying.
-export async function GET() {
+// ?inline=1 is for displaying the certificate directly on the graduated
+// F90 page itself (an <iframe> or <embed>) — the plain attachment
+// disposition below is still what the panel's own blob-download button
+// uses, unaffected either way since that flow fetches and saves manually.
+export async function GET(req: NextRequest) {
   const guard = await requireAnyRole();
   if ("error" in guard) return guard.error;
 
@@ -51,10 +55,11 @@ export async function GET() {
   });
 
   const safeName = user.name.replace(/[^a-zA-Z0-9]+/g, "-");
+  const inline = req.nextUrl.searchParams.get("inline") === "1";
   return new NextResponse(Buffer.from(pdfBytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="F90-Certificate-${safeName}.pdf"`,
+      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="F90-Certificate-${safeName}.pdf"`,
     },
   });
 }
