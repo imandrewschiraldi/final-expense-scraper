@@ -147,7 +147,7 @@ export const F90_PHASES: F90Phase[] = [
         key: "P2_S2",
         title: "Purchase Your Dialer Seat",
         description:
-          "Purchase your dialer seat to get started in the Agent Accelerator Lead Program, prior to Monday's kickoff, so your phone line and Agent Accelerator Lead Program leads are ready to go. Once it's purchased, text your manager so it can be linked to Tier 1 Financial.",
+          "Purchase your dialer seat to get started in the Agent Accelerator Lead Program, prior to Monday's kickoff, so your phone line and Agent Accelerator Lead Program leads are ready to go. Once it's purchased, text your manager at (631) 708-6052 so it can be linked to Tier 1 Financial.",
         links: [CLOSERTEXT_LINK],
       },
       {
@@ -265,23 +265,23 @@ export const F90_PHASES: F90Phase[] = [
         description:
           "Purchase raw consumer data and run automated SMS drip campaigns to generate inbound callbacks and text replies.",
         benchmark: "iLoveLeads ($69/month + $0.01 per SMS)",
-        link: { label: "Get Started →", href: null },
+        link: { label: "See Trusted Lead Vendors →", href: "/agent/buy-leads" },
       },
       {
         key: "P5_S2",
         title: "Pre-Booked Appointments",
         description:
           "Purchase verified, pre-set calendar appointments so you focus strictly on running presentations and closing.",
-        benchmark: "$20–$25 per appointment (iLoveLeads & Leadspply)",
-        link: { label: "Get Started →", href: null },
+        benchmark: "$20–$25 per appointment",
+        link: { label: "See Trusted Lead Vendors →", href: "/agent/buy-leads" },
       },
       {
         key: "P5_S3",
         title: "Fresh Exclusive/Real-Time Leads",
         description:
           "Buy newly generated leads to dial immediately using your daily KPI cadence.",
-        benchmark: "FOMO Leads",
-        link: { label: "Get Started →", href: null },
+        benchmark: "Real-time leads",
+        link: { label: "See Trusted Lead Vendors →", href: "/agent/buy-leads" },
       },
       {
         key: "P5_S4",
