@@ -6,6 +6,7 @@ import { rangeSince } from "@/lib/dashboardRange";
 import { getAgencySettings } from "@/lib/agencySettings";
 import { resolveOverviewLayout } from "@/lib/overviewWidgets";
 import { getDownlineIds } from "@/lib/hierarchy";
+import { getOverviewTodo } from "@/lib/overviewTodo";
 import {
   generateDemoPolicies,
   generateDemoAgencyPolicies,
@@ -40,6 +41,7 @@ export async function GET() {
     widgetRows,
     recruitingUser,
     viewer,
+    todo,
   ] = await Promise.all([
     db.chatChannel
       .findMany({
@@ -112,6 +114,7 @@ export async function GET() {
       where: { id: userId },
       select: { demoModeEnabled: true },
     }),
+    getOverviewTodo(userId),
   ]);
 
   // Recruiting Radar is dropped from the layout entirely (not just left
@@ -253,6 +256,7 @@ export async function GET() {
       color: settings.overviewSubtitleColor,
       bold: settings.overviewSubtitleBold,
     },
+    todo,
     hallOfFame: {
       personal: {
         issuedAP: personalLifeAP,

@@ -60,6 +60,31 @@ const DEFAULT_SUBTITLE: Subtitle = {
   bold: false,
 };
 
+type OverviewTodo =
+  | { kind: "followUp"; text: string; href: string }
+  | { kind: "annualReview"; text: string; href: string }
+  | { kind: "meeting"; text: string; href: string; startAt: string };
+
+// followUp/annualReview read as a call to action (copper, bold); a plain
+// next-meeting line is informational, not something to act on, so it
+// stays styled like the agency subtitle it's standing in for.
+function todoClassName(kind: OverviewTodo["kind"]) {
+  return kind === "meeting"
+    ? "text-muted"
+    : "font-bold text-[var(--copper-metal-hi)]";
+}
+
+function formatMeetingTime(iso: string, timeZone?: string) {
+  return new Date(iso).toLocaleString("en-US", {
+    timeZone,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 type OverviewData = {
   messages: {
     id: string;
@@ -72,6 +97,7 @@ type OverviewData = {
   }[];
   newLessons: { id: string; title: string; moduleTitle: string }[];
   overviewSubtitle: Subtitle;
+  todo: OverviewTodo | null;
   hallOfFame: {
     personal: { issuedAP: number; targetAP: number };
     agency: { issuedAP: number; targetAP: number };
@@ -198,6 +224,7 @@ export function OverviewClient() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [timeZone, setTimeZone] = useState<string | undefined>(undefined);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor),
@@ -220,6 +247,21 @@ export function OverviewClient() {
       cancelled = true;
     };
   }, []);
+
+  // Only fetched when it's actually needed for the "next meeting" line
+  // below — the two other todo kinds (and the plain agency subtitle) have
+  // no time to format, so there's no reason to ask for this otherwise.
+  useEffect(() => {
+    if (data?.todo?.kind !== "meeting") return;
+    let cancelled = false;
+    fetch("/api/profile")
+      .then((res) => res.json())
+      .then((d) => !cancelled && setTimeZone(d?.profile?.timeZone || undefined))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [data?.todo?.kind]);
 
   const isAdmin = session?.user.role === "ADMIN";
   const name = session?.user.name?.split(" ")[0] ?? "there";
@@ -279,12 +321,23 @@ export function OverviewClient() {
             Welcome back, {name}
           </h1>
           <div className="mt-1.5 flex items-start gap-1.5">
-            <p
-              className={`text-sm ${subtitleClassName(subtitle.color, subtitle.bold)}`}
-              style={subtitleStyle(subtitle.color)}
-            >
-              {subtitle.text}
-            </p>
+            {data?.todo ? (
+              <Link
+                href={data.todo.href}
+                className={`text-sm hover:underline ${todoClassName(data.todo.kind)}`}
+              >
+                {data.todo.kind === "meeting"
+                  ? `${data.todo.text} — ${formatMeetingTime(data.todo.startAt, timeZone)}`
+                  : data.todo.text}
+              </Link>
+            ) : (
+              <p
+                className={`text-sm ${subtitleClassName(subtitle.color, subtitle.bold)}`}
+                style={subtitleStyle(subtitle.color)}
+              >
+                {subtitle.text}
+              </p>
+            )}
             {isAdmin && data && (
               <SubtitleEditor
                 current={subtitle}
