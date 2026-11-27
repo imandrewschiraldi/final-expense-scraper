@@ -29,14 +29,11 @@ import {
   Gauge,
   ChevronsLeft,
   ChevronsRight,
-  Maximize2,
-  Minimize2,
   Search,
   X,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { useWideLayout } from "@/lib/useWideLayout";
 import { ProfileMenu } from "@/components/portal/ProfileMenu";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
@@ -676,7 +673,6 @@ export function Sidebar({
   const [collapsed, setCollapsed] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(initialProfile);
   const [chatUnread, setChatUnread] = useState(false);
-  const [wide, setWide] = useWideLayout();
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -862,30 +858,6 @@ export function Sidebar({
           </Link>
           {!collapsed && (
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setWide(!wide)}
-                aria-label={
-                  wide
-                    ? "Use standard width"
-                    : "Use wide layout for large monitors"
-                }
-                title={
-                  wide
-                    ? "Use standard width"
-                    : "Use wide layout for large monitors"
-                }
-                className={cn(
-                  "transition-colors hover:text-foreground",
-                  wide ? "text-[var(--copper-metal)]" : "text-muted",
-                )}
-              >
-                {wide ? (
-                  <Minimize2 className="h-4 w-4" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" />
-                )}
-              </button>
               <button
                 type="button"
                 onClick={toggleCollapsed}

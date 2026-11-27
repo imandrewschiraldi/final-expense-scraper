@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const body = await req.json();
-  const { clientName, clientPhone, state, carrier, product, line, annualPremium, status, pipelineStageId, carrierPlanId } = body as {
+  const { clientName, clientPhone, state, carrier, product, line, annualPremium, status, pipelineStageId, carrierPlanId, notes, followUpAt } = body as {
     clientName?: string;
     clientPhone?: string;
     state?: string;
@@ -33,7 +33,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     status?: PolicyStatus;
     pipelineStageId?: string;
     carrierPlanId?: string | null;
+    notes?: string | null;
+    followUpAt?: string | null;
   };
+
+  let parsedFollowUpAt: Date | null | undefined;
+  if (followUpAt !== undefined) {
+    if (followUpAt === null || followUpAt === "") {
+      parsedFollowUpAt = null;
+    } else {
+      const parsed = new Date(followUpAt);
+      if (Number.isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "Invalid follow-up date" }, { status: 400 });
+      }
+      parsedFollowUpAt = parsed;
+    }
+  }
 
   if (status !== undefined && !POLICY_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
@@ -85,6 +100,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(carrierPlanId !== undefined ? { carrierPlanId } : {}),
       ...(shouldRecomputeCommission ? { commissionAmount } : {}),
       ...(syncedStageId !== undefined ? { pipelineStageId: syncedStageId } : {}),
+      ...(notes !== undefined ? { notes: notes?.trim() || null } : {}),
+      ...(parsedFollowUpAt !== undefined ? { followUpAt: parsedFollowUpAt } : {}),
       ...(effectiveStatus !== undefined
         ? {
             status: effectiveStatus,
