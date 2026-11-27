@@ -33,7 +33,7 @@ import {
   saveFieldPrefs,
   type BookOfBusinessPhase,
 } from "@/lib/bookOfBusinessFieldPrefs";
-import { AddLeadForm } from "@/components/portal/AddLeadForm";
+import { AddOpportunityForm } from "@/components/portal/AddOpportunityForm";
 import {
   PolicySubmitForm,
   type SubmittedPolicy,
@@ -887,7 +887,7 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
           title="Add Opportunity"
           maxWidthClassName="max-w-lg"
         >
-          <AddLeadForm
+          <AddOpportunityForm
             defaultLeadType={leadType}
             onAdded={() => {
               setShowAddForm(false);

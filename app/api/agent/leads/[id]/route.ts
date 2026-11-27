@@ -2,11 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
-import { computeVaultAwareStatusUpdate, agentHasVaultAccess, shouldLogContact } from "@/lib/vault";
+import { isLeadType } from "@/lib/leadType";
+import {
+  computeVaultAwareStatusUpdate,
+  agentHasVaultAccess,
+  shouldLogContact,
+} from "@/lib/vault";
 import { stageIdForSystemKey, getStageTarget } from "@/lib/pipelineSync";
 import { Prisma } from "@prisma/client";
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const guard = await requireAgent();
   if ("error" in guard) return guard.error;
 
@@ -19,8 +27,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const lead = await db.lead.findFirst({
     where: { id, OR: or },
     include: {
-      notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
-      contactLogEntries: { orderBy: { createdAt: "desc" }, include: { agent: { select: { name: true } } } },
+      notes: {
+        orderBy: { createdAt: "desc" },
+        include: { author: { select: { name: true } } },
+      },
+      contactLogEntries: {
+        orderBy: { createdAt: "desc" },
+        include: { agent: { select: { name: true } } },
+      },
     },
   });
 
@@ -31,13 +45,25 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json({ lead });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const guard = await requireAgent();
   if ("error" in guard) return guard.error;
 
   const { id } = await params;
   const body = await req.json();
-  const { status, pipelineStageId, firstName, lastName, phone, state, dateOfBirth } = body as {
+  const {
+    status,
+    pipelineStageId,
+    firstName,
+    lastName,
+    phone,
+    state,
+    dateOfBirth,
+    leadType,
+  } = body as {
     status?: LeadStatus;
     pipelineStageId?: string;
     firstName?: string;
@@ -45,15 +71,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     phone?: string;
     state?: string;
     dateOfBirth?: string;
+    leadType?: string;
   };
 
-  const isFieldEdit = firstName !== undefined || lastName !== undefined || phone !== undefined || state !== undefined || dateOfBirth !== undefined;
+  const isFieldEdit =
+    firstName !== undefined ||
+    lastName !== undefined ||
+    phone !== undefined ||
+    state !== undefined ||
+    dateOfBirth !== undefined ||
+    leadType !== undefined;
 
   if (status !== undefined && !LEAD_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
+  if (leadType !== undefined && !isLeadType(leadType)) {
+    return NextResponse.json({ error: "Invalid lead type" }, { status: 400 });
+  }
   if (status !== undefined && pipelineStageId !== undefined) {
-    return NextResponse.json({ error: "Provide either status or pipelineStageId, not both" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Provide either status or pipelineStageId, not both" },
+      { status: 400 },
+    );
   }
   if (status === undefined && pipelineStageId === undefined && !isFieldEdit) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
@@ -70,34 +109,51 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if (lead.isArchived) {
-    return NextResponse.json({ error: "This lead is locked and can no longer be updated" }, { status: 423 });
+    return NextResponse.json(
+      { error: "This lead is locked and can no longer be updated" },
+      { status: 423 },
+    );
   }
 
   // Editing lead details (as opposed to just changing status) is only
   // allowed on leads already assigned to this agent — never on a shared
   // Vault lead they haven't claimed yet.
   if (isFieldEdit && lead.assignedAgentId !== agentId) {
-    return NextResponse.json({ error: "You can only edit details on leads assigned to you" }, { status: 403 });
+    return NextResponse.json(
+      { error: "You can only edit details on leads assigned to you" },
+      { status: 403 },
+    );
   }
 
   const editData: Prisma.LeadUncheckedUpdateManyInput = {};
   if (isFieldEdit) {
     if (firstName !== undefined) {
       const trimmed = firstName.trim();
-      if (!trimmed) return NextResponse.json({ error: "First name is required" }, { status: 400 });
+      if (!trimmed)
+        return NextResponse.json(
+          { error: "First name is required" },
+          { status: 400 },
+        );
       editData.firstName = trimmed;
     }
     if (lastName !== undefined) editData.lastName = lastName.trim();
     if (phone !== undefined) {
       const normalized = phone.replace(/[^\d+]/g, "");
       if (normalized.length < 10) {
-        return NextResponse.json({ error: "A valid phone number is required" }, { status: 400 });
+        return NextResponse.json(
+          { error: "A valid phone number is required" },
+          { status: 400 },
+        );
       }
       editData.phone = normalized;
     }
     if (state !== undefined) {
       const trimmed = state.trim().toUpperCase();
-      if (!trimmed) return NextResponse.json({ error: "State is required" }, { status: 400 });
+      if (!trimmed)
+        return NextResponse.json(
+          { error: "State is required" },
+          { status: 400 },
+        );
       editData.state = trimmed;
     }
     if (dateOfBirth !== undefined) {
@@ -107,11 +163,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       } else {
         const parsed = new Date(dateOfBirth);
         if (Number.isNaN(parsed.getTime())) {
-          return NextResponse.json({ error: "Invalid date of birth" }, { status: 400 });
+          return NextResponse.json(
+            { error: "Invalid date of birth" },
+            { status: 400 },
+          );
         }
         editData.dateOfBirth = parsed;
       }
     }
+    // Book of Business's "Add Opportunity" moving an existing contact into
+    // a different product pipeline — a Lead only ever belongs to one at a
+    // time today, so this reassigns rather than adds a second membership.
+    if (leadType !== undefined) editData.leadType = leadType;
   }
 
   // The status this update resolves to for vault/contact-log purposes —
@@ -134,11 +197,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     statusData.pipelineStageId = pipelineStageId;
     if (target.systemKey) {
       effectiveStatus = target.systemKey as LeadStatus;
-      statusData = { ...statusData, ...computeVaultAwareStatusUpdate(effectiveStatus, lead, agentId) };
+      statusData = {
+        ...statusData,
+        ...computeVaultAwareStatusUpdate(effectiveStatus, lead, agentId),
+      };
     }
   }
 
-  const data: Prisma.LeadUncheckedUpdateManyInput = { ...editData, ...statusData };
+  const data: Prisma.LeadUncheckedUpdateManyInput = {
+    ...editData,
+    ...statusData,
+  };
 
   // Use updateMany with the same ownership/vault condition as the read
   // above so that if another agent claims this vault lead in between, this
@@ -149,18 +218,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   });
 
   if (result.count === 0) {
-    return NextResponse.json({ error: "This lead was just claimed by another agent" }, { status: 409 });
+    return NextResponse.json(
+      { error: "This lead was just claimed by another agent" },
+      { status: 409 },
+    );
   }
 
   if (effectiveStatus !== undefined && shouldLogContact(effectiveStatus)) {
-    await db.contactLogEntry.create({ data: { leadId: id, agentId, status: effectiveStatus } });
+    await db.contactLogEntry.create({
+      data: { leadId: id, agentId, status: effectiveStatus },
+    });
   }
 
   const updated = await db.lead.findUniqueOrThrow({
     where: { id },
     include: {
-      notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
-      contactLogEntries: { orderBy: { createdAt: "desc" }, include: { agent: { select: { name: true } } } },
+      notes: {
+        orderBy: { createdAt: "desc" },
+        include: { author: { select: { name: true } } },
+      },
+      contactLogEntries: {
+        orderBy: { createdAt: "desc" },
+        include: { agent: { select: { name: true } } },
+      },
     },
   });
 
@@ -173,7 +253,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
  * their book through normal admin assignment or the shared vault, even
  * though both look identical in "My Leads" otherwise.
  */
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const guard = await requireAgent();
   if ("error" in guard) return guard.error;
 
@@ -182,7 +265,11 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const lead = await db.lead.findUnique({
     where: { id },
-    select: { assignedAgentId: true, isArchived: true, sourceImport: { select: { uploadedById: true } } },
+    select: {
+      assignedAgentId: true,
+      isArchived: true,
+      sourceImport: { select: { uploadedById: true } },
+    },
   });
 
   if (!lead || lead.assignedAgentId !== agentId) {
@@ -190,11 +277,17 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
 
   if (lead.sourceImport?.uploadedById !== agentId) {
-    return NextResponse.json({ error: "You can only delete leads you imported yourself" }, { status: 403 });
+    return NextResponse.json(
+      { error: "You can only delete leads you imported yourself" },
+      { status: 403 },
+    );
   }
 
   if (lead.isArchived) {
-    return NextResponse.json({ error: "This lead is locked and can no longer be deleted" }, { status: 423 });
+    return NextResponse.json(
+      { error: "This lead is locked and can no longer be deleted" },
+      { status: 423 },
+    );
   }
 
   await db.lead.delete({ where: { id } });
