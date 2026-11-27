@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Bot, Mic, Send, X } from "lucide-react";
+import { Bot, Mic, Send, X, Volume2, VolumeX, Ear, EarOff } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
 import { ProfileMenu } from "@/components/portal/ProfileMenu";
 import { QuickLinksMenu } from "@/components/portal/QuickLinksMenu";
 import { ThemeMenu } from "@/components/portal/ThemeMenu";
+import * as atlasVoice from "@/lib/atlasVoice";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
 type Profile = { name: string; profileImageUrl: string | null };
@@ -142,6 +143,17 @@ function AtlasAssistant() {
   const listenBaseRef = useRef("");
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const atlasContext = useAtlasContext();
+  const voiceStatus = useSyncExternalStore(
+    atlasVoice.subscribe,
+    atlasVoice.getStatus,
+    () => "off" as atlasVoice.VoiceStatus,
+  );
+  const voiceMuted = useSyncExternalStore(
+    atlasVoice.subscribe,
+    atlasVoice.getMuted,
+    () => false,
+  );
+  const handsFreeOn = voiceStatus !== "off" && voiceStatus !== "unsupported";
 
   function clearSilenceTimer() {
     if (silenceTimerRef.current) {
@@ -209,6 +221,11 @@ function AtlasAssistant() {
           ...m,
           { role: "model", text: data.answer, sources: data.sources, records: data.records },
         ]);
+        // Spoken replies are a hands-free thing, not something every typed
+        // question triggers — speak() itself no-ops if Mute is on.
+        if (handsFreeOn && typeof data.answer === "string") {
+          atlasVoice.speak(data.answer, () => {});
+        }
       }
     } catch {
       setError("Couldn't reach A.T.L.A.S.");
@@ -216,6 +233,17 @@ function AtlasAssistant() {
       setLoading(false);
     }
   }
+
+  // Re-pointed at the latest closures after every render (no dependency
+  // array — openPanel/submitQuestion read refs, which aren't safe to
+  // invoke during render itself, so this has to run as an effect even
+  // though it's just a module-level variable assignment underneath).
+  useEffect(() => {
+    atlasVoice.setHandlers({
+      onWake: openPanel,
+      onCommand: (text) => void submitQuestion(text),
+    });
+  });
 
   // Feature-detected client-side only — not every browser (Firefox desktop,
   // notably) implements SpeechRecognition at all, so the mic button simply
@@ -337,9 +365,16 @@ function AtlasAssistant() {
   }
 
   const hasThread = messages.length > 0;
+  const voiceStatusLabel: Record<atlasVoice.VoiceStatus, string | null> = {
+    unsupported: null,
+    off: null,
+    standby: "Standby: say “Hey Atlas”",
+    capturing: "Listening…",
+    speaking: "Speaking…",
+  };
 
   return (
-    <div ref={containerRef} data-tour="ask-gemini-box" className="relative">
+    <div ref={containerRef} data-tour="ask-gemini-box" className="relative flex items-center gap-1.5">
       {/* Closed state: a small fixed-size trigger pill, never a wide text
           input sitting in the header's own flow — this is what lets
           A.T.L.A.S. render on every page/role without colliding with any
@@ -355,6 +390,53 @@ function AtlasAssistant() {
         <span>Ask A.T.L.A.S.</span>
         <span className="hidden text-[10px] text-muted/70 sm:inline">⌘K</span>
       </button>
+
+      {/* Hands-Free Mode: continuous background listening for "Hey Atlas"
+          across every page, and a separate Mute toggle for spoken replies
+          — two independent switches, same as the spec calls for (you can
+          want hands-free listening without spoken replies, or vice versa). */}
+      <button
+        type="button"
+        onClick={() =>
+          handsFreeOn ? atlasVoice.disableHandsFree() : atlasVoice.enableHandsFree()
+        }
+        aria-label={handsFreeOn ? "Turn off Hands-Free Mode" : "Turn on Hands-Free Mode"}
+        title={
+          voiceStatus === "unsupported"
+            ? "Hands-Free Mode isn't supported in this browser"
+            : handsFreeOn
+              ? "Turn off Hands-Free Mode"
+              : "Turn on Hands-Free Mode"
+        }
+        disabled={voiceStatus === "unsupported"}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors disabled:opacity-30 ${
+          handsFreeOn
+            ? "border-copper-dim-gradient metal-copper-text"
+            : "border-border text-muted hover:text-foreground"
+        }`}
+      >
+        {handsFreeOn ? (
+          <Ear className={`h-3.5 w-3.5 ${voiceStatus === "capturing" ? "animate-pulse" : ""}`} />
+        ) : (
+          <EarOff className="h-3.5 w-3.5" />
+        )}
+      </button>
+      {handsFreeOn && (
+        <button
+          type="button"
+          onClick={() => atlasVoice.toggleMute()}
+          aria-label={voiceMuted ? "Unmute spoken replies" : "Mute spoken replies"}
+          title={voiceMuted ? "Unmute spoken replies" : "Mute spoken replies"}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border text-muted transition-colors hover:text-foreground"
+        >
+          {voiceMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+        </button>
+      )}
+      {voiceStatusLabel[voiceStatus] && (
+        <span className="hidden text-[10px] text-muted sm:inline">
+          {voiceStatusLabel[voiceStatus]}
+        </span>
+      )}
 
       {open && (
         <div
