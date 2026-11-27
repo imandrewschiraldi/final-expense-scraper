@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { Lock } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import {
   F90_PHASES,
@@ -8,14 +10,17 @@ import {
   F90_DAYS,
   f90DayNumber,
   f90IsGraduated,
+  f90Phase5Unlocked,
 } from "@/lib/f90Content";
 
 export function F90Panel({
   enrolledAt,
   initialCompletedSteps,
+  salesCount,
 }: {
   enrolledAt: string;
   initialCompletedSteps: string[];
+  salesCount: number;
 }) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(
     new Set(initialCompletedSteps),
@@ -26,6 +31,7 @@ export function F90Panel({
   const dayNumber = f90DayNumber(enrolledDate);
   const graduated = f90IsGraduated(enrolledDate);
   const pct = Math.round((completedSteps.size / F90_TOTAL_STEPS) * 100);
+  const phase5Unlocked = f90Phase5Unlocked(salesCount, enrolledDate);
 
   async function toggleStep(stepKey: string, completed: boolean) {
     setSavingKey(stepKey);
@@ -98,39 +104,65 @@ export function F90Panel({
                 {phase.subtitle}
               </p>
             </div>
-            <div className="space-y-3">
-              {phase.steps.map((step) => {
-                const checked = completedSteps.has(step.key);
-                return (
-                  <label
-                    key={step.key}
-                    className="flex cursor-pointer items-start gap-3 rounded-[10px] border border-border bg-surface2/40 p-3 transition-colors hover:border-copper-dim-gradient"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={savingKey === step.key}
-                      onChange={(e) => toggleStep(step.key, e.target.checked)}
-                      className="mt-0.5 h-4 w-4 shrink-0"
-                    />
-                    <div>
-                      <p
-                        className={
-                          checked
-                            ? "text-sm font-semibold text-muted line-through"
-                            : "text-sm font-semibold text-white"
-                        }
-                      >
-                        {step.title}
-                      </p>
-                      <p className="mt-0.5 whitespace-pre-line text-sm text-muted">
-                        {step.description}
-                      </p>
+            {phase.key === "P5" && !phase5Unlocked ? (
+              <div className="flex items-start gap-3 rounded-[10px] border border-border bg-surface2/40 p-4">
+                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
+                <p className="text-sm text-muted">
+                  Locked until you&apos;ve closed 5 sales or reached Day 90 —
+                  you&apos;re at {salesCount} {salesCount === 1 ? "sale" : "sales"}{" "}
+                  and Day {dayNumber}.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {phase.steps.map((step) => {
+                  const checked = completedSteps.has(step.key);
+                  return (
+                    <div
+                      key={step.key}
+                      className="rounded-[10px] border border-border bg-surface2/40 p-3 transition-colors hover:border-copper-dim-gradient"
+                    >
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={savingKey === step.key}
+                          onChange={(e) => toggleStep(step.key, e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0"
+                        />
+                        <div>
+                          <p
+                            className={
+                              checked
+                                ? "text-sm font-semibold text-muted line-through"
+                                : "text-sm font-semibold text-white"
+                            }
+                          >
+                            {step.title}
+                          </p>
+                          <p className="mt-0.5 whitespace-pre-line text-sm text-muted">
+                            {step.description}
+                          </p>
+                        </div>
+                      </label>
+                      {step.links && (
+                        <div className="mt-3 ml-7 flex flex-wrap gap-2">
+                          {step.links.map((link) => (
+                            <Link
+                              key={link.href}
+                              href={link.href}
+                              className="metal-copper-text rounded-lg border border-border px-3 py-1.5 text-xs font-bold transition-colors hover:border-copper-dim-gradient"
+                            >
+                              {link.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </label>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         ))}
       </div>

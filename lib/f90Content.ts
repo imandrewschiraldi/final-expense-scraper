@@ -11,6 +11,10 @@ export type F90Step = {
   key: string;
   title: string;
   description: string;
+  // Deep-links straight to another tab instead of making the agent go
+  // find it while they're mid-call — only Phase 3's call workflow step
+  // uses this.
+  links?: { label: string; href: string }[];
 };
 
 export type F90Phase = {
@@ -104,12 +108,17 @@ export const F90_PHASES: F90Phase[] = [
         key: "P3_S2",
         title: "Call & Sales Execution Workflow",
         description:
-          "1. Open & Discover: Follow the approved call script to build rapport, establish urgency, and complete the Client Suitability Sheet (health history, medications, budget, and coverage goals) while on the phone.\n" +
+          "1. Open & Discover: Follow the approved call script to build rapport, establish urgency, and complete the Client Suitability Sheet (health history, medications, budget, and coverage goals) while on the phone — it's on the lead's own detail page, not here, since it's bound to that specific contact.\n" +
           "2. Field Underwrite: Enter the client's health profile and medications into the Underwriting Genie to identify pre-approved carriers.\n" +
           "3. Run Quotes: Open the Quote Tool and pull accurate rates for the approved carriers.\n" +
           "4. Present Options: Present 2 to 3 coverage tiers (Good, Better, Best) based on the client's budget and ask for the sale.\n" +
           "5. Access E-App: Once the client selects an option, open the carrier's e-application through the Carrier Resources portal and complete all required fields, payment details, and voice/email signatures.\n" +
           "6. Post-Call Submission: Hang up the phone, review the application for accuracy, and hit submit.",
+        links: [
+          { label: "Launch Underwriting Genie →", href: "/underwriting-genie" },
+          { label: "Open Quote Tool →", href: "/quoter" },
+          { label: "Go to Carrier Resources →", href: "/carrier-resources" },
+        ],
       },
     ],
   },
@@ -197,4 +206,15 @@ export function f90DayNumber(enrolledAt: Date, now: Date = new Date()): number {
 
 export function f90IsGraduated(enrolledAt: Date, now: Date = new Date()): boolean {
   return f90DayNumber(enrolledAt, now) > F90_DAYS;
+}
+
+/** Phase 5's own trigger — "5 closed sales OR Day 90," independent of
+ *  (and reached well before, in the common case) the $20,000 Issued AP
+ *  graduation standard that's the last step inside Phase 5 itself. */
+export function f90Phase5Unlocked(
+  salesCount: number,
+  enrolledAt: Date,
+  now: Date = new Date(),
+): boolean {
+  return salesCount >= 5 || f90DayNumber(enrolledAt, now) >= F90_DAYS;
 }

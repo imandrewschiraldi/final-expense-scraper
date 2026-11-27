@@ -292,6 +292,14 @@ model Lead {
   existingCoverage        String?
   coverageAmountRequested String?
   militaryBranch          String?
+  /// Health history and current medications, as the agent captures them
+  /// live on the F90 call workflow's "Client Suitability Sheet" step
+  /// (lib/f90Content.ts's P3_S2) — free text rather than a structured
+  /// list, same reasoning as the other supplemental fields above: sources
+  /// provide wildly different levels of detail, and the Underwriting
+  /// Genie's own medication/condition picker (an ephemeral lookup tool,
+  /// not persisted here) is what actually drives a carrier match.
+  medicalNotes            String?
   // Free-text notes carried over from the lead source/vendor at import
   // time — distinct from the `notes` relation below, which is the
   // in-app contact-note history agents write themselves.

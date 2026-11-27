@@ -48,8 +48,9 @@ type SpeechRecognitionWindow = typeof window & {
  * broad (not just insurance/underwriting — general work topics too, live-
  * searched), with one narrow exception: a specific person's carrier
  * eligibility routes to the agency's own underwriting guide instead.
- * Server-side key, the actual system prompt, and the "not your actual lead
- * data" disclaimer all live in the API route, not here.
+ * Server-side key and the actual system prompt live in the API route, not
+ * here — including which function-calling tools Gemini can reach for
+ * (CRM search, underwriting cross-reference, live web lookup).
  *
  * A small, fixed-position pill (not a wide text input sitting in the
  * header's own flow) is what lets this render on every page, every role,

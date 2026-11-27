@@ -12,10 +12,17 @@ export default async function F90Page() {
   const session = await auth();
   if (!session) redirect("/login");
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { f90EnrolledAt: true, f90CompletedSteps: true },
-  });
+  const [user, salesCount] = await Promise.all([
+    db.user.findUnique({
+      where: { id: session.user.id },
+      select: { f90EnrolledAt: true, f90CompletedSteps: true },
+    }),
+    // Every Policy row is a closed sale (created at submission, not just
+    // once issued) — matches the SOP's own "5 closed sales" wording for
+    // unlocking Phase 5, distinct from the $20,000 Issued AP graduation
+    // standard, which is about issued premium specifically.
+    db.policy.count({ where: { agentId: session.user.id } }),
+  ]);
 
   if (!user?.f90EnrolledAt) {
     redirect("/overview");
@@ -26,6 +33,7 @@ export default async function F90Page() {
       <F90Panel
         enrolledAt={user.f90EnrolledAt.toISOString()}
         initialCompletedSteps={user.f90CompletedSteps}
+        salesCount={salesCount}
       />
     </div>
   );

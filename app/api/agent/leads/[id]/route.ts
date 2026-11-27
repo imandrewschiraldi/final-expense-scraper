@@ -64,6 +64,13 @@ export async function PATCH(
     state,
     dateOfBirth,
     leadType,
+    income,
+    existingCoverage,
+    coverageAmountRequested,
+    height,
+    weight,
+    tobaccoUse,
+    medicalNotes,
   } = body as {
     status?: LeadStatus;
     pipelineStageId?: string;
@@ -73,6 +80,16 @@ export async function PATCH(
     state?: string;
     dateOfBirth?: string;
     leadType?: string;
+    // The Client Suitability Sheet (lib/f90Content.ts's P3_S2 step) — an
+    // agent captures these live, on the lead's own detail page, while
+    // actually on the call with them.
+    income?: string;
+    existingCoverage?: string;
+    coverageAmountRequested?: string;
+    height?: string;
+    weight?: string;
+    tobaccoUse?: boolean | null;
+    medicalNotes?: string;
   };
 
   const isFieldEdit =
@@ -81,7 +98,14 @@ export async function PATCH(
     phone !== undefined ||
     state !== undefined ||
     dateOfBirth !== undefined ||
-    leadType !== undefined;
+    leadType !== undefined ||
+    income !== undefined ||
+    existingCoverage !== undefined ||
+    coverageAmountRequested !== undefined ||
+    height !== undefined ||
+    weight !== undefined ||
+    tobaccoUse !== undefined ||
+    medicalNotes !== undefined;
 
   if (status !== undefined && !LEAD_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
@@ -176,6 +200,18 @@ export async function PATCH(
     // a different product pipeline — a Lead only ever belongs to one at a
     // time today, so this reassigns rather than adds a second membership.
     if (leadType !== undefined) editData.leadType = leadType;
+    // Client Suitability Sheet fields — a blank string clears the field,
+    // same as dateOfBirth above, rather than being rejected as invalid.
+    if (income !== undefined) editData.income = income.trim() || null;
+    if (existingCoverage !== undefined)
+      editData.existingCoverage = existingCoverage.trim() || null;
+    if (coverageAmountRequested !== undefined)
+      editData.coverageAmountRequested = coverageAmountRequested.trim() || null;
+    if (height !== undefined) editData.height = height.trim() || null;
+    if (weight !== undefined) editData.weight = weight.trim() || null;
+    if (tobaccoUse !== undefined) editData.tobaccoUse = tobaccoUse;
+    if (medicalNotes !== undefined)
+      editData.medicalNotes = medicalNotes.trim() || null;
   }
 
   // The status this update resolves to for vault/contact-log purposes —
