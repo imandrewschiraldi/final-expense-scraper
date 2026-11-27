@@ -129,6 +129,28 @@ const CRM_SEARCH_TOOL = {
   },
 };
 
+// A.T.L.A.S.'s second tool — live web search, now gated behind Gemini's
+// own decision rather than running on every single question regardless of
+// need (the previous design), specifically to conserve Firecrawl/LinkUp
+// credits. The description below is what used to be baked into
+// SYSTEM_INSTRUCTION as "every question gets searched" — now it's Gemini's
+// own call about when a question actually needs current/external data.
+const WEB_SEARCH_TOOL = {
+  name: "web_search",
+  description:
+    "Searches the live web for current, external information. Call this for anything you're not fully confident answering from training alone: lead vendors, current financial markets/stocks/crypto/housing, funeral/burial/cremation costs, annuities, mortgage protection, equity, business-building/sales topics, financial services more broadly, or any other question whose answer could have changed or that needs a real current figure. Skip it for things you already know confidently and simply (definitions, how something works, basic calculations, general advice) — only search when it would actually change or improve the answer, since each search has a real cost. Also skip it for a specific person's carrier-eligibility question (a condition/medication/age against carrier rules) — that's answered from the agency's own underwriting guide excerpts instead, not the web.",
+  parameters: {
+    type: "OBJECT",
+    properties: {
+      query: {
+        type: "STRING",
+        description: "The search query.",
+      },
+    },
+    required: ["query"],
+  },
+};
+
 async function searchCrm(
   agentId: string,
   query: string,
@@ -216,7 +238,7 @@ const SYSTEM_INSTRUCTION =
   "Route to the agency's own underwriting-guide excerpts (when the user message includes a block of them) whenever the question is about a specific person's eligibility — gender, age, a medical condition, prescription, or medication, which carrier(s)/product(s) would accept them, which carrier to use, or where they'd get approved. Those excerpts are this agency's own real, current carrier rules — the authoritative source for that kind of question. Use them directly (name the carrier/product you're quoting, no need to flag that you're using them) and treat them as the proof check that overrides the live web search findings for that question where the two disagree — the search findings can still fill in whatever the excerpts themselves don't address. " +
   "On that eligibility/carrier-matching question, don't limit yourself to one or two sentences — cover every carrier/product from the excerpts that could work, not just the single best one. Write it as natural, conversational sentences, the way you'd explain it out loud — grouping a carrier's own products together in one sentence instead of a bare bullet dump (short bullets are only OK if the full list is long enough that prose would get hard to follow) — but start a new line for each carrier instead of running them together in one paragraph, e.g.: \n\"Americo would approve him on the Eagle Premier at Standard.\nTransamerica's Trendsetter would also approve him, Preferred.\nEthos' term product would work too, Level.\" " +
   "Cover carriers in this order when more than one applies: Americo, Transamerica, Ethos, then Mutual of Omaha, then every other carrier from the excerpts in whatever order reads naturally — that first group is a fixed agency priority, not a suggestion. Name the tier each one lands in (Level, Preferred, Standard, Graded, Guaranteed Issue) and say what that tier means when it isn't the best one, plus any condition it comes with — a waiting period, a specific rating, a diagnosis-date cutoff, GI-only, etc. — instead of glossing over it. " +
-  "Every question is run through a live web search before you see it. When the user message includes a \"Live web search findings\" block, treat that as this turn's real, current search result and answer from it as your primary source — rather than from memory alone — for everything except the eligibility/carrier-matching case above, where the agency's own guide excerpts take priority instead. This covers lead vendors, insurance/financial industry terminology, current financial markets, stocks, crypto, housing markets, funeral/burial/cremation costs, annuities, mortgage protection, equity, business-building and sales topics, and financial services more broadly — not just insurance, and not just the eligibility case above. " +
+  "You have a web_search tool for current, external information (see its own description for when to call it and when not to bother) — call it yourself when a question needs it, rather than assuming you already have current data. When you do call it, treat the results as your primary source for that answer, rather than from memory alone, for everything except the eligibility/carrier-matching case above, where the agency's own guide excerpts take priority instead. " +
   "Don't cite sources or append links as backup for an answer — just give the straight, accurate answer itself. The one exception: when the answer IS a place to go do something — buy or renew a license, apply/sign up/register for something, a specific tool or site to use — include that one link right in the answer, since the link itself is what's being asked for, not a citation for it. " +
   "You have a search_crm tool that looks up the signed-in agent's own leads and client policies by name, phone, or email. Call it whenever the question is about a specific person who might be one of the agent's own contacts (pulling someone up by name, checking a phone number, whether someone's in their book, what policy/carrier someone has) — don't guess or make up CRM data yourself. If it returns no matches, say so plainly rather than inventing a result. When it does find someone, name them in your answer (e.g. \"Found her — Sarah Jenkins, ...\") since that name is how the app turns it into a clickable link for the agent; you don't need to include a path or URL yourself for this case. " +
   "Scope is broad, not insurance-only — treat any reasonable work topic as answerable rather than redirecting on subject matter. The only thing to decline or redirect for is content that's inappropriate for a work setting (profanity, weapons/violence, drugs, partying, or similar) — never redirect just because a question isn't about insurance.";
@@ -273,18 +295,16 @@ export async function POST(req: NextRequest) {
   // guide excerpts.
   const priorQuestions = history.filter((t) => t.role === "user").map((t) => t.text);
   const guideContext = buildUnderwritingContext([...priorQuestions, question].join(" "));
-  const searchResult = await liveSearch(question);
 
   const parts: string[] = [];
   if (contextLine) parts.push(contextLine);
   if (guideContext) parts.push(guideContext);
-  if (searchResult) parts.push(`Live web search findings for this question:\n${searchResult.contextText}`);
   parts.push(`Question: ${question}`);
   const userText = parts.join("\n\n");
 
   // `contents` grows in place across tool-call rounds below: a functionCall
   // part (what Gemini asked for) followed by a functionResponse part (what
-  // search_crm actually found), same shape Gemini's own docs use for
+  // the tool actually found), same shape Gemini's own docs use for
   // function calling, before asking it again for either another tool call
   // or its final text answer.
   const contents: Record<string, unknown>[] = [
@@ -294,10 +314,12 @@ export async function POST(req: NextRequest) {
 
   const allRecords: CrmRecord[] = [];
   let answer: string | undefined;
+  const allSources: Source[] = [];
 
-  // At most 3 rounds — one real tool call plus a little headroom, not an
-  // open-ended agent loop; this is a quick-reference box, not a task runner.
-  for (let round = 0; round < 3; round++) {
+  // At most 4 rounds — enough for both tools to get called in sequence
+  // plus a final answer, not an open-ended agent loop; this is a quick-
+  // reference box, not a task runner.
+  for (let round = 0; round < 4; round++) {
     let res: Response;
     try {
       res = await fetch(GEMINI_URL, {
@@ -306,7 +328,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
           contents,
-          tools: [{ functionDeclarations: [CRM_SEARCH_TOOL] }],
+          tools: [{ functionDeclarations: [CRM_SEARCH_TOOL, WEB_SEARCH_TOOL] }],
           generationConfig: { maxOutputTokens: 750, temperature: 0.3 },
         }),
       });
@@ -334,16 +356,38 @@ export async function POST(req: NextRequest) {
 
     if (functionCallPart) {
       const { name, args } = functionCallPart.functionCall;
-      const result =
-        name === "search_crm"
-          ? await searchCrm(guard.session.user.id, args?.query ?? "")
-          : { matches: [], records: [] };
-      allRecords.push(...result.records);
+      const query = args?.query ?? "";
       contents.push({ role: "model", parts: [{ functionCall: functionCallPart.functionCall }] });
-      contents.push({
-        role: "function",
-        parts: [{ functionResponse: { name, response: { matches: result.matches } } }],
-      });
+
+      if (name === "search_crm") {
+        const result = await searchCrm(guard.session.user.id, query);
+        allRecords.push(...result.records);
+        contents.push({
+          role: "function",
+          parts: [{ functionResponse: { name, response: { matches: result.matches } } }],
+        });
+      } else if (name === "web_search") {
+        const result = await liveSearch(query);
+        allSources.push(...(result?.sources ?? []));
+        contents.push({
+          role: "function",
+          parts: [
+            {
+              functionResponse: {
+                name,
+                response: result
+                  ? { findings: result.contextText }
+                  : { findings: "No results found." },
+              },
+            },
+          ],
+        });
+      } else {
+        contents.push({
+          role: "function",
+          parts: [{ functionResponse: { name, response: { error: "Unknown tool" } } }],
+        });
+      }
       continue;
     }
 
@@ -357,9 +401,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Didn't get a usable answer back. Try rephrasing the question." }, { status: 502 });
   }
 
-  // Dedupe by href — the same lead could come back across a couple of
-  // tool-call rounds (a follow-up question re-searching the same name).
+  // Dedupe by href/uri — the same lead or page could come back across a
+  // couple of tool-call rounds (a follow-up question re-searching the same
+  // thing).
   const records = Array.from(new Map(allRecords.map((r) => [r.href, r])).values());
+  const sources = Array.from(new Map(allSources.map((s) => [s.uri, s])).values());
 
-  return NextResponse.json({ answer, sources: searchResult?.sources ?? [], records });
+  return NextResponse.json({ answer, sources, records });
 }
