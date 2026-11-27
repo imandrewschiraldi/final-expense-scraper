@@ -82,13 +82,6 @@ const NAV_ITEMS: NavItem[] = [
     section: "overview",
   },
   {
-    href: "/calendar",
-    label: "Calendar",
-    icon: CalendarDays,
-    roles: ["ADMIN", "MANAGER", "AGENT"],
-    section: "overview",
-  },
-  {
     href: "/agency",
     label: "Agency Dashboard",
     icon: Building2,
@@ -134,6 +127,13 @@ const NAV_ITEMS: NavItem[] = [
     href: "/chat",
     label: "Team Chat",
     icon: MessagesSquare,
+    roles: ["ADMIN", "MANAGER", "AGENT"],
+    section: "team",
+  },
+  {
+    href: "/calendar",
+    label: "Calendar",
+    icon: CalendarDays,
     roles: ["ADMIN", "MANAGER", "AGENT"],
     section: "team",
   },
