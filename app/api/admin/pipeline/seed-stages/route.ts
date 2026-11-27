@@ -11,6 +11,13 @@ import { SEED_STAGES } from "@/lib/pipelineStages";
 // touches rows that don't already have a pipelineStageId/leadType set, so
 // re-running it (or running it again after an admin starts moving cards
 // around) never clobbers anything already in motion.
+//
+// A policy submitted with no linked Lead has no leadType to copy from —
+// confirmed with the account owner that every historical policy like this,
+// across every agent, was Veterans Final Expense, so those are defaulted
+// to it explicitly below rather than left permanently invisible in every
+// Client pipeline. Going forward this gap is closed at submit time instead
+// (PolicySubmitForm now requires picking a pipeline for a manual entry).
 export const maxDuration = 300;
 
 export async function POST() {
@@ -72,8 +79,17 @@ export async function POST() {
     `,
   );
 
+  // Whatever's left still null at this point has no Lead to copy from at
+  // all (a fully manual entry) — see the top-of-file note on why Veterans
+  // Final Expense is the right default for every one of these.
+  const defaultedResult = await db.policy.updateMany({
+    where: { leadType: null },
+    data: { leadType: "VETERANS_FINAL_EXPENSE" },
+  });
+
   return NextResponse.json({
     stagesSeeded: Object.keys(stageIds).length,
     policiesLeadTypeBackfilled: leadTypeResult,
+    policiesLeadTypeDefaulted: defaultedResult.count,
   });
 }

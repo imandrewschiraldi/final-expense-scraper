@@ -359,7 +359,8 @@ function SeedStagesButton() {
       }
       setResult(
         `Done — ${data.stagesSeeded} stages ready, ${data.policiesLeadTypeBackfilled} ` +
-          `${data.policiesLeadTypeBackfilled === 1 ? "policy" : "policies"} backfilled.`,
+          `${data.policiesLeadTypeBackfilled === 1 ? "policy" : "policies"} backfilled from their lead, ` +
+          `${data.policiesLeadTypeDefaulted} defaulted to Veterans Final Expense.`,
       );
     } catch {
       setResult("Setup failed.");
@@ -373,9 +374,10 @@ function SeedStagesButton() {
       <div>
         <p className="text-sm font-semibold text-white">One-time setup</p>
         <p className="text-xs text-muted">
-          Assigns every existing lead and policy to its matching stage above.
-          Safe to run more than once — never overwrites a stage that&apos;s
-          already been changed.
+          Assigns every existing lead and policy to its matching stage above. A
+          policy with no linked lead and no pipeline is defaulted to Veterans
+          Final Expense. Safe to run more than once — never overwrites a stage,
+          pipeline, or default that&apos;s already been set.
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
