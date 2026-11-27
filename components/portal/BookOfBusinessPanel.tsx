@@ -40,6 +40,7 @@ import {
   type CarrierWithPlans,
 } from "@/components/portal/PolicySubmitForm";
 import { PolicyEditForm } from "@/components/portal/PolicyEditForm";
+import { CarrierLogo } from "@/components/portal/CarrierLogo";
 
 // Every Lead-phase opportunity carries this flat standard value — leads
 // don't have a real dollar amount the way a submitted policy does, but a
@@ -274,6 +275,11 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  // Set instead of ever patching a Lead straight to a "Sold" stage — see
+  // isSoldStage below.
+  const [soldLeadPrompt, setSoldLeadPrompt] = useState<OpportunityLead | null>(
+    null,
+  );
 
   const router = useRouter();
   const sensors = useSensors(
@@ -330,6 +336,16 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
     () => new Map(stages.map((s) => [s.id, s])),
     [stages],
   );
+  // Moving a Lead onto a "Sold" stage — by drag or by the list dropdown —
+  // doesn't patch the stage directly. It pops the Submit Policy form open
+  // instead (prefilled from the lead), same as the user described: filling
+  // out and submitting that form is what actually moves the opportunity
+  // from the Lead pipeline to the matching Client pipeline (see
+  // /api/portal/policies' leadId handling). Closing the form without
+  // submitting leaves the lead exactly where it was.
+  function isSoldStage(stageId: string) {
+    return stagesById.get(stageId)?.systemKey === "SOLD";
+  }
   // "Search Opportunities" just matches on contact/client name — opportunity
   // here means the same thing GoHighLevel means by it: a lead (unsold) or a
   // client (sold), so this one search box covers both phases.
@@ -374,6 +390,10 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
       return;
 
     if (phase === "LEAD") {
+      if (isSoldStage(targetStageId)) {
+        setSoldLeadPrompt(current as OpportunityLead);
+        return;
+      }
       setLeads((prev) =>
         prev.map((l) =>
           l.id === itemId ? { ...l, pipelineStageId: targetStageId } : l,
@@ -419,6 +439,10 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
     lead: OpportunityLead,
     pipelineStageId: string,
   ) {
+    if (isSoldStage(pipelineStageId)) {
+      setSoldLeadPrompt(lead);
+      return;
+    }
     setUpdatingId(lead.id);
     const res = await fetch(`/api/agent/leads/${lead.id}`, {
       method: "PATCH",
@@ -705,9 +729,8 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                 <th className="px-4 py-3">Client</th>
                 <th className="px-4 py-3">Stage</th>
                 <th className="px-4 py-3">Value</th>
-                {fields.includes("carrier") && (
-                  <th className="px-4 py-3">Carrier</th>
-                )}
+                <th className="px-4 py-3">Carrier</th>
+                <th className="px-4 py-3">Commission</th>
                 {fields.includes("state") && (
                   <th className="px-4 py-3">State</th>
                 )}
@@ -722,7 +745,7 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
             <tbody>
               {visiblePolicies.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-6 text-center text-muted">
+                  <td colSpan={10} className="px-4 py-6 text-center text-muted">
                     No opportunities in this pipeline yet.
                   </td>
                 </tr>
@@ -762,9 +785,17 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
                     <td className="px-4 py-3 text-foreground">
                       {formatCurrency(p.annualPremium)}
                     </td>
-                    {fields.includes("carrier") && (
-                      <td className="px-4 py-3 text-muted">{p.carrier}</td>
-                    )}
+                    <td className="px-4 py-3 text-muted">
+                      <CarrierLogo
+                        name={p.carrier}
+                        className="h-5 w-auto object-contain"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-muted">
+                      {p.commissionAmount
+                        ? formatCurrency(p.commissionAmount)
+                        : "—"}
+                    </td>
                     {fields.includes("state") && (
                       <td className="px-4 py-3 text-muted">{p.state ?? "—"}</td>
                     )}
@@ -885,6 +916,28 @@ export function BookOfBusinessPanel({ isAgent }: { isAgent: boolean }) {
               );
               loadCounts();
               setEditingPolicy(null);
+            }}
+          />
+        </Modal>
+      )}
+
+      {soldLeadPrompt && (
+        <Modal
+          open
+          onClose={() => setSoldLeadPrompt(null)}
+          title="Submit Policy"
+          maxWidthClassName="max-w-lg"
+        >
+          <PolicySubmitForm
+            isAgent={isAgent}
+            defaultLeadType={leadType}
+            prefillLead={soldLeadPrompt}
+            onSubmitted={() => {
+              setLeads((prev) =>
+                prev.filter((l) => l.id !== soldLeadPrompt.id),
+              );
+              setSoldLeadPrompt(null);
+              loadCounts();
             }}
           />
         </Modal>

@@ -6,6 +6,7 @@ import { postDailySaleAnnouncement } from "@/lib/chatBot";
 import { resolveCommissionAmount } from "@/lib/commissionServer";
 import { generateDemoPolicies, demoPoliciesAsApiRows } from "@/lib/demoData";
 import { stageIdForSystemKey } from "@/lib/pipelineSync";
+import { computeVaultAwareStatusUpdate } from "@/lib/vault";
 import { isLeadType } from "@/lib/leadType";
 import { PolicyLine, PolicyStatus } from "@prisma/client";
 
@@ -28,7 +29,9 @@ export async function GET(req: NextRequest) {
       select: { name: true, demoModeEnabled: true },
     });
     if (user?.demoModeEnabled) {
-      return NextResponse.json({ policies: demoPoliciesAsApiRows(generateDemoPolicies(), user.name) });
+      return NextResponse.json({
+        policies: demoPoliciesAsApiRows(generateDemoPolicies(), user.name),
+      });
     }
   }
 
@@ -46,7 +49,19 @@ export async function POST(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { leadId, clientName, clientPhone, state, carrier, product, line, leadType, annualPremium, status, carrierPlanId } = body as {
+  const {
+    leadId,
+    clientName,
+    clientPhone,
+    state,
+    carrier,
+    product,
+    line,
+    leadType,
+    annualPremium,
+    status,
+    carrierPlanId,
+  } = body as {
     leadId?: string;
     clientName?: string;
     clientPhone?: string;
@@ -61,9 +76,17 @@ export async function POST(req: NextRequest) {
   };
   const resolvedLine: PolicyLine = line === "ANNUITY" ? "ANNUITY" : "LIFE";
 
-  if (!clientName?.trim() || !carrier?.trim() || !annualPremium || annualPremium <= 0) {
+  if (
+    !clientName?.trim() ||
+    !carrier?.trim() ||
+    !annualPremium ||
+    annualPremium <= 0
+  ) {
     return NextResponse.json(
-      { error: "Client name, carrier, and a positive annual premium are required" },
+      {
+        error:
+          "Client name, carrier, and a positive annual premium are required",
+      },
       { status: 400 },
     );
   }
@@ -77,7 +100,8 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date();
-  const resolvedStatus = status && POLICY_STATUSES.includes(status) ? status : "SUBMITTED";
+  const resolvedStatus =
+    status && POLICY_STATUSES.includes(status) ? status : "SUBMITTED";
   const resolvedCarrierPlanId = carrierPlanId || null;
   const commissionAmount = await resolveCommissionAmount({
     agentId: guard.session.user.id,
@@ -110,14 +134,38 @@ export async function POST(req: NextRequest) {
   });
 
   await db.policyStatusHistory.create({
-    data: { policyId: policy.id, fromStatus: null, toStatus: resolvedStatus, changedById: guard.session.user.id },
+    data: {
+      policyId: policy.id,
+      fromStatus: null,
+      toStatus: resolvedStatus,
+      changedById: guard.session.user.id,
+    },
   });
   if (guard.session.user.id) {
     await checkAndAwardGoals(guard.session.user.id);
   }
 
+  // Submitting a policy off a lead is what actually moves that opportunity
+  // from the Lead pipeline to the Client pipeline — the lead itself needs
+  // to transition to Sold here too, not just the new Policy row, or it'd
+  // keep sitting in both pipelines at once. A lead reached via "Link to a
+  // Sold Lead" is already Sold/archived, so this is a harmless no-op for
+  // it; a lead Book of Business just popped this form open for (marked
+  // Sold but not yet submitted) actually leaves the Lead pipeline here.
+  if (lead) {
+    const leadStageId = await stageIdForSystemKey("LEAD", "SOLD");
+    await db.lead.update({
+      where: { id: lead.id },
+      data: {
+        ...computeVaultAwareStatusUpdate("SOLD", lead, guard.session.user.id),
+        ...(leadStageId ? { pipelineStageId: leadStageId } : {}),
+      },
+    });
+  }
+
   await postDailySaleAnnouncement({
-    agentName: guard.session.user.name ?? guard.session.user.email ?? "An agent",
+    agentName:
+      guard.session.user.name ?? guard.session.user.email ?? "An agent",
     annualPremium,
     carrier: carrier.trim(),
   });

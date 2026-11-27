@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { PRODUCTS } from "@/lib/products";
-import type { LeadType } from "@/lib/leadType";
+import { LEAD_TYPES, LEAD_TYPE_LABELS, type LeadType } from "@/lib/leadType";
 
 const POLICY_STATUSES = ["SUBMITTED", "ISSUED", "CHARGEBACK"] as const;
 export type PolicyStatus = (typeof POLICY_STATUSES)[number];
@@ -18,7 +18,10 @@ const STATUS_LABELS: Record<PolicyStatus, string> = {
 const POLICY_LINES = ["LIFE", "ANNUITY"] as const;
 export type PolicyLine = (typeof POLICY_LINES)[number];
 
-const LINE_LABELS: Record<PolicyLine, string> = { LIFE: "Life", ANNUITY: "Annuity" };
+const LINE_LABELS: Record<PolicyLine, string> = {
+  LIFE: "Life",
+  ANNUITY: "Annuity",
+};
 
 export type SubmittedPolicy = {
   id: string;
@@ -37,18 +40,34 @@ export type SubmittedPolicy = {
   commissionAmount?: string | null;
 };
 
-type SoldLead = { id: string; firstName: string; lastName: string; phone: string; state: string };
+type SoldLead = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  state: string;
+  leadType: LeadType;
+};
 export type CarrierPlan = { id: string; name: string };
-export type CarrierWithPlans = { id: string; name: string; plans: CarrierPlan[] };
+export type CarrierWithPlans = {
+  id: string;
+  name: string;
+  plans: CarrierPlan[];
+};
 
 /** The plans for one named carrier, scoping a Rate Plan picker so it never
  *  shows another carrier's products (e.g. Ethos's products for a Corebridge
  *  sale). Matches case/whitespace-insensitively since free-text `carrier`
  *  values on older policies may not byte-match the Carrier record's name. */
-export function plansForCarrierName(carriers: CarrierWithPlans[], carrierName: string | null | undefined): CarrierPlan[] {
+export function plansForCarrierName(
+  carriers: CarrierWithPlans[],
+  carrierName: string | null | undefined,
+): CarrierPlan[] {
   if (!carrierName?.trim()) return [];
   const norm = carrierName.trim().toLowerCase();
-  return carriers.find((c) => c.name.trim().toLowerCase() === norm)?.plans ?? [];
+  return (
+    carriers.find((c) => c.name.trim().toLowerCase() === norm)?.plans ?? []
+  );
 }
 
 const emptyForm = {
@@ -62,11 +81,13 @@ const emptyForm = {
   annualPremium: "",
   status: "SUBMITTED" as PolicyStatus,
   carrierPlanId: "",
+  leadType: "" as LeadType | "",
 };
 
 export function PolicySubmitForm({
   isAgent,
   defaultLeadType,
+  prefillLead,
   onSubmitted,
 }: {
   isAgent: boolean;
@@ -75,16 +96,47 @@ export function PolicySubmitForm({
   // the linked lead's own leadType if one is picked below, same as the
   // server already does when a leadId is submitted without an explicit one.
   defaultLeadType?: LeadType;
+  // Seeds the form from a specific Lead up front — used when Book of
+  // Business pops this form open automatically because a Lead was just
+  // dragged/moved to a "Sold" stage (see BookOfBusinessPanel). Distinct
+  // from the "Link to a Sold Lead" picker below, which only lists leads
+  // already archived with status SOLD — this lead hasn't been marked sold
+  // yet; that only happens once this form is actually submitted (the
+  // server moves it out of the Lead pipeline at that point).
+  prefillLead?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    state: string;
+  };
   onSubmitted: (policy: SubmittedPolicy) => void;
 }) {
   const [soldLeads, setSoldLeads] = useState<SoldLead[]>([]);
   const [carriers, setCarriers] = useState<CarrierWithPlans[]>([]);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(() =>
+    prefillLead
+      ? {
+          ...emptyForm,
+          leadId: prefillLead.id,
+          clientName: `${prefillLead.firstName} ${prefillLead.lastName}`.trim(),
+          clientPhone: prefillLead.phone,
+          state: prefillLead.state,
+        }
+      : emptyForm,
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   // Off by default: pick a real carrier so the Rate Plan list below scopes
   // to it. Only drops to free text for a carrier that isn't set up yet.
   const [manualCarrier, setManualCarrier] = useState(false);
+  // Only the standalone Submit Policy page (no defaultLeadType, no
+  // prefillLead) needs to ask which pipeline a manually-entered policy
+  // belongs to — Book of Business always already knows (either the
+  // pipeline it was opened from, or the lead being moved to Sold), and a
+  // linked "sold lead" pick below always wins server-side regardless of
+  // what's chosen here.
+  const needsLeadTypePicker = !defaultLeadType && !prefillLead;
 
   useEffect(() => {
     if (isAgent) {
@@ -108,8 +160,14 @@ export function PolicySubmitForm({
 
   function onCarrierSelect(carrier: string) {
     setForm((f) => {
-      const stillValid = plansForCarrierName(carriers, carrier).some((p) => p.id === f.carrierPlanId);
-      return { ...f, carrier, carrierPlanId: stillValid ? f.carrierPlanId : "" };
+      const stillValid = plansForCarrierName(carriers, carrier).some(
+        (p) => p.id === f.carrierPlanId,
+      );
+      return {
+        ...f,
+        carrier,
+        carrierPlanId: stillValid ? f.carrierPlanId : "",
+      };
     });
   }
 
@@ -121,13 +179,22 @@ export function PolicySubmitForm({
       clientName: lead ? `${lead.firstName} ${lead.lastName}` : f.clientName,
       clientPhone: lead ? lead.phone : f.clientPhone,
       state: lead ? lead.state : f.state,
+      leadType: lead ? lead.leadType : f.leadType,
     }));
   }
 
   async function submitDeal() {
     setError(null);
-    if (!form.clientName.trim() || !form.carrier.trim() || !form.annualPremium) {
+    if (
+      !form.clientName.trim() ||
+      !form.carrier.trim() ||
+      !form.annualPremium
+    ) {
       setError("Client name, carrier, and annual premium are required.");
+      return;
+    }
+    if (needsLeadTypePicker && !form.leadType) {
+      setError("Pick which pipeline this policy belongs to.");
       return;
     }
     setSaving(true);
@@ -137,7 +204,7 @@ export function PolicySubmitForm({
       body: JSON.stringify({
         ...form,
         leadId: form.leadId || undefined,
-        leadType: defaultLeadType,
+        leadType: defaultLeadType ?? form.leadType ?? undefined,
         annualPremium: Number(form.annualPremium),
         carrierPlanId: form.carrierPlanId || undefined,
       }),
@@ -159,11 +226,34 @@ export function PolicySubmitForm({
           <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
             Link to a Sold Lead (optional)
           </label>
-          <Select value={form.leadId} onChange={(e) => onLeadSelect(e.target.value)}>
+          <Select
+            value={form.leadId}
+            onChange={(e) => onLeadSelect(e.target.value)}
+          >
             <option value="">— Manual entry —</option>
             {soldLeads.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.firstName} {l.lastName} ({l.state})
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
+      {needsLeadTypePicker && (
+        <div>
+          <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+            Pipeline
+          </label>
+          <Select
+            value={form.leadType}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, leadType: e.target.value as LeadType }))
+            }
+          >
+            <option value="">— Select Pipeline —</option>
+            {LEAD_TYPES.map((lt) => (
+              <option key={lt} value={lt}>
+                {LEAD_TYPE_LABELS[lt]}
               </option>
             ))}
           </Select>
@@ -180,7 +270,11 @@ export function PolicySubmitForm({
           value={form.clientPhone}
           onChange={(e) => setForm({ ...form, clientPhone: e.target.value })}
         />
-        <Input placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+        <Input
+          placeholder="State"
+          value={form.state}
+          onChange={(e) => setForm({ ...form, state: e.target.value })}
+        />
         {manualCarrier || carriers.length === 0 ? (
           <div className="flex gap-1.5">
             <Input
@@ -200,7 +294,10 @@ export function PolicySubmitForm({
           </div>
         ) : (
           <div className="flex gap-1.5">
-            <Select value={form.carrier} onChange={(e) => onCarrierSelect(e.target.value)}>
+            <Select
+              value={form.carrier}
+              onChange={(e) => onCarrierSelect(e.target.value)}
+            >
               <option value="">— Select Carrier —</option>
               {carriers.map((c) => (
                 <option key={c.id} value={c.name}>
@@ -224,7 +321,11 @@ export function PolicySubmitForm({
             // Picking the Annuities product defaults Line of Business to
             // Annuity too — still overridable below, just saves the extra
             // click on the common case.
-            setForm((f) => ({ ...f, product, line: product === "Annuities" ? "ANNUITY" : f.line }));
+            setForm((f) => ({
+              ...f,
+              product,
+              line: product === "Annuities" ? "ANNUITY" : f.line,
+            }));
           }}
         >
           <option value="">— Select Product —</option>
@@ -247,7 +348,12 @@ export function PolicySubmitForm({
         <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
           Line of Business
         </label>
-        <Select value={form.line} onChange={(e) => setForm({ ...form, line: e.target.value as PolicyLine })}>
+        <Select
+          value={form.line}
+          onChange={(e) =>
+            setForm({ ...form, line: e.target.value as PolicyLine })
+          }
+        >
           {POLICY_LINES.map((l) => (
             <option key={l} value={l}>
               {LINE_LABELS[l]}
@@ -261,9 +367,16 @@ export function PolicySubmitForm({
             Rate Plan (optional — drives Commissions Paid)
           </label>
           {plansForCarrier.length === 0 ? (
-            <p className="text-xs text-muted">No rate plans configured for {form.carrier} yet.</p>
+            <p className="text-xs text-muted">
+              No rate plans configured for {form.carrier} yet.
+            </p>
           ) : (
-            <Select value={form.carrierPlanId} onChange={(e) => setForm((f) => ({ ...f, carrierPlanId: e.target.value }))}>
+            <Select
+              value={form.carrierPlanId}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, carrierPlanId: e.target.value }))
+              }
+            >
               <option value="">— Not rated —</option>
               {plansForCarrier.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -278,7 +391,12 @@ export function PolicySubmitForm({
         <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
           Status
         </label>
-        <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as PolicyStatus })}>
+        <Select
+          value={form.status}
+          onChange={(e) =>
+            setForm({ ...form, status: e.target.value as PolicyStatus })
+          }
+        >
           {POLICY_STATUSES.map((s) => (
             <option key={s} value={s}>
               {STATUS_LABELS[s]}
@@ -288,7 +406,7 @@ export function PolicySubmitForm({
       </div>
       {error && <p className="text-sm text-red-light">{error}</p>}
       <Button onClick={submitDeal} disabled={saving}>
-        {saving ? "Submitting..." : "Submit Deal"}
+        {saving ? "Submitting..." : "Submit Policy"}
       </Button>
     </div>
   );
