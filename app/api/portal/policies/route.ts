@@ -6,6 +6,7 @@ import { postDailySaleAnnouncement } from "@/lib/chatBot";
 import { resolveCommissionAmount } from "@/lib/commissionServer";
 import { generateDemoPolicies, demoPoliciesAsApiRows } from "@/lib/demoData";
 import { stageIdForSystemKey } from "@/lib/pipelineSync";
+import { isLeadType } from "@/lib/leadType";
 import { PolicyLine, PolicyStatus } from "@prisma/client";
 
 const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
   if ("error" in guard) return guard.error;
 
   const body = await req.json();
-  const { leadId, clientName, clientPhone, state, carrier, product, line, annualPremium, status, carrierPlanId } = body as {
+  const { leadId, clientName, clientPhone, state, carrier, product, line, leadType, annualPremium, status, carrierPlanId } = body as {
     leadId?: string;
     clientName?: string;
     clientPhone?: string;
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
     carrier?: string;
     product?: string;
     line?: PolicyLine;
+    leadType?: string;
     annualPremium?: number;
     status?: PolicyStatus;
     carrierPlanId?: string;
@@ -93,7 +95,11 @@ export async function POST(req: NextRequest) {
       carrier: carrier.trim(),
       product: product?.trim() || null,
       line: resolvedLine,
-      leadType: lead?.leadType ?? null,
+      // A linked lead's own leadType always wins — it's the more specific
+      // signal (the "Link to a Sold Lead" picker isn't scoped to the
+      // pipeline the Add Opportunity form was opened from, so a selected
+      // lead could belong to a different product than the caller's leadType).
+      leadType: lead?.leadType ?? (isLeadType(leadType) ? leadType : null),
       pipelineStageId,
       annualPremium,
       status: resolvedStatus,

@@ -341,19 +341,69 @@ function PhaseColumn({
   );
 }
 
+function SeedStagesButton() {
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function run() {
+    setRunning(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/pipeline/seed-stages", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResult(data.error ?? "Setup failed.");
+        return;
+      }
+      setResult(
+        `Done — ${data.stagesSeeded} stages ready, ${data.policiesLeadTypeBackfilled} ` +
+          `${data.policiesLeadTypeBackfilled === 1 ? "policy" : "policies"} backfilled.`,
+      );
+    } catch {
+      setResult("Setup failed.");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <Card className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p className="text-sm font-semibold text-white">One-time setup</p>
+        <p className="text-xs text-muted">
+          Assigns every existing lead and policy to its matching stage above.
+          Safe to run more than once — never overwrites a stage that&apos;s
+          already been changed.
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        {result && <p className="text-xs text-muted">{result}</p>}
+        <Button onClick={run} disabled={running} variant="secondary">
+          {running ? "Running..." : "Run Setup"}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 export function PipelineStagesPanel() {
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <PhaseColumn
-        phase="LEAD"
-        title="Lead Stages"
-        description="Shared by My Leads, the Vault, and every lead pipeline (Mortgage Protection Leads, Final Expense Leads, ...)."
-      />
-      <PhaseColumn
-        phase="CLIENT"
-        title="Client Stages"
-        description="Shared by every client pipeline (Mortgage Protection Clients, Final Expense Clients, ...) once a policy is submitted."
-      />
+    <div className="space-y-8">
+      <SeedStagesButton />
+      <div className="grid gap-8 lg:grid-cols-2">
+        <PhaseColumn
+          phase="LEAD"
+          title="Lead Stages"
+          description="Shared by My Leads, the Vault, and every lead pipeline (Mortgage Protection Leads, Final Expense Leads, ...)."
+        />
+        <PhaseColumn
+          phase="CLIENT"
+          title="Client Stages"
+          description="Shared by every client pipeline (Mortgage Protection Clients, Final Expense Clients, ...) once a policy is submitted."
+        />
+      </div>
     </div>
   );
 }

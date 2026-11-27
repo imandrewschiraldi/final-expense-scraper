@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { PRODUCTS } from "@/lib/products";
+import type { LeadType } from "@/lib/leadType";
 
 const POLICY_STATUSES = ["SUBMITTED", "ISSUED", "CHARGEBACK"] as const;
 export type PolicyStatus = (typeof POLICY_STATUSES)[number];
@@ -65,9 +66,15 @@ const emptyForm = {
 
 export function PolicySubmitForm({
   isAgent,
+  defaultLeadType,
   onSubmitted,
 }: {
   isAgent: boolean;
+  // Pre-tags the policy with the pipeline it was added from (Book of
+  // Business's "+ Add Opportunity" on a Client pipeline) — overridden by
+  // the linked lead's own leadType if one is picked below, same as the
+  // server already does when a leadId is submitted without an explicit one.
+  defaultLeadType?: LeadType;
   onSubmitted: (policy: SubmittedPolicy) => void;
 }) {
   const [soldLeads, setSoldLeads] = useState<SoldLead[]>([]);
@@ -130,6 +137,7 @@ export function PolicySubmitForm({
       body: JSON.stringify({
         ...form,
         leadId: form.leadId || undefined,
+        leadType: defaultLeadType,
         annualPremium: Number(form.annualPremium),
         carrierPlanId: form.carrierPlanId || undefined,
       }),
