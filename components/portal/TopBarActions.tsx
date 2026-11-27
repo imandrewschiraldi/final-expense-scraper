@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Bot, Mic, Send, X } from "lucide-react";
 import { NotificationBell } from "@/components/agent/NotificationBell";
 import { HEADER_HEIGHT } from "@/components/portal/Sidebar";
@@ -13,7 +14,13 @@ type Role = "ADMIN" | "MANAGER" | "AGENT";
 type Profile = { name: string; profileImageUrl: string | null };
 
 type Source = { uri: string; title: string };
-type ChatTurn = { role: "user" | "model"; text: string; sources?: Source[] };
+type CrmRecord = { label: string; href: string };
+type ChatTurn = {
+  role: "user" | "model";
+  text: string;
+  sources?: Source[];
+  records?: CrmRecord[];
+};
 
 // Minimal ambient typing for the Web Speech API's SpeechRecognition — not
 // reliably present across TS's DOM lib versions, and the webkit-prefixed
@@ -200,7 +207,7 @@ function AtlasAssistant() {
       } else {
         setMessages((m) => [
           ...m,
-          { role: "model", text: data.answer, sources: data.sources },
+          { role: "model", text: data.answer, sources: data.sources, records: data.records },
         ]);
       }
     } catch {
@@ -400,6 +407,19 @@ function AtlasAssistant() {
                   {m.role === "user" ? "You" : "A.T.L.A.S."}
                 </p>
                 <p className="whitespace-pre-wrap text-foreground">{m.text}</p>
+                {m.records && m.records.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {m.records.map((r) => (
+                      <Link
+                        key={r.href + r.label}
+                        href={r.href}
+                        className="metal-copper-text rounded-full border border-border px-2.5 py-1 text-xs font-bold transition-colors hover:border-copper-dim-gradient"
+                      >
+                        {r.label} →
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             {loading && (

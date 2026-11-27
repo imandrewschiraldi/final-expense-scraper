@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { buildUnderwritingContext } from "@/lib/underwriting/aiContext";
+import { db } from "@/lib/db";
 
 // "-latest" alias instead of a pinned version (gemini-2.5-flash/2.0-flash
 // both now 404 — Google retires pinned versions) so this keeps working as
@@ -101,6 +102,115 @@ async function liveSearch(query: string): Promise<LiveSearchResult | null> {
   return null;
 }
 
+type CrmRecord = { label: string; href: string };
+
+// A.T.L.A.S.'s one real function-calling tool — search the signed-in
+// agent's own leads and client policies by name, phone, or email. Scoped
+// to the caller's own book regardless of role (same as every other
+// agent-facing query in this app, e.g. lib/agentLeads.ts), not an
+// agency-wide search, so this never surfaces another agent's book through
+// the assistant. Returns a handful of matches plus a deep link per record
+// — the one thing the assistant is told to put directly in its reply
+// (see SYSTEM_INSTRUCTION's existing "include that one link right in the
+// answer" rule), rather than a separate citations list.
+const CRM_SEARCH_TOOL = {
+  name: "search_crm",
+  description:
+    "Search the signed-in agent's own CRM — their leads/contacts and their client policies — by a person's name, phone number, or email. Use this whenever the question is about a specific person who might be in the agent's own book (\"pull up Sarah Jenkins\", \"what's John's phone number\", \"is she in my vault\", \"what policy does he have\"), not for general industry questions.",
+  parameters: {
+    type: "OBJECT",
+    properties: {
+      query: {
+        type: "STRING",
+        description: "The name, phone number, or email to search for.",
+      },
+    },
+    required: ["query"],
+  },
+};
+
+async function searchCrm(
+  agentId: string,
+  query: string,
+): Promise<{ matches: Record<string, unknown>[]; records: CrmRecord[] }> {
+  const q = query.trim();
+  if (!q) return { matches: [], records: [] };
+  const digits = q.replace(/\D/g, "");
+
+  const [leads, policies] = await Promise.all([
+    db.lead.findMany({
+      where: {
+        assignedAgentId: agentId,
+        OR: [
+          { firstName: { contains: q, mode: "insensitive" } },
+          { lastName: { contains: q, mode: "insensitive" } },
+          { email: { contains: q, mode: "insensitive" } },
+          ...(digits.length >= 4 ? [{ phone: { contains: digits } }] : []),
+        ],
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        state: true,
+        status: true,
+        dateOfBirth: true,
+      },
+      take: 5,
+    }),
+    db.policy.findMany({
+      where: {
+        agentId,
+        OR: [
+          { clientName: { contains: q, mode: "insensitive" } },
+          ...(digits.length >= 4 ? [{ clientPhone: { contains: digits } }] : []),
+        ],
+      },
+      select: {
+        id: true,
+        clientName: true,
+        carrier: true,
+        product: true,
+        status: true,
+        annualPremium: true,
+      },
+      take: 5,
+    }),
+  ]);
+
+  const records: CrmRecord[] = [];
+  const matches: Record<string, unknown>[] = [];
+
+  for (const l of leads) {
+    const name = `${l.firstName} ${l.lastName}`.trim();
+    records.push({ label: name, href: `/agent/leads/${l.id}` });
+    matches.push({
+      type: "lead",
+      name,
+      phone: l.phone,
+      state: l.state,
+      status: l.status,
+      dateOfBirth: l.dateOfBirth,
+      link: `/agent/leads/${l.id}`,
+    });
+  }
+  for (const p of policies) {
+    records.push({ label: p.clientName, href: "/book-of-business" });
+    matches.push({
+      type: "policy",
+      name: p.clientName,
+      carrier: p.carrier,
+      product: p.product,
+      status: p.status,
+      annualPremium: Number(p.annualPremium),
+      link: "/book-of-business",
+    });
+  }
+
+  return { matches, records };
+}
+
 const SYSTEM_INSTRUCTION =
   "You are a quick-reference assistant built into a final expense insurance agency's internal sales platform, surfaced from a header search box that supports follow-up questions in the same conversation. Answer directly and briefly — get straight to the point. No preamble, no restating the question, no disclaimers or caveats, no hedging about what you do or don't have access to. One or two sentences for most questions; a short list only when the question genuinely calls for one. Use the conversation history to understand follow-ups (\"what about...\", \"and if they also...\") without making the user repeat earlier details. " +
   "Route to the agency's own underwriting-guide excerpts (when the user message includes a block of them) whenever the question is about a specific person's eligibility — gender, age, a medical condition, prescription, or medication, which carrier(s)/product(s) would accept them, which carrier to use, or where they'd get approved. Those excerpts are this agency's own real, current carrier rules — the authoritative source for that kind of question. Use them directly (name the carrier/product you're quoting, no need to flag that you're using them) and treat them as the proof check that overrides the live web search findings for that question where the two disagree — the search findings can still fill in whatever the excerpts themselves don't address. " +
@@ -108,6 +218,7 @@ const SYSTEM_INSTRUCTION =
   "Cover carriers in this order when more than one applies: Americo, Transamerica, Ethos, then Mutual of Omaha, then every other carrier from the excerpts in whatever order reads naturally — that first group is a fixed agency priority, not a suggestion. Name the tier each one lands in (Level, Preferred, Standard, Graded, Guaranteed Issue) and say what that tier means when it isn't the best one, plus any condition it comes with — a waiting period, a specific rating, a diagnosis-date cutoff, GI-only, etc. — instead of glossing over it. " +
   "Every question is run through a live web search before you see it. When the user message includes a \"Live web search findings\" block, treat that as this turn's real, current search result and answer from it as your primary source — rather than from memory alone — for everything except the eligibility/carrier-matching case above, where the agency's own guide excerpts take priority instead. This covers lead vendors, insurance/financial industry terminology, current financial markets, stocks, crypto, housing markets, funeral/burial/cremation costs, annuities, mortgage protection, equity, business-building and sales topics, and financial services more broadly — not just insurance, and not just the eligibility case above. " +
   "Don't cite sources or append links as backup for an answer — just give the straight, accurate answer itself. The one exception: when the answer IS a place to go do something — buy or renew a license, apply/sign up/register for something, a specific tool or site to use — include that one link right in the answer, since the link itself is what's being asked for, not a citation for it. " +
+  "You have a search_crm tool that looks up the signed-in agent's own leads and client policies by name, phone, or email. Call it whenever the question is about a specific person who might be one of the agent's own contacts (pulling someone up by name, checking a phone number, whether someone's in their book, what policy/carrier someone has) — don't guess or make up CRM data yourself. If it returns no matches, say so plainly rather than inventing a result. When it does find someone, name them in your answer (e.g. \"Found her — Sarah Jenkins, ...\") since that name is how the app turns it into a clickable link for the agent; you don't need to include a path or URL yourself for this case. " +
   "Scope is broad, not insurance-only — treat any reasonable work topic as answerable rather than redirecting on subject matter. The only thing to decline or redirect for is content that's inappropriate for a work setting (profanity, weapons/violence, drugs, partying, or similar) — never redirect just because a question isn't about insurance.";
 
 const MAX_QUESTION_LENGTH = 500;
@@ -171,42 +282,84 @@ export async function POST(req: NextRequest) {
   parts.push(`Question: ${question}`);
   const userText = parts.join("\n\n");
 
-  const contents = [
+  // `contents` grows in place across tool-call rounds below: a functionCall
+  // part (what Gemini asked for) followed by a functionResponse part (what
+  // search_crm actually found), same shape Gemini's own docs use for
+  // function calling, before asking it again for either another tool call
+  // or its final text answer.
+  const contents: Record<string, unknown>[] = [
     ...history.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
     { role: "user", parts: [{ text: userText }] },
   ];
 
-  let res: Response;
-  try {
-    res = await fetch(GEMINI_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        contents,
-        generationConfig: { maxOutputTokens: 750, temperature: 0.3 },
-      }),
-    });
-  } catch (err) {
-    console.error("Gemini API request failed", err);
-    return NextResponse.json({ error: "Couldn't reach the AI assistant. Try again in a moment." }, { status: 502 });
+  const allRecords: CrmRecord[] = [];
+  let answer: string | undefined;
+
+  // At most 3 rounds — one real tool call plus a little headroom, not an
+  // open-ended agent loop; this is a quick-reference box, not a task runner.
+  for (let round = 0; round < 3; round++) {
+    let res: Response;
+    try {
+      res = await fetch(GEMINI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+          contents,
+          tools: [{ functionDeclarations: [CRM_SEARCH_TOOL] }],
+          generationConfig: { maxOutputTokens: 750, temperature: 0.3 },
+        }),
+      });
+    } catch (err) {
+      console.error("Gemini API request failed", err);
+      return NextResponse.json({ error: "Couldn't reach the AI assistant. Try again in a moment." }, { status: 502 });
+    }
+
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error("Gemini API error", res.status, detail);
+      const error =
+        res.status === 429
+          ? "The AI assistant has hit its usage limit for now. Check the Gemini API plan/billing — this won't clear on its own until quota resets."
+          : "Couldn't reach the AI assistant. Try again in a moment.";
+      return NextResponse.json({ error }, { status: 502 });
+    }
+
+    const data = await res.json();
+    const responseParts: Array<Record<string, unknown>> =
+      data?.candidates?.[0]?.content?.parts ?? [];
+    const functionCallPart = responseParts.find((p) => p.functionCall) as
+      | { functionCall: { name: string; args?: { query?: string } } }
+      | undefined;
+
+    if (functionCallPart) {
+      const { name, args } = functionCallPart.functionCall;
+      const result =
+        name === "search_crm"
+          ? await searchCrm(guard.session.user.id, args?.query ?? "")
+          : { matches: [], records: [] };
+      allRecords.push(...result.records);
+      contents.push({ role: "model", parts: [{ functionCall: functionCallPart.functionCall }] });
+      contents.push({
+        role: "function",
+        parts: [{ functionResponse: { name, response: { matches: result.matches } } }],
+      });
+      continue;
+    }
+
+    answer = responseParts.find((p) => typeof p.text === "string")?.text as
+      | string
+      | undefined;
+    break;
   }
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    console.error("Gemini API error", res.status, detail);
-    const error =
-      res.status === 429
-        ? "The AI assistant has hit its usage limit for now. Check the Gemini API plan/billing — this won't clear on its own until quota resets."
-        : "Couldn't reach the AI assistant. Try again in a moment.";
-    return NextResponse.json({ error }, { status: 502 });
-  }
-
-  const data = await res.json();
-  const answer: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!answer) {
     return NextResponse.json({ error: "Didn't get a usable answer back. Try rephrasing the question." }, { status: 502 });
   }
 
-  return NextResponse.json({ answer, sources: searchResult?.sources ?? [] });
+  // Dedupe by href — the same lead could come back across a couple of
+  // tool-call rounds (a follow-up question re-searching the same name).
+  const records = Array.from(new Map(allRecords.map((r) => [r.href, r])).values());
+
+  return NextResponse.json({ answer, sources: searchResult?.sources ?? [], records });
 }
