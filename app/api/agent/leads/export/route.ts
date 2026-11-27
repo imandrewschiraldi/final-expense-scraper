@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { buildAgentLeadsWhere, AGENT_LEADS_ORDER_BY } from "@/lib/agentLeads";
 import { LEAD_STATUS_LABELS } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS } from "@/lib/leadType";
+import { getStageTarget } from "@/lib/pipelineSync";
 import { formatPhone } from "@/lib/formatPhone";
 import { formatDob } from "@/lib/formatDob";
 
@@ -15,15 +16,28 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
+  const pipelineStageId = searchParams.get("pipelineStageId");
   const archived = searchParams.get("archived") === "true";
   const state = searchParams.get("state");
+
+  let pipelineStageSystemKey: string | null = null;
+  if (pipelineStageId) {
+    const target = await getStageTarget(pipelineStageId);
+    if (!target || target.phase !== "LEAD") {
+      return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
+    }
+    pipelineStageSystemKey = target.systemKey;
+  }
 
   const leads = await db.lead.findMany({
     where: buildAgentLeadsWhere(guard.session.user.id, {
       status,
+      pipelineStageId,
+      pipelineStageSystemKey,
       archived,
       state,
     }),
+    include: { pipelineStage: { select: { name: true } } },
     orderBy: AGENT_LEADS_ORDER_BY,
   });
 
@@ -37,7 +51,7 @@ export async function GET(req: NextRequest) {
       State: lead.state,
       "Date of Birth": formatDob(lead.dateOfBirth),
       "Lead Type": LEAD_TYPE_LABELS[lead.leadType],
-      Status: LEAD_STATUS_LABELS[lead.status],
+      Status: lead.pipelineStage?.name ?? LEAD_STATUS_LABELS[lead.status],
       "Assigned At": lead.assignedAt
         ? format(lead.assignedAt, "MM/dd/yyyy")
         : "",

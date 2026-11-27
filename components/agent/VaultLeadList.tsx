@@ -22,6 +22,7 @@ type Lead = {
   status: LeadStatus;
   leadType: LeadType;
   createdAt: string;
+  pipelineStage: { name: string; systemKey: string | null } | null;
 };
 
 type StateCount = { state: string; count: number };
@@ -143,7 +144,7 @@ export function VaultLeadList() {
                   {format(new Date(lead.createdAt), "MM/dd/yyyy")}
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={lead.status} />
+                  <StatusBadge status={lead.status} pipelineStage={lead.pipelineStage} />
                 </td>
               </tr>
             ))}

@@ -59,14 +59,7 @@ function LeadTypeBanner({ leadType }: { leadType: LeadType }) {
   return null;
 }
 
-const STATUS_OPTIONS: LeadStatus[] = [
-  "NEW",
-  "CONTACTED",
-  "NO_ANSWER",
-  "APPOINTMENT_BOOKING",
-  "SOLD",
-  "NOT_INTERESTED",
-];
+type PipelineStage = { id: string; name: string; systemKey: string | null };
 
 type Note = {
   id: string;
@@ -91,6 +84,7 @@ type Lead = {
   state: string;
   dateOfBirth: string | null;
   status: LeadStatus;
+  pipelineStage: PipelineStage | null;
   leadType: LeadType;
   isArchived: boolean;
   isVaulted: boolean;
@@ -174,6 +168,17 @@ export function LeadDetailPanel({
   const [noteBody, setNoteBody] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The admin's own Lead-phase pipeline — same dynamic list Book of
+  // Business and My Leads already move leads through, so a custom stage
+  // shows up as a pickable option here too.
+  const [stages, setStages] = useState<PipelineStage[]>([]);
+
+  useEffect(() => {
+    fetch("/api/portal/pipeline-stages?phase=LEAD")
+      .then((res) => res.json())
+      .then((data) => setStages(data.stages))
+      .catch(() => {});
+  }, []);
 
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -218,13 +223,13 @@ export function LeadDetailPanel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [prevHref, nextHref, router]);
 
-  async function updateStatus(status: LeadStatus) {
+  async function moveStage(stageId: string) {
     setSaving(true);
     setError(null);
     const res = await fetch(`/api/agent/leads/${lead.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ pipelineStageId: stageId }),
     });
     const data = await res.json();
     setSaving(false);
@@ -235,6 +240,7 @@ export function LeadDetailPanel({
     setLead((prev) => ({
       ...prev,
       status: data.lead.status,
+      pipelineStage: data.lead.pipelineStage,
       isArchived: data.lead.isArchived,
       isVaulted: data.lead.isVaulted,
       contactLogEntries: data.lead.contactLogEntries,
@@ -483,8 +489,9 @@ export function LeadDetailPanel({
         {!editing &&
           (lead.isArchived ? (
             <p className="rounded-[10px] border border-border bg-surface2 p-3 text-sm text-muted">
-              This lead is {LEAD_STATUS_LABELS[lead.status].toLowerCase()} and
-              locked — it has exited your active pool.
+              This lead is{" "}
+              {(lead.pipelineStage?.name ?? LEAD_STATUS_LABELS[lead.status]).toLowerCase()}{" "}
+              and locked — it has exited your active pool.
             </p>
           ) : (
             <div>
@@ -492,19 +499,26 @@ export function LeadDetailPanel({
                 Update Status
               </label>
               <div className="flex flex-wrap gap-2">
-                {STATUS_OPTIONS.map((status) => (
-                  <Button
-                    key={status}
-                    variant="secondary"
-                    disabled={saving}
-                    onClick={() => updateStatus(status)}
-                    className={cn(
-                      status === lead.status && "btn-metal-copper-active",
-                    )}
-                  >
-                    {LEAD_STATUS_LABELS[status]}
-                  </Button>
-                ))}
+                {stages.map((stage) => {
+                  // A not-yet-migrated lead has no pipelineStageId yet —
+                  // fall back to matching the stage whose systemKey equals
+                  // its legacy status, same dual-match the PATCH route and
+                  // list filters already use.
+                  const isActive = lead.pipelineStage
+                    ? stage.id === lead.pipelineStage.id
+                    : stage.systemKey === lead.status;
+                  return (
+                    <Button
+                      key={stage.id}
+                      variant="secondary"
+                      disabled={saving}
+                      onClick={() => moveStage(stage.id)}
+                      className={cn(isActive && "btn-metal-copper-active")}
+                    >
+                      {stage.name}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
           ))}

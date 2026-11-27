@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { buildAgentLeadsWhere, AGENT_LEADS_ORDER_BY } from "@/lib/agentLeads";
 import { isLeadType } from "@/lib/leadType";
 import { generateUniqueLeadNumbers } from "@/lib/leadNumber";
-import { stageIdForSystemKey } from "@/lib/pipelineSync";
+import { stageIdForSystemKey, getStageTarget } from "@/lib/pipelineSync";
 
 export async function GET(req: NextRequest) {
   const guard = await requireAgent();
@@ -12,17 +12,30 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
+  const pipelineStageId = searchParams.get("pipelineStageId");
   const archived = searchParams.get("archived") === "true";
   const state = searchParams.get("state");
   const q = searchParams.get("q");
 
+  let pipelineStageSystemKey: string | null = null;
+  if (pipelineStageId) {
+    const target = await getStageTarget(pipelineStageId);
+    if (!target || target.phase !== "LEAD") {
+      return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
+    }
+    pipelineStageSystemKey = target.systemKey;
+  }
+
   const leads = await db.lead.findMany({
     where: buildAgentLeadsWhere(guard.session.user.id, {
       status,
+      pipelineStageId,
+      pipelineStageSystemKey,
       archived,
       state,
       q,
     }),
+    include: { pipelineStage: { select: { name: true, systemKey: true } } },
     orderBy: AGENT_LEADS_ORDER_BY,
     // A contact search only needs enough to list and pick a result —
     // capped so a broad query (e.g. a common first name) can't return an

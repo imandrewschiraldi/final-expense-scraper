@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import { AgentLeadImportForm } from "@/components/agent/AgentLeadImportForm";
 import { cn } from "@/lib/cn";
-import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
+import { LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 import { formatPhone, telHref } from "@/lib/formatPhone";
 import { formatDob } from "@/lib/formatDob";
+
+type PipelineStage = { id: string; name: string; systemKey: string | null };
 
 type Lead = {
   id: string;
@@ -21,6 +23,7 @@ type Lead = {
   dateOfBirth: string | null;
   status: LeadStatus;
   leadType: LeadType;
+  pipelineStage: PipelineStage | null;
 };
 
 const LEAD_TYPE_SHORT_LABELS: Record<LeadType, string> = {
@@ -31,21 +34,12 @@ const LEAD_TYPE_SHORT_LABELS: Record<LeadType, string> = {
   ANNUITY: "ANN",
 };
 
-const ACTIVE_TABS: { value: LeadStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All Active" },
-  { value: "NEW", label: LEAD_STATUS_LABELS.NEW },
-  { value: "CONTACTED", label: LEAD_STATUS_LABELS.CONTACTED },
-  { value: "NO_ANSWER", label: LEAD_STATUS_LABELS.NO_ANSWER },
-  { value: "APPOINTMENT_BOOKING", label: LEAD_STATUS_LABELS.APPOINTMENT_BOOKING },
-  { value: "NOT_INTERESTED", label: LEAD_STATUS_LABELS.NOT_INTERESTED },
-];
-
-function buildFilterParams(tab: LeadStatus | "ALL", archiveView: boolean, state: string) {
+function buildFilterParams(stageId: string | "ALL", archiveView: boolean, state: string) {
   const params = new URLSearchParams();
   if (archiveView) {
     params.set("archived", "true");
-  } else if (tab !== "ALL") {
-    params.set("status", tab);
+  } else if (stageId !== "ALL") {
+    params.set("pipelineStageId", stageId);
   }
   if (state) {
     params.set("state", state);
@@ -54,7 +48,12 @@ function buildFilterParams(tab: LeadStatus | "ALL", archiveView: boolean, state:
 }
 
 export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
-  const [tab, setTab] = useState<LeadStatus | "ALL">("ALL");
+  // The admin's own Lead-phase pipeline — same dynamic list Book of
+  // Business already filters/moves by (see lib/pipelineStages.ts's
+  // seeded defaults plus whatever custom stages an admin has added), so a
+  // stage added or renamed there shows up here too without a code change.
+  const [stages, setStages] = useState<PipelineStage[]>([]);
+  const [tab, setTab] = useState<string>("ALL");
   const [archiveView, setArchiveView] = useState(false);
   const [stateFilter, setStateFilter] = useState("");
   const [stateOptions, setStateOptions] = useState<{ state: string; count: number }[]>([]);
@@ -66,6 +65,10 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
   const filterParams = buildFilterParams(tab, archiveView, stateFilter);
   const filterQuery = filterParams.toString();
 
+  // Sold leads keep their own Archive toggle below rather than a tab here —
+  // same "Active" scope the old fixed 6-status tab row covered.
+  const activeTabs = stages.filter((s) => s.systemKey !== "SOLD");
+
   useEffect(() => {
     async function loadStates() {
       const res = await fetch("/api/agent/leads/states");
@@ -75,7 +78,16 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
       }
     }
 
+    async function loadStages() {
+      const res = await fetch("/api/portal/pipeline-stages?phase=LEAD");
+      if (res.ok) {
+        const data = await res.json();
+        setStages(data.stages);
+      }
+    }
+
     loadStates();
+    loadStages();
   }, []);
 
   useEffect(() => {
@@ -110,21 +122,35 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {ACTIVE_TABS.map((t) => (
+          <button
+            onClick={() => {
+              setArchiveView(false);
+              setTab("ALL");
+            }}
+            className={cn(
+              "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+              !archiveView && tab === "ALL"
+                ? "toggle-pill-active"
+                : "border-copper-hover-gradient text-muted hover:text-foreground",
+            )}
+          >
+            All Active
+          </button>
+          {activeTabs.map((s) => (
             <button
-              key={t.value}
+              key={s.id}
               onClick={() => {
                 setArchiveView(false);
-                setTab(t.value);
+                setTab(s.id);
               }}
               className={cn(
                 "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-                !archiveView && tab === t.value
+                !archiveView && tab === s.id
                   ? "toggle-pill-active"
                   : "border-copper-hover-gradient text-muted hover:text-foreground",
               )}
             >
-              {t.label}
+              {s.name}
             </button>
           ))}
         </div>
@@ -194,7 +220,7 @@ export function AgentLeadList({ initialLeads }: { initialLeads: Lead[] }) {
                   {LEAD_TYPE_SHORT_LABELS[lead.leadType]}
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={lead.status} />
+                  <StatusBadge status={lead.status} pipelineStage={lead.pipelineStage} />
                 </td>
               </tr>
             ))}

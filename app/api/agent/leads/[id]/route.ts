@@ -35,6 +35,7 @@ export async function GET(
         orderBy: { createdAt: "desc" },
         include: { agent: { select: { name: true } } },
       },
+      pipelineStage: { select: { id: true, name: true, systemKey: true } },
     },
   });
 
@@ -241,6 +242,7 @@ export async function PATCH(
         orderBy: { createdAt: "desc" },
         include: { agent: { select: { name: true } } },
       },
+      pipelineStage: { select: { id: true, name: true, systemKey: true } },
     },
   });
 

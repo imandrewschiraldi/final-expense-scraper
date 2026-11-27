@@ -9,6 +9,7 @@ import {
   LeadStatus,
 } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, isLeadType } from "@/lib/leadType";
+import { getStageTarget } from "@/lib/pipelineSync";
 import { formatPhone } from "@/lib/formatPhone";
 import { formatDob } from "@/lib/formatDob";
 import { Prisma } from "@prisma/client";
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
     ? statesParam.split(",").filter(Boolean)
     : undefined;
   const status = searchParams.get("status") as LeadStatus | null;
+  const pipelineStageId = searchParams.get("pipelineStageId");
   const leadType = searchParams.get("leadType");
   const agentId = searchParams.get("agentId");
   const unassignedOnly = searchParams.get("unassignedOnly") === "true";
@@ -36,7 +38,24 @@ export async function GET(req: NextRequest) {
 
   if (states && states.length > 0) where.state = { in: states };
   else if (state) where.state = state;
-  if (status && LEAD_STATUSES.includes(status)) where.status = status;
+  // Mirrors /api/admin/leads' own stage resolution — the Export CSV button
+  // sends whatever All Leads is currently filtered to, which is now a
+  // PipelineStage id rather than the legacy status enum (see
+  // AllLeadsPanel's buildFilterParams).
+  if (pipelineStageId) {
+    const target = await getStageTarget(pipelineStageId);
+    if (!target || target.phase !== "LEAD") {
+      return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
+    }
+    where.OR = target.systemKey
+      ? [
+          { pipelineStageId },
+          { pipelineStageId: null, status: target.systemKey as LeadStatus },
+        ]
+      : [{ pipelineStageId }];
+  } else if (status && LEAD_STATUSES.includes(status)) {
+    where.status = status;
+  }
   if (leadType && isLeadType(leadType)) where.leadType = leadType;
   if (unassignedOnly) where.assignedAgentId = null;
   else if (agentId) where.assignedAgentId = agentId;
@@ -53,7 +72,10 @@ export async function GET(req: NextRequest) {
       states && states.length > 1
         ? [{ state: "asc" }, { createdAt: "desc" }]
         : { createdAt: "desc" },
-    include: { assignedAgent: { select: { name: true } } },
+    include: {
+      assignedAgent: { select: { name: true } },
+      pipelineStage: { select: { name: true } },
+    },
   });
 
   const csv = Papa.unparse(
@@ -66,7 +88,7 @@ export async function GET(req: NextRequest) {
       State: lead.state,
       "Date of Birth": formatDob(lead.dateOfBirth),
       "Lead Type": LEAD_TYPE_LABELS[lead.leadType],
-      Status: LEAD_STATUS_LABELS[lead.status],
+      Status: lead.pipelineStage?.name ?? LEAD_STATUS_LABELS[lead.status],
       "Assigned Agent": lead.assignedAgent?.name ?? "Unassigned",
       Vault: lead.isVaulted ? "Yes" : "No",
       Archived: lead.isArchived ? "Yes" : "No",

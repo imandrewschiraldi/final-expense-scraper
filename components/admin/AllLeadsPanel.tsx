@@ -9,11 +9,7 @@ import { StatCard } from "@/components/admin/StatCard";
 import { formatPhone } from "@/lib/formatPhone";
 import { formatDob } from "@/lib/formatDob";
 import { LEAD_TYPE_LABELS, LEAD_TYPES, LeadType } from "@/lib/leadType";
-import {
-  LEAD_STATUS_LABELS,
-  LEAD_STATUSES,
-  LeadStatus,
-} from "@/lib/leadStatus";
+import { LeadStatus } from "@/lib/leadStatus";
 import { US_STATES } from "@/lib/usStates";
 
 type Lead = {
@@ -29,6 +25,7 @@ type Lead = {
   isArchived: boolean;
   isVaulted: boolean;
   assignedAgent: { id: string; name: string } | null;
+  pipelineStage: { name: string; systemKey: string | null } | null;
 };
 
 type StateCount = { state: string; count: number };
@@ -43,7 +40,13 @@ export function AllLeadsPanel() {
   const [stateFilterOpen, setStateFilterOpen] = useState(false);
   const [stateFilterSearch, setStateFilterSearch] = useState("");
   const stateFilterRef = useRef<HTMLDivElement>(null);
-  const [statusFilter, setStatusFilter] = useState("");
+  // Holds a Lead-phase PipelineStage id, not the legacy status enum — the
+  // dynamic stage list (fetched below) is this admin's own, same list Book
+  // of Business and My Leads already filter/move by.
+  const [stageFilter, setStageFilter] = useState("");
+  const [leadStages, setLeadStages] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [leadTypeFilter, setLeadTypeFilter] = useState("");
   const [archivedFilter, setArchivedFilter] = useState<
     "any" | "true" | "false"
@@ -104,6 +107,12 @@ export function AllLeadsPanel() {
   useEffect(() => {
     loadAgentsWithLeads();
   }, [loadAgentsWithLeads]);
+
+  useEffect(() => {
+    fetch("/api/portal/pipeline-stages?phase=LEAD")
+      .then((res) => res.json())
+      .then((data) => setLeadStages(data.stages));
+  }, []);
 
   const loadVaultStateCounts = useCallback(async () => {
     const res = await fetch("/api/admin/leads/states?isVaulted=true");
@@ -201,7 +210,7 @@ export function AllLeadsPanel() {
       });
       if (stateFilters.size > 0)
         params.set("states", [...stateFilters].join(","));
-      if (statusFilter) params.set("status", statusFilter);
+      if (stageFilter) params.set("pipelineStageId", stageFilter);
       if (leadTypeFilter) params.set("leadType", leadTypeFilter);
       if (vaultFilter !== "any") params.set("isVaulted", vaultFilter);
       if (unassignedOnly) params.set("unassignedOnly", "true");
@@ -210,7 +219,7 @@ export function AllLeadsPanel() {
     },
     [
       stateFilters,
-      statusFilter,
+      stageFilter,
       leadTypeFilter,
       archivedFilter,
       vaultFilter,
@@ -645,16 +654,16 @@ export function AllLeadsPanel() {
               Status
             </label>
             <Select
-              value={statusFilter}
+              value={stageFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value);
+                setStageFilter(e.target.value);
                 setPage(1);
               }}
             >
               <option value="">All Statuses</option>
-              {LEAD_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {LEAD_STATUS_LABELS[s]}
+              {leadStages.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </Select>
@@ -839,7 +848,7 @@ export function AllLeadsPanel() {
                     {LEAD_TYPE_LABELS[lead.leadType]}
                   </td>
                   <td className="py-2 pr-4">
-                    <StatusBadge status={lead.status} />
+                    <StatusBadge status={lead.status} pipelineStage={lead.pipelineStage} />
                   </td>
                   <td className="py-2 pr-4 text-muted">
                     {lead.assignedAgent?.name ?? "Unassigned"}

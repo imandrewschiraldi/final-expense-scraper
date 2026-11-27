@@ -45,6 +45,7 @@ export default async function VaultLeadDetailPage({
         orderBy: { createdAt: "desc" },
         include: { agent: { select: { name: true } } },
       },
+      pipelineStage: { select: { id: true, name: true, systemKey: true } },
     },
   });
 

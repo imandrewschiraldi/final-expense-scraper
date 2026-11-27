@@ -1,8 +1,27 @@
 import { LEAD_STATUS_COLORS, LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { cn } from "@/lib/cn";
 
-export function StatusBadge({ status }: { status: LeadStatus }) {
-  const colors = LEAD_STATUS_COLORS[status];
+// A systemKey stage's `status` is always kept in sync with it (see the
+// stage-change PATCH route), so its existing color still applies — the
+// label just prefers the stage's own (possibly admin-renamed) name. A
+// custom, no-systemKey stage has no status equivalent at all, so it gets a
+// flat neutral treatment instead of whatever `status` happened to be
+// before the lead was dragged there — same "no per-stage color" choice
+// already made for Book of Business's own custom stages.
+const NEUTRAL_COLORS = {
+  bg: "bg-muted/20",
+  text: "text-muted",
+} as const;
+
+export function StatusBadge({
+  status,
+  pipelineStage,
+}: {
+  status: LeadStatus;
+  pipelineStage?: { name: string; systemKey: string | null } | null;
+}) {
+  const colors = pipelineStage && !pipelineStage.systemKey ? NEUTRAL_COLORS : LEAD_STATUS_COLORS[status];
+  const label = pipelineStage?.name ?? LEAD_STATUS_LABELS[status];
   return (
     <span
       className={cn(
@@ -18,7 +37,7 @@ export function StatusBadge({ status }: { status: LeadStatus }) {
           "drop-shadow-[0_1px_1px_rgba(0,0,0,0.55)]",
       )}
     >
-      {LEAD_STATUS_LABELS[status]}
+      {label}
     </span>
   );
 }

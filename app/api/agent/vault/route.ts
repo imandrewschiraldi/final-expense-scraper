@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "asc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
+      include: { pipelineStage: { select: { name: true, systemKey: true } } },
     }),
     db.lead.count({ where }),
   ]);

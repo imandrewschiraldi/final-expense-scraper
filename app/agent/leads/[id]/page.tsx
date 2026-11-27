@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { LeadDetailPanel } from "@/components/agent/LeadDetailPanel";
 import { buildAgentLeadsWhere } from "@/lib/agentLeads";
+import { getStageTarget } from "@/lib/pipelineSync";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,11 @@ export default async function AgentLeadDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ status?: string; archived?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    pipelineStageId?: string;
+    archived?: string;
+  }>;
 }) {
   const { id } = await params;
   const filters = await searchParams;
@@ -30,6 +35,7 @@ export default async function AgentLeadDetailPage({
         include: { agent: { select: { name: true } } },
       },
       sourceImport: { select: { uploadedById: true } },
+      pipelineStage: { select: { id: true, name: true, systemKey: true } },
     },
   });
 
@@ -37,11 +43,21 @@ export default async function AgentLeadDetailPage({
     notFound();
   }
 
+  // The same stage the My Leads tab row filtered to, resolved the same way
+  // the list GET route does, so Prev/Next stays inside exactly the set of
+  // leads the agent was actually looking at (see buildAgentLeadsWhere's
+  // dual-match comment for why the systemKey matters here too).
+  const stageTarget = filters.pipelineStageId
+    ? await getStageTarget(filters.pipelineStageId)
+    : null;
+
   // Mirrors the Vault detail page's approach — targeted indexed queries for
   // Prev/Next/position instead of fetching every sibling id and scanning
   // for this one's spot in the list on every click.
   const where = buildAgentLeadsWhere(agentId, {
     status: filters.status,
+    pipelineStageId: filters.pipelineStageId,
+    pipelineStageSystemKey: stageTarget?.systemKey ?? null,
     archived: filters.archived === "true",
   });
   // AGENT_LEADS_ORDER_BY is assignedAt desc, so the item "before" this one
@@ -79,11 +95,13 @@ export default async function AgentLeadDetailPage({
   const nextId = nextLead?.id ?? null;
 
   const filterQuery = new URLSearchParams(
-    filters.status
-      ? { status: filters.status }
-      : filters.archived === "true"
-        ? { archived: "true" }
-        : {},
+    filters.pipelineStageId
+      ? { pipelineStageId: filters.pipelineStageId }
+      : filters.status
+        ? { status: filters.status }
+        : filters.archived === "true"
+          ? { archived: "true" }
+          : {},
   ).toString();
 
   return (

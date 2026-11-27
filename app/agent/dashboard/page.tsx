@@ -14,6 +14,9 @@ export default async function AgentDashboardPage() {
     db.lead.findMany({
       where: { assignedAgentId: agentId, isArchived: false },
       orderBy: { assignedAt: "desc" },
+      include: {
+        pipelineStage: { select: { id: true, name: true, systemKey: true } },
+      },
     }),
     db.lead.groupBy({
       by: ["status"],

@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
 import { isLeadType } from "@/lib/leadType";
+import { getStageTarget } from "@/lib/pipelineSync";
 import { Prisma } from "@prisma/client";
 
 const PAGE_SIZE = 50;
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
     ? statesParam.split(",").filter(Boolean)
     : undefined;
   const status = searchParams.get("status") as LeadStatus | null;
+  const pipelineStageId = searchParams.get("pipelineStageId");
   const leadType = searchParams.get("leadType");
   const agentId = searchParams.get("agentId");
   const unassignedOnly = searchParams.get("unassignedOnly") === "true";
@@ -35,7 +37,20 @@ export async function GET(req: NextRequest) {
 
   if (states && states.length > 0) where.state = { in: states };
   else if (state) where.state = state;
-  if (status && LEAD_STATUSES.includes(status)) where.status = status;
+  if (pipelineStageId) {
+    const target = await getStageTarget(pipelineStageId);
+    if (!target || target.phase !== "LEAD") {
+      return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
+    }
+    where.OR = target.systemKey
+      ? [
+          { pipelineStageId },
+          { pipelineStageId: null, status: target.systemKey as LeadStatus },
+        ]
+      : [{ pipelineStageId }];
+  } else if (status && LEAD_STATUSES.includes(status)) {
+    where.status = status;
+  }
   if (leadType && isLeadType(leadType)) where.leadType = leadType;
   if (unassignedOnly) where.assignedAgentId = null;
   else if (agentId) where.assignedAgentId = agentId;
@@ -58,7 +73,10 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: { assignedAgent: { select: { id: true, name: true } } },
+      include: {
+        assignedAgent: { select: { id: true, name: true } },
+        pipelineStage: { select: { name: true, systemKey: true } },
+      },
     }),
     db.lead.count({ where }),
   ]);
