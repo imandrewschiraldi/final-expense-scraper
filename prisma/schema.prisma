@@ -149,6 +149,7 @@ model User {
   chatGroupMeBridgesMade ChatGroupMeBridge[]
   pushSubscriptions      PushSubscription[]
   announcementItems      AnnouncementItem[]
+  calendarEvents         CalendarEvent[]
 
   @@map("users")
 }
@@ -1040,6 +1041,40 @@ model OverviewWidget {
   enabled Boolean @default(true)
 
   @@map("overview_widgets")
+}
+
+/// A training/event on the Overview page's calendar widget — admin-created
+/// (and admin-only to edit), visible to every agent. `startAt`/`endAt` are
+/// the first (or only, for a non-recurring event) occurrence's actual
+/// date and time; a recurring event repeats weekly on that same weekday
+/// and time indefinitely, or until `recurrenceEndAt` if set. There's no
+/// per-occurrence row — lib/calendarEvents.ts expands a recurring row into
+/// its individual occurrences on read, for whatever date range is being
+/// viewed, rather than materializing (and having to keep generating) one
+/// row per future week.
+model CalendarEvent {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  /// A join/registration/recording link — Zoom, a video call, a signup
+  /// page, whatever the training actually needs. Shown as a "Join" button
+  /// wherever this event renders.
+  link            String?
+  phoneNumber     String?
+  location        String?
+  startAt         DateTime
+  endAt           DateTime
+  recurring       Boolean   @default(false)
+  /// Only meaningful when `recurring` is true. Null means "repeats
+  /// forever."
+  recurrenceEndAt DateTime?
+  createdById     String?
+  createdBy       User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([startAt])
+  @@map("calendar_events")
 }
 
 /// A card on the agent-facing "Buy Leads" page (app/agent/buy-leads) —

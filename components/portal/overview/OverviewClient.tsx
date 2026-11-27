@@ -33,6 +33,7 @@ import { AnnouncementsCarousel } from "@/components/portal/overview/Announcement
 import { HallOfFameCard } from "@/components/portal/overview/HallOfFameCard";
 import { BonusVolumeCard } from "@/components/portal/overview/BonusVolumeCard";
 import { GoalsMiniWidget } from "@/components/portal/overview/GoalsMiniWidget";
+import { CalendarWidget } from "@/components/portal/overview/CalendarWidget";
 import { TeamChatWidget } from "@/components/portal/overview/TeamChatWidget";
 import { MiniLeaderboard } from "@/components/portal/overview/MiniLeaderboard";
 import { NewTrainingWidget } from "@/components/portal/overview/NewTrainingWidget";
@@ -102,6 +103,8 @@ function WidgetContent({
       return <BonusVolumeCard issuedAP={data.bonusVolume.issuedAP} />;
     case "goals":
       return <GoalsMiniWidget />;
+    case "calendar":
+      return <CalendarWidget />;
     case "teamChat":
       return <TeamChatWidget messages={data.messages} />;
     case "leaderboard":
@@ -130,10 +133,15 @@ function EditableTile({
   widget,
   onToggle,
   children,
+  spanFull = false,
 }: {
   widget: LayoutWidget;
   onToggle: () => void;
   children: React.ReactNode;
+  // The calendar tile — spans every column of the grid it's dropped into,
+  // same as it does outside edit mode (see the plain render path below),
+  // so dragging it around doesn't shrink it down to a single column's width.
+  spanFull?: boolean;
 }) {
   const {
     attributes,
@@ -150,7 +158,11 @@ function EditableTile({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`relative ${spanFull ? "sm:col-span-2 lg:col-span-3" : ""}`}
+    >
       <div className={widget.enabled ? "" : "opacity-40"}>{children}</div>
       <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
         <button
@@ -364,6 +376,7 @@ export function OverviewClient() {
                   key={widget.id}
                   widget={widget}
                   onToggle={() => toggleWidget(widget.id, !widget.enabled)}
+                  spanFull={widget.id === "calendar"}
                 >
                   <WidgetContent
                     id={widget.id}
@@ -380,7 +393,14 @@ export function OverviewClient() {
           {data.layout
             .filter((w) => w.enabled)
             .map((widget) => (
-              <div key={widget.id}>
+              <div
+                key={widget.id}
+                className={
+                  widget.id === "calendar"
+                    ? "sm:col-span-2 lg:col-span-3"
+                    : undefined
+                }
+              >
                 <WidgetContent
                   id={widget.id}
                   data={data}

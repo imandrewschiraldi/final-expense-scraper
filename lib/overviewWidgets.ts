@@ -8,6 +8,11 @@ export const OVERVIEW_WIDGET_REGISTRY: OverviewWidgetDef[] = [
   { id: "hallOfFame", label: "Hall of Fame" },
   { id: "bonusVolume", label: "Bonus Volume" },
   { id: "goals", label: "Goals" },
+  // Spans the full row width wherever it lands (see OverviewClient's grid),
+  // unlike every other tile here — defaults right after the three top
+  // cards it was built to sit "underneath", but stays reorderable with
+  // everything else above.
+  { id: "calendar", label: "Training Calendar" },
   { id: "teamChat", label: "Team Chat" },
   { id: "leaderboard", label: "Leaderboard" },
   { id: "newTraining", label: "New Training" },
