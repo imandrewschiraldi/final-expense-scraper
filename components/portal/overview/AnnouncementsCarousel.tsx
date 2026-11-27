@@ -59,6 +59,14 @@ const STEP = CARD_WIDTH + CARD_GAP;
 // Pixels per second of continuous auto-scroll — tuned to read as a steady
 // drift rather than either a jump or a crawl.
 const SCROLL_SPEED = 40;
+// How many back-to-back copies of the slide set are rendered. Only 2 are
+// strictly needed for a seamless loop (see the wraparound effect below),
+// but with a short set — 3, 4, 5 slides — the repeat is visible almost
+// immediately, reading as "it only loops twice" rather than an endless
+// carousel. Rendering 10 copies means a full 9 passes go by before the
+// viewer ever reaches the point the scroll position wraps back to, long
+// enough that it reads as unbroken no matter how few slides are in it.
+const SET_COPIES = 10;
 
 function Badge({ children }: { children: React.ReactNode }) {
   return (
@@ -612,15 +620,18 @@ export function AnnouncementsCarousel() {
     load();
   }, []);
 
-  // A continuous right-to-left drift, not periodic jumps — one set of
-  // slides is rendered twice back to back, and once the scroll position
-  // passes the first copy it's snapped back by exactly that copy's width
-  // (identical content on both sides of the snap, so it's imperceptible),
-  // which is what makes it loop forever instead of bouncing at the end.
+  // A continuous right-to-left drift, not periodic jumps — SET_COPIES
+  // copies of the slide set are rendered back to back, and once the scroll
+  // position has drifted through all but the last copy, it's snapped back
+  // by that same distance (identical content at both the old and new
+  // position, so the snap itself is imperceptible) — which is what makes
+  // it loop forever instead of bouncing at the end, while still leaving a
+  // full spare copy ahead at all times so nothing blanks out mid-snap.
   useEffect(() => {
     if (items.length === 0) return;
     let raf = 0;
     const setWidth = items.length * STEP;
+    const wrapAt = setWidth * (SET_COPIES - 1);
 
     function tick(ts: number) {
       const el = scrollerRef.current;
@@ -628,7 +639,7 @@ export function AnnouncementsCarousel() {
       if (running) {
         if (lastTickRef.current !== null) {
           el.scrollLeft += SCROLL_SPEED * ((ts - lastTickRef.current) / 1000);
-          if (el.scrollLeft >= setWidth) el.scrollLeft -= setWidth;
+          if (el.scrollLeft >= wrapAt) el.scrollLeft -= wrapAt;
         }
         lastTickRef.current = ts;
       } else {
@@ -712,15 +723,17 @@ export function AnnouncementsCarousel() {
           className="flex overflow-x-auto pb-1"
           style={{ scrollbarWidth: "none", gap: CARD_GAP }}
         >
-          {[...items, ...items].map((item, i) => (
-            <div
-              key={`${item.id}-${i}`}
-              className="shrink-0"
-              style={{ width: CARD_WIDTH }}
-            >
-              <Thumbnail item={item} onOpen={() => setLightbox(item)} />
-            </div>
-          ))}
+          {Array.from({ length: SET_COPIES }, () => items)
+            .flat()
+            .map((item, i) => (
+              <div
+                key={`${item.id}-${i}`}
+                className="shrink-0"
+                style={{ width: CARD_WIDTH }}
+              >
+                <Thumbnail item={item} onOpen={() => setLightbox(item)} />
+              </div>
+            ))}
         </div>
       )}
 

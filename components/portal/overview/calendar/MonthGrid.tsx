@@ -5,6 +5,7 @@ import {
   formatTime,
   isSameDay,
   monthGridRange,
+  MONTH_GRID_WEEKS,
   type CalendarOccurrence,
 } from "@/lib/calendarRecurrence";
 
@@ -20,7 +21,7 @@ function dateKey(date: Date): string {
 }
 
 /** Groups already-expanded occurrences by calendar day, for O(1) lookup per
- *  cell instead of filtering the whole list 42 times. */
+ *  cell instead of filtering the whole list once per grid cell. */
 export function groupOccurrencesByDay(
   occurrences: CalendarOccurrence[],
 ): Map<string, CalendarOccurrence[]> {
@@ -46,7 +47,9 @@ export function MonthGrid({
   onEventClick: (occurrence: CalendarOccurrence) => void;
 }) {
   const { start } = monthGridRange(monthAnchor);
-  const days = Array.from({ length: 42 }, (_, i) => addDays(start, i));
+  const days = Array.from({ length: MONTH_GRID_WEEKS * 7 }, (_, i) =>
+    addDays(start, i),
+  );
   const byDay = groupOccurrencesByDay(occurrences);
   const today = new Date();
   const monthIndex = monthAnchor.getMonth();
