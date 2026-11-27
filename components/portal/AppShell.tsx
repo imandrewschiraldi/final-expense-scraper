@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar, type SidebarProfile } from "@/components/portal/Sidebar";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { HeaderDivider } from "@/components/portal/HeaderDivider";
@@ -11,6 +12,7 @@ import { SoundEffects } from "@/components/portal/SoundEffects";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { TourOverlay } from "@/components/tour/TourOverlay";
 import { CARD_LAYOUT_CHANGED_EVENT } from "@/lib/cardLayoutEvent";
+import { isFullBleedRoute } from "@/lib/fullBleedRoutes";
 import { cn } from "@/lib/cn";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
@@ -71,6 +73,13 @@ export function AppShell({
   const [cardLayoutEnabled, setCardLayoutEnabled] = useState(
     initialSidebarProfile?.cardLayoutEnabled ?? false,
   );
+  // Scripts/Commission Calculator's full-bleed iframe is sized to cancel
+  // out exactly one gutter around it (see EmbeddedTool) — the overlay
+  // card's own border/background and the second padded layer it puts
+  // around `children` would leave a gutter nothing cancels, so those two
+  // pages always get the plain full-bleed shell regardless of this toggle.
+  const pathname = usePathname();
+  const showCardLayout = cardLayoutEnabled && !isFullBleedRoute(pathname);
   useEffect(() => {
     fetch("/api/profile")
       .then((res) => (res.ok ? res.json() : null))
@@ -144,7 +153,7 @@ export function AppShell({
           // takes effect once the `lg` width is already guaranteed by the
           // variant below, so there's no need for the base's own sm/lg
           // progressive steps here — just the one final value.
-          cardLayoutEnabled &&
+          showCardLayout &&
             "lg:[@media_not_(display-mode:standalone)]:h-screen lg:[@media_not_(display-mode:standalone)]:overflow-hidden lg:[@media_not_(display-mode:standalone)]:p-4",
         )}
       >
@@ -194,7 +203,7 @@ export function AppShell({
             // only needs each property's final value, not a progressive
             // sm/lg step-up.
             "overflow-visible rounded-none border-0 bg-transparent shadow-none",
-            cardLayoutEnabled &&
+            showCardLayout &&
               "lg:[@media_not_(display-mode:standalone)]:relative lg:[@media_not_(display-mode:standalone)]:h-full lg:[@media_not_(display-mode:standalone)]:overflow-y-auto lg:[@media_not_(display-mode:standalone)]:rounded-[20px] lg:[@media_not_(display-mode:standalone)]:border lg:[@media_not_(display-mode:standalone)]:border-border lg:[@media_not_(display-mode:standalone)]:bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] lg:[@media_not_(display-mode:standalone)]:px-10 lg:[@media_not_(display-mode:standalone)]:pt-2 lg:[@media_not_(display-mode:standalone)]:pb-8 lg:[@media_not_(display-mode:standalone)]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
           )}
         >
