@@ -5,6 +5,7 @@ import { checkAndAwardGoals } from "@/lib/personalDashboard";
 import { postDailySaleAnnouncement } from "@/lib/chatBot";
 import { resolveCommissionAmount } from "@/lib/commissionServer";
 import { generateDemoPolicies, demoPoliciesAsApiRows } from "@/lib/demoData";
+import { stageIdForSystemKey } from "@/lib/pipelineSync";
 import { PolicyLine, PolicyStatus } from "@prisma/client";
 
 const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
     annualPremium,
     carrierPlanId: resolvedCarrierPlanId,
   });
+  const pipelineStageId = await stageIdForSystemKey("CLIENT", resolvedStatus);
   const policy = await db.policy.create({
     data: {
       agentId: guard.session.user.id,
@@ -91,6 +93,8 @@ export async function POST(req: NextRequest) {
       carrier: carrier.trim(),
       product: product?.trim() || null,
       line: resolvedLine,
+      leadType: lead?.leadType ?? null,
+      pipelineStageId,
       annualPremium,
       status: resolvedStatus,
       issuedAt: resolvedStatus === "ISSUED" ? now : null,

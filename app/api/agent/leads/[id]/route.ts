@@ -3,6 +3,7 @@ import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
 import { computeVaultAwareStatusUpdate, agentHasVaultAccess, shouldLogContact } from "@/lib/vault";
+import { stageIdForSystemKey, getStageTarget } from "@/lib/pipelineSync";
 import { Prisma } from "@prisma/client";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -36,8 +37,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const body = await req.json();
-  const { status, firstName, lastName, phone, state, dateOfBirth } = body as {
+  const { status, pipelineStageId, firstName, lastName, phone, state, dateOfBirth } = body as {
     status?: LeadStatus;
+    pipelineStageId?: string;
     firstName?: string;
     lastName?: string;
     phone?: string;
@@ -50,7 +52,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (status !== undefined && !LEAD_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
-  if (status === undefined && !isFieldEdit) {
+  if (status !== undefined && pipelineStageId !== undefined) {
+    return NextResponse.json({ error: "Provide either status or pipelineStageId, not both" }, { status: 400 });
+  }
+  if (status === undefined && pipelineStageId === undefined && !isFieldEdit) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
@@ -75,7 +80,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "You can only edit details on leads assigned to you" }, { status: 403 });
   }
 
-  const editData: Prisma.LeadUpdateManyMutationInput = {};
+  const editData: Prisma.LeadUncheckedUpdateManyInput = {};
   if (isFieldEdit) {
     if (firstName !== undefined) {
       const trimmed = firstName.trim();
@@ -109,8 +114,31 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
-  const statusData = status !== undefined ? computeVaultAwareStatusUpdate(status, lead, agentId) : {};
-  const data: Prisma.LeadUpdateManyMutationInput = { ...editData, ...statusData };
+  // The status this update resolves to for vault/contact-log purposes —
+  // whichever of `status` or `pipelineStageId` the caller sent, the two stay
+  // in lockstep below so the side effects (vault exit, contact log,
+  // isArchived) are identical no matter which field drove the change.
+  let effectiveStatus: LeadStatus | undefined;
+  let statusData: Prisma.LeadUncheckedUpdateManyInput = {};
+
+  if (status !== undefined) {
+    effectiveStatus = status;
+    statusData = computeVaultAwareStatusUpdate(status, lead, agentId);
+    const syncedStageId = await stageIdForSystemKey("LEAD", status);
+    if (syncedStageId) statusData.pipelineStageId = syncedStageId;
+  } else if (pipelineStageId !== undefined) {
+    const target = await getStageTarget(pipelineStageId);
+    if (!target || target.phase !== "LEAD") {
+      return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
+    }
+    statusData.pipelineStageId = pipelineStageId;
+    if (target.systemKey) {
+      effectiveStatus = target.systemKey as LeadStatus;
+      statusData = { ...statusData, ...computeVaultAwareStatusUpdate(effectiveStatus, lead, agentId) };
+    }
+  }
+
+  const data: Prisma.LeadUncheckedUpdateManyInput = { ...editData, ...statusData };
 
   // Use updateMany with the same ownership/vault condition as the read
   // above so that if another agent claims this vault lead in between, this
@@ -124,8 +152,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "This lead was just claimed by another agent" }, { status: 409 });
   }
 
-  if (status !== undefined && shouldLogContact(status)) {
-    await db.contactLogEntry.create({ data: { leadId: id, agentId, status } });
+  if (effectiveStatus !== undefined && shouldLogContact(effectiveStatus)) {
+    await db.contactLogEntry.create({ data: { leadId: id, agentId, status: effectiveStatus } });
   }
 
   const updated = await db.lead.findUniqueOrThrow({

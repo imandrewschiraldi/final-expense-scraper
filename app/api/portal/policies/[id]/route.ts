@@ -3,6 +3,7 @@ import { requireAnyRole } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { checkAndAwardGoals } from "@/lib/personalDashboard";
 import { resolveCommissionAmount } from "@/lib/commissionServer";
+import { stageIdForSystemKey, getStageTarget } from "@/lib/pipelineSync";
 import { PolicyLine, PolicyStatus } from "@prisma/client";
 
 const POLICY_STATUSES: PolicyStatus[] = ["SUBMITTED", "ISSUED", "CHARGEBACK"];
@@ -21,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const body = await req.json();
-  const { clientName, clientPhone, state, carrier, product, line, annualPremium, status, carrierPlanId } = body as {
+  const { clientName, clientPhone, state, carrier, product, line, annualPremium, status, pipelineStageId, carrierPlanId } = body as {
     clientName?: string;
     clientPhone?: string;
     state?: string;
@@ -30,11 +31,33 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     line?: PolicyLine;
     annualPremium?: number;
     status?: PolicyStatus;
+    pipelineStageId?: string;
     carrierPlanId?: string | null;
   };
 
   if (status !== undefined && !POLICY_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+  if (status !== undefined && pipelineStageId !== undefined) {
+    return NextResponse.json({ error: "Provide either status or pipelineStageId, not both" }, { status: 400 });
+  }
+
+  // The status this update resolves to — whichever of `status` or
+  // `pipelineStageId` the caller sent, both stay in lockstep below so
+  // issuedAt/status history are identical no matter which field drove the
+  // change. A stage with no legacy systemKey (e.g. "Lapsed") only moves
+  // pipelineStageId and leaves status untouched.
+  let effectiveStatus: PolicyStatus | undefined = status;
+  let syncedStageId: string | undefined;
+  if (status !== undefined) {
+    syncedStageId = (await stageIdForSystemKey("CLIENT", status)) ?? undefined;
+  } else if (pipelineStageId !== undefined) {
+    const target = await getStageTarget(pipelineStageId);
+    if (!target || target.phase !== "CLIENT") {
+      return NextResponse.json({ error: "Invalid stage" }, { status: 400 });
+    }
+    syncedStageId = pipelineStageId;
+    if (target.systemKey) effectiveStatus = target.systemKey as PolicyStatus;
   }
 
   // A changed AP or a newly-picked/cleared rate plan both mean the frozen
@@ -61,18 +84,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(annualPremium !== undefined ? { annualPremium } : {}),
       ...(carrierPlanId !== undefined ? { carrierPlanId } : {}),
       ...(shouldRecomputeCommission ? { commissionAmount } : {}),
-      ...(status !== undefined
+      ...(syncedStageId !== undefined ? { pipelineStageId: syncedStageId } : {}),
+      ...(effectiveStatus !== undefined
         ? {
-            status,
-            issuedAt: status === "ISSUED" ? (existing.issuedAt ?? new Date()) : existing.issuedAt,
+            status: effectiveStatus,
+            issuedAt: effectiveStatus === "ISSUED" ? (existing.issuedAt ?? new Date()) : existing.issuedAt,
           }
         : {}),
     },
   });
 
-  if (status !== undefined && status !== existing.status) {
+  if (effectiveStatus !== undefined && effectiveStatus !== existing.status) {
     await db.policyStatusHistory.create({
-      data: { policyId: policy.id, fromStatus: existing.status, toStatus: status, changedById: guard.session.user.id },
+      data: { policyId: policy.id, fromStatus: existing.status, toStatus: effectiveStatus, changedById: guard.session.user.id },
     });
     if (policy.agentId) {
       await checkAndAwardGoals(policy.agentId);
