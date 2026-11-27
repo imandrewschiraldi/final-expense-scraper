@@ -1077,3 +1077,26 @@ h4,
 .animate-lead-card-prev {
   animation: lead-card-slide-from-left 0.16s ease-out;
 }
+
+/* F90 roadmap backdrop — a deep gradient plus a scattered-dot "starfield"
+   (two layered radial-gradient tiles, offset from each other) standing in
+   for a hand-illustrated game-map background without needing an actual
+   art asset. */
+.f90-road-bg {
+  background:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.5) 0, transparent 60%),
+    radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.35) 0, transparent 60%),
+    radial-gradient(1.5px 1.5px at 40% 80%, rgba(255,255,255,0.4) 0, transparent 60%),
+    radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,0.3) 0, transparent 60%),
+    radial-gradient(1.5px 1.5px at 25% 45%, rgba(255,255,255,0.3) 0, transparent 60%),
+    radial-gradient(1px 1px at 55% 10%, rgba(255,255,255,0.4) 0, transparent 60%),
+    radial-gradient(ellipse at top, #2a1a3d 0%, #0c0712 60%, #050308 100%);
+  background-size:
+    140px 140px,
+    160px 160px,
+    180px 180px,
+    120px 120px,
+    150px 150px,
+    130px 130px,
+    100% 100%;
+}

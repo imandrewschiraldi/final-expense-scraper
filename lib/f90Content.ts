@@ -24,7 +24,16 @@ export type F90Step = {
   links?: F90Link[];
   // Monday-Friday live session times, rendered as a small calendar strip
   // instead of plain checkbox text — only Phase 2's academy step uses this.
-  trainingSchedule?: { day: string; topic: string; time: string; link: F90Link }[];
+  // Hours are the fixed wall-clock time in ET (America/New_York), the zone
+  // the Academy actually runs on; the UI converts to each viewer's own
+  // profile time zone for display via zonedWallTimeToInstant.
+  trainingSchedule?: {
+    day: string;
+    topic: string;
+    startHour: number;
+    endHour: number;
+    link: F90Link;
+  }[];
   // Breaks one step's instructions into separate labeled boxes instead of
   // a single wall of text — only the Call & Sales Execution Workflow uses
   // this, since it's 6 distinct actions, not one.
@@ -156,11 +165,11 @@ export const F90_PHASES: F90Phase[] = [
         description:
           "Attend all mandatory live training sessions, Monday through Friday, 12:00–2:00 PM Eastern. Same Zoom link every day. Take notes on script structure, objection handling, and quoting tools.",
         trainingSchedule: [
-          { day: "Monday", topic: "New Agent Orientation", time: "12–2 PM ET", link: PINNACLE_ACADEMY_LINK },
-          { day: "Tuesday", topic: "Scripts & Objections", time: "12–2 PM ET", link: PINNACLE_ACADEMY_LINK },
-          { day: "Wednesday", topic: "Carriers & Applications", time: "12–2 PM ET", link: PINNACLE_ACADEMY_LINK },
-          { day: "Thursday", topic: "Underwriting", time: "12–2 PM ET", link: PINNACLE_ACADEMY_LINK },
-          { day: "Friday", topic: "Lead Flow & Workflow", time: "12–2 PM ET", link: PINNACLE_ACADEMY_LINK },
+          { day: "Monday", topic: "New Agent Orientation", startHour: 12, endHour: 14, link: PINNACLE_ACADEMY_LINK },
+          { day: "Tuesday", topic: "Scripts & Objections", startHour: 12, endHour: 14, link: PINNACLE_ACADEMY_LINK },
+          { day: "Wednesday", topic: "Carriers & Applications", startHour: 12, endHour: 14, link: PINNACLE_ACADEMY_LINK },
+          { day: "Thursday", topic: "Underwriting", startHour: 12, endHour: 14, link: PINNACLE_ACADEMY_LINK },
+          { day: "Friday", topic: "Lead Flow & Workflow", startHour: 12, endHour: 14, link: PINNACLE_ACADEMY_LINK },
         ],
       },
       {
@@ -192,7 +201,7 @@ export const F90_PHASES: F90Phase[] = [
           {
             heading: "1. Open & Discover",
             prompt:
-              "Follow the approved call script to build rapport and establish urgency, then complete the Client Suitability Sheet (health history, medications, budget, and coverage goals) while you're still on the phone. That sheet lives on the lead's own detail page, not here, since it's bound to that specific contact.",
+              "Follow the approved call script to build rapport and establish urgency, then complete the Client Suitability Sheet (health history, medications, budget, and coverage goals) while you're still on the phone — pick the lead below and fill it out live, right here, or on that lead's own detail page.",
           },
           {
             heading: "2. Field Underwrite",

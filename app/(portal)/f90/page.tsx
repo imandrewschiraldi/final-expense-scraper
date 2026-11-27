@@ -15,7 +15,12 @@ export default async function F90Page() {
   const [user, salesCount, issuedPolicies] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
-      select: { name: true, f90EnrolledAt: true, f90CompletedSteps: true },
+      select: {
+        name: true,
+        f90EnrolledAt: true,
+        f90CompletedSteps: true,
+        timeZone: true,
+      },
     }),
     // Every Policy row is a closed sale (created at submission, not just
     // once issued) — matches the SOP's own "5 closed sales" wording for
@@ -41,6 +46,7 @@ export default async function F90Page() {
     <div className="pt-10 lg:pt-24">
       <F90Panel
         agentName={user.name}
+        agentTimeZone={user.timeZone}
         enrolledAt={user.f90EnrolledAt.toISOString()}
         initialCompletedSteps={user.f90CompletedSteps}
         salesCount={salesCount}
