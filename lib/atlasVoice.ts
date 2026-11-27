@@ -43,7 +43,14 @@ type SpeechRecognitionWindow = typeof window & {
 };
 
 const WAKE_PATTERN = /\b(hey|hi|ok(?:ay)?)\s+atlas\b[,.]?\s*/i;
-const SILENCE_AUTO_SEND_MS = 1500;
+// Once real command speech has started, how long a pause before auto-
+// submitting. Right after the wake word fires with nothing said yet, a much
+// longer grace period applies instead (see armSilenceTimer) — the chime cue
+// plus a beat to take a breath and actually start the question is normal,
+// and the old single short timeout fired during exactly that beat, kicking
+// back to standby before the user had said anything.
+const SILENCE_AUTO_SEND_MS = 2200;
+const WAKE_GRACE_MS = 4500;
 
 let status: VoiceStatus = "off";
 let muted = false;
@@ -99,6 +106,7 @@ function clearSilenceTimer() {
 
 function armSilenceTimer() {
   clearSilenceTimer();
+  const delay = captureBuffer.trim() ? SILENCE_AUTO_SEND_MS : WAKE_GRACE_MS;
   silenceTimer = setTimeout(() => {
     const text = captureBuffer.trim();
     capturedFinal = "";
@@ -106,7 +114,7 @@ function armSilenceTimer() {
     if (text) onCommand?.(text);
     status = shouldBeListening ? "standby" : "off";
     notify();
-  }, SILENCE_AUTO_SEND_MS);
+  }, delay);
 }
 
 function isSupported() {
