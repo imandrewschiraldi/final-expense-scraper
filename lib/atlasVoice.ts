@@ -51,6 +51,7 @@ const WAKE_PATTERN = /\b(hey|hi|ok(?:ay)?)\s+atlas\b[,.]?\s*/i;
 // back to standby before the user had said anything.
 const SILENCE_AUTO_SEND_MS = 2200;
 const WAKE_GRACE_MS = 4500;
+const STORAGE_KEY = "atlas-hands-free-enabled";
 
 let status: VoiceStatus = "off";
 let muted = false;
@@ -222,6 +223,15 @@ function startRecognitionSession() {
   }
 }
 
+function persistEnabled(enabled: boolean) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, enabled ? "1" : "0");
+  } catch {
+    // Private browsing / storage disabled — hands-free just won't
+    // auto-resume on the next load, nothing else is affected.
+  }
+}
+
 export function enableHandsFree() {
   if (!isSupported()) {
     status = "unsupported";
@@ -232,6 +242,7 @@ export function enableHandsFree() {
   status = "standby";
   notify();
   startRecognitionSession();
+  persistEnabled(true);
 }
 
 export function disableHandsFree() {
@@ -242,6 +253,25 @@ export function disableHandsFree() {
   window.speechSynthesis?.cancel();
   status = "off";
   notify();
+  persistEnabled(false);
+}
+
+// Called once from the first AtlasAssistant that mounts on a fresh page
+// load — resumes hands-free automatically if the user had it on last time,
+// so it stays "always on" across reloads/new tabs instead of needing a
+// fresh click every time. Guarded so it only actually runs once per page
+// load even though every mount across (portal)/admin/agent layouts calls it.
+let autoStartAttempted = false;
+export function resumeHandsFreeIfPreviouslyEnabled() {
+  if (autoStartAttempted || typeof window === "undefined") return;
+  autoStartAttempted = true;
+  try {
+    if (window.localStorage.getItem(STORAGE_KEY) === "1") {
+      enableHandsFree();
+    }
+  } catch {
+    // Storage unavailable — just stays off until manually enabled.
+  }
 }
 
 export function toggleMute() {
@@ -270,17 +300,63 @@ export function toSpeakableText(answer: string): string {
   ).trim();
 }
 
+// The browser's absolute-default voice (often an old low-quality local
+// engine, e.g. "Microsoft David" on Windows or eSpeak on Linux) is what
+// reads as the "robot voice" — browsers ship much better voices too, they
+// just aren't picked unless asked for by name/property. getVoices() is
+// also notoriously empty until the async 'voiceschanged' event fires on
+// first load, so the pick is cached and re-attempted on that event rather
+// than looked up fresh (and wrongly empty) on every speak() call.
+let resolvedVoice: SpeechSynthesisVoice | null = null;
+let voiceListenerAttached = false;
+
+function pickBestVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+  if (!voices.length) return null;
+  const byNamePattern = (pattern: RegExp) => voices.find((v) => pattern.test(v.name));
+  return (
+    byNamePattern(/Natural/i) || // Edge's "Microsoft ... Online (Natural)" voices — the best available when present
+    byNamePattern(/Google US English/i) || // Chrome's higher-quality network voice
+    byNamePattern(/Samantha/i) || // macOS/Safari's good default
+    voices.find((v) => v.lang === "en-US" && !v.localService) || // any other non-local (network) en-US voice
+    voices.find((v) => v.lang.startsWith("en")) ||
+    voices[0]
+  );
+}
+
+function ensureVoiceResolved() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  if (!voiceListenerAttached) {
+    voiceListenerAttached = true;
+    window.speechSynthesis.onvoiceschanged = () => {
+      resolvedVoice = pickBestVoice(window.speechSynthesis.getVoices());
+    };
+  }
+  if (!resolvedVoice) {
+    resolvedVoice = pickBestVoice(window.speechSynthesis.getVoices());
+  }
+}
+
+if (typeof window !== "undefined") {
+  // Kick off voice loading as soon as this module runs client-side, so a
+  // voice is already resolved by the time the first reply needs speaking
+  // rather than falling back to the default on that first call.
+  ensureVoiceResolved();
+}
+
 export function speak(text: string, onDone: () => void) {
   if (muted || !text.trim() || typeof window.speechSynthesis === "undefined") {
     onDone();
     return;
   }
+  ensureVoiceResolved();
   status = "speaking";
   notify();
   // Stop listening while talking so hands-free mode doesn't hear (and
   // potentially react to) its own voice.
   recognition?.stop();
   const utterance = new SpeechSynthesisUtterance(toSpeakableText(text));
+  if (resolvedVoice) utterance.voice = resolvedVoice;
+  utterance.rate = 1.03;
   utterance.onend = () => {
     status = shouldBeListening ? "standby" : "off";
     notify();

@@ -245,6 +245,14 @@ function AtlasAssistant() {
     });
   });
 
+  // Resumes hands-free automatically if it was on last time, so it stays
+  // "always on" across page reloads/new tabs instead of needing a fresh
+  // click every time — a no-op after the first mount on a given page load
+  // (see resumeHandsFreeIfPreviouslyEnabled's own guard).
+  useEffect(() => {
+    atlasVoice.resumeHandsFreeIfPreviouslyEnabled();
+  }, []);
+
   // Feature-detected client-side only — not every browser (Firefox desktop,
   // notably) implements SpeechRecognition at all, so the mic button simply
   // doesn't render there instead of showing something that does nothing.
