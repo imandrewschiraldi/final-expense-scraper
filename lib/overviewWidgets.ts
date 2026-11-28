@@ -1,8 +1,9 @@
 // Client-safe registry of every tile the Overview page's widget grid can
 // show. Admin-adjustable order/visibility lives in the OverviewWidget
 // table, keyed by these same ids; a widget with no row there just uses its
-// registry default (its position in this array) and stays enabled.
-export type OverviewWidgetDef = { id: string; label: string };
+// registry default (its position in this array, and enabled unless
+// `defaultEnabled` says otherwise) and stays enabled.
+export type OverviewWidgetDef = { id: string; label: string; defaultEnabled?: boolean };
 
 export const OVERVIEW_WIDGET_REGISTRY: OverviewWidgetDef[] = [
   { id: "hallOfFame", label: "Hall of Fame" },
@@ -18,6 +19,9 @@ export const OVERVIEW_WIDGET_REGISTRY: OverviewWidgetDef[] = [
   { id: "newTraining", label: "New Training" },
   { id: "recruitingRadar", label: "Recruiting Radar" },
   { id: "underwritingGenie", label: "Underwriting Genie" },
+  // Off by default — an admin opts into it via Edit Layout's eye toggle,
+  // same mechanism as hiding any of the widgets above, just inverted.
+  { id: "atlas", label: "A.T.L.A.S.", defaultEnabled: false },
 ];
 
 export type ResolvedOverviewWidget = OverviewWidgetDef & { order: number; enabled: boolean };
@@ -28,6 +32,10 @@ export type ResolvedOverviewWidget = OverviewWidgetDef & { order: number; enable
 export function resolveOverviewLayout(overrides: Map<string, { order: number; enabled: boolean }>): ResolvedOverviewWidget[] {
   return OVERVIEW_WIDGET_REGISTRY.map((def, index) => {
     const override = overrides.get(def.id);
-    return { ...def, order: override?.order ?? index, enabled: override?.enabled ?? true };
+    return {
+      ...def,
+      order: override?.order ?? index,
+      enabled: override?.enabled ?? def.defaultEnabled ?? true,
+    };
   }).sort((a, b) => a.order - b.order);
 }

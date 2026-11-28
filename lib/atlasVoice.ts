@@ -111,6 +111,14 @@ export function setHandlers(handlers: {
   onCommand = handlers.onCommand;
 }
 
+// Lets something other than the wake word itself open the panel — e.g. the
+// Overview page's clickable A.T.L.A.S. HUD widget — by reusing the exact
+// same handler the real wake word already calls, rather than wiring up a
+// second, separate "open the panel" channel.
+export function triggerWakeManually() {
+  onWake?.();
+}
+
 function clearSilenceTimer() {
   if (silenceTimer) {
     clearTimeout(silenceTimer);

@@ -39,6 +39,7 @@ import { MiniLeaderboard } from "@/components/portal/overview/MiniLeaderboard";
 import { NewTrainingWidget } from "@/components/portal/overview/NewTrainingWidget";
 import { RecruitingRadarWidget } from "@/components/portal/overview/RecruitingRadarWidget";
 import { UnderwritingGenieMini } from "@/components/portal/overview/UnderwritingGenieMini";
+import { AtlasHudWidget } from "@/components/portal/overview/AtlasHudWidget";
 import {
   SubtitleEditor,
   subtitleClassName,
@@ -143,6 +144,8 @@ function WidgetContent({
       return <RecruitingRadarWidget />;
     case "underwritingGenie":
       return <UnderwritingGenieMini />;
+    case "atlas":
+      return <AtlasHudWidget />;
     default:
       return null;
   }
