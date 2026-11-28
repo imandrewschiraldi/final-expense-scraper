@@ -9,7 +9,8 @@ import {
   shouldLogContact,
 } from "@/lib/vault";
 import { stageIdForSystemKey, getStageTarget } from "@/lib/pipelineSync";
-import { Prisma } from "@prisma/client";
+import { Prisma, PhoneType } from "@prisma/client";
+import { colorForTagName } from "@/app/api/agent/tag-colors/route";
 
 export async function GET(
   _req: NextRequest,
@@ -36,6 +37,8 @@ export async function GET(
         include: { agent: { select: { name: true } } },
       },
       pipelineStage: { select: { id: true, name: true, systemKey: true } },
+      secondaryEmails: { orderBy: { createdAt: "asc" } },
+      secondaryPhones: { orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -61,6 +64,7 @@ export async function PATCH(
     firstName,
     lastName,
     phone,
+    email,
     state,
     dateOfBirth,
     leadType,
@@ -73,12 +77,17 @@ export async function PATCH(
     medicalNotes,
     tags,
     source,
+    dndAll,
+    dndChannels,
+    secondaryEmails,
+    secondaryPhones,
   } = body as {
     status?: LeadStatus;
     pipelineStageId?: string;
     firstName?: string;
     lastName?: string;
     phone?: string;
+    email?: string | null;
     state?: string;
     dateOfBirth?: string;
     leadType?: string;
@@ -96,12 +105,20 @@ export async function PATCH(
     // free-text acquisition source.
     tags?: string[];
     source?: string | null;
+    dndAll?: boolean;
+    dndChannels?: Record<string, boolean> | null;
+    // Full replacement lists — the Add/Edit Contact form always sends its
+    // whole "+ Add Email/Phone" row set, never a single row to patch, so
+    // this replaces rather than merges (see the write below).
+    secondaryEmails?: string[];
+    secondaryPhones?: { value: string; type?: string; countryCode?: string }[];
   };
 
   const isFieldEdit =
     firstName !== undefined ||
     lastName !== undefined ||
     phone !== undefined ||
+    email !== undefined ||
     state !== undefined ||
     dateOfBirth !== undefined ||
     leadType !== undefined ||
@@ -113,7 +130,11 @@ export async function PATCH(
     tobaccoUse !== undefined ||
     medicalNotes !== undefined ||
     tags !== undefined ||
-    source !== undefined;
+    source !== undefined ||
+    dndAll !== undefined ||
+    dndChannels !== undefined ||
+    secondaryEmails !== undefined ||
+    secondaryPhones !== undefined;
 
   if (status !== undefined && !LEAD_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
@@ -222,6 +243,24 @@ export async function PATCH(
       editData.medicalNotes = medicalNotes.trim() || null;
     if (tags !== undefined) editData.tags = tags;
     if (source !== undefined) editData.source = source?.trim() || null;
+    if (email !== undefined) {
+      const trimmed = email?.trim() || "";
+      if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+      }
+      editData.email = trimmed || null;
+    }
+    if (dndAll !== undefined) editData.dndAll = dndAll;
+    if (dndChannels !== undefined) editData.dndChannels = dndChannels ?? Prisma.JsonNull;
+  }
+
+  // New tag names get a stable color the first time they're used — a no-op
+  // upsert for tags that already have one.
+  if (tags !== undefined && tags.length > 0) {
+    await db.tagColor.createMany({
+      data: tags.map((name) => ({ name, color: colorForTagName(name) })),
+      skipDuplicates: true,
+    });
   }
 
   // The status this update resolves to for vault/contact-log purposes —
@@ -277,6 +316,42 @@ export async function PATCH(
     });
   }
 
+  // Full replacement of the secondary email/phone lists — see this route's
+  // own type comment above on why these always arrive as the whole set
+  // rather than a single row to patch.
+  if (secondaryEmails !== undefined || secondaryPhones !== undefined) {
+    await db.$transaction([
+      ...(secondaryEmails !== undefined
+        ? [
+            db.leadEmail.deleteMany({ where: { leadId: id } }),
+            db.leadEmail.createMany({
+              data: secondaryEmails
+                .map((v) => v.trim())
+                .filter(Boolean)
+                .map((value) => ({ leadId: id, value })),
+            }),
+          ]
+        : []),
+      ...(secondaryPhones !== undefined
+        ? [
+            db.leadPhone.deleteMany({ where: { leadId: id } }),
+            db.leadPhone.createMany({
+              data: secondaryPhones
+                .filter((p) => p.value?.trim())
+                .map((p) => ({
+                  leadId: id,
+                  value: p.value.replace(/[^\d+]/g, ""),
+                  type: (Object.values(PhoneType) as string[]).includes(p.type ?? "")
+                    ? (p.type as PhoneType)
+                    : PhoneType.MOBILE,
+                  countryCode: p.countryCode || "+1",
+                })),
+            }),
+          ]
+        : []),
+    ]);
+  }
+
   const updated = await db.lead.findUniqueOrThrow({
     where: { id },
     include: {
@@ -289,6 +364,8 @@ export async function PATCH(
         include: { agent: { select: { name: true } } },
       },
       pipelineStage: { select: { id: true, name: true, systemKey: true } },
+      secondaryEmails: { orderBy: { createdAt: "asc" } },
+      secondaryPhones: { orderBy: { createdAt: "asc" } },
     },
   });
 

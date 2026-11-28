@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import { Prisma, PhoneType } from "@prisma/client";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { buildAgentLeadsWhere, AGENT_LEADS_ORDER_BY } from "@/lib/agentLeads";
@@ -7,6 +7,7 @@ import { filterGroupToWhere, type FilterGroup } from "@/lib/contactFilters";
 import { isLeadType } from "@/lib/leadType";
 import { generateUniqueLeadNumbers } from "@/lib/leadNumber";
 import { stageIdForSystemKey, getStageTarget } from "@/lib/pipelineSync";
+import { colorForTagName } from "@/app/api/agent/tag-colors/route";
 
 export async function GET(req: NextRequest) {
   const guard = await requireAgent();
@@ -146,6 +147,15 @@ export async function POST(req: NextRequest) {
   const tags = Array.isArray(body?.tags)
     ? body.tags.filter((t: unknown): t is string => typeof t === "string" && t.trim().length > 0)
     : [];
+  const dndAll = body?.dndAll === true;
+  const secondaryEmails: string[] = Array.isArray(body?.secondaryEmails)
+    ? body.secondaryEmails.filter((v: unknown): v is string => typeof v === "string" && v.trim().length > 0)
+    : [];
+  const secondaryPhones: { value: string; type?: string; countryCode?: string }[] = Array.isArray(
+    body?.secondaryPhones,
+  )
+    ? body.secondaryPhones.filter((p: unknown): p is { value: string } => !!(p as { value?: string })?.value?.trim())
+    : [];
   let state =
     typeof body?.state === "string" ? body.state.trim().toUpperCase() : "";
   const leadType = body?.leadType;
@@ -218,8 +228,33 @@ export async function POST(req: NextRequest) {
       zip: zip || null,
       source: source || null,
       tags,
+      dndAll,
+      secondaryEmails: secondaryEmails.length
+        ? { createMany: { data: secondaryEmails.map((value) => ({ value: value.trim() })) } }
+        : undefined,
+      secondaryPhones: secondaryPhones.length
+        ? {
+            createMany: {
+              data: secondaryPhones.map((p) => ({
+                value: p.value.replace(/[^\d+]/g, ""),
+                type: (Object.values(PhoneType) as string[]).includes(p.type ?? "")
+                  ? (p.type as PhoneType)
+                  : PhoneType.MOBILE,
+                countryCode: p.countryCode || "+1",
+              })),
+            },
+          }
+        : undefined,
     },
+    include: { secondaryEmails: true, secondaryPhones: true },
   });
+
+  if (tags.length > 0) {
+    await db.tagColor.createMany({
+      data: tags.map((name: string) => ({ name, color: colorForTagName(name) })),
+      skipDuplicates: true,
+    });
+  }
 
   return NextResponse.json({ lead }, { status: 201 });
 }

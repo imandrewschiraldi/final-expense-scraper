@@ -232,6 +232,17 @@ model PipelineStage {
   @@map("pipeline_stages")
 }
 
+// A secondary email/phone's type — matches the Contacts page's Add
+// Contact form picker. Only used for LeadPhone (and borrowed by LeadEmail's
+// `type` for symmetry) — Lead.phone/Lead.email (the primary values) don't
+// carry a type of their own, same as before this model existed.
+enum PhoneType {
+  MOBILE
+  HOME
+  WORK
+  OTHER
+}
+
 model Lead {
   id              String         @id @default(cuid())
   firstName       String
@@ -324,12 +335,31 @@ model Lead {
   /// distinct from `sourceImport` below, which tracks the CSV batch a
   /// bulk-imported lead came from, not this kind of agent-facing category.
   source                  String?
+  /// Workspace-wide Do Not Disturb flag — set from the Add/Edit Contact
+  /// form's "DND all channels" checkbox. Nothing currently reads this to
+  /// block outbound SMS/email/calls (there's no outbound messaging engine
+  /// in this app yet); it's surfaced on the Contacts page/detail panel as a
+  /// visible flag an agent sets and respects manually, same as the rest of
+  /// the Client Suitability Sheet's free-form fields.
+  dndAll                  Boolean  @default(false)
+  /// Optional per-channel override once dndAll is false — { call, sms,
+  /// email, whatsapp, inbound } booleans. Null means "no per-channel
+  /// overrides set", distinct from an explicit all-false object.
+  dndChannels             Json?
 
   notes             LeadNote[]
   contactLogEntries ContactLogEntry[]
   policies          Policy[]
   calendarEvents    CalendarEvent[]
   tasks             LeadTask[]
+  /// Additional emails/phones beyond the primary `email`/`phone` fields
+  /// above — the Add/Edit Contact form's "+ Add Email" / "+ Add Phone"
+  /// rows. The primary value itself is never duplicated in here: it lives
+  /// only on `email`/`phone`, which is what every other part of the app
+  /// (dialer links, SMS links, CSV export, search) already reads, so none
+  /// of that needed to change to support multiple values.
+  secondaryEmails   LeadEmail[]
+  secondaryPhones   LeadPhone[]
 
   @@index([state])
   @@index([status])
@@ -360,6 +390,44 @@ model LeadNote {
 
   @@index([leadId])
   @@map("lead_notes")
+}
+
+model LeadEmail {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  value     String
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@map("lead_emails")
+}
+
+model LeadPhone {
+  id          String    @id @default(cuid())
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  value       String
+  type        PhoneType @default(MOBILE)
+  countryCode String    @default("+1")
+  createdAt   DateTime  @default(now())
+
+  @@index([leadId])
+  @@map("lead_phones")
+}
+
+/// A display color for a tag name used in Lead.tags (still a plain string
+/// array there — see that field's own doc comment for why — this just adds
+/// the one thing a string array can't: a color per name, so the Contacts
+/// table's tag pills can be color-coded like the reference CRM's). Keyed on
+/// the tag text itself rather than a foreign key, since Lead.tags has no id
+/// to join on; an unmatched tag just renders with a default neutral color.
+model TagColor {
+  name      String   @id
+  color     String
+  createdAt DateTime @default(now())
+
+  @@map("tag_colors")
 }
 
 // Auto-created whenever an agent marks a lead Contacted, No Answer, or Not
@@ -1369,6 +1437,12 @@ model SmartList {
   sortConfig       Json?
   pageSize         Int      @default(20)
   order            Int      @default(0)
+  /// false (default, "Private/Only Me") — visible only to `owner`. true
+  /// ("Global/Shared with Team") — visible to every agent, though it still
+  /// only ever queries that agent's own leads (buildAgentLeadsWhere always
+  /// scopes by assignedAgentId): sharing the saved filter/column/sort
+  /// preset, never another agent's underlying contacts.
+  isGlobal         Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
