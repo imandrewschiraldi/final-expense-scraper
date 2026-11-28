@@ -367,17 +367,6 @@ export function f90IsGraduated(enrolledAt: Date, now: Date = new Date()): boolea
   return f90DayNumber(enrolledAt, now) > F90_DAYS;
 }
 
-/** Phase 5's own trigger — "5 closed sales OR Day 90," independent of
- *  (and reached well before, in the common case) the $20,000 Issued AP
- *  graduation standard that the certificate itself checks. */
-export function f90Phase5Unlocked(
-  salesCount: number,
-  enrolledAt: Date,
-  now: Date = new Date(),
-): boolean {
-  return salesCount >= 5 || f90DayNumber(enrolledAt, now) >= F90_DAYS;
-}
-
 /** Which roadmap node (phase index, or -1 for "not started"/5 for
  *  "graduated") an agent is currently sitting on — the first phase with an
  *  incomplete step, since actual progress through compliance-gated steps
@@ -392,68 +381,80 @@ export function f90CurrentPhaseIndex(completedSteps: string[]): number {
   return F90_PHASES.length - 1;
 }
 
-// The winding map's own node list — one Mission Node per individual step
-// (not per phase, see F90_PHASES above for the phase grouping those steps
-// still belong to), plus one combined "Vault" node for all of Phase 5's
-// channels. This is what actually walks the road; F90_PHASES/F90Step stay
-// the single source of truth for each node's real content.
-export type F90RoadmapNode = {
-  key: string; // a step key, or "VAULT" for the single Phase 5 node
-  phaseKey: string;
+// The roadmap's own node list — a short "trunk" of one node per phase
+// (plus a final Graduation node), with each phase's individual steps
+// branching off its trunk node like twigs on a tree, instead of every
+// single step sitting inline on the main path. Six trunk nodes total:
+// Phase 1-4, the Phase 5 Vault, and Graduation. F90_PHASES/F90Step stay
+// the single source of truth for each branch's real content.
+export type F90TrunkNode = {
+  key: string; // a phase key, or "GRADUATION"
   title: string;
-  kind: "step" | "vault";
+  kind: "phase" | "vault" | "graduation";
+  branches: { key: string; title: string }[]; // empty for vault/graduation
 };
 
-export const F90_ROADMAP_NODES: F90RoadmapNode[] = F90_PHASES.flatMap(
-  (phase): F90RoadmapNode[] =>
-    phase.key === "P5"
-      ? [{ key: "VAULT", phaseKey: "P5", title: "Lead Scaling Vault", kind: "vault" }]
-      : phase.steps.map((step) => ({
-          key: step.key,
-          phaseKey: phase.key,
-          title: step.title,
-          kind: "step",
-        })),
-);
+export const F90_TRUNK_NODES: F90TrunkNode[] = [
+  ...F90_PHASES.map(
+    (phase): F90TrunkNode =>
+      phase.key === "P5"
+        ? { key: phase.key, title: "Lead Scaling Vault", kind: "vault", branches: [] }
+        : {
+            key: phase.key,
+            title: phase.title,
+            kind: "phase",
+            branches: phase.steps.map((step) => ({ key: step.key, title: step.title })),
+          },
+  ),
+  { key: "GRADUATION", title: "Graduation", kind: "graduation", branches: [] },
+];
 
-/** Index (0-based) of the node the agent is actively working on — the
- *  first not-yet-completed step node, or the Vault node once every Phase
- *  1-4 step is done, or past-the-end (nodes.length) once even the Vault
- *  is behind them (certificate eligibility is what actually matters then,
- *  handled separately). */
-export function f90CurrentNodeIndex(completedSteps: string[]): number {
+/** Index (0-based) of the trunk node the agent is actively working on —
+ *  the first Phase 1-4 trunk with an incomplete branch, or the Vault's
+ *  index once all four are done (no separate sales/day gate — the Vault
+ *  is the lead source agents dial through to get those first sales, so
+ *  it opens as soon as bootcamp/compliance is behind them). Graduation's
+ *  own lock state is driven by certificate eligibility, not this index,
+ *  since that also depends on Issued AP. */
+export function f90CurrentTrunkIndex(completedSteps: string[]): number {
   const completedSet = new Set(completedSteps);
-  for (let i = 0; i < F90_ROADMAP_NODES.length; i++) {
-    const node = F90_ROADMAP_NODES[i];
-    if (node.kind === "vault") return i; // reached once every step before it is done
-    if (!completedSet.has(node.key)) return i;
+  const phaseNodes = F90_TRUNK_NODES.filter((t) => t.kind === "phase");
+  for (let i = 0; i < phaseNodes.length; i++) {
+    if (!phaseNodes[i].branches.every((b) => completedSet.has(b.key))) return i;
   }
-  return F90_ROADMAP_NODES.length;
+  return phaseNodes.length; // the Vault's index once every phase is done
 }
 
-// Hand-tuned-feeling but formula-driven 2D positions for the winding path —
-// a 6-lane left-right snake (not a straight line or a simple sine wave) with
-// a touch of deterministic jitter per node, descending the canvas top to
-// bottom so Phase 1 starts at the top and the Vault/diploma land at the
-// bottom. `pseudoRandom` mirrors the confetti module's own impure-free
-// scatter trick (Math.sin/seed), not actual randomness, so positions are
-// stable across renders without needing to store them anywhere.
-const ROADMAP_LANES = [20, 38, 62, 80, 62, 38];
-// Integer-only hash (bitwise + Math.imul, no Math.sin): native sin()
-// implementations differ in their last bit between Node (SSR) and the
-// browser's V8 build, which caused a hydration mismatch. Bitwise ops are
-// spec-defined to the bit, so this is identical on server and client.
-function pseudoJitter(seed: number): number {
-  let x = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
-  x ^= x >>> 13;
-  x = Math.imul(x, 0xc2b2ae35);
-  x ^= x >>> 16;
-  return (x >>> 0) / 4294967296;
+// Formula-driven 2D positions for the trunk-and-branch tree — a wide
+// left-right snake for the 6 trunk nodes (plenty of vertical room between
+// them for branches to fan out), with each phase's branch nodes hanging
+// off their trunk node in a short alternating-side comb, connected back
+// to that trunk node only (not to each other or to the main path).
+const TRUNK_LANES = [28, 72, 28, 72, 28, 72];
+// Tall enough to fit Phase 1's 6 branches comfortably spaced between it
+// and the next trunk node without crowding.
+const TRUNK_Y_GAP = 420;
+const BRANCH_SIDE_OFFSET = 22;
+
+export function f90TrunkNodePosition(index: number): { x: number; y: number } {
+  const x = TRUNK_LANES[index % TRUNK_LANES.length];
+  const y = 110 + index * TRUNK_Y_GAP;
+  return { x, y };
 }
-export function f90RoadmapNodePosition(index: number): { x: number; y: number } {
-  const lane = ROADMAP_LANES[index % ROADMAP_LANES.length];
-  const jitter = (pseudoJitter(index) - 0.5) * 8;
-  const x = Math.min(88, Math.max(12, lane + jitter));
-  const y = 90 + index * 150;
+
+/** A branch node's position hangs between its own trunk node and the next
+ *  one, offset to alternating sides like twigs off a tree, scaled to fit
+ *  however many branches that particular trunk node has. */
+export function f90BranchNodePosition(
+  trunkIndex: number,
+  branchIndex: number,
+  branchCount: number,
+): { x: number; y: number } {
+  const trunk = f90TrunkNodePosition(trunkIndex);
+  const next = f90TrunkNodePosition(trunkIndex + 1);
+  const span = next.y - trunk.y;
+  const y = trunk.y + ((branchIndex + 1) / (branchCount + 1)) * span;
+  const side = branchIndex % 2 === 0 ? 1 : -1;
+  const x = Math.min(94, Math.max(6, trunk.x + side * BRANCH_SIDE_OFFSET));
   return { x, y };
 }

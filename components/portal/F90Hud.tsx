@@ -51,12 +51,10 @@ export function F90Hud({
   dayNumber,
   issuedAP,
   salesCount,
-  phase5Unlocked,
 }: {
   dayNumber: number;
   issuedAP: number;
   salesCount: number;
-  phase5Unlocked: boolean;
 }) {
   const daysRemaining = Math.max(0, F90_DAYS - dayNumber);
   const dayPct = Math.min(1, dayNumber / F90_DAYS);
@@ -112,10 +110,10 @@ export function F90Hud({
           <p className="text-[10px] font-bold tracking-widest text-white/50 uppercase">90-Day Clock</p>
         </div>
 
-        {/* 5-sale gauge */}
+        {/* First-5-sales tracker */}
         <div className="flex flex-col items-center gap-2">
           <div className="h-20 w-20 sm:h-24 sm:w-24">
-            <Ring pct={salesPct} color={phase5Unlocked ? "#2fd06b" : "var(--copper-metal-hi)"}>
+            <Ring pct={salesPct} color={salesCount >= 5 ? "#2fd06b" : "var(--copper-metal-hi)"}>
               <div className="text-center">
                 <p className="font-condensed text-xl font-extrabold text-white sm:text-2xl">
                   {Math.min(salesCount, 5)}/5
@@ -125,7 +123,7 @@ export function F90Hud({
             </Ring>
           </div>
           <p className="text-[10px] font-bold tracking-widest text-white/50 uppercase">
-            {phase5Unlocked ? "Vault Unlocked" : "Unlocks Vault"}
+            {salesCount >= 5 ? "5 Sales Hit ✓" : "First 5 Sales"}
           </p>
         </div>
 

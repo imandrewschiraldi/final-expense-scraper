@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Lock, GraduationCap, Check, Upload, FileCheck, Power } from "lucide-react";
+import { Lock, GraduationCap, Vault, Check, Upload, FileCheck, Power } from "lucide-react";
 import { Stepper } from "@/components/ui/Stepper";
 import { cn } from "@/lib/cn";
 import {
@@ -10,15 +10,16 @@ import {
   F90_TOTAL_STEPS,
   F90_DAYS,
   F90_GRADUATION_AP,
-  F90_ROADMAP_NODES,
+  F90_TRUNK_NODES,
   f90DayNumber,
   f90IsGraduated,
-  f90Phase5Unlocked,
   f90IsEligibleForCertificate,
-  f90CurrentNodeIndex,
-  f90RoadmapNodePosition,
+  f90CurrentTrunkIndex,
+  f90TrunkNodePosition,
+  f90BranchNodePosition,
   isF90StepKey,
   type F90Step,
+  type F90TrunkNode,
   type F90Link,
   type F90DocType,
 } from "@/lib/f90Content";
@@ -394,24 +395,27 @@ function TrainingScheduleStrip({
   }
 
   return (
-    <div className="mt-3 grid grid-cols-5 gap-2">
+    <div className="mt-3 flex flex-col gap-2">
       {schedule.map((s) => (
         <div
           key={s.day}
-          className="rounded-xl border-2 p-2 text-center"
+          className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-xl border-2 p-3"
           style={{ borderColor: PAPER_BORDER, background: PAPER_BG }}
         >
-          <p className="text-xs font-extrabold tracking-wide uppercase" style={{ color: INK }}>
-            {s.day.slice(0, 3)}
-          </p>
-          <p className="mt-1 text-xs font-bold" style={{ color: ACCENT }}>
-            {label(s.startHour)}–{label(s.endHour)}
-            {showZoneLabel ? "" : " ET"}
-          </p>
-          <p className="mt-1 text-xs font-semibold" style={{ color: INK_MUTED }}>
-            {s.topic}
-          </p>
-          <div className="mt-2 flex justify-center">
+          <div className="min-w-0">
+            <p className="text-xs font-extrabold tracking-wide uppercase" style={{ color: INK }}>
+              {s.day}
+            </p>
+            <p className="mt-0.5 text-xs font-bold" style={{ color: ACCENT }}>
+              {label(s.startHour)}–{label(s.endHour)}
+              {showZoneLabel ? "" : " ET"}
+              <span className="font-semibold" style={{ color: INK_MUTED }}>
+                {" "}
+                · {s.topic}
+              </span>
+            </p>
+          </div>
+          <div className="shrink-0">
             <WorksheetLinkPill link={s.link} />
           </div>
         </div>
@@ -482,6 +486,37 @@ function findF90Step(key: string): F90Step | null {
     if (step) return step;
   }
   return null;
+}
+
+/** Resolves a selected roadmap key (a trunk node's own key, or one of its
+ *  branch step keys) into what the Mission Drawer should actually show. */
+function resolveSelection(key: string | null): DrawerSelection | null {
+  if (!key) return null;
+  const trunk = F90_TRUNK_NODES.find((t) => t.key === key);
+  if (trunk) {
+    if (trunk.kind === "phase") return { kind: "phase", trunk };
+    if (trunk.kind === "vault") return { kind: "vault", trunk };
+    return { kind: "graduation", trunk };
+  }
+  const step = findF90Step(key);
+  if (!step) return null;
+  const phase = F90_PHASES.find((p) => p.steps.some((s) => s.key === key));
+  return { kind: "step", step, phaseKey: phase?.key ?? "" };
+}
+
+/** Where the map opens on first load — the first incomplete task within
+ *  the agent's current phase, or that phase's/Vault's trunk node itself
+ *  once there's nothing left to jump straight into. */
+function initialSelectionKey(completedSteps: string[]): string | null {
+  const trunkIndex = f90CurrentTrunkIndex(completedSteps);
+  const trunk = F90_TRUNK_NODES[trunkIndex];
+  if (!trunk) return null;
+  if (trunk.kind === "phase") {
+    const completedSet = new Set(completedSteps);
+    const firstIncomplete = trunk.branches.find((b) => !completedSet.has(b.key));
+    return firstIncomplete?.key ?? trunk.key;
+  }
+  return trunk.key;
 }
 
 type DocUrls = Record<F90DocType, string | null>;
@@ -621,27 +656,31 @@ function GenericCompleteButton({
   );
 }
 
+type DrawerSelection =
+  | { kind: "phase"; trunk: F90TrunkNode }
+  | { kind: "vault"; trunk: F90TrunkNode }
+  | { kind: "graduation"; trunk: F90TrunkNode }
+  | { kind: "step"; step: F90Step; phaseKey: string };
+
 function MissionDrawer({
-  node,
+  selection,
   completedSteps,
   savingKey,
   onToggle,
-  phase5Unlocked,
-  salesCount,
-  dayNumber,
+  onSelectNode,
   issuedAP,
+  certificateEligible,
   agentTimeZone,
   docUrls,
   onDocUploaded,
 }: {
-  node: { key: string; phaseKey: string; kind: "step" | "vault" } | null;
+  selection: DrawerSelection | null;
   completedSteps: Set<string>;
   savingKey: string | null;
   onToggle: (key: string, completed: boolean) => void;
-  phase5Unlocked: boolean;
-  salesCount: number;
-  dayNumber: number;
+  onSelectNode: (key: string) => void;
   issuedAP: number;
+  certificateEligible: boolean;
   agentTimeZone: string | null;
   docUrls: DocUrls;
   onDocUploaded: (docType: F90DocType, url: string) => void;
@@ -656,7 +695,7 @@ function MissionDrawer({
     }
   }
 
-  if (!node) {
+  if (!selection) {
     return (
       <div className="f90-road-bg flex min-h-[260px] items-center justify-center rounded-2xl border border-white/10 p-8 text-center shadow-[0_0_30px_rgba(0,0,0,0.4)]">
         <p className="text-sm font-bold text-white/50">Tap a mission on the map to get started.</p>
@@ -664,76 +703,124 @@ function MissionDrawer({
     );
   }
 
-  if (node.kind === "vault") {
-    const vaultPhase = F90_PHASES.find((p) => p.key === "P5");
+  if (selection.kind === "graduation") {
+    const remaining = Math.max(0, F90_GRADUATION_AP - issuedAP);
     return (
-      <div
-        key={node.key}
-        className="animate-f90-panel-in f90-road-bg rounded-2xl border border-white/10 p-6 shadow-[0_0_30px_rgba(0,0,0,0.4)]"
-      >
-        <p className="font-condensed text-xs font-bold tracking-[0.2em] text-white/50 uppercase">Phase 5</p>
-        <h3 className="font-condensed mb-4 text-xl font-extrabold text-white uppercase">Lead Scaling Vault</h3>
-        {phase5Unlocked ? (
-          <>
-            <div className="mb-4 rounded-xl border border-white/15 bg-black/30 p-4">
-              <p className="text-xs font-bold text-white/60 uppercase">90-Day Graduation Standard</p>
-              <p className="mt-1 text-sm text-white/80">
-                {`Combine the Agent Accelerator Lead Program with whichever channel(s) below you run, and hit $${F90_GRADUATION_AP.toLocaleString()} in Issued AP within your first 90 days.`}
-              </p>
-              <p className="metal-copper-text mt-2 text-sm font-bold">
-                {`$${Math.round(issuedAP).toLocaleString()} / $${F90_GRADUATION_AP.toLocaleString()}`}
-              </p>
-            </div>
-            <div className="space-y-3">
-              {vaultPhase?.channels?.map((c) => {
-                const selected = completedSteps.has(c.key);
-                return (
-                  <button
-                    key={c.key}
-                    type="button"
-                    onClick={() => handleToggle(c.key, !selected)}
-                    className={cn(
-                      "w-full rounded-xl border-2 p-3 text-left transition-colors",
-                      selected
-                        ? "border-[var(--copper-metal-hi)] bg-[var(--copper-metal-hi)]/10"
-                        : "border-white/15 bg-black/20 hover:border-white/30",
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-white">{c.title}</p>
-                      {selected && <Check className="h-4 w-4 text-[var(--copper-metal-hi)]" />}
-                    </div>
-                    <p className="mt-1 text-xs text-white/60">{c.description}</p>
-                    <p className="mt-1 text-[11px] font-semibold text-white/40">Benchmark: {c.benchmark}</p>
-                    <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                      <WorksheetLinkPill link={c.link} />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        ) : (
-          <div className="flex items-start gap-3 rounded-xl border border-white/15 bg-black/30 p-4">
-            <Lock className="mt-0.5 h-5 w-5 shrink-0 text-white/50" />
-            <p className="text-sm text-white/70">
-              Locked until you&apos;ve closed 5 sales or reached Day 90 — you&apos;re at {salesCount}{" "}
-              {salesCount === 1 ? "sale" : "sales"} and Day {dayNumber}.
-            </p>
-          </div>
-        )}
+      <div className="animate-f90-panel-in f90-road-bg rounded-2xl border border-white/10 p-6 shadow-[0_0_30px_rgba(0,0,0,0.4)]">
+        <p className="font-condensed text-xs font-bold tracking-[0.2em] text-white/50 uppercase">Final Destination</p>
+        <h3 className="font-condensed mb-3 text-xl font-extrabold text-white uppercase">Graduation</h3>
+        <p className="mb-4 text-sm text-white/70">
+          {certificateEligible
+            ? "Every Phase 1–4 mission is complete and you've hit the Issued AP standard — your diploma is unlocked below."
+            : `Complete every Phase 1–4 mission and reach $${F90_GRADUATION_AP.toLocaleString()} in Issued AP to unlock your diploma.`}
+        </p>
+        <div className="rounded-xl border border-white/15 bg-black/30 p-4">
+          <p className="metal-copper-text text-sm font-bold">
+            {`$${Math.round(issuedAP).toLocaleString()} / $${F90_GRADUATION_AP.toLocaleString()} Issued AP`}
+          </p>
+          {!certificateEligible && (
+            <p className="mt-1 text-xs text-white/60">{`$${Math.round(remaining).toLocaleString()} to go.`}</p>
+          )}
+        </div>
+        <p className="mt-4 text-xs font-bold tracking-wide text-white/50 uppercase">
+          Scroll down to see your diploma ↓
+        </p>
       </div>
     );
   }
 
-  const step = findF90Step(node.key);
-  if (!step) return null;
+  if (selection.kind === "vault") {
+    const vaultPhase = F90_PHASES.find((p) => p.key === "P5");
+    return (
+      <div className="animate-f90-panel-in f90-road-bg rounded-2xl border border-white/10 p-6 shadow-[0_0_30px_rgba(0,0,0,0.4)]">
+        <p className="font-condensed text-xs font-bold tracking-[0.2em] text-white/50 uppercase">Phase 5</p>
+        <h3 className="font-condensed mb-4 text-xl font-extrabold text-white uppercase">Lead Scaling Vault</h3>
+        <div className="mb-4 rounded-xl border border-white/15 bg-black/30 p-4">
+          <p className="text-xs font-bold text-white/60 uppercase">90-Day Graduation Standard</p>
+          <p className="mt-1 text-sm text-white/80">
+            {`Combine the Agent Accelerator Lead Program with whichever channel(s) below you run, and hit $${F90_GRADUATION_AP.toLocaleString()} in Issued AP within your first 90 days.`}
+          </p>
+          <p className="metal-copper-text mt-2 text-sm font-bold">
+            {`$${Math.round(issuedAP).toLocaleString()} / $${F90_GRADUATION_AP.toLocaleString()}`}
+          </p>
+        </div>
+        <div className="space-y-3">
+          {vaultPhase?.channels?.map((c) => {
+            const selected = completedSteps.has(c.key);
+            return (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => handleToggle(c.key, !selected)}
+                className={cn(
+                  "w-full rounded-xl border-2 p-3 text-left transition-colors",
+                  selected
+                    ? "border-[var(--copper-metal-hi)] bg-[var(--copper-metal-hi)]/10"
+                    : "border-white/15 bg-black/20 hover:border-white/30",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold text-white">{c.title}</p>
+                  {selected && <Check className="h-4 w-4 text-[var(--copper-metal-hi)]" />}
+                </div>
+                <p className="mt-1 text-xs text-white/60">{c.description}</p>
+                <p className="mt-1 text-[11px] font-semibold text-white/40">Benchmark: {c.benchmark}</p>
+                <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                  <WorksheetLinkPill link={c.link} />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (selection.kind === "phase") {
+    const phase = F90_PHASES.find((p) => p.key === selection.trunk.key);
+    return (
+      <div className="animate-f90-panel-in f90-road-bg rounded-2xl border border-white/10 p-6 shadow-[0_0_30px_rgba(0,0,0,0.4)]">
+        <p className="font-condensed text-xs font-bold tracking-[0.2em] text-white/50 uppercase">
+          {phase?.subtitle}
+        </p>
+        <h3 className="font-condensed mb-4 text-xl font-extrabold text-white uppercase">{selection.trunk.title}</h3>
+        <p className="mb-4 text-xs font-bold tracking-wide text-white/50 uppercase">Tap a task below</p>
+        <div className="space-y-2">
+          {selection.trunk.branches.map((b, i) => {
+            const done = completedSteps.has(b.key);
+            return (
+              <button
+                key={b.key}
+                type="button"
+                onClick={() => onSelectNode(b.key)}
+                className="flex w-full items-center gap-3 rounded-xl border-2 border-white/15 bg-black/20 p-3 text-left transition-colors hover:border-white/30"
+              >
+                <span
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-extrabold",
+                    done
+                      ? "border-transparent bg-[linear-gradient(135deg,var(--copper-metal-dk),var(--copper-metal-hi))] text-black"
+                      : "border-white/30 text-white/70",
+                  )}
+                >
+                  {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                </span>
+                <span className="text-sm font-bold text-white">{b.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  const step = selection.step;
   const checked = completedSteps.has(step.key);
-  const phaseTitle = F90_PHASES.find((p) => p.key === node.phaseKey)?.title ?? "";
+  const phaseTitle = F90_PHASES.find((p) => p.key === selection.phaseKey)?.title ?? "";
 
   return (
     <div
-      key={node.key}
+      key={step.key}
       className="animate-f90-panel-in f90-road-bg rounded-2xl border border-white/10 p-6 shadow-[0_0_30px_rgba(0,0,0,0.4)]"
     >
       <p className="font-condensed text-xs font-bold tracking-[0.2em] text-white/50 uppercase">{phaseTitle}</p>
@@ -813,18 +900,18 @@ function MissionDrawer({
 
 function RoadmapCanvas({
   completedSteps,
-  phase5Unlocked,
+  certificateEligible,
   selectedNode,
   onSelectNode,
 }: {
   completedSteps: Set<string>;
-  phase5Unlocked: boolean;
+  certificateEligible: boolean;
   selectedNode: string | null;
   onSelectNode: (key: string) => void;
 }) {
-  const currentIndex = f90CurrentNodeIndex([...completedSteps]);
-  const lastPos = f90RoadmapNodePosition(F90_ROADMAP_NODES.length - 1);
-  const totalHeight = lastPos.y + 110;
+  const currentTrunkIndex = f90CurrentTrunkIndex([...completedSteps]);
+  const lastTrunk = f90TrunkNodePosition(F90_TRUNK_NODES.length - 1);
+  const totalHeight = lastTrunk.y + 110;
 
   return (
     <div
@@ -835,46 +922,71 @@ function RoadmapCanvas({
         Roadmap to Graduation
       </p>
       <svg viewBox={`0 0 100 ${totalHeight}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
-        {F90_ROADMAP_NODES.slice(0, -1).map((node, i) => {
-          const a = f90RoadmapNodePosition(i);
-          const b = f90RoadmapNodePosition(i + 1);
-          const traveled = i < currentIndex;
+        {F90_TRUNK_NODES.slice(0, -1).map((trunk, i) => {
+          const a = f90TrunkNodePosition(i);
+          const b = f90TrunkNodePosition(i + 1);
+          const traveled = i < currentTrunkIndex;
           return (
             <line
-              key={node.key}
+              key={trunk.key}
               x1={a.x}
               y1={a.y}
               x2={b.x}
               y2={b.y}
               stroke={traveled ? "var(--copper-metal-hi)" : "rgba(255,255,255,0.3)"}
-              strokeWidth={traveled ? 1 : 0.6}
+              strokeWidth={traveled ? 1.2 : 0.7}
               strokeDasharray={traveled ? undefined : "2.5,2.5"}
               strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
             />
           );
         })}
+        {F90_TRUNK_NODES.map((trunk, i) => {
+          if (trunk.branches.length === 0) return null;
+          const trunkPos = f90TrunkNodePosition(i);
+          const trunkReached = i <= currentTrunkIndex;
+          return trunk.branches.map((branch, j) => {
+            const pos = f90BranchNodePosition(i, j, trunk.branches.length);
+            const done = completedSteps.has(branch.key);
+            return (
+              <line
+                key={branch.key}
+                x1={trunkPos.x}
+                y1={trunkPos.y}
+                x2={pos.x}
+                y2={pos.y}
+                stroke={done ? "var(--copper-metal-hi)" : "rgba(255,255,255,0.25)"}
+                strokeWidth={done ? 0.9 : 0.5}
+                strokeDasharray={done ? undefined : "2,2"}
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+                opacity={trunkReached ? 1 : 0.4}
+              />
+            );
+          });
+        })}
       </svg>
-      {F90_ROADMAP_NODES.map((node, i) => {
-        const pos = f90RoadmapNodePosition(i);
-        const isVault = node.kind === "vault";
-        const completed = !isVault && completedSteps.has(node.key);
-        const isCurrent = i === currentIndex && (!isVault || phase5Unlocked);
-        const vaultLockedAtCurrent = isVault && i === currentIndex && !phase5Unlocked;
-        const locked = i > currentIndex || vaultLockedAtCurrent;
-        const isSelected = selectedNode === node.key;
+
+      {F90_TRUNK_NODES.map((trunk, i) => {
+        const pos = f90TrunkNodePosition(i);
+        const isVault = trunk.kind === "vault";
+        const isGraduation = trunk.kind === "graduation";
+        const completed = trunk.kind === "phase" && trunk.branches.every((b) => completedSteps.has(b.key));
+        const locked = isGraduation ? !certificateEligible : i > currentTrunkIndex;
+        const isCurrent = isGraduation ? certificateEligible : i === currentTrunkIndex;
+        const isSelected = selectedNode === trunk.key;
         return (
           <button
-            key={node.key}
+            key={trunk.key}
             type="button"
-            data-testid={`f90-node-${node.key}`}
-            onClick={() => onSelectNode(node.key)}
+            data-testid={`f90-trunk-${trunk.key}`}
+            onClick={() => onSelectNode(trunk.key)}
             className="absolute z-10 flex flex-col items-center gap-1"
             style={{ left: `${pos.x}%`, top: pos.y, transform: "translate(-50%, -50%)" }}
           >
             <span
               className={cn(
-                "flex h-14 w-14 items-center justify-center rounded-full border-4 font-condensed text-sm font-extrabold transition-transform hover:scale-105",
+                "flex h-16 w-16 items-center justify-center rounded-full border-4 font-condensed text-sm font-extrabold transition-transform hover:scale-105",
                 isSelected && "scale-110",
                 isCurrent && "animate-pulse",
                 completed
@@ -885,23 +997,62 @@ function RoadmapCanvas({
                       ? "border-white/15 bg-black/50 text-white/40 backdrop-blur-sm"
                       : "border-white/30 bg-black/40 text-white/70",
               )}
-              style={isCurrent ? { boxShadow: "0 0 20px 2px var(--copper-metal-hi)" } : undefined}
+              style={isCurrent ? { boxShadow: "0 0 24px 3px var(--copper-metal-hi)" } : undefined}
             >
               {completed ? (
-                <Check className="h-6 w-6" />
+                <Check className="h-7 w-7" />
               ) : locked ? (
-                <Lock className="h-5 w-5" />
+                <Lock className="h-6 w-6" />
+              ) : isGraduation ? (
+                <GraduationCap className="h-7 w-7" />
               ) : isVault ? (
-                <GraduationCap className="h-6 w-6" />
+                <Vault className="h-7 w-7" />
               ) : (
                 i + 1
               )}
             </span>
-            <span className="max-w-[88px] text-center text-[9px] font-bold tracking-wide text-white/70 uppercase">
-              {node.title}
+            <span className="max-w-[104px] text-center text-[10px] font-bold tracking-wide text-white/80 uppercase">
+              {trunk.title}
             </span>
           </button>
         );
+      })}
+
+      {F90_TRUNK_NODES.map((trunk, i) => {
+        if (trunk.branches.length === 0) return null;
+        const trunkLocked = i > currentTrunkIndex;
+        return trunk.branches.map((branch, j) => {
+          const pos = f90BranchNodePosition(i, j, trunk.branches.length);
+          const completed = completedSteps.has(branch.key);
+          const isSelected = selectedNode === branch.key;
+          return (
+            <button
+              key={branch.key}
+              type="button"
+              data-testid={`f90-node-${branch.key}`}
+              onClick={() => onSelectNode(branch.key)}
+              className="absolute z-10 flex flex-col items-center gap-1"
+              style={{ left: `${pos.x}%`, top: pos.y, transform: "translate(-50%, -50%)" }}
+            >
+              <span
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-full border-[3px] font-condensed text-xs font-extrabold transition-transform hover:scale-105",
+                  isSelected && "scale-110",
+                  completed
+                    ? "border-transparent bg-[linear-gradient(135deg,var(--copper-metal-dk),var(--copper-metal-hi))] text-black"
+                    : trunkLocked
+                      ? "border-white/15 bg-black/50 text-white/35 backdrop-blur-sm"
+                      : "border-white/30 bg-black/40 text-white/70",
+                )}
+              >
+                {completed ? <Check className="h-4 w-4" /> : trunkLocked ? <Lock className="h-3.5 w-3.5" /> : j + 1}
+              </span>
+              <span className="max-w-[76px] text-center text-[8px] font-bold tracking-wide text-white/60 uppercase">
+                {branch.title}
+              </span>
+            </button>
+          );
+        });
       })}
     </div>
   );
@@ -929,8 +1080,8 @@ export function F90Panel({
   );
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [docUrls, setDocUrls] = useState<DocUrls>(initialDocUrls);
-  const [selectedNode, setSelectedNode] = useState<string | null>(
-    () => F90_ROADMAP_NODES[f90CurrentNodeIndex(initialCompletedSteps)]?.key ?? null,
+  const [selectedNode, setSelectedNode] = useState<string | null>(() =>
+    initialSelectionKey(initialCompletedSteps),
   );
 
   const enrolledDate = new Date(enrolledAt);
@@ -941,7 +1092,6 @@ export function F90Panel({
     () => completedArray.filter(isF90StepKey).length,
     [completedArray],
   );
-  const phase5Unlocked = f90Phase5Unlocked(salesCount, enrolledDate);
   const certificateEligible = f90IsEligibleForCertificate(completedArray, issuedAP);
 
   async function toggleStep(stepKey: string, completed: boolean) {
@@ -971,7 +1121,7 @@ export function F90Panel({
     }
   }
 
-  const selectedNodeMeta = F90_ROADMAP_NODES.find((n) => n.key === selectedNode) ?? null;
+  const selection = resolveSelection(selectedNode);
 
   return (
     <div className="space-y-6">
@@ -987,18 +1137,15 @@ export function F90Panel({
         </p>
       </div>
 
-      <F90Hud
-        dayNumber={dayNumber}
-        issuedAP={issuedAP}
-        salesCount={salesCount}
-        phase5Unlocked={phase5Unlocked}
-      />
+      <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pb-4 sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+        <F90Hud dayNumber={dayNumber} issuedAP={issuedAP} salesCount={salesCount} />
+      </div>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div className="lg:w-[65%]">
           <RoadmapCanvas
             completedSteps={completedSteps}
-            phase5Unlocked={phase5Unlocked}
+            certificateEligible={certificateEligible}
             selectedNode={selectedNode}
             onSelectNode={setSelectedNode}
           />
@@ -1007,16 +1154,15 @@ export function F90Panel({
           </div>
         </div>
 
-        <div className="lg:sticky lg:top-24 lg:w-[35%] lg:self-start">
+        <div className="lg:sticky lg:top-[244px] lg:max-h-[calc(100vh-268px)] lg:w-[35%] lg:self-start lg:overflow-y-auto lg:pr-1">
           <MissionDrawer
-            node={selectedNodeMeta}
+            selection={selection}
             completedSteps={completedSteps}
             savingKey={savingKey}
             onToggle={toggleStep}
-            phase5Unlocked={phase5Unlocked}
-            salesCount={salesCount}
-            dayNumber={dayNumber}
+            onSelectNode={setSelectedNode}
             issuedAP={issuedAP}
+            certificateEligible={certificateEligible}
             agentTimeZone={agentTimeZone}
             docUrls={docUrls}
             onDocUploaded={(docType, url) =>
