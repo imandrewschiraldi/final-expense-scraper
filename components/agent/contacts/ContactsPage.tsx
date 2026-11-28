@@ -62,17 +62,16 @@ import {
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
 
 // Top-level tab bar, matching the reference CRM's Contacts page structure
-// (Smart Lists | Bulk Actions | Custom Fields | Tasks | Companies). "Smart
-// Lists" and "Bulk Actions" both render the same contacts table/filters —
-// see the `showTable` block below — just with different surrounding chrome
-// (Bulk Actions pins the bulk-action bar open and drops the per-list nav).
-type TopTabKey = "smartLists" | "bulkActions" | "customFields" | "tasks" | "companies";
+// (Smart Lists | Bulk Actions | Custom Fields | Tasks). "Smart Lists" and
+// "Bulk Actions" both render the same contacts table/filters — see the
+// `showTable` block below — just with different surrounding chrome (Bulk
+// Actions pins the bulk-action bar open and drops the per-list nav).
+type TopTabKey = "smartLists" | "bulkActions" | "customFields" | "tasks";
 const TOP_TABS: { key: TopTabKey; label: string }[] = [
   { key: "smartLists", label: "Smart Lists" },
   { key: "bulkActions", label: "Bulk Actions" },
   { key: "customFields", label: "Custom Fields" },
   { key: "tasks", label: "Tasks" },
-  { key: "companies", label: "Companies" },
 ];
 
 // Which columns have a server-side sort field (lib/agentLeads's
@@ -209,7 +208,6 @@ export function ContactsPage({
   initialContacts: ContactRow[];
   initialTotal: number;
 }) {
-  const [archiveView, setArchiveView] = useState(false);
   const [stateFilter, setStateFilter] = useState("");
   const [stateOptions, setStateOptions] = useState<{ state: string; count: number }[]>([]);
   const [search, setSearch] = useState("");
@@ -285,7 +283,6 @@ export function ContactsPage({
     params.set("paginate", "true");
     params.set("limit", String(pageSize));
     params.set("offset", String(page * pageSize));
-    if (archiveView) params.set("archived", "true");
     if (stateFilter) params.set("state", stateFilter);
     if (debouncedSearch) params.set("q", debouncedSearch);
     if (sortConfig) {
@@ -294,7 +291,7 @@ export function ContactsPage({
     }
     if (filterGroup.conditions.length > 0) params.set("filters", JSON.stringify(filterGroup));
     return params.toString();
-  }, [archiveView, stateFilter, debouncedSearch, sortConfig, filterGroup, page, pageSize]);
+  }, [stateFilter, debouncedSearch, sortConfig, filterGroup, page, pageSize]);
 
   useEffect(() => {
     let cancelled = false;
@@ -371,7 +368,7 @@ export function ContactsPage({
     const selection = selectAllMatching
       ? {
           selectAllMatching: true,
-          archived: archiveView,
+          archived: false,
           state: stateFilter || null,
           q: debouncedSearch || null,
           filters: filterGroup.conditions.length > 0 ? filterGroup : null,
@@ -407,7 +404,6 @@ export function ContactsPage({
       // export everything the current view's own filters match (minus
       // explicit per-row exclusions isn't supported for CSV export, an
       // accepted simplification over the exact in-app selection).
-      if (archiveView) params.set("archived", "true");
       if (stateFilter) params.set("state", stateFilter);
     }
     window.location.href = `/api/agent/leads/export?${params.toString()}`;
@@ -522,12 +518,6 @@ export function ContactsPage({
 
       {activeTopTab === "customFields" && <CustomFieldsPanel />}
       {activeTopTab === "tasks" && <TasksPanel />}
-      {activeTopTab === "companies" && (
-        <div className="rounded-[10px] border border-border bg-surface p-6 text-center text-sm text-muted">
-          Companies aren&apos;t used in this book of business — every contact here is an individual
-          client, not an organization. This tab is kept for layout parity only.
-        </div>
-      )}
 
       {activeTopTab === "bulkActions" && (
         <p className="mb-4 text-sm text-muted">
@@ -636,15 +626,6 @@ export function ContactsPage({
               </option>
             ))}
           </Select>
-          <button
-            onClick={() => setArchiveView((v) => !v)}
-            className={cn(
-              "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-              archiveView ? "toggle-pill-active" : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
-            )}
-          >
-            Archive
-          </button>
         </div>
         <Input
           value={search}
@@ -910,7 +891,6 @@ export function ContactsPage({
           }}
           countParams={(() => {
             const params = new URLSearchParams();
-            if (archiveView) params.set("archived", "true");
             if (stateFilter) params.set("state", stateFilter);
             if (debouncedSearch) params.set("q", debouncedSearch);
             return params;
