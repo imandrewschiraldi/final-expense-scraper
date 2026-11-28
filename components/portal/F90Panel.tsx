@@ -899,13 +899,13 @@ export function F90Panel({
     <div className="space-y-6">
       <div className="mb-1">
         <PageHeading slug="first-90" alt="First 90" />
-        <div className="mb-3 flex justify-center">
+        <div className="mt-3 mb-3 flex justify-center">
           <Image
             src="/headings/standard-operating-procedures-light.png"
             alt="Standard Operating Procedures"
-            width={796}
-            height={129}
-            className="h-10 w-auto"
+            width={1022}
+            height={36}
+            className="h-[17px] w-auto lg:h-[26px]"
             priority
           />
         </div>
