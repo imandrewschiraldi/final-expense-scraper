@@ -1,9 +1,12 @@
-// The agency's First 90 Days onboarding program — a fixed, code-defined
-// curriculum (not admin-editable) an enrolled agent works through on their
-// own F90 sidebar tab, checking off each step as they complete it (see
-// User.f90CompletedSteps). Step keys are stable identifiers, never
-// reused/reordered/removed once shipped, since an agent's progress is
-// stored by key.
+// The agency's First 90 Days onboarding program — a code-defined curriculum
+// an enrolled agent works through on their own F90 sidebar tab, checking
+// off each step as they complete it (see User.f90CompletedSteps). Step keys
+// are stable identifiers, never reused/reordered/removed once shipped,
+// since an agent's progress is stored by key, and admin overrides (see
+// F90StepContent in prisma/schema.prisma and f90ApplyStepOverrides below)
+// are keyed the same way. The text/links/video below are the defaults —
+// an admin can override a step's title, description, links, or add a
+// video from the Admin > F90 page without touching this file.
 
 export const F90_DAYS = 90;
 
@@ -38,7 +41,53 @@ export type F90Step = {
   // a single wall of text — only the Call & Sales Execution Workflow uses
   // this, since it's 6 distinct actions, not one.
   subSteps?: { heading: string; prompt: string }[];
+  // Admin-added embeddable video (see f90ApplyStepOverrides) — undefined
+  // for every code-defined step above; only ever set on the merged copy
+  // handed to the agent-facing page.
+  videoUrl?: string | null;
 };
+
+// One row of admin-edited mission content (F90StepContent in
+// prisma/schema.prisma), already JSON-parsed — a null field means "keep
+// using this step's code default," not "clear it," so an admin can
+// override just the video without retyping the title and description too.
+export type F90StepOverrideRow = {
+  stepKey: string;
+  title: string | null;
+  description: string | null;
+  videoUrl: string | null;
+  links: F90Link[] | null;
+};
+
+/** Layers admin-edited mission content over the code-defined F90_PHASES
+ *  (or any phase list derived from it) — call once on the server with
+ *  whatever rows exist in F90StepContent, then pass the result to
+ *  F90Panel instead of the raw F90_PHASES import. A step with no matching
+ *  row comes back unchanged (same object reference). */
+export function f90ApplyStepOverrides(
+  phases: F90Phase[],
+  overrides: F90StepOverrideRow[],
+): F90Phase[] {
+  if (overrides.length === 0) return phases;
+  const byKey = new Map(overrides.map((o) => [o.stepKey, o]));
+  return phases.map((phase) => {
+    if (phase.steps.length === 0) return phase; // Phase 5's channels aren't covered
+    return {
+      ...phase,
+      steps: phase.steps.map((step) => {
+        const o = byKey.get(step.key);
+        if (!o) return step;
+        return {
+          ...step,
+          title: o.title ?? step.title,
+          description: o.description ?? step.description,
+          links: o.links ?? step.links,
+          videoUrl: o.videoUrl ?? null,
+        };
+      }),
+    };
+  });
+}
 
 export type F90Channel = {
   key: string;

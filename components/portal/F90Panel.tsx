@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Lock, GraduationCap, Vault, Check, Upload, FileCheck, Power } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
-  F90_PHASES,
   F90_TOTAL_STEPS,
   F90_DAYS,
   F90_GRADUATION_AP,
@@ -16,6 +15,7 @@ import {
   f90IsEligibleForCertificate,
   f90CurrentTrunkIndex,
   isF90StepKey,
+  type F90Phase,
   type F90Step,
   type F90Link,
   type F90DocType,
@@ -571,6 +571,63 @@ function SectionBar({ children }: { children: React.ReactNode }) {
   );
 }
 
+// An admin-added mission video (see F90StepContent) — YouTube/Vimeo/Loom
+// watch-page links get rewritten to their embeddable player URL; anything
+// else (a direct .mp4/.webm/.ogg file, or an already-embeddable URL like a
+// Wistia share link) is used as-is.
+function f90VideoEmbedSrc(raw: string): { kind: "file" | "iframe"; src: string } | null {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.replace(/^www\./, "");
+  if (host === "youtube.com" || host === "m.youtube.com") {
+    if (url.pathname.startsWith("/embed/")) return { kind: "iframe", src: raw };
+    const id = url.searchParams.get("v");
+    return id ? { kind: "iframe", src: `https://www.youtube.com/embed/${id}` } : null;
+  }
+  if (host === "youtu.be") {
+    const id = url.pathname.slice(1);
+    return id ? { kind: "iframe", src: `https://www.youtube.com/embed/${id}` } : null;
+  }
+  if (host === "vimeo.com") {
+    const id = url.pathname.split("/").filter(Boolean)[0];
+    return id ? { kind: "iframe", src: `https://player.vimeo.com/video/${id}` } : null;
+  }
+  if (host === "player.vimeo.com") return { kind: "iframe", src: raw };
+  if (host === "loom.com") {
+    const id = url.pathname.split("/").filter(Boolean).pop();
+    return id ? { kind: "iframe", src: `https://www.loom.com/embed/${id}` } : null;
+  }
+  if (/\.(mp4|webm|ogg)$/i.test(url.pathname)) return { kind: "file", src: raw };
+  return { kind: "iframe", src: raw };
+}
+
+function F90VideoEmbed({ url }: { url: string }) {
+  const embed = f90VideoEmbedSrc(url);
+  if (!embed) return null;
+  return (
+    <div
+      className="mt-3 aspect-video max-w-xl overflow-hidden rounded-xl border-2"
+      style={{ borderColor: PAPER_BORDER }}
+    >
+      {embed.kind === "file" ? (
+        <video src={embed.src} controls className="h-full w-full" />
+      ) : (
+        <iframe
+          src={embed.src}
+          className="h-full w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title="Mission video"
+        />
+      )}
+    </div>
+  );
+}
+
 function StepRow({
   n,
   step,
@@ -600,6 +657,8 @@ function StepRow({
         <p className="mt-1 text-sm whitespace-pre-line" style={{ color: INK_MUTED }}>
           {step.description}
         </p>
+
+        {step.videoUrl && <F90VideoEmbed url={step.videoUrl} />}
 
         <div className="mt-3 max-w-sm">
           {step.key === "P2_S2" ? (
@@ -667,7 +726,7 @@ function PhaseWorksheetSection({
   issuedAP,
 }: {
   sectionRef: (el: HTMLDivElement | null) => void;
-  phase: (typeof F90_PHASES)[number];
+  phase: F90Phase;
   completedSteps: Set<string>;
   savingKey: string | null;
   onToggle: (key: string, completed: boolean) => void;
@@ -854,6 +913,7 @@ export function F90Panel({
   initialCompletedSteps,
   issuedAP,
   initialDocUrls,
+  phases,
 }: {
   agentName: string;
   agentTimeZone: string | null;
@@ -861,6 +921,10 @@ export function F90Panel({
   initialCompletedSteps: string[];
   issuedAP: number;
   initialDocUrls: DocUrls;
+  // F90_PHASES (lib/f90Content.ts) with any admin mission-content overrides
+  // already layered on — see f90ApplyStepOverrides, called server-side in
+  // app/(portal)/f90/page.tsx so this component never needs the DB itself.
+  phases: F90Phase[];
 }) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(
     new Set(initialCompletedSteps),
@@ -946,7 +1010,7 @@ export function F90Panel({
         />
       </div>
 
-      {F90_PHASES.map((phase) => (
+      {phases.map((phase) => (
         <PhaseWorksheetSection
           key={phase.key}
           sectionRef={(el) => {

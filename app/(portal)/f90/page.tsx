@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { F90Panel } from "@/components/portal/F90Panel";
+import { F90_PHASES, f90ApplyStepOverrides, type F90Link } from "@/lib/f90Content";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function F90Page() {
   const session = await auth();
   if (!session) redirect("/login");
 
-  const [user, issuedPolicies] = await Promise.all([
+  const [user, issuedPolicies, contentOverrides] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -29,6 +30,7 @@ export default async function F90Page() {
       where: { agentId: session.user.id, status: "ISSUED" },
       select: { annualPremium: true },
     }),
+    db.f90StepContent.findMany(),
   ]);
 
   if (!user?.f90EnrolledAt) {
@@ -38,6 +40,17 @@ export default async function F90Page() {
   const issuedAP = issuedPolicies.reduce(
     (sum, p) => sum + Number(p.annualPremium),
     0,
+  );
+
+  const phases = f90ApplyStepOverrides(
+    F90_PHASES,
+    contentOverrides.map((o) => ({
+      stepKey: o.stepKey,
+      title: o.title,
+      description: o.description,
+      videoUrl: o.videoUrl,
+      links: Array.isArray(o.links) ? (o.links as unknown as F90Link[]) : null,
+    })),
   );
 
   return (
@@ -53,6 +66,7 @@ export default async function F90Page() {
           eo: user.f90EoDocUrl,
           aml: user.f90AmlDocUrl,
         }}
+        phases={phases}
       />
     </div>
   );

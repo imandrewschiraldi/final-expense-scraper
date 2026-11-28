@@ -1281,3 +1281,26 @@ model LeadVendor {
   @@index([order])
   @@map("lead_vendors")
 }
+
+/// Admin override for one F90 "mission" (an F90Step from lib/f90Content.ts)
+/// — title/description/videoUrl/links each replace that field's
+/// code-defined default when non-null, so an admin can override just the
+/// video without having to re-type the title too. Keyed by the step's
+/// stable `key` (same lookup key User.f90CompletedSteps uses), never by
+/// title, since titles are exactly what this lets an admin change. Rows
+/// are created lazily on first edit — a step with no row here just means
+/// "nobody has customized it," not "this step doesn't exist."
+model F90StepContent {
+  stepKey     String   @id
+  title       String?
+  description String?  @db.Text
+  /// An embeddable video URL (YouTube/Vimeo/Loom/Wistia watch-page link, or
+  /// a direct video file URL) shown under the mission's description.
+  videoUrl    String?
+  /// Overrides F90Step.links wholesale when set — an array of
+  /// {label, href}, the same shape as F90Link in lib/f90Content.ts.
+  links       Json?
+  updatedAt   DateTime @updatedAt
+
+  @@map("f90_step_content")
+}
