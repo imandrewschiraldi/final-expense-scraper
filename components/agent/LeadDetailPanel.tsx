@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Flag, Home, Phone as PhoneIcon } from "lucide-react";
+import { Phone as PhoneIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -26,43 +26,6 @@ function PhoneLink({ phone }: { phone: string }) {
       {formatPhone(phone)}
     </a>
   );
-}
-
-/** A teaser banner at the top of the lead card for the two lead types worth
- *  flagging at a glance — gives the header card a mailer-postcard feel
- *  (like a mailer's bold callout line) instead of a plain data card. Sits
- *  in normal flow, not absolutely positioned, so it can never overlap the
- *  name/phone below it regardless of how long the name is or how narrow
- *  the card gets on mobile. Silent (returns null) for Final Expense and
- *  IUL, which don't carry the same at-a-glance qualifier.
- *
- *  My Leads-only history: this rendered everywhere until the user asked
- *  for a flatter, more professional My Leads card with the banner gone —
- *  Vault explicitly keeps the mailer-postcard look ("for the vault, it's
- *  okay to look like that"), so this component is now only ever called
- *  with canEdit === false. */
-function LeadTypeBanner({ leadType }: { leadType: LeadType }) {
-  if (leadType === "VETERANS_FINAL_EXPENSE") {
-    return (
-      <div className="mb-3 -mx-5 -mt-5 flex items-center gap-1.5 rounded-t-[9px] bg-gradient-to-r from-[#7a1c28] via-[#b9324a] to-[#7a1c28] px-4 py-1.5">
-        <Flag className="h-3.5 w-3.5 text-white" />
-        <span className="font-condensed text-[11px] font-extrabold tracking-[0.12em] text-white uppercase">
-          Veteran Lead
-        </span>
-      </div>
-    );
-  }
-  if (leadType === "MORTGAGE_PROTECTION") {
-    return (
-      <div className="mb-3 -mx-5 -mt-5 flex items-center gap-1.5 rounded-t-[9px] bg-gradient-to-r from-copper-dim via-copper to-copper-dim px-4 py-1.5">
-        <Home className="h-3.5 w-3.5 text-black" />
-        <span className="font-condensed text-[11px] font-extrabold tracking-[0.12em] text-black uppercase">
-          Mortgage Protection Lead
-        </span>
-      </div>
-    );
-  }
-  return null;
 }
 
 type PipelineStage = { id: string; name: string; systemKey: string | null };
@@ -455,10 +418,6 @@ export function LeadDetailPanel({
         key={lead.id}
         className={cn(
           "relative overflow-hidden",
-          // The dashed-border mailer-postcard treatment stays for Vault
-          // (canEdit === false) — My Leads uses a plain, flat card instead.
-          !canEdit &&
-            "before:pointer-events-none before:absolute before:inset-[6px] before:rounded-[6px] before:border before:border-dashed before:border-copper-dim/25",
           navDirection === "next" && "animate-lead-card-next",
           navDirection === "prev" && "animate-lead-card-prev",
         )}
@@ -469,7 +428,6 @@ export function LeadDetailPanel({
           </CardHeader>
         ) : (
           <>
-            {!canEdit && <LeadTypeBanner leadType={lead.leadType} />}
             <CardHeader>
               <div>
                 <CardTitle>
@@ -580,15 +538,12 @@ export function LeadDetailPanel({
                   return (
                     <Button
                       key={stage.id}
-                      // My Leads gets the flat/muted treatment agreed on for
-                      // its professional redesign; Vault keeps the existing
-                      // shiny metal-copper buttons untouched.
-                      variant={canEdit ? "ghost" : "secondary"}
+                      // Flat/muted treatment for both My Leads and Vault —
+                      // the shiny metal-copper buttons are gone everywhere.
+                      variant="ghost"
                       disabled={saving}
                       onClick={() => moveStage(stage.id)}
-                      className={cn(
-                        isActive && (canEdit ? "toggle-pill-active" : "btn-metal-copper-active"),
-                      )}
+                      className={cn(isActive && "toggle-pill-active")}
                     >
                       {stage.name}
                     </Button>
