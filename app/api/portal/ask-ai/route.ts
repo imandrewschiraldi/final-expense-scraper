@@ -5,7 +5,10 @@ import { db } from "@/lib/db";
 import { getCalendarEventsForUser } from "@/lib/calendarEvents";
 import { shiftToZone, zonedWallTimeToInstant } from "@/lib/timeZoneMath";
 import { startOfDay, addDays, expandOccurrences, formatTime } from "@/lib/calendarRecurrence";
-import { metricsForWindow } from "@/lib/personalDashboard";
+import { metricsForWindow, activeGoalsFor } from "@/lib/personalDashboard";
+import { GOAL_CATEGORY_LABELS, GOAL_CATEGORY_FORMAT } from "@/lib/personalDashboardShared";
+import { rangeSince } from "@/lib/dashboardRange";
+import { F90_TOTAL_STEPS } from "@/lib/f90Content";
 
 // "-latest" alias instead of a pinned version (gemini-2.5-flash/2.0-flash
 // both now 404 — Google retires pinned versions) so this keeps working as
@@ -181,6 +184,34 @@ const TEAM_HEADCOUNT_TOOL = {
   parameters: { type: "OBJECT", properties: {}, required: [] },
 };
 
+const MY_GOALS_TOOL = {
+  name: "get_my_goals",
+  description:
+    "Gets the signed-in user's own active goals and their live progress (current value, target, percent complete, pace needed to hit it). Use this for questions like \"what's my goal progress\", \"am I on pace for my AP goal\", \"how much do I have left on my goal\".",
+  parameters: { type: "OBJECT", properties: {}, required: [] },
+};
+
+const LEADERBOARD_RANK_TOOL = {
+  name: "get_my_leaderboard_rank",
+  description:
+    "Gets the signed-in user's own current rank on the agency leaderboard (by issued annual premium this month) and how far they are from the agent above them. Use this for questions like \"where do I rank\", \"am I in first place\", \"how far am I from #1\".",
+  parameters: { type: "OBJECT", properties: {}, required: [] },
+};
+
+const PIPELINE_SUMMARY_TOOL = {
+  name: "get_my_pipeline_summary",
+  description:
+    "Gets a breakdown of the signed-in agent's own book — how many leads they have by status (new, contacted, appointment booked, sold, etc.) and how many policies they have by status (submitted, issued, chargeback). Use this for questions like \"how many leads do I have\", \"what's in my pipeline\", \"how many policies are pending\".",
+  parameters: { type: "OBJECT", properties: {}, required: [] },
+};
+
+const F90_PROGRESS_TOOL = {
+  name: "get_my_f90_progress",
+  description:
+    "Gets the signed-in agent's own First 90 Days (F90) onboarding progress — whether they're enrolled, how many steps they've completed out of the total, and days since they started. Use this for questions like \"what step am I on\", \"how much of F90 do I have left\", \"when did I start my first 90 days\".",
+  parameters: { type: "OBJECT", properties: {}, required: [] },
+};
+
 async function getTodaySchedule(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId }, select: { timeZone: true } });
   const timeZone = user?.timeZone || undefined;
@@ -230,6 +261,91 @@ async function getTeamHeadcount(userId: string, role: string) {
     return { count, scope: "this manager's own downline" };
   }
   return { count: 0, scope: "a plain agent has no agents reporting to them" };
+}
+
+async function getMyGoals(userId: string) {
+  const goals = await activeGoalsFor(userId);
+  if (!goals.length) return { goals: [], note: "No active goals set." };
+  return {
+    goals: goals.map((g) => {
+      const fmt = GOAL_CATEGORY_FORMAT[g.category] ?? "currency";
+      const formatValue = (v: number) =>
+        fmt === "currency"
+          ? v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+          : Math.round(v).toLocaleString("en-US");
+      return {
+        category: GOAL_CATEGORY_LABELS[g.category] ?? g.category,
+        current: formatValue(g.currentValue),
+        target: formatValue(g.targetValue),
+        percentComplete: Math.round(g.percent),
+        remaining: formatValue(g.remaining),
+      };
+    }),
+  };
+}
+
+async function getMyLeaderboardRank(userId: string) {
+  const since = rangeSince("monthly");
+  const [agents, policies] = await Promise.all([
+    db.user.findMany({ where: { active: true }, select: { id: true } }),
+    db.policy.findMany({
+      where: { status: "ISSUED", agentId: { not: null }, issuedAt: { gte: since ?? undefined } },
+      select: { annualPremium: true, agentId: true },
+    }),
+  ]);
+  const totals = new Map<string, number>(agents.map((a) => [a.id, 0]));
+  for (const p of policies) {
+    if (!p.agentId || !totals.has(p.agentId)) continue;
+    totals.set(p.agentId, (totals.get(p.agentId) ?? 0) + Number(p.annualPremium));
+  }
+  const ranked = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]);
+  const myIndex = ranked.findIndex(([id]) => id === userId);
+  if (myIndex === -1) return { rank: null, note: "Not an active agent on the leaderboard." };
+  const myAP = ranked[myIndex][1];
+  const aboveAP = myIndex > 0 ? ranked[myIndex - 1][1] : null;
+  return {
+    rank: myIndex + 1,
+    totalAgents: ranked.length,
+    myIssuedApThisMonth: myAP,
+    apBehindNextRankUp: aboveAP !== null ? Math.max(0, aboveAP - myAP) : 0,
+    period: "this month (issued premium)",
+  };
+}
+
+async function getMyPipelineSummary(agentId: string) {
+  const [leadGroups, policyGroups] = await Promise.all([
+    db.lead.groupBy({
+      by: ["status"],
+      where: { assignedAgentId: agentId },
+      _count: { _all: true },
+    }),
+    db.policy.groupBy({
+      by: ["status"],
+      where: { agentId },
+      _count: { _all: true },
+    }),
+  ]);
+  return {
+    leadsByStatus: Object.fromEntries(leadGroups.map((g) => [g.status, g._count._all])),
+    policiesByStatus: Object.fromEntries(policyGroups.map((g) => [g.status, g._count._all])),
+  };
+}
+
+async function getMyF90Progress(userId: string) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { f90EnrolledAt: true, f90CompletedSteps: true },
+  });
+  if (!user?.f90EnrolledAt) {
+    return { enrolled: false, note: "Not enrolled in the First 90 Days program." };
+  }
+  const daysSinceStart = Math.floor((Date.now() - user.f90EnrolledAt.getTime()) / (1000 * 60 * 60 * 24));
+  return {
+    enrolled: true,
+    completedSteps: user.f90CompletedSteps.length,
+    totalSteps: F90_TOTAL_STEPS,
+    daysSinceStart,
+  };
 }
 
 async function searchCrm(
@@ -322,7 +438,7 @@ const SYSTEM_INSTRUCTION =
   "You have a web_search tool for current, external information (see its own description for when to call it and when not to bother) — call it yourself when a question needs it, rather than assuming you already have current data. When you do call it, treat the results as your primary source for that answer, rather than from memory alone, for everything except the eligibility/carrier-matching case above, where the agency's own guide excerpts take priority instead. " +
   "Don't cite sources or append links as backup for an answer — just give the straight, accurate answer itself. The one exception: when the answer IS a place to go do something — buy or renew a license, apply/sign up/register for something, a specific tool or site to use — include that one link right in the answer, since the link itself is what's being asked for, not a citation for it. " +
   "You have a search_crm tool that looks up the signed-in agent's own leads and client policies by name, phone, or email. Call it whenever the question is about a specific person who might be one of the agent's own contacts (pulling someone up by name, checking a phone number, whether someone's in their book, what policy/carrier someone has) — don't guess or make up CRM data yourself. If it returns no matches, say so plainly rather than inventing a result. When it does find someone, name them in your answer (e.g. \"Found her — Sarah Jenkins, ...\") since that name is how the app turns it into a clickable link for the agent; you don't need to include a path or URL yourself for this case. " +
-  "You also have three tools over the app's own real data — never say you don't have access to this information, call the right tool instead: get_today_schedule for anything about today's calendar/schedule/meetings; get_my_production_today for the signed-in agent's own sales/production count or premium for today; get_team_headcount for how many agents someone has (their downline if a manager, the whole agency if an admin — a plain agent has none and the tool will say so, which you should relay honestly rather than guessing a number). " +
+  "You also have tools over the app's own real data covering most of what this platform tracks for the signed-in user — never say you don't have access to something one of these covers, call the right tool instead: get_today_schedule (today's calendar/schedule/meetings), get_my_production_today (their own sales/production count and premium for today), get_team_headcount (how many agents they have — their downline if a manager, the whole agency if an admin, none if a plain agent), get_my_goals (their active goals and live progress/pace), get_my_leaderboard_rank (their current leaderboard standing and gap to the rank above), get_my_pipeline_summary (their lead counts by status and policy counts by status), get_my_f90_progress (their First 90 Days onboarding step count and enrollment status). Prefer one of these tools over search_crm/web_search whenever the question matches what it covers. If a question is about platform data none of these tools cover, say plainly that you can't look that up yet rather than guessing a number. " +
   "Scope is broad, not insurance-only — treat any reasonable work topic as answerable rather than redirecting on subject matter. The only thing to decline or redirect for is content that's inappropriate for a work setting (profanity, weapons/violence, drugs, partying, or similar) — never redirect just because a question isn't about insurance.";
 
 const MAX_QUESTION_LENGTH = 500;
@@ -418,6 +534,10 @@ export async function POST(req: NextRequest) {
                 TODAY_SCHEDULE_TOOL,
                 MY_PRODUCTION_TOOL,
                 TEAM_HEADCOUNT_TOOL,
+                MY_GOALS_TOOL,
+                LEADERBOARD_RANK_TOOL,
+                PIPELINE_SUMMARY_TOOL,
+                F90_PROGRESS_TOOL,
               ],
             },
           ],
@@ -496,6 +616,30 @@ export async function POST(req: NextRequest) {
         });
       } else if (name === "get_team_headcount") {
         const result = await getTeamHeadcount(guard.session.user.id, guard.session.user.role);
+        contents.push({
+          role: "user",
+          parts: [{ functionResponse: { name, response: result } }],
+        });
+      } else if (name === "get_my_goals") {
+        const result = await getMyGoals(guard.session.user.id);
+        contents.push({
+          role: "user",
+          parts: [{ functionResponse: { name, response: result } }],
+        });
+      } else if (name === "get_my_leaderboard_rank") {
+        const result = await getMyLeaderboardRank(guard.session.user.id);
+        contents.push({
+          role: "user",
+          parts: [{ functionResponse: { name, response: result } }],
+        });
+      } else if (name === "get_my_pipeline_summary") {
+        const result = await getMyPipelineSummary(guard.session.user.id);
+        contents.push({
+          role: "user",
+          parts: [{ functionResponse: { name, response: result } }],
+        });
+      } else if (name === "get_my_f90_progress") {
+        const result = await getMyF90Progress(guard.session.user.id);
         contents.push({
           role: "user",
           parts: [{ functionResponse: { name, response: result } }],

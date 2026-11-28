@@ -373,7 +373,21 @@ function pickBestVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | n
   if (!voices.length) return null;
   const byNamePattern = (pattern: RegExp) => voices.find((v) => pattern.test(v.name));
   return (
-    byNamePattern(/Natural/i) || // Edge's "Microsoft ... Online (Natural)" voices — the best available when present
+    // A calm, crisp, formal-sounding male voice — the closest the Web
+    // Speech API gets to a "JARVIS-like" assistant register, in priority
+    // order of actual audio quality. This is a stock OS/browser voice
+    // picked for character, not a clone of the (copyrighted) MCU JARVIS
+    // voice itself, which this deliberately doesn't attempt. UK English
+    // ones are preferred first — the clipped, formal delivery reads
+    // closest to that vibe. Covers Edge's "Online (Natural)" male voices,
+    // macOS/Safari's "Daniel", and Chrome's "Google UK English Male".
+    byNamePattern(/Microsoft Ryan Online \(Natural\)/i) ||
+    byNamePattern(/Microsoft Thomas Online \(Natural\)/i) ||
+    byNamePattern(/^Daniel$/i) ||
+    byNamePattern(/Google UK English Male/i) ||
+    byNamePattern(/Microsoft Guy Online \(Natural\)/i) ||
+    byNamePattern(/Microsoft Davis Online \(Natural\)/i) ||
+    byNamePattern(/Natural/i) || // any other Edge "Online (Natural)" voice
     byNamePattern(/Google US English/i) || // Chrome's higher-quality network voice
     byNamePattern(/Samantha/i) || // macOS/Safari's good default
     voices.find((v) => v.lang === "en-US" && !v.localService) || // any other non-local (network) en-US voice
@@ -419,7 +433,11 @@ export function speak(text: string, onDone: () => void) {
   clearConversationTimer();
   const utterance = new SpeechSynthesisUtterance(toSpeakableText(text));
   if (resolvedVoice) utterance.voice = resolvedVoice;
-  utterance.rate = 1.03;
+  // Slightly slower and a touch lower than default — a calmer, more
+  // deliberate delivery reads closer to a composed assistant than the
+  // previous quicker/flatter default pacing.
+  utterance.rate = 0.97;
+  utterance.pitch = 0.92;
   utterance.onend = () => {
     status = shouldBeListening ? "standby" : "off";
     notify();
