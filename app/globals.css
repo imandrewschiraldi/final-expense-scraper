@@ -203,6 +203,39 @@
   --overlay-card-surface: #3d5c4a;
 }
 
+/* The "New Page Layout" beta's overlay card always reads as a white card
+   with dark text, regardless of the agency's selected theme (dark/light/
+   green) — only the sidebar/chrome around it follows that theme. Same
+   variable values as the light theme above, just scoped to this one
+   wrapper instead of :root, so everything inside it (text, borders,
+   nested surfaces, inputs) inherits light-theme-equivalent tokens the
+   same way the whole app already does when the theme itself is switched,
+   without actually switching the agency's theme. Gated to the exact same
+   desktop-browser-only condition AppShell's own card styling already
+   uses (`lg:[@media_not_(display-mode:standalone)]:...`) — on a phone or
+   inside the installed web app this div never actually shows as a card
+   (AppShell falls back to its transparent base classes there), so these
+   overrides must stay off too, or mobile/standalone would get force-fed
+   light-theme tokens with no card to justify it. */
+@media (min-width: 1024px) {
+  @media not (display-mode: standalone) {
+    .overlay-card-surface-light {
+      color-scheme: light;
+
+      --background: #ffffff;
+      --surface: #e3e3e1;
+      --surface2: #f5f5f4;
+      --border: rgba(0, 0, 0, 0.18);
+      --foreground: #2a2622;
+      --white: #17140f;
+      --muted: #746f67;
+      --input-bg: #e3e3e1;
+      --sidebar-divider: rgba(0, 0, 0, 0.1);
+      --overlay-card-surface: #e3e3e1;
+    }
+  }
+}
+
 /* Carrier logo files are white (plus a couple of small color accents),
    so they go invisible on light mode's light surfaces — rather than
    propping a dark chip behind every one, flip the artwork itself to
@@ -211,6 +244,13 @@
    since this is bitmap artwork, not text. */
 :root[data-theme="light"] .carrier-logo-img {
   filter: brightness(0);
+}
+@media (min-width: 1024px) {
+  @media not (display-mode: standalone) {
+    .overlay-card-surface-light .carrier-logo-img {
+      filter: brightness(0);
+    }
+  }
 }
 
 /* EmbeddedTool's three stacked iframes (Scripts/Commission Calculator's
