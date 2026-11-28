@@ -20,6 +20,9 @@ export default async function F90Page() {
         f90EnrolledAt: true,
         f90CompletedSteps: true,
         timeZone: true,
+        f90LicenseDocUrl: true,
+        f90EoDocUrl: true,
+        f90AmlDocUrl: true,
       },
     }),
     // Every Policy row is a closed sale (created at submission, not just
@@ -51,6 +54,11 @@ export default async function F90Page() {
         initialCompletedSteps={user.f90CompletedSteps}
         salesCount={salesCount}
         issuedAP={issuedAP}
+        initialDocUrls={{
+          license: user.f90LicenseDocUrl,
+          eo: user.f90EoDocUrl,
+          aml: user.f90AmlDocUrl,
+        }}
       />
     </div>
   );

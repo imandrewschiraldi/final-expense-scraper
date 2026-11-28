@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Lock, GraduationCap, Check } from "lucide-react";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { Lock, GraduationCap, Check, Upload, FileCheck, Power } from "lucide-react";
 import { Stepper } from "@/components/ui/Stepper";
 import { cn } from "@/lib/cn";
 import {
@@ -12,17 +10,22 @@ import {
   F90_TOTAL_STEPS,
   F90_DAYS,
   F90_GRADUATION_AP,
+  F90_ROADMAP_NODES,
   f90DayNumber,
   f90IsGraduated,
   f90Phase5Unlocked,
   f90IsEligibleForCertificate,
-  f90CurrentPhaseIndex,
+  f90CurrentNodeIndex,
+  f90RoadmapNodePosition,
   isF90StepKey,
-  type F90Phase,
+  type F90Step,
   type F90Link,
+  type F90DocType,
 } from "@/lib/f90Content";
 import { formatKpiDate } from "@/lib/kpiTracker";
 import { zonedWallTimeToInstant } from "@/lib/timeZoneMath";
+import { F90Hud } from "@/components/portal/F90Hud";
+import { F90Diploma } from "@/components/portal/F90Diploma";
 
 // The step-detail "worksheet" is deliberately a literal printed-document
 // surface — white page, black rules, a copper frame and color-blocked
@@ -38,19 +41,6 @@ const INK_MUTED = "#2b2b2b";
 const PAPER_BORDER = "#141414";
 const PAPER_BG = "#ffffff";
 const ACCENT = "#b5551e";
-const CREAM = "#f5efe3";
-
-// Winding-path positions (percent of the road container) for each stop —
-// deliberately not a straight evenly-spaced row, so this actually reads as
-// a road climbing toward graduation rather than a plain progress stepper.
-const ROAD_POSITIONS: Record<string, { x: number; y: number }> = {
-  P1: { x: 8, y: 82 },
-  P2: { x: 26, y: 40 },
-  P3: { x: 44, y: 76 },
-  P4: { x: 62, y: 34 },
-  P5: { x: 80, y: 72 },
-  GRAD: { x: 94, y: 22 },
-};
 
 function WorksheetLinkPill({ link }: { link: F90Link }) {
   const className =
@@ -449,7 +439,7 @@ function confettiPieces() {
   }));
 }
 
-function Confetti() {
+export function Confetti() {
   const pieces = useMemo(() => confettiPieces(), []);
   // Purely decorative and never meaningful in the initial server-rendered
   // HTML — rendering only after mount avoids a hydration mismatch, since
@@ -482,71 +472,157 @@ function Confetti() {
   );
 }
 
-function F90GraduationView({
-  agentName,
-  issuedAP,
+/** Finds a step's full content (title/description/links/etc.) by key —
+ *  F90_ROADMAP_NODES only carries the key/title needed to place a node on
+ *  the map; F90_PHASES stays the one source of truth for everything else
+ *  about it. */
+function findF90Step(key: string): F90Step | null {
+  for (const phase of F90_PHASES) {
+    const step = phase.steps.find((s) => s.key === key);
+    if (step) return step;
+  }
+  return null;
+}
+
+type DocUrls = Record<F90DocType, string | null>;
+
+function DocUploadDropzone({
+  label,
+  docType,
+  url,
+  onUploaded,
 }: {
-  agentName: string;
-  issuedAP: number;
+  label: string;
+  docType: F90DocType;
+  url: string | null;
+  onUploaded: (docType: F90DocType, url: string) => void;
 }) {
-  const [showConfetti, setShowConfetti] = useState(true);
-  const [downloading, setDownloading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => setShowConfetti(false), 4500);
-    return () => clearTimeout(t);
-  }, []);
-
-  async function downloadCertificate() {
-    setDownloading(true);
+  async function handleFile(file: File) {
+    setUploading(true);
     setError(null);
     try {
-      const res = await fetch("/api/portal/f90/certificate");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("docType", docType);
+      const res = await fetch("/api/portal/f90/upload-doc", { method: "POST", body: formData });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error ?? "Couldn't generate the certificate.");
+        setError(data?.error ?? "Upload failed");
         return;
       }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "F90-Certificate.pdf";
-      a.click();
-      URL.revokeObjectURL(url);
+      const data = await res.json();
+      onUploaded(docType, data.url);
     } finally {
-      setDownloading(false);
+      setUploading(false);
     }
   }
 
   return (
-    <div className="text-center">
-      {showConfetti && <Confetti />}
-      <GraduationCap className="metal-copper-text mx-auto mb-3 h-12 w-12" />
-      <h1 className="font-condensed mb-1.5 text-[28px] font-extrabold tracking-wide text-white uppercase">
-        You Graduated F90 University
-      </h1>
-      <p className="mx-auto mb-6 max-w-xl text-sm text-muted">
-        {`${agentName}, you've issued $${Math.round(issuedAP).toLocaleString()} in Annual Premium and completed every Phase 1–4 step. Your certificate is ready below.`}
+    <div
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files?.[0];
+        if (file) void handleFile(file);
+      }}
+      onClick={() => inputRef.current?.click()}
+      className={cn(
+        "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed p-3 text-center transition-colors",
+        url
+          ? "border-[#2fd06b] bg-[#2fd06b]/10"
+          : "border-white/20 bg-black/20 hover:border-[var(--copper-metal-hi)]",
+      )}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,application/pdf"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleFile(file);
+          e.target.value = "";
+        }}
+      />
+      {url ? (
+        <FileCheck className="h-5 w-5 text-[#2fd06b]" />
+      ) : (
+        <Upload className="h-5 w-5 text-white/60" />
+      )}
+      <p className="text-[11px] font-extrabold text-white uppercase">{label}</p>
+      <p className="text-[9px] text-white/50">
+        {uploading ? "Uploading…" : url ? "Uploaded" : "Click or drop"}
       </p>
-      <Card className="mx-auto mb-4 max-w-4xl p-2">
-        <iframe
-          src="/api/portal/f90/certificate?inline=1"
-          title="F90 Graduation Certificate"
-          className="aspect-[792/612] w-full rounded-[6px]"
-        />
-      </Card>
-      {error && <p className="mb-3 text-sm text-red-light">{error}</p>}
-      <Button onClick={downloadCertificate} disabled={downloading}>
-        {downloading ? "Generating…" : "Download Certificate"}
-      </Button>
+      {error && <p className="text-[9px] text-red-400">{error}</p>}
     </div>
   );
 }
 
-function PhaseDetail({
-  phase,
+function DialerSeatToggle({
+  checked,
+  saving,
+  onToggle,
+}: {
+  checked: boolean;
+  saving: boolean;
+  onToggle: (next: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(!checked)}
+      disabled={saving}
+      className={cn(
+        "flex w-full items-center justify-center gap-3 rounded-xl border-2 px-4 py-3 transition-colors",
+        checked ? "border-[#2fd06b] bg-[#2fd06b]/15" : "border-white/20 bg-black/20 hover:border-[var(--copper-metal-hi)]",
+      )}
+    >
+      <Power className={checked ? "h-5 w-5 text-[#2fd06b]" : "h-5 w-5 text-white/50"} />
+      <span className="text-sm font-extrabold text-white uppercase">
+        {checked ? "$250 Dialer Seat Activated" : "Confirm $250 Dialer Seat Activation"}
+      </span>
+    </button>
+  );
+}
+
+function GenericCompleteButton({
+  checked,
+  saving,
+  onClick,
+}: {
+  checked: boolean;
+  saving: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={saving}
+      className={cn(
+        "flex w-full items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-extrabold tracking-wide uppercase transition-colors",
+        checked
+          ? "border-[#2fd06b] bg-[#2fd06b]/15 text-[#2fd06b]"
+          : "border-white/20 bg-black/20 text-white hover:border-[var(--copper-metal-hi)]",
+      )}
+    >
+      {checked ? (
+        <>
+          <Check className="h-4 w-4" /> Mission Complete
+        </>
+      ) : (
+        "Mark Mission Complete"
+      )}
+    </button>
+  );
+}
+
+function MissionDrawer({
+  node,
   completedSteps,
   savingKey,
   onToggle,
@@ -555,8 +631,10 @@ function PhaseDetail({
   dayNumber,
   issuedAP,
   agentTimeZone,
+  docUrls,
+  onDocUploaded,
 }: {
-  phase: F90Phase;
+  node: { key: string; phaseKey: string; kind: "step" | "vault" } | null;
   completedSteps: Set<string>;
   savingKey: string | null;
   onToggle: (key: string, completed: boolean) => void;
@@ -565,221 +643,266 @@ function PhaseDetail({
   dayNumber: number;
   issuedAP: number;
   agentTimeZone: string | null;
+  docUrls: DocUrls;
+  onDocUploaded: (docType: F90DocType, url: string) => void;
 }) {
-  const isP5 = phase.key === "P5";
-  const phaseNumber = F90_PHASES.findIndex((p) => p.key === phase.key) + 1;
+  const [justCompleted, setJustCompleted] = useState(false);
 
-  return (
-    <div
-      className="overflow-hidden rounded-2xl border shadow-[0_12px_40px_rgba(0,0,0,0.35)]"
-      style={{ borderColor: "#ddd", background: PAPER_BG }}
-    >
-      <div
-        className="flex items-center justify-between border-b-2 px-6 py-3 sm:px-8"
-        style={{ borderColor: INK }}
-      >
-        <span className="text-xs font-extrabold tracking-[0.2em] uppercase" style={{ color: ACCENT }}>
-          F90 Playbook
-        </span>
-        <span className="text-xs font-extrabold tracking-[0.2em] uppercase" style={{ color: ACCENT }}>
-          Phase {phaseNumber} · {String(phaseNumber).padStart(2, "0")}
-        </span>
+  function handleToggle(key: string, completed: boolean) {
+    onToggle(key, completed);
+    if (completed) {
+      setJustCompleted(true);
+      setTimeout(() => setJustCompleted(false), 2200);
+    }
+  }
+
+  if (!node) {
+    return (
+      <div className="f90-road-bg flex min-h-[260px] items-center justify-center rounded-2xl border border-white/10 p-8 text-center shadow-[0_0_30px_rgba(0,0,0,0.4)]">
+        <p className="text-sm font-bold text-white/50">Tap a mission on the map to get started.</p>
       </div>
+    );
+  }
 
+  if (node.kind === "vault") {
+    const vaultPhase = F90_PHASES.find((p) => p.key === "P5");
+    return (
       <div
-        className="px-6 py-3 text-center sm:px-8"
-        style={{ background: ACCENT }}
+        key={node.key}
+        className="animate-f90-panel-in f90-road-bg rounded-2xl border border-white/10 p-6 shadow-[0_0_30px_rgba(0,0,0,0.4)]"
       >
-        <span className="text-sm font-extrabold tracking-[0.25em] text-white uppercase">
-          {phase.title}
-        </span>
-      </div>
-
-      <div className="p-6 sm:p-8">
-        <p className="mb-6 text-xs font-extrabold tracking-[0.15em] uppercase" style={{ color: INK_MUTED }}>
-          {phase.subtitle}
-        </p>
-
-        {isP5 ? (
-        phase5Unlocked ? (
-          <div>
-            <div className="mb-5 flex flex-wrap overflow-hidden rounded-xl border-2" style={{ borderColor: INK }}>
-              <div className="flex-1 border-r-2 p-4" style={{ borderColor: INK, background: CREAM }}>
-                <p className="text-xs font-extrabold tracking-[0.15em] uppercase" style={{ color: INK }}>
-                  90-Day Graduation Standard
-                </p>
-                <p className="mt-1 text-sm" style={{ color: INK }}>
-                  {`Combine the Agent Accelerator Lead Program with whichever channel(s) below you run, and hit $${F90_GRADUATION_AP.toLocaleString()} in Issued Annual Premium within your first 90 days.`}
-                </p>
-              </div>
-              <div
-                className="flex shrink-0 flex-col items-center justify-center p-4 text-center"
-                style={{ background: INK, minWidth: 180 }}
-              >
-                <span className="text-lg font-extrabold text-white">
-                  {`$${Math.round(issuedAP).toLocaleString()}`}
-                </span>
-                <span className="text-xs font-bold uppercase" style={{ color: ACCENT }}>
-                  {`of $${F90_GRADUATION_AP.toLocaleString()} AP`}
-                </span>
-              </div>
+        <p className="font-condensed text-xs font-bold tracking-[0.2em] text-white/50 uppercase">Phase 5</p>
+        <h3 className="font-condensed mb-4 text-xl font-extrabold text-white uppercase">Lead Scaling Vault</h3>
+        {phase5Unlocked ? (
+          <>
+            <div className="mb-4 rounded-xl border border-white/15 bg-black/30 p-4">
+              <p className="text-xs font-bold text-white/60 uppercase">90-Day Graduation Standard</p>
+              <p className="mt-1 text-sm text-white/80">
+                {`Combine the Agent Accelerator Lead Program with whichever channel(s) below you run, and hit $${F90_GRADUATION_AP.toLocaleString()} in Issued AP within your first 90 days.`}
+              </p>
+              <p className="metal-copper-text mt-2 text-sm font-bold">
+                {`$${Math.round(issuedAP).toLocaleString()} / $${F90_GRADUATION_AP.toLocaleString()}`}
+              </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {phase.channels?.map((c, idx) => {
+            <div className="space-y-3">
+              {vaultPhase?.channels?.map((c) => {
                 const selected = completedSteps.has(c.key);
                 return (
                   <button
                     key={c.key}
                     type="button"
-                    onClick={() => onToggle(c.key, !selected)}
-                    disabled={savingKey === c.key}
-                    className="rounded-xl border-2 p-4 text-left transition-colors"
-                    style={{
-                      borderColor: INK,
-                      background: selected ? INK : PAPER_BG,
-                    }}
+                    onClick={() => handleToggle(c.key, !selected)}
+                    className={cn(
+                      "w-full rounded-xl border-2 p-3 text-left transition-colors",
+                      selected
+                        ? "border-[var(--copper-metal-hi)] bg-[var(--copper-metal-hi)]/10"
+                        : "border-white/15 bg-black/20 hover:border-white/30",
+                    )}
                   >
-                    <div className="mb-1 flex items-center gap-2">
-                      <span
-                        className="text-xl font-extrabold"
-                        style={{ color: selected ? "#fff" : ACCENT }}
-                      >
-                        {idx + 1}
-                      </span>
-                      <p
-                        className="flex-1 text-base font-extrabold"
-                        style={{ color: selected ? "#fff" : INK }}
-                      >
-                        {c.title}
-                      </p>
-                      {selected && <Check className="h-5 w-5 shrink-0 text-white" />}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold text-white">{c.title}</p>
+                      {selected && <Check className="h-4 w-4 text-[var(--copper-metal-hi)]" />}
                     </div>
-                    <p className="text-sm" style={{ color: selected ? "#ddd" : INK_MUTED }}>
-                      {c.description}
-                    </p>
-                    <p
-                      className="mt-2 text-xs font-bold uppercase"
-                      style={{ color: selected ? "#ddd" : INK_MUTED }}
-                    >
-                      Benchmark: {c.benchmark}
-                    </p>
-                    <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                    <p className="mt-1 text-xs text-white/60">{c.description}</p>
+                    <p className="mt-1 text-[11px] font-semibold text-white/40">Benchmark: {c.benchmark}</p>
+                    <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                       <WorksheetLinkPill link={c.link} />
                     </div>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </>
         ) : (
-          <div className="flex items-start gap-3 rounded-xl border-2 p-4" style={{ borderColor: PAPER_BORDER, background: PAPER_BG }}>
-            <Lock className="mt-0.5 h-5 w-5 shrink-0" style={{ color: INK_MUTED }} />
-            <p className="text-base" style={{ color: INK }}>
-              Locked until you&apos;ve closed 5 sales or reached Day 90 — you&apos;re at{" "}
-              {salesCount} {salesCount === 1 ? "sale" : "sales"} and Day {dayNumber}.
+          <div className="flex items-start gap-3 rounded-xl border border-white/15 bg-black/30 p-4">
+            <Lock className="mt-0.5 h-5 w-5 shrink-0 text-white/50" />
+            <p className="text-sm text-white/70">
+              Locked until you&apos;ve closed 5 sales or reached Day 90 — you&apos;re at {salesCount}{" "}
+              {salesCount === 1 ? "sale" : "sales"} and Day {dayNumber}.
             </p>
           </div>
-        )
+        )}
+      </div>
+    );
+  }
+
+  const step = findF90Step(node.key);
+  if (!step) return null;
+  const checked = completedSteps.has(step.key);
+  const phaseTitle = F90_PHASES.find((p) => p.key === node.phaseKey)?.title ?? "";
+
+  return (
+    <div
+      key={node.key}
+      className="animate-f90-panel-in f90-road-bg rounded-2xl border border-white/10 p-6 shadow-[0_0_30px_rgba(0,0,0,0.4)]"
+    >
+      <p className="font-condensed text-xs font-bold tracking-[0.2em] text-white/50 uppercase">{phaseTitle}</p>
+      <h3 className="font-condensed mb-3 text-xl font-extrabold text-white uppercase">{step.title}</h3>
+      <p className="mb-4 text-sm whitespace-pre-line text-white/70">{step.description}</p>
+
+      {step.key === "P2_S2" ? (
+        <DialerSeatToggle
+          checked={checked}
+          saving={savingKey === step.key}
+          onToggle={(next) => handleToggle(step.key, next)}
+        />
       ) : (
-        // Numbered worksheet lines flowing down one continuous page — a
-        // thin rule between items, not a separate boxed/shadowed card per
-        // step, since a real worksheet is one sheet, not a stack of cards.
-        // The embedded modules below (mini KPI tracker, suitability sheet,
-        // training strip, the 6-box call workflow) keep their own light
-        // boxes on purpose — those are actual fillable fields/sections on
-        // the sheet, not another layer of "step cards."
-        <div>
-          {phase.steps.map((step, i) => {
-            const checked = completedSteps.has(step.key);
-            return (
-              <div
-                key={step.key}
-                className={cn("py-5", i > 0 && "border-t-2")}
-                style={{ borderColor: PAPER_BORDER }}
-              >
-                <div className="flex items-start gap-4">
-                  <button
-                    type="button"
-                    onClick={() => onToggle(step.key, !checked)}
-                    disabled={savingKey === step.key}
-                    aria-label={checked ? "Mark incomplete" : "Mark complete"}
-                    className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base font-extrabold transition-colors"
-                    style={{
-                      background: checked ? "#1f7a3d" : INK,
-                      color: checked ? "#fff" : ACCENT,
-                    }}
-                  >
-                    {checked ? <Check className="h-5 w-5 text-white" /> : i + 1}
-                  </button>
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <p
-                        className="text-lg font-extrabold"
-                        style={{ color: INK, textDecoration: checked ? "line-through" : undefined }}
-                      >
-                        {step.title}
-                      </p>
-                      {checked && (
-                        <span className="rounded-full bg-[#1f7a3d] px-2 py-0.5 text-[11px] font-bold text-white uppercase">
-                          Completed
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-base whitespace-pre-line" style={{ color: INK_MUTED }}>
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
+        <GenericCompleteButton
+          checked={checked}
+          saving={savingKey === step.key}
+          onClick={() => handleToggle(step.key, !checked)}
+        />
+      )}
 
-                {step.links && (
-                  <div className="mt-4 ml-10 flex flex-wrap gap-2">
-                    {step.links.map((link) => (
-                      <WorksheetLinkPill key={link.label} link={link} />
-                    ))}
-                  </div>
-                )}
-
-                {step.trainingSchedule && (
-                  <div className="ml-10">
-                    <TrainingScheduleStrip schedule={step.trainingSchedule} agentTimeZone={agentTimeZone} />
-                  </div>
-                )}
-
-                {step.subSteps && (
-                  <div className="mt-4 ml-10 grid gap-3 sm:grid-cols-2">
-                    {step.subSteps.map((sub) => (
-                      <div
-                        key={sub.heading}
-                        className="rounded-xl border-2 p-4"
-                        style={{ borderColor: PAPER_BORDER, background: "#fff" }}
-                      >
-                        <p className="text-sm font-extrabold tracking-wide uppercase" style={{ color: ACCENT }}>
-                          {sub.heading}
-                        </p>
-                        <p className="mt-1.5 text-sm" style={{ color: INK }}>
-                          {sub.prompt}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {step.key === "P3_S1" && (
-                  <div className="ml-10">
-                    <MiniKpiTracker />
-                  </div>
-                )}
-                {step.key === "P3_S2" && (
-                  <div className="ml-10">
-                    <SuitabilitySheetWidget />
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      {step.key === "P1_S5" && (
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <DocUploadDropzone label="License" docType="license" url={docUrls.license} onUploaded={onDocUploaded} />
+          <DocUploadDropzone label="E&O Cert" docType="eo" url={docUrls.eo} onUploaded={onDocUploaded} />
+          <DocUploadDropzone label="AML Cert" docType="aml" url={docUrls.aml} onUploaded={onDocUploaded} />
         </div>
       )}
-      </div>
+
+      {step.links && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {step.links.map((link) => (
+            <WorksheetLinkPill key={link.label} link={link} />
+          ))}
+        </div>
+      )}
+
+      {step.trainingSchedule && (
+        <div className="mt-4">
+          <TrainingScheduleStrip schedule={step.trainingSchedule} agentTimeZone={agentTimeZone} />
+        </div>
+      )}
+
+      {step.subSteps && (
+        <div className="mt-4 grid gap-3">
+          {step.subSteps.map((sub) => (
+            <div key={sub.heading} className="rounded-xl border-2 p-4" style={{ borderColor: PAPER_BORDER, background: "#fff" }}>
+              <p className="text-sm font-extrabold tracking-wide uppercase" style={{ color: ACCENT }}>
+                {sub.heading}
+              </p>
+              <p className="mt-1.5 text-sm" style={{ color: INK }}>
+                {sub.prompt}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {step.key === "P3_S1" && (
+        <div className="mt-4">
+          <MiniKpiTracker />
+        </div>
+      )}
+      {step.key === "P3_S2" && (
+        <div className="mt-4">
+          <SuitabilitySheetWidget />
+        </div>
+      )}
+
+      {justCompleted && (
+        <div className="animate-f90-panel-in mt-4 rounded-lg border border-[#2fd06b]/40 bg-[#2fd06b]/10 p-3 text-center text-xs font-extrabold tracking-wide text-[#2fd06b] uppercase">
+          ✓ Mission Complete — Next Node Unlocked
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoadmapCanvas({
+  completedSteps,
+  phase5Unlocked,
+  selectedNode,
+  onSelectNode,
+}: {
+  completedSteps: Set<string>;
+  phase5Unlocked: boolean;
+  selectedNode: string | null;
+  onSelectNode: (key: string) => void;
+}) {
+  const currentIndex = f90CurrentNodeIndex([...completedSteps]);
+  const lastPos = f90RoadmapNodePosition(F90_ROADMAP_NODES.length - 1);
+  const totalHeight = lastPos.y + 110;
+
+  return (
+    <div
+      className="f90-road-bg relative overflow-hidden rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+      style={{ height: totalHeight }}
+    >
+      <p className="font-condensed absolute top-4 left-1/2 z-10 -translate-x-1/2 text-center text-xs font-extrabold tracking-[0.3em] text-white/80 uppercase">
+        Roadmap to Graduation
+      </p>
+      <svg viewBox={`0 0 100 ${totalHeight}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+        {F90_ROADMAP_NODES.slice(0, -1).map((node, i) => {
+          const a = f90RoadmapNodePosition(i);
+          const b = f90RoadmapNodePosition(i + 1);
+          const traveled = i < currentIndex;
+          return (
+            <line
+              key={node.key}
+              x1={a.x}
+              y1={a.y}
+              x2={b.x}
+              y2={b.y}
+              stroke={traveled ? "var(--copper-metal-hi)" : "rgba(255,255,255,0.3)"}
+              strokeWidth={traveled ? 1 : 0.6}
+              strokeDasharray={traveled ? undefined : "2.5,2.5"}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          );
+        })}
+      </svg>
+      {F90_ROADMAP_NODES.map((node, i) => {
+        const pos = f90RoadmapNodePosition(i);
+        const isVault = node.kind === "vault";
+        const completed = !isVault && completedSteps.has(node.key);
+        const isCurrent = i === currentIndex && (!isVault || phase5Unlocked);
+        const vaultLockedAtCurrent = isVault && i === currentIndex && !phase5Unlocked;
+        const locked = i > currentIndex || vaultLockedAtCurrent;
+        const isSelected = selectedNode === node.key;
+        return (
+          <button
+            key={node.key}
+            type="button"
+            data-testid={`f90-node-${node.key}`}
+            onClick={() => onSelectNode(node.key)}
+            className="absolute z-10 flex flex-col items-center gap-1"
+            style={{ left: `${pos.x}%`, top: pos.y, transform: "translate(-50%, -50%)" }}
+          >
+            <span
+              className={cn(
+                "flex h-14 w-14 items-center justify-center rounded-full border-4 font-condensed text-sm font-extrabold transition-transform hover:scale-105",
+                isSelected && "scale-110",
+                isCurrent && "animate-pulse",
+                completed
+                  ? "border-transparent bg-[linear-gradient(135deg,var(--copper-metal-dk),var(--copper-metal-hi))] text-black"
+                  : isCurrent
+                    ? "border-[var(--copper-metal-hi)] bg-black/40 text-white"
+                    : locked
+                      ? "border-white/15 bg-black/50 text-white/40 backdrop-blur-sm"
+                      : "border-white/30 bg-black/40 text-white/70",
+              )}
+              style={isCurrent ? { boxShadow: "0 0 20px 2px var(--copper-metal-hi)" } : undefined}
+            >
+              {completed ? (
+                <Check className="h-6 w-6" />
+              ) : locked ? (
+                <Lock className="h-5 w-5" />
+              ) : isVault ? (
+                <GraduationCap className="h-6 w-6" />
+              ) : (
+                i + 1
+              )}
+            </span>
+            <span className="max-w-[88px] text-center text-[9px] font-bold tracking-wide text-white/70 uppercase">
+              {node.title}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -791,6 +914,7 @@ export function F90Panel({
   initialCompletedSteps,
   salesCount,
   issuedAP,
+  initialDocUrls,
 }: {
   agentName: string;
   agentTimeZone: string | null;
@@ -798,30 +922,27 @@ export function F90Panel({
   initialCompletedSteps: string[];
   salesCount: number;
   issuedAP: number;
+  initialDocUrls: DocUrls;
 }) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(
     new Set(initialCompletedSteps),
   );
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [selectedNode, setSelectedNode] = useState<string>(
-    () => F90_PHASES[f90CurrentPhaseIndex(initialCompletedSteps)].key,
+  const [docUrls, setDocUrls] = useState<DocUrls>(initialDocUrls);
+  const [selectedNode, setSelectedNode] = useState<string | null>(
+    () => F90_ROADMAP_NODES[f90CurrentNodeIndex(initialCompletedSteps)]?.key ?? null,
   );
 
   const enrolledDate = new Date(enrolledAt);
   const dayNumber = f90DayNumber(enrolledDate);
   const pastDay90 = f90IsGraduated(enrolledDate);
   const completedArray = useMemo(() => [...completedSteps], [completedSteps]);
-  // Phase 5's channel picks share the same completedSteps Set/API as the
-  // real phase steps (reusing toggleStep), but they aren't steps and
-  // shouldn't count toward "X/15 steps" — only F90_ALL_STEP_KEYS entries do.
   const completedStepCount = useMemo(
     () => completedArray.filter(isF90StepKey).length,
     [completedArray],
   );
-  const pct = Math.round((completedStepCount / F90_TOTAL_STEPS) * 100);
   const phase5Unlocked = f90Phase5Unlocked(salesCount, enrolledDate);
   const certificateEligible = f90IsEligibleForCertificate(completedArray, issuedAP);
-  const currentPhaseIndex = f90CurrentPhaseIndex(completedArray);
 
   async function toggleStep(stepKey: string, completed: boolean) {
     setSavingKey(stepKey);
@@ -850,150 +971,45 @@ export function F90Panel({
     }
   }
 
-  if (certificateEligible) {
-    return <F90GraduationView agentName={agentName} issuedAP={issuedAP} />;
-  }
-
-  const roadItems = [
-    ...F90_PHASES.map((p, i) => ({ key: p.key, title: p.title, index: i })),
-    { key: "GRAD", title: "Graduation", index: F90_PHASES.length },
-  ];
-  const selectedPhase = F90_PHASES.find((p) => p.key === selectedNode) ?? null;
-  const isGradSelected = selectedNode === "GRAD";
+  const selectedNodeMeta = F90_ROADMAP_NODES.find((n) => n.key === selectedNode) ?? null;
 
   return (
-    <div>
-      <h1 className="font-condensed mb-1.5 text-[28px] font-extrabold tracking-wide text-white uppercase">
-        F90 — First 90 Days
-      </h1>
-      <p className="mb-6 max-w-2xl text-sm text-muted">
-        Your path from pre-licensing to full-time production. Click a stop on the road below to
-        see what&apos;s next — your progress is saved automatically.
-      </p>
-
-      <div
-        className="f90-road-bg mb-8 rounded-2xl border border-white/10 p-6 shadow-[0_0_40px_rgba(0,0,0,0.5)]"
-      >
-        <div className="mb-5 flex items-center justify-between">
-          <span className="font-condensed text-[11px] font-bold tracking-[0.2em] text-white/70 uppercase">
-            {pastDay90 ? "Day 90+" : `Day ${dayNumber} of ${F90_DAYS}`}
-          </span>
-          <span className="metal-copper-text text-sm font-bold">
-            {completedStepCount}/{F90_TOTAL_STEPS} steps · {pct}%
-          </span>
-        </div>
-        <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-black/40">
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${pct}%`,
-              background: "linear-gradient(90deg, var(--copper-metal-dk), var(--copper-metal-hi))",
-              boxShadow: "0 0 10px var(--copper-metal-hi)",
-            }}
-          />
-        </div>
-
-        <p className="font-condensed mb-4 text-center text-sm font-extrabold tracking-[0.25em] text-white/90 uppercase">
-          Roadmap to Graduation
+    <div className="space-y-6">
+      <div className="mb-1">
+        <h1 className="font-condensed mb-1.5 text-[28px] font-extrabold tracking-wide text-white uppercase">
+          F90 — First 90 Days
+        </h1>
+        <p className="max-w-2xl text-sm text-muted">
+          {pastDay90
+            ? "You've passed Day 90 — finish strong."
+            : `Day ${dayNumber} of ${F90_DAYS}. ${completedStepCount}/${F90_TOTAL_STEPS} missions complete.`}{" "}
+          Tap any mission on the map to open it.
         </p>
-
-        <div className="relative h-80 w-full sm:h-72">
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="absolute inset-0 h-full w-full"
-          >
-            {roadItems.slice(0, -1).map((item, i) => {
-              const a = ROAD_POSITIONS[item.key];
-              const b = ROAD_POSITIONS[roadItems[i + 1].key];
-              const traveled = item.index < currentPhaseIndex;
-              return (
-                <line
-                  key={item.key}
-                  x1={a.x}
-                  y1={a.y}
-                  x2={b.x}
-                  y2={b.y}
-                  stroke={traveled ? "var(--copper-metal-hi)" : "rgba(255,255,255,0.3)"}
-                  strokeWidth={traveled ? 1 : 0.6}
-                  strokeDasharray={traveled ? undefined : "2.5,2.5"}
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                />
-              );
-            })}
-          </svg>
-          {roadItems.map((item) => {
-            const isGrad = item.key === "GRAD";
-            const isComplete = !isGrad && item.index < currentPhaseIndex;
-            const isCurrent = !isGrad && item.index === currentPhaseIndex;
-            const isSelected = selectedNode === item.key;
-            const pos = ROAD_POSITIONS[item.key];
-            return (
-              <button
-                key={item.key}
-                type="button"
-                data-testid={`f90-road-node-${item.key}`}
-                onClick={() => setSelectedNode(item.key)}
-                className="absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2"
-                style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-              >
-                <span
-                  className={cn(
-                    "flex h-16 w-16 items-center justify-center rounded-full border-4 font-condensed text-lg font-extrabold transition-transform hover:scale-105",
-                    isSelected && "scale-110",
-                    isCurrent && "animate-pulse",
-                    isGrad
-                      ? "border-[var(--copper-metal-hi)] bg-black/40 text-[var(--copper-metal-hi)]"
-                      : isComplete
-                        ? "border-white/20 bg-[linear-gradient(135deg,var(--copper-metal-dk),var(--copper-metal-hi))] text-black"
-                        : isCurrent
-                          ? "border-[var(--copper-metal-hi)] bg-black/40 text-white"
-                          : isSelected
-                            ? "border-white/60 bg-black/40 text-white"
-                            : "border-white/15 bg-black/30 text-white/50",
-                  )}
-                  style={
-                    isCurrent
-                      ? { boxShadow: "0 0 22px 2px var(--copper-metal-hi)" }
-                      : isComplete
-                        ? { boxShadow: "0 0 10px rgba(240,160,80,0.4)" }
-                        : undefined
-                  }
-                >
-                  {isGrad ? (
-                    <GraduationCap className="h-7 w-7" />
-                  ) : isComplete ? (
-                    <Check className="h-7 w-7" />
-                  ) : (
-                    item.index + 1
-                  )}
-                </span>
-                <span className="max-w-[100px] text-center text-[11px] font-bold tracking-wide text-white/80 uppercase">
-                  {item.title}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
-      <div key={selectedNode} className="animate-f90-panel-in">
-        {isGradSelected ? (
-          <div
-            className="rounded-2xl border p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] sm:p-8"
-            style={{ borderColor: "#ddd", background: PAPER_BG }}
-          >
-            <h2 className="mb-2 text-2xl font-extrabold" style={{ color: INK }}>
-              Graduation
-            </h2>
-            <p className="text-base" style={{ color: INK_MUTED }}>
-              {`Reach $${F90_GRADUATION_AP.toLocaleString()} in Issued Annual Premium with every Phase 1–4 step complete, and this page turns into your certificate. You're at $${Math.round(issuedAP).toLocaleString()} today.`}
-            </p>
+      <F90Hud
+        dayNumber={dayNumber}
+        issuedAP={issuedAP}
+        salesCount={salesCount}
+        phase5Unlocked={phase5Unlocked}
+      />
+
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="lg:w-[65%]">
+          <RoadmapCanvas
+            completedSteps={completedSteps}
+            phase5Unlocked={phase5Unlocked}
+            selectedNode={selectedNode}
+            onSelectNode={setSelectedNode}
+          />
+          <div className="mt-6">
+            <F90Diploma agentName={agentName} issuedAP={issuedAP} eligible={certificateEligible} />
           </div>
-        ) : selectedPhase ? (
-          <PhaseDetail
-            phase={selectedPhase}
+        </div>
+
+        <div className="lg:sticky lg:top-24 lg:w-[35%] lg:self-start">
+          <MissionDrawer
+            node={selectedNodeMeta}
             completedSteps={completedSteps}
             savingKey={savingKey}
             onToggle={toggleStep}
@@ -1002,8 +1018,12 @@ export function F90Panel({
             dayNumber={dayNumber}
             issuedAP={issuedAP}
             agentTimeZone={agentTimeZone}
+            docUrls={docUrls}
+            onDocUploaded={(docType, url) =>
+              setDocUrls((prev) => ({ ...prev, [docType]: url }))
+            }
           />
-        ) : null}
+        </div>
       </div>
     </div>
   );

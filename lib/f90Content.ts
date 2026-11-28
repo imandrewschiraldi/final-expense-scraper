@@ -321,6 +321,19 @@ export function isF90ChannelKey(key: string): boolean {
   return F90_ALL_CHANNEL_KEYS.includes(key);
 }
 
+// Compliance-document upload nodes on the roadmap (License, E&O, AML) —
+// scanned documents are commonly a photo or a PDF, not just an image like
+// the training-lesson upload this otherwise mirrors.
+export const F90_DOC_TYPES = ["license", "eo", "aml"] as const;
+export type F90DocType = (typeof F90_DOC_TYPES)[number];
+export const F90_DOC_MAX_BYTES = 10 * 1024 * 1024;
+export const F90_DOC_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "application/pdf",
+] as const;
+
 // The Graduation Certificate's own trigger — $20,000+ Issued AP AND every
 // Phase 1-4 step checked off. Phase 5 is deliberately excluded: it's
 // already gated separately (5 sales or Day 90) and isn't part of what the
@@ -377,4 +390,70 @@ export function f90CurrentPhaseIndex(completedSteps: string[]): number {
     if (!phase.steps.every((s) => completedSet.has(s.key))) return i;
   }
   return F90_PHASES.length - 1;
+}
+
+// The winding map's own node list — one Mission Node per individual step
+// (not per phase, see F90_PHASES above for the phase grouping those steps
+// still belong to), plus one combined "Vault" node for all of Phase 5's
+// channels. This is what actually walks the road; F90_PHASES/F90Step stay
+// the single source of truth for each node's real content.
+export type F90RoadmapNode = {
+  key: string; // a step key, or "VAULT" for the single Phase 5 node
+  phaseKey: string;
+  title: string;
+  kind: "step" | "vault";
+};
+
+export const F90_ROADMAP_NODES: F90RoadmapNode[] = F90_PHASES.flatMap(
+  (phase): F90RoadmapNode[] =>
+    phase.key === "P5"
+      ? [{ key: "VAULT", phaseKey: "P5", title: "Lead Scaling Vault", kind: "vault" }]
+      : phase.steps.map((step) => ({
+          key: step.key,
+          phaseKey: phase.key,
+          title: step.title,
+          kind: "step",
+        })),
+);
+
+/** Index (0-based) of the node the agent is actively working on — the
+ *  first not-yet-completed step node, or the Vault node once every Phase
+ *  1-4 step is done, or past-the-end (nodes.length) once even the Vault
+ *  is behind them (certificate eligibility is what actually matters then,
+ *  handled separately). */
+export function f90CurrentNodeIndex(completedSteps: string[]): number {
+  const completedSet = new Set(completedSteps);
+  for (let i = 0; i < F90_ROADMAP_NODES.length; i++) {
+    const node = F90_ROADMAP_NODES[i];
+    if (node.kind === "vault") return i; // reached once every step before it is done
+    if (!completedSet.has(node.key)) return i;
+  }
+  return F90_ROADMAP_NODES.length;
+}
+
+// Hand-tuned-feeling but formula-driven 2D positions for the winding path —
+// a 6-lane left-right snake (not a straight line or a simple sine wave) with
+// a touch of deterministic jitter per node, descending the canvas top to
+// bottom so Phase 1 starts at the top and the Vault/diploma land at the
+// bottom. `pseudoRandom` mirrors the confetti module's own impure-free
+// scatter trick (Math.sin/seed), not actual randomness, so positions are
+// stable across renders without needing to store them anywhere.
+const ROADMAP_LANES = [20, 38, 62, 80, 62, 38];
+// Integer-only hash (bitwise + Math.imul, no Math.sin): native sin()
+// implementations differ in their last bit between Node (SSR) and the
+// browser's V8 build, which caused a hydration mismatch. Bitwise ops are
+// spec-defined to the bit, so this is identical on server and client.
+function pseudoJitter(seed: number): number {
+  let x = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
+  x ^= x >>> 13;
+  x = Math.imul(x, 0xc2b2ae35);
+  x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
+}
+export function f90RoadmapNodePosition(index: number): { x: number; y: number } {
+  const lane = ROADMAP_LANES[index % ROADMAP_LANES.length];
+  const jitter = (pseudoJitter(index) - 0.5) * 8;
+  const x = Math.min(88, Math.max(12, lane + jitter));
+  const y = 90 + index * 150;
+  return { x, y };
 }

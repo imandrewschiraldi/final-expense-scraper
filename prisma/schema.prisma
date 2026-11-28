@@ -130,6 +130,13 @@ model User {
   /// admin-editable, so a plain string array is enough; no separate step
   /// table needed.
   f90CompletedSteps      String[]  @default([])
+  /// Uploaded compliance document URLs for the F90 roadmap's Phase 1/2
+  /// upload nodes (Blob storage, public-access URL — same trust model as
+  /// every other upload in this app, e.g. profile pictures). Null until
+  /// the agent uploads one; re-uploading just overwrites the URL.
+  f90LicenseDocUrl       String?
+  f90EoDocUrl            String?
+  f90AmlDocUrl           String?
   npn                    String?
   residentState          String?
   /// IANA zone name (e.g. "America/New_York") — null means "use the
