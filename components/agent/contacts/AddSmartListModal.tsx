@@ -6,7 +6,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { FiltersDrawer } from "./FiltersDrawer";
-import { useClickOutside } from "./useClickOutside";
+import { useClickOutside } from "@/lib/useClickOutside";
 import { ALL_COLUMNS, EMPTY_FILTER, type ColumnKey, type FilterGroup, type SmartList, type SortConfig } from "./types";
 
 const SORT_OPTIONS: { key: string; dir: "asc" | "desc"; label: string }[] = [

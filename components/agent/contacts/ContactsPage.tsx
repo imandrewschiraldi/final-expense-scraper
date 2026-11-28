@@ -47,7 +47,7 @@ import { useTagColors } from "./useTagColors";
 import { CustomFieldsPanel } from "./CustomFieldsPanel";
 import { TasksPanel } from "./TasksPanel";
 import { AddSmartListModal } from "./AddSmartListModal";
-import { useClickOutside } from "./useClickOutside";
+import { useClickOutside } from "@/lib/useClickOutside";
 import {
   ALL_COLUMNS,
   DEFAULT_VISIBLE_COLUMNS,
