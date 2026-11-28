@@ -920,12 +920,24 @@ export function F90Panel({
       <RoadmapStrip completedSteps={completedSteps} certificateEligible={certificateEligible} onJump={jumpTo} />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <StatBlock value={`${Math.max(0, F90_DAYS - dayNumber)}`} label="Days Left of 90" />
+        <StatBlock
+          value={`${Math.max(0, F90_DAYS - dayNumber)}`}
+          label="Days Left in F90 University"
+        />
         <StatBlock
           value={`$${Math.round(issuedAP).toLocaleString()}`}
-          label={`of $${F90_GRADUATION_AP.toLocaleString()} Issued AP`}
+          label={`Issued AP Toward Your $${F90_GRADUATION_AP.toLocaleString()} Graduation Goal`}
         />
       </div>
+      <p className="-mt-2 max-w-2xl text-xs text-muted">
+        To graduate and unlock your certificate, you need{" "}
+        <strong>${F90_GRADUATION_AP.toLocaleString()} in Issued Annual Premium</strong> —
+        the yearly premium on policies a carrier has fully approved and issued, not just
+        submitted — <strong>within your first 90 days</strong>, plus every Phase 1–4 step
+        below checked off. Phase 5 (the Lead Scaling Vault) isn&apos;t required for
+        graduation; it&apos;s how you keep dialing toward that $
+        {F90_GRADUATION_AP.toLocaleString()} once Phases 1–4 are behind you.
+      </p>
 
       {F90_PHASES.map((phase) => (
         <PhaseWorksheetSection
