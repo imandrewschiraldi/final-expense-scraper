@@ -819,15 +819,30 @@ function RoadmapStrip({
   );
 }
 
-function StatBlock({ value, label }: { value: string; label: string }) {
+function StatBlock({
+  value,
+  label,
+  caption,
+}: {
+  value: string;
+  label: string;
+  caption?: string;
+}) {
   return (
-    <div className="flex items-center gap-4 rounded-xl p-4" style={{ background: ACCENT }}>
-      <p className="font-condensed text-3xl font-extrabold" style={{ color: "#ffffff" }}>
-        {value}
-      </p>
-      <p className="text-xs font-extrabold tracking-wide uppercase" style={{ color: "#ffffff" }}>
-        {label}
-      </p>
+    <div className="flex flex-col gap-2 rounded-xl p-4" style={{ background: ACCENT }}>
+      <div className="flex items-center gap-4">
+        <p className="font-condensed text-3xl font-extrabold" style={{ color: "#ffffff" }}>
+          {value}
+        </p>
+        <p className="text-xs font-extrabold tracking-wide uppercase" style={{ color: "#ffffff" }}>
+          {label}
+        </p>
+      </div>
+      {caption && (
+        <p className="text-[11px] leading-snug" style={{ color: "rgba(255,255,255,0.85)" }}>
+          {caption}
+        </p>
+      )}
     </div>
   );
 }
@@ -926,18 +941,10 @@ export function F90Panel({
         />
         <StatBlock
           value={`$${Math.round(issuedAP).toLocaleString()}`}
-          label={`Issued AP Toward Your $${F90_GRADUATION_AP.toLocaleString()} Graduation Goal`}
+          label="Issued AP"
+          caption={`During your first 90 days, for agents utilizing the Agent Accelerator Lead Program, your goal is to issue $${F90_GRADUATION_AP.toLocaleString()} of Annual Premium.`}
         />
       </div>
-      <p className="-mt-2 max-w-2xl text-xs text-muted">
-        To graduate and unlock your certificate, you need{" "}
-        <strong>${F90_GRADUATION_AP.toLocaleString()} in Issued Annual Premium</strong> —
-        the yearly premium on policies a carrier has fully approved and issued, not just
-        submitted — <strong>within your first 90 days</strong>, plus every Phase 1–4 step
-        below checked off. Phase 5 (the Lead Scaling Vault) isn&apos;t required for
-        graduation; it&apos;s how you keep dialing toward that $
-        {F90_GRADUATION_AP.toLocaleString()} once Phases 1–4 are behind you.
-      </p>
 
       {F90_PHASES.map((phase) => (
         <PhaseWorksheetSection

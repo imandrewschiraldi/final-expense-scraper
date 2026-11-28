@@ -334,11 +334,11 @@ export const F90_DOC_MIME_TYPES = [
   "application/pdf",
 ] as const;
 
-// The Graduation Certificate's own trigger — $20,000+ Issued AP AND every
+// The Graduation Certificate's own trigger — $30,000+ Issued AP AND every
 // Phase 1-4 step checked off. Phase 5 is deliberately excluded: it's
 // already gated separately (5 sales or Day 90) and isn't part of what the
 // certificate itself certifies.
-export const F90_GRADUATION_AP = 20000;
+export const F90_GRADUATION_AP = 30000;
 
 export function f90Phases1to4StepKeys(): string[] {
   return F90_PHASES.filter((p) => p.key !== "P5").flatMap((p) =>
