@@ -32,6 +32,8 @@ enum LeadType {
   FINAL_EXPENSE
   IUL
   ANNUITY
+  WHOLE_LIFE
+  TERM_LIFE
 }
 
 /// Which shared, universal stage set a PipelineStage belongs to — every

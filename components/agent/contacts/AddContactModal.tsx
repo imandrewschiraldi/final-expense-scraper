@@ -7,9 +7,24 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { LEAD_TYPES, LEAD_TYPE_LABELS, type LeadType } from "@/lib/leadType";
-import { useTagColors } from "./useTagColors";
+import { TagCombobox } from "./TagCombobox";
 
-const SOURCE_OPTIONS = ["Self Gen", "Referral", "Purchased Mailer", "Live Transfer", "Other"];
+const SOURCE_OPTIONS = [
+  "Facebook Ad",
+  "Direct Mail",
+  "Digital",
+  "Aged Lead",
+  "Referral",
+  "Goat Leads",
+  "FOMO Leads",
+  "Titan Leads",
+  "Aria",
+  "Proven Lead Solutions",
+  "I Love Leads",
+  "VA Appointment",
+  "SMS Appointment",
+  "Other",
+];
 const PHONE_TYPES = ["MOBILE", "HOME", "WORK", "OTHER"] as const;
 
 type DuplicateMatch = { id: string; firstName: string; lastName: string; email: string | null; phone: string } | null;
@@ -21,7 +36,6 @@ export function AddContactModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const { colorFor, ensureColor } = useTagColors();
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -35,7 +49,6 @@ export function AddContactModal({
     dndAll: false,
   });
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
   const [secondaryEmails, setSecondaryEmails] = useState<string[]>([]);
   const [secondaryPhones, setSecondaryPhones] = useState<{ value: string; type: string }[]>([]);
   const [duplicate, setDuplicate] = useState<DuplicateMatch>(null);
@@ -55,14 +68,6 @@ export function AddContactModal({
       const data = await res.json();
       setDuplicate(data.match);
     }
-  }
-
-  function addTag() {
-    const tag = tagInput.trim();
-    if (!tag || tags.includes(tag)) return;
-    setTags((prev) => [...prev, tag]);
-    setTagInput("");
-    ensureColor(tag);
   }
 
   async function save(addAnother: boolean) {
@@ -247,32 +252,11 @@ export function AddContactModal({
           <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
             Tags
           </label>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                style={{ backgroundColor: `${colorFor(tag)}26`, color: colorFor(tag) }}
-                className="font-condensed inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide"
-              >
-                {tag}
-                <button type="button" onClick={() => setTags((prev) => prev.filter((t) => t !== tag))} aria-label={`Remove ${tag}`}>
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-            <Input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addTag();
-                }
-              }}
-              placeholder="Create tag…"
-              className="h-7 w-32 text-xs"
-            />
-          </div>
+          <TagCombobox
+            tags={tags}
+            onAdd={(tag) => setTags((prev) => [...prev, tag])}
+            onRemove={(tag) => setTags((prev) => prev.filter((t) => t !== tag))}
+          />
         </div>
 
         <div className="grid grid-cols-3 gap-3">

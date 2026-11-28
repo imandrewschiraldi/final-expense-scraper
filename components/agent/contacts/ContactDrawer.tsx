@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
 import { formatPhone, telHref } from "@/lib/formatPhone";
+import { TagCombobox } from "./TagCombobox";
 
 type Task = {
   id: string;
@@ -48,7 +49,6 @@ export function ContactDrawer({ leadId, onClose }: { leadId: string; onClose: ()
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"tasks" | "notes" | "activity">("tasks");
   const [newNote, setNewNote] = useState("");
-  const [newTagInput, setNewTagInput] = useState("");
   const [newTask, setNewTask] = useState({ title: "", dueAt: "", description: "" });
   const [savingTask, setSavingTask] = useState(false);
 
@@ -96,11 +96,9 @@ export function ContactDrawer({ leadId, onClose }: { leadId: string; onClose: ()
     };
   }, [leadId]);
 
-  async function addTag() {
-    const tag = newTagInput.trim();
-    if (!tag || !contact) return;
-    setNewTagInput("");
-    const next = Array.from(new Set([...contact.tags, tag]));
+  async function addTag(tag: string) {
+    if (!tag.trim() || !contact) return;
+    const next = Array.from(new Set([...contact.tags, tag.trim()]));
     setContact({ ...contact, tags: next });
     await fetch(`/api/agent/leads/${leadId}`, {
       method: "PATCH",
@@ -202,31 +200,7 @@ export function ContactDrawer({ leadId, onClose }: { leadId: string; onClose: ()
                 <label className="font-condensed mb-1.5 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
                   Tags
                 </label>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {contact.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="font-condensed inline-flex items-center gap-1 rounded-full bg-copper-glow px-2.5 py-1 text-[11px] font-bold tracking-wide text-copper"
-                    >
-                      {tag}
-                      <button type="button" onClick={() => removeTag(tag)} aria-label={`Remove ${tag}`}>
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                  <Input
-                    value={newTagInput}
-                    onChange={(e) => setNewTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addTag();
-                      }
-                    }}
-                    placeholder="Add tag…"
-                    className="h-7 w-28 text-xs"
-                  />
-                </div>
+                <TagCombobox tags={contact.tags} onAdd={addTag} onRemove={removeTag} />
               </div>
               <Link
                 href={`/agent/leads/${contact.id}`}

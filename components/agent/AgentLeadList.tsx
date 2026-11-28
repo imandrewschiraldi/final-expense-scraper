@@ -32,6 +32,8 @@ const LEAD_TYPE_SHORT_LABELS: Record<LeadType, string> = {
   FINAL_EXPENSE: "FE",
   IUL: "IUL",
   ANNUITY: "ANN",
+  WHOLE_LIFE: "WL",
+  TERM_LIFE: "TL",
 };
 
 function buildFilterParams(stageId: string | "ALL", archiveView: boolean, state: string) {
