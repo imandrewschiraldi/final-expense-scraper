@@ -319,6 +319,18 @@ model Lead {
   income                  String?
   existingCoverage        String?
   coverageAmountRequested String?
+  /// Bucketed version of the coverage goal ("$10k–$25k" | "$50k–$100k" |
+  /// "$250k+", see lib/leadType.ts's COVERAGE_GOAL_BUCKETS) for quick
+  /// filtering/reporting — kept alongside the free-text
+  /// `coverageAmountRequested` above rather than replacing it, since an
+  /// agent may know an exact requested amount, a rough bucket, both, or
+  /// neither.
+  coverageGoalBucket      String?
+  /// What the client can afford monthly toward coverage — distinct from
+  /// `monthlyLeftover` below (money left after all expenses) and `income`
+  /// above (total monthly income); this is the budget number an agent
+  /// actually quotes against.
+  monthlyBudget           String?
   militaryBranch          String?
   /// Health history and current medications, as the agent captures them
   /// live on the F90 call workflow's "Client Suitability Sheet" step

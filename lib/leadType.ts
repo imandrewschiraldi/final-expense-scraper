@@ -86,3 +86,11 @@ export const LIFE_INSURANCE_TYPE_LABELS: Record<(typeof LIFE_INSURANCE_TYPES)[nu
   TERM: "Term",
   WHOLE_LIFE: "Whole Life",
 };
+
+// Bucketed coverage goal — see Lead.coverageGoalBucket.
+export const COVERAGE_GOAL_BUCKETS = ["TEN_TO_25K", "FIFTY_TO_100K", "250K_PLUS"] as const;
+export const COVERAGE_GOAL_BUCKET_LABELS: Record<(typeof COVERAGE_GOAL_BUCKETS)[number], string> = {
+  TEN_TO_25K: "$10k–$25k",
+  FIFTY_TO_100K: "$50k–$100k",
+  "250K_PLUS": "$250k+",
+};

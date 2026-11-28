@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
-import { isLeadType, TOBACCO_STATUSES } from "@/lib/leadType";
+import { isLeadType, TOBACCO_STATUSES, COVERAGE_GOAL_BUCKETS } from "@/lib/leadType";
 import {
   computeVaultAwareStatusUpdate,
   agentHasVaultAccess,
@@ -125,6 +125,8 @@ export async function PATCH(
     income,
     existingCoverage,
     coverageAmountRequested,
+    coverageGoalBucket,
+    monthlyBudget,
     height,
     weight,
     tobaccoUse,
@@ -153,6 +155,9 @@ export async function PATCH(
     income?: string;
     existingCoverage?: string;
     coverageAmountRequested?: string;
+    // "TEN_TO_25K" | "FIFTY_TO_100K" | "250K_PLUS" — see its own schema doc comment.
+    coverageGoalBucket?: string | null;
+    monthlyBudget?: string;
     height?: string;
     weight?: string;
     tobaccoUse?: boolean | null;
@@ -203,6 +208,8 @@ export async function PATCH(
     income !== undefined ||
     existingCoverage !== undefined ||
     coverageAmountRequested !== undefined ||
+    coverageGoalBucket !== undefined ||
+    monthlyBudget !== undefined ||
     height !== undefined ||
     weight !== undefined ||
     tobaccoUse !== undefined ||
@@ -228,6 +235,13 @@ export async function PATCH(
     !(TOBACCO_STATUSES as readonly string[]).includes(tobaccoStatus)
   ) {
     return NextResponse.json({ error: "Invalid tobacco status" }, { status: 400 });
+  }
+  if (
+    coverageGoalBucket !== undefined &&
+    coverageGoalBucket !== null &&
+    !(COVERAGE_GOAL_BUCKETS as readonly string[]).includes(coverageGoalBucket)
+  ) {
+    return NextResponse.json({ error: "Invalid coverage goal bucket" }, { status: 400 });
   }
   if (status !== undefined && pipelineStageId !== undefined) {
     return NextResponse.json(
@@ -323,6 +337,8 @@ export async function PATCH(
       editData.existingCoverage = existingCoverage.trim() || null;
     if (coverageAmountRequested !== undefined)
       editData.coverageAmountRequested = coverageAmountRequested.trim() || null;
+    if (coverageGoalBucket !== undefined) editData.coverageGoalBucket = coverageGoalBucket;
+    if (monthlyBudget !== undefined) editData.monthlyBudget = monthlyBudget.trim() || null;
     if (height !== undefined) editData.height = height.trim() || null;
     if (weight !== undefined) editData.weight = weight.trim() || null;
     if (tobaccoUse !== undefined) editData.tobaccoUse = tobaccoUse;

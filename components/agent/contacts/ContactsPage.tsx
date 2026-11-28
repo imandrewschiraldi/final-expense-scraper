@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -44,6 +44,10 @@ import { ImportModal } from "./ImportModal";
 import { FiltersDrawer } from "./FiltersDrawer";
 import { ContactDrawer } from "./ContactDrawer";
 import { useTagColors } from "./useTagColors";
+import { CustomFieldsPanel } from "./CustomFieldsPanel";
+import { TasksPanel } from "./TasksPanel";
+import { AddSmartListModal } from "./AddSmartListModal";
+import { useClickOutside } from "./useClickOutside";
 import {
   ALL_COLUMNS,
   DEFAULT_VISIBLE_COLUMNS,
@@ -56,6 +60,20 @@ import {
 } from "./types";
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
+
+// Top-level tab bar, matching the reference CRM's Contacts page structure
+// (Smart Lists | Bulk Actions | Custom Fields | Tasks | Companies). "Smart
+// Lists" and "Bulk Actions" both render the same contacts table/filters —
+// see the `showTable` block below — just with different surrounding chrome
+// (Bulk Actions pins the bulk-action bar open and drops the per-list nav).
+type TopTabKey = "smartLists" | "bulkActions" | "customFields" | "tasks" | "companies";
+const TOP_TABS: { key: TopTabKey; label: string }[] = [
+  { key: "smartLists", label: "Smart Lists" },
+  { key: "bulkActions", label: "Bulk Actions" },
+  { key: "customFields", label: "Custom Fields" },
+  { key: "tasks", label: "Tasks" },
+  { key: "companies", label: "Companies" },
+];
 
 // Which columns have a server-side sort field (lib/agentLeads's
 // SORTABLE_FIELDS on the GET route) — the rest render as plain headers,
@@ -200,6 +218,7 @@ export function ContactsPage({
   const [smartLists, setSmartLists] = useState<SmartList[]>([]);
   const [activeSmartListId, setActiveSmartListId] = useState<string>("all");
   const [showManageSmartLists, setShowManageSmartLists] = useState(false);
+  const [showAddSmartList, setShowAddSmartList] = useState(false);
 
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(() =>
     loadLocal("contacts.visibleColumns", DEFAULT_VISIBLE_COLUMNS),
@@ -225,8 +244,11 @@ export function ContactsPage({
   const [showImport, setShowImport] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
+  const columnsRef = useRef<HTMLDivElement>(null);
+  useClickOutside(columnsRef, showColumns, () => setShowColumns(false));
   const [drawerContactId, setDrawerContactId] = useState<string | null>(null);
   const [bulkTaskPrompt, setBulkTaskPrompt] = useState(false);
+  const [activeTopTab, setActiveTopTab] = useState<TopTabKey>("smartLists");
 
   useEffect(() => saveLocal("contacts.visibleColumns", visibleColumns), [visibleColumns]);
   useEffect(() => saveLocal("contacts.pageSize", pageSize), [pageSize]);
@@ -450,34 +472,72 @@ export function ContactsPage({
   const rangeStart = total === 0 ? 0 : page * pageSize + 1;
   const rangeEnd = Math.min(total, (page + 1) * pageSize);
 
+  const showTable = activeTopTab === "smartLists" || activeTopTab === "bulkActions";
+
   return (
     <div>
-      {/* Action buttons row */}
-      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-        <Button
-          variant="ghost"
-          onClick={() => {
-            /* Dialer integration isn't wired up yet — intentionally a no-op for now. */
-          }}
-          title="Dialer integration coming soon"
-        >
-          <PhoneIcon className="h-4 w-4" />
-          Dial this list
-        </Button>
-        <Button onClick={() => setShowAddContact(true)}>
-          <Plus className="h-4 w-4" />
-          Add Contact
-        </Button>
-        <Button variant="secondary" onClick={() => setShowImport(true)}>
-          Import
-        </Button>
-        <Button variant="secondary" onClick={() => exportCsv(selectedCount > 0)}>
-          Export{selectedCount > 0 ? ` (${selectedCount.toLocaleString()})` : ""}
-        </Button>
+      {/* Top-level tab bar */}
+      <div className="mb-5 flex flex-wrap items-center gap-6 border-b border-border">
+        {TOP_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTopTab(tab.key)}
+            className={cn(
+              "font-condensed shrink-0 border-b-2 pb-2.5 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+              activeTopTab === tab.key
+                ? "border-copper text-foreground"
+                : "border-transparent text-muted hover:text-foreground",
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
+
+      {activeTopTab === "smartLists" && (
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              /* Dialer integration isn't wired up yet — intentionally a no-op for now. */
+            }}
+            title="Dialer integration coming soon"
+          >
+            <PhoneIcon className="h-4 w-4" />
+            Dial this list
+          </Button>
+          <Button onClick={() => setShowAddContact(true)}>
+            <Plus className="h-4 w-4" />
+            Add Contact
+          </Button>
+          <Button variant="secondary" onClick={() => setShowImport(true)}>
+            Import
+          </Button>
+          <Button variant="secondary" onClick={() => exportCsv(selectedCount > 0)}>
+            Export{selectedCount > 0 ? ` (${selectedCount.toLocaleString()})` : ""}
+          </Button>
+        </div>
+      )}
+
+      {activeTopTab === "customFields" && <CustomFieldsPanel />}
+      {activeTopTab === "tasks" && <TasksPanel />}
+      {activeTopTab === "companies" && (
+        <div className="rounded-[10px] border border-border bg-surface p-6 text-center text-sm text-muted">
+          Companies aren&apos;t used in this book of business — every contact here is an individual
+          client, not an organization. This tab is kept for layout parity only.
+        </div>
+      )}
+
+      {activeTopTab === "bulkActions" && (
+        <p className="mb-4 text-sm text-muted">
+          Select contacts below, then choose an action to apply to all of them at once.
+        </p>
+      )}
 
       {/* Smart List tab bar — plain pressable words, not boxed buttons,
           matching the reference CRM's "All / + Add smart list" row. */}
+      {activeTopTab === "smartLists" && (
       <div className="mb-3 flex flex-wrap items-center gap-5 border-b border-border pb-3">
         <div className="flex flex-wrap items-center gap-5 overflow-x-auto">
           <button
@@ -509,12 +569,21 @@ export function ContactsPage({
           ))}
           <button
             type="button"
-            onClick={() => setShowManageSmartLists(true)}
+            onClick={() => setShowAddSmartList(true)}
             className="font-condensed shrink-0 flex items-center gap-1 pb-1 text-[13px] font-bold tracking-[0.05em] text-muted uppercase hover:text-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
             Add Smart List
           </button>
+          {smartLists.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowManageSmartLists(true)}
+              className="font-condensed shrink-0 pb-1 text-[13px] font-bold tracking-[0.05em] text-muted uppercase hover:text-foreground"
+            >
+              Manage Lists
+            </button>
+          )}
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-3">
           {isDirty && (
@@ -528,7 +597,7 @@ export function ContactsPage({
               </button>
             </>
           )}
-          <div className="relative">
+          <div className="relative" ref={columnsRef}>
             <button
               type="button"
               onClick={() => setShowColumns((s) => !s)}
@@ -543,7 +612,10 @@ export function ContactsPage({
           </div>
         </div>
       </div>
+      )}
 
+      {showTable && (
+      <>
       {/* Filters row */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -582,8 +654,9 @@ export function ContactsPage({
         />
       </div>
 
-      {/* Bulk action bar */}
-      {selectedCount > 0 && (
+      {/* Bulk action bar — pinned open on the dedicated Bulk Actions tab,
+          otherwise only shown once something's selected. */}
+      {(selectedCount > 0 || activeTopTab === "bulkActions") && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-copper-dim-gradient bg-surface2 px-4 py-2.5">
           <span className="text-sm text-foreground">{selectedCount.toLocaleString()} selected</span>
           <Button
@@ -703,13 +776,12 @@ export function ContactsPage({
                       )}
                     >
                       {key === "name" && (
-                        <button
-                          type="button"
-                          onClick={() => setDrawerContactId(contact.id)}
+                        <Link
+                          href={`/agent/leads/${contact.id}`}
                           className="text-left text-white hover:metal-copper-text"
                         >
                           {contact.firstName} {contact.lastName}
-                        </button>
+                        </Link>
                       )}
                       {key === "phone" && (
                         <a href={telHref(contact.phone)} className="hover:metal-copper-text hover:underline">
@@ -753,12 +825,15 @@ export function ContactsPage({
                   ))}
                   <td className="w-28 px-4 py-3">
                     <div className="flex items-center gap-1 pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100">
-                      <a href={telHref(contact.phone)} title="Call" className="text-muted hover:text-foreground">
+                      {/* Call/SMS are disabled for now — shown for layout parity with the
+                          reference CRM, but intentionally inert (no dialer/SMS integration
+                          wired up yet). Not real <a> links, so there's nothing to click through to. */}
+                      <span title="Call (coming soon)" aria-disabled="true" className="cursor-not-allowed text-muted opacity-40">
                         <PhoneIcon className="h-4 w-4" />
-                      </a>
-                      <a href={`sms:${contact.phone}`} title="SMS" className="text-muted hover:text-foreground">
+                      </span>
+                      <span title="SMS (coming soon)" aria-disabled="true" className="cursor-not-allowed text-muted opacity-40">
                         <MessageSquare className="h-4 w-4" />
-                      </a>
+                      </span>
                       <button type="button" title="Add Task" onClick={() => setDrawerContactId(contact.id)} className="text-muted hover:text-foreground">
                         <ClipboardList className="h-4 w-4" />
                       </button>
@@ -817,6 +892,8 @@ export function ContactsPage({
           </button>
         </div>
       </div>
+      </>
+      )}
 
       {showAddContact && (
         <AddContactModal onClose={() => setShowAddContact(false)} onCreated={reload} />
@@ -846,6 +923,24 @@ export function ContactsPage({
           smartLists={smartLists}
           onClose={() => setShowManageSmartLists(false)}
           onChange={setSmartLists}
+        />
+      )}
+      {showAddSmartList && (
+        <AddSmartListModal
+          pageSize={pageSize}
+          onClose={() => setShowAddSmartList(false)}
+          onCreated={(list) => {
+            setSmartLists((prev) => [...prev, list]);
+            // Apply the new list's own settings directly rather than calling
+            // switchSmartList(list.id) — that reads `smartLists` from this
+            // render's closure, which doesn't have the just-created list yet.
+            setActiveSmartListId(list.id);
+            setPage(0);
+            setFilterGroup(list.filterConditions ?? EMPTY_FILTER);
+            setVisibleColumns(list.visibleColumns.length > 0 ? (list.visibleColumns as ColumnKey[]) : DEFAULT_VISIBLE_COLUMNS);
+            setSortConfig(list.sortConfig ?? null);
+            setPageSize(list.pageSize);
+          }}
         />
       )}
       {bulkTaskPrompt && (

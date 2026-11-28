@@ -14,6 +14,8 @@ import {
   LIFE_INSURANCE_SOURCE_LABELS,
   LIFE_INSURANCE_TYPES,
   LIFE_INSURANCE_TYPE_LABELS,
+  COVERAGE_GOAL_BUCKETS,
+  COVERAGE_GOAL_BUCKET_LABELS,
   type LeadType,
 } from "@/lib/leadType";
 
@@ -75,6 +77,8 @@ export type SuitabilityLead = {
   liquidAssets?: string[];
   existingCoverage?: string | null;
   coverageAmountRequested?: string | null;
+  coverageGoalBucket?: string | null;
+  monthlyBudget?: string | null;
   coverageEffectiveDate?: string | null;
   recurringDraftDay?: string | null;
   bronzeFaceAmount?: string | null;
@@ -306,6 +310,7 @@ export function ClientSuitabilitySheet({ lead, onUpdate }: { lead: SuitabilityLe
             {textField("additionalIncome", "Additional Income (not SS or salary)")}
             {textField("dependents", "Dependents / Kids in the Home")}
             {textField("monthlyLeftover", "Money Left at End of Month", "after all expenses paid")}
+            {textField("monthlyBudget", "Monthly Budget for Coverage", "e.g. $75/mo")}
           </div>
         </div>
 
@@ -407,6 +412,23 @@ export function ClientSuitabilitySheet({ lead, onUpdate }: { lead: SuitabilityLe
             )}
             {textField("existingCoverage", "Existing Coverage Summary", "e.g. $10,000 whole life")}
             {textField("coverageAmountRequested", "Coverage Requested", "e.g. $25,000")}
+            <div>
+              <label className={label}>Coverage Goal</label>
+              <Select
+                value={form.coverageGoalBucket ?? ""}
+                onChange={(e) => {
+                  set("coverageGoalBucket", e.target.value as never);
+                  commit("coverageGoalBucket", e.target.value || null);
+                }}
+              >
+                <option value="">—</option>
+                {COVERAGE_GOAL_BUCKETS.map((b) => (
+                  <option key={b} value={b}>
+                    {COVERAGE_GOAL_BUCKET_LABELS[b]}
+                  </option>
+                ))}
+              </Select>
+            </div>
             <div className="sm:col-span-2">
               <label className={label}>Liquid Assets for an Emergency</label>
               {checklistField("liquidAssets", LIQUID_ASSETS)}
