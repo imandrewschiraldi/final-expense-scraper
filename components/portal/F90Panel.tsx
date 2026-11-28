@@ -688,7 +688,7 @@ function PhaseWorksheetSection({
         {phase.channels ? (
           <>
             <p className="mb-4 text-sm" style={{ color: INK_MUTED }}>
-              {`Combine the Agent Accelerator Lead Program with whichever channel(s) below you run, and hit $${F90_GRADUATION_AP.toLocaleString()} in Issued AP within your first 90 days — you're at $${Math.round(issuedAP).toLocaleString()} so far.`}
+              {`Combine the Agent Accelerator Lead Program with whichever channel(s) below you run, and hit $${F90_GRADUATION_AP.toLocaleString()} in Issued Annual Premium within your first 90 days — you're at $${Math.round(issuedAP).toLocaleString()} so far.`}
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               {phase.channels.map((c, i) => {
@@ -941,7 +941,7 @@ export function F90Panel({
         />
         <StatBlock
           value={`$${Math.round(issuedAP).toLocaleString()}`}
-          label="Issued AP"
+          label="Issued Annual Premium"
           caption={`During your first 90 days, for agents utilizing the Agent Accelerator Lead Program, your goal is to issue $${F90_GRADUATION_AP.toLocaleString()} of Annual Premium.`}
         />
       </div>

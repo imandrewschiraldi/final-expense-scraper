@@ -74,7 +74,7 @@ function DiplomaFace({ agentName, issuedAP }: { agentName: string; issuedAP: num
             className="rounded-full px-3 py-1 text-[10px] font-extrabold tracking-wide text-[#2a2316] uppercase sm:text-xs"
             style={{ background: GOLD_LIGHT, border: `1px solid ${GOLD_DARK}` }}
           >
-            {`$${Math.round(issuedAP).toLocaleString()} Issued AP`}
+            {`$${Math.round(issuedAP).toLocaleString()} Issued Annual Premium`}
           </span>
         </div>
 
@@ -152,11 +152,12 @@ export function F90Diploma({
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-black/50 px-4 text-center">
             <Lock className="h-8 w-8 text-[#ffffff]/80" />
             <p className="font-condensed text-sm font-extrabold tracking-wide text-[#ffffff] uppercase">
-              {`$${Math.round(remaining).toLocaleString()} in Issued AP to go`}
+              {`$${Math.round(remaining).toLocaleString()} in Issued Annual Premium to go`}
             </p>
             <p className="max-w-xs text-xs text-[#ffffff]/60">
               Complete every Phase 1–4 step and reach $
-              {F90_GRADUATION_AP.toLocaleString()} Issued AP to unlock your diploma.
+              {F90_GRADUATION_AP.toLocaleString()} in Issued Annual Premium to unlock
+              your diploma.
             </p>
             <Button variant="ghost" onClick={() => setPreviewing(true)}>
               Preview Graduation
