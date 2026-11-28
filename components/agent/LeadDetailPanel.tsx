@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Callout } from "@/components/ui/Callout";
+import { ClientSuitabilitySheet, type SuitabilityLead } from "./ClientSuitabilitySheet";
 import { LEAD_STATUS_LABELS, LeadStatus } from "@/lib/leadStatus";
 import { LEAD_TYPE_LABELS, LeadType } from "@/lib/leadType";
 import { cn } from "@/lib/cn";
@@ -44,7 +45,10 @@ type ContactLogEntry = {
   agent: { name: string } | null;
 };
 
-type Lead = {
+// Lead is SuitabilityLead (every Client Suitability Sheet field) plus the
+// rest of what this page itself needs — the header, status buttons,
+// Contact Log, and Notes sections.
+type Lead = SuitabilityLead & {
   id: string;
   leadNumber: string | null;
   firstName: string;
@@ -61,28 +65,17 @@ type Lead = {
   notes: Note[];
   contactLogEntries: ContactLogEntry[];
   email?: string | null;
-  address?: string | null;
   zip?: string | null;
   county?: string | null;
-  beneficiary?: string | null;
-  beneficiaryRelationship?: string | null;
   gender?: string | null;
   maritalStatus?: string | null;
-  height?: string | null;
-  weight?: string | null;
-  tobaccoUse?: boolean | null;
-  occupation?: string | null;
-  income?: string | null;
-  existingCoverage?: string | null;
-  coverageAmountRequested?: string | null;
   militaryBranch?: string | null;
   vendorNotes?: string | null;
-  medicalNotes?: string | null;
 };
 
-// height/weight/income/existingCoverage/coverageAmountRequested/tobaccoUse
-// are deliberately NOT here — they're editable, on the Client Suitability
-// Sheet card below, not shown twice over as read-only here too.
+// height/weight/income/existingCoverage/coverageAmountRequested/tobaccoStatus
+// and everything else in the Client Suitability Sheet are deliberately NOT
+// here — they're editable there, not shown twice over as read-only here too.
 const SUPPLEMENTAL_FIELDS: { key: keyof Lead; label: string }[] = [
   { key: "email", label: "Email" },
   { key: "address", label: "Address" },
@@ -95,21 +88,6 @@ const SUPPLEMENTAL_FIELDS: { key: keyof Lead; label: string }[] = [
   { key: "occupation", label: "Occupation" },
   { key: "militaryBranch", label: "Military Branch" },
   { key: "vendorNotes", label: "Source Notes" },
-];
-
-// Client Suitability Sheet — the one place these fields are editable,
-// auto-saving on blur so an agent can fill it in live, on the call,
-// without a separate save step (see lib/f90Content.ts's P3_S2 step).
-const SUITABILITY_TEXT_FIELDS: {
-  key: "income" | "existingCoverage" | "coverageAmountRequested" | "height" | "weight";
-  label: string;
-  placeholder: string;
-}[] = [
-  { key: "income", label: "Income / Budget", placeholder: "e.g. $4,500/mo" },
-  { key: "existingCoverage", label: "Existing Coverage", placeholder: "e.g. $10,000 whole life" },
-  { key: "coverageAmountRequested", label: "Coverage Requested", placeholder: "e.g. $25,000" },
-  { key: "height", label: "Height", placeholder: "e.g. 5'10\"" },
-  { key: "weight", label: "Weight", placeholder: "e.g. 210 lbs" },
 ];
 
 type Navigation = {
@@ -162,46 +140,6 @@ export function LeadDetailPanel({
       .then((data) => setStages(data.stages))
       .catch(() => {});
   }, []);
-
-  // Client Suitability Sheet — local text state per field so typing isn't
-  // fighting a round-trip on every keystroke; each field saves on blur
-  // (or immediately for the tobacco-use checkbox, which has no "blur
-  // after typing" moment of its own).
-  const [suitability, setSuitability] = useState({
-    income: lead.income ?? "",
-    existingCoverage: lead.existingCoverage ?? "",
-    coverageAmountRequested: lead.coverageAmountRequested ?? "",
-    height: lead.height ?? "",
-    weight: lead.weight ?? "",
-    medicalNotes: lead.medicalNotes ?? "",
-  });
-  const [savingSuitability, setSavingSuitability] = useState<string | null>(
-    null,
-  );
-  const [suitabilitySavedAt, setSuitabilitySavedAt] = useState<number | null>(
-    null,
-  );
-
-  async function saveSuitabilityField(
-    field: keyof typeof suitability | "tobaccoUse",
-    value: string | boolean | null,
-  ) {
-    setSavingSuitability(field);
-    try {
-      const res = await fetch(`/api/agent/leads/${lead.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [field]: value }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setLead((prev) => ({ ...prev, ...data.lead }));
-        setSuitabilitySavedAt(Date.now());
-      }
-    } finally {
-      setSavingSuitability(null);
-    }
-  }
 
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -558,68 +496,11 @@ export function LeadDetailPanel({
       </Card>
 
       {canEdit && !editing && !lead.isArchived && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Client Suitability Sheet</CardTitle>
-            {savingSuitability && (
-              <span className="text-xs text-muted">Saving…</span>
-            )}
-            {!savingSuitability && suitabilitySavedAt && (
-              <span className="text-xs text-muted">Saved</span>
-            )}
-          </CardHeader>
-          <p className="mb-3 text-sm text-muted">
-            Fill this in live, on the call — it saves itself as you go, no
-            separate submit step.
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {SUITABILITY_TEXT_FIELDS.map((f) => (
-              <div key={f.key}>
-                <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
-                  {f.label}
-                </label>
-                <Input
-                  value={suitability[f.key]}
-                  placeholder={f.placeholder}
-                  onChange={(e) =>
-                    setSuitability((prev) => ({ ...prev, [f.key]: e.target.value }))
-                  }
-                  onBlur={(e) => {
-                    if (e.target.value !== (lead[f.key] ?? ""))
-                      saveSuitabilityField(f.key, e.target.value);
-                  }}
-                />
-              </div>
-            ))}
-            <label className="flex items-center gap-2 pt-1 text-sm text-foreground sm:col-span-2">
-              <input
-                type="checkbox"
-                checked={lead.tobaccoUse ?? false}
-                onChange={(e) => saveSuitabilityField("tobaccoUse", e.target.checked)}
-                className="h-4 w-4"
-              />
-              Tobacco Use
-            </label>
-            <div className="sm:col-span-2">
-              <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.1em] text-muted uppercase">
-                Health History &amp; Medications
-              </label>
-              <textarea
-                value={suitability.medicalNotes}
-                placeholder="Conditions, current medications, anything relevant to underwriting..."
-                rows={3}
-                onChange={(e) =>
-                  setSuitability((prev) => ({ ...prev, medicalNotes: e.target.value }))
-                }
-                onBlur={(e) => {
-                  if (e.target.value !== (lead.medicalNotes ?? ""))
-                    saveSuitabilityField("medicalNotes", e.target.value);
-                }}
-                className="w-full resize-none rounded-lg border-copper-focus-gradient bg-surface2 px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none"
-              />
-            </div>
-          </div>
-        </Card>
+        <ClientSuitabilitySheet
+          key={lead.id}
+          lead={lead}
+          onUpdate={(patch) => setLead((prev) => ({ ...prev, ...patch }))}
+        />
       )}
 
       {!editing &&

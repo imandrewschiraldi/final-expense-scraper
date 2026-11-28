@@ -109,6 +109,8 @@ export default async function AgentLeadDetailPage({
       lead={{
         ...lead,
         dateOfBirth: lead.dateOfBirth?.toISOString() ?? null,
+        client2DateOfBirth: lead.client2DateOfBirth?.toISOString() ?? null,
+        coverageEffectiveDate: lead.coverageEffectiveDate?.toISOString() ?? null,
         createdAt: lead.createdAt.toISOString(),
         notes: lead.notes.map((n) => ({
           ...n,

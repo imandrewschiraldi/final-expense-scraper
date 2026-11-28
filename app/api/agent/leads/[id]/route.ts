@@ -12,6 +12,60 @@ import { stageIdForSystemKey, getStageTarget } from "@/lib/pipelineSync";
 import { Prisma, PhoneType } from "@prisma/client";
 import { colorForTagName } from "@/app/api/agent/tag-colors/route";
 
+// Client Suitability Sheet fields added beyond the original five — plain
+// string fields that just trim-or-null, no field-specific validation (see
+// each one's own schema.prisma doc comment for what it is). Handled
+// generically rather than one-by-one since there are ~30 of them.
+const SUITABILITY_STRING_FIELDS = [
+  "client1Surgeries",
+  "client2FirstName",
+  "client2LastName",
+  "client2Occupation",
+  "client2Height",
+  "client2Weight",
+  "client2Surgeries",
+  "client2Medications",
+  "significantOther",
+  "additionalIncome",
+  "dependents",
+  "monthlyLeftover",
+  "mortgageTerm",
+  "mortgagePurchaseType",
+  "homeValue",
+  "homeEquity",
+  "rentOrMortgagePayment",
+  "howLongWillStay",
+  "lifeInsuranceSource",
+  "lifeInsuranceType",
+  "lifeInsuranceCompany",
+  "lifeInsuranceFaceAmount",
+  "lifeInsuranceMonthly",
+  "lifeInsuranceSince",
+  "recurringDraftDay",
+  "bronzeFaceAmount",
+  "bronzeMonthly",
+  "silverFaceAmount",
+  "silverMonthly",
+  "goldFaceAmount",
+  "goldMonthly",
+  "bankName",
+  "bankRoutingNumber",
+  "bankAccountNumber",
+  "ssn",
+  "driversLicenseNumber",
+  "driversLicenseState",
+] as const;
+
+const SUITABILITY_BOOLEAN_FIELDS = [
+  "client1Bankruptcy",
+  "client1DuiFelony",
+  "client2Smoker",
+  "client2Bankruptcy",
+  "client2DuiFelony",
+  "isForeverHome",
+  "hasLifeInsurance",
+] as const;
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -121,7 +175,24 @@ export async function PATCH(
     secondaryPhones?: { value: string; type?: string; countryCode?: string }[];
   };
 
+  // The rest of the Client Suitability Sheet expansion — too many fields to
+  // destructure one-by-one, handled generically below (see
+  // SUITABILITY_STRING_FIELDS/SUITABILITY_BOOLEAN_FIELDS).
+  const rawBody = body as Record<string, unknown>;
+  const client2Age = rawBody.client2Age as number | null | undefined;
+  const client2DateOfBirth = rawBody.client2DateOfBirth as string | null | undefined;
+  const coverageEffectiveDate = rawBody.coverageEffectiveDate as string | null | undefined;
+  const liquidAssets = rawBody.liquidAssets as string[] | undefined;
+  const hasSuitabilityExpansionEdit =
+    SUITABILITY_STRING_FIELDS.some((f) => rawBody[f] !== undefined) ||
+    SUITABILITY_BOOLEAN_FIELDS.some((f) => rawBody[f] !== undefined) ||
+    client2Age !== undefined ||
+    client2DateOfBirth !== undefined ||
+    coverageEffectiveDate !== undefined ||
+    liquidAssets !== undefined;
+
   const isFieldEdit =
+    hasSuitabilityExpansionEdit ||
     firstName !== undefined ||
     lastName !== undefined ||
     phone !== undefined ||
@@ -273,6 +344,49 @@ export async function PATCH(
     }
     if (dndAll !== undefined) editData.dndAll = dndAll;
     if (dndChannels !== undefined) editData.dndChannels = dndChannels ?? Prisma.JsonNull;
+
+    // The rest of the Client Suitability Sheet expansion (Client 2,
+    // Income & Budget, Mortgage Protection, Existing Coverage, 3 Coverage
+    // Options, Golden Info) — generic pass-through, blank string clears.
+    const editDataRecord = editData as unknown as Record<string, unknown>;
+    for (const f of SUITABILITY_STRING_FIELDS) {
+      if (rawBody[f] === undefined) continue;
+      const v = rawBody[f];
+      editDataRecord[f] = typeof v === "string" ? v.trim() || null : null;
+    }
+    for (const f of SUITABILITY_BOOLEAN_FIELDS) {
+      if (rawBody[f] !== undefined) editDataRecord[f] = rawBody[f];
+    }
+    if (client2Age !== undefined) editData.client2Age = client2Age;
+    if (client2DateOfBirth !== undefined) {
+      if (!client2DateOfBirth) {
+        editData.client2DateOfBirth = null;
+      } else {
+        const parsed = new Date(client2DateOfBirth);
+        if (Number.isNaN(parsed.getTime())) {
+          return NextResponse.json(
+            { error: "Invalid Client 2 date of birth" },
+            { status: 400 },
+          );
+        }
+        editData.client2DateOfBirth = parsed;
+      }
+    }
+    if (coverageEffectiveDate !== undefined) {
+      if (!coverageEffectiveDate) {
+        editData.coverageEffectiveDate = null;
+      } else {
+        const parsed = new Date(coverageEffectiveDate);
+        if (Number.isNaN(parsed.getTime())) {
+          return NextResponse.json(
+            { error: "Invalid coverage effective date" },
+            { status: 400 },
+          );
+        }
+        editData.coverageEffectiveDate = parsed;
+      }
+    }
+    if (liquidAssets !== undefined) editData.liquidAssets = liquidAssets;
   }
 
   // New tag names get a stable color the first time they're used — a no-op

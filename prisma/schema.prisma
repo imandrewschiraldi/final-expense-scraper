@@ -361,6 +361,94 @@ model Lead {
   /// overrides set", distinct from an explicit all-false object.
   dndChannels             Json?
 
+  /// --- Client Suitability Sheet: the rest of the agency's real paper
+  /// form, field-for-field, in the same order it appears on paper. Client 1
+  /// is this same Lead record (firstName/lastName/age/occupation/
+  /// dateOfBirth/height/weight/tobaccoStatus already exist above); only
+  /// Client 1's fields not already covered elsewhere get a new column here.
+  /// Client 2 is an entirely separate person (spouse/co-applicant) with no
+  /// Lead row of its own, so its whole field set is new. All optional —
+  /// the sheet is filled in live, field by field, never all at once. ---
+  client1Surgeries  String?
+  client1Bankruptcy Boolean?
+  client1DuiFelony  Boolean?
+
+  client2FirstName   String?
+  client2LastName    String?
+  client2Age         Int?
+  client2Occupation  String?
+  client2DateOfBirth DateTime?
+  client2Smoker      Boolean?
+  client2Height      String?
+  client2Weight      String?
+  client2Surgeries   String?
+  client2Medications String?
+  client2Bankruptcy  Boolean?
+  client2DuiFelony   Boolean?
+
+  // Income & Budget
+  significantOther String?
+  additionalIncome String?
+  dependents       String?
+  monthlyLeftover  String?
+
+  /// Mortgage Protection section — only shown in the UI when
+  /// leadType === MORTGAGE_PROTECTION ("ONLY FILL THIS PORTION OUT IF
+  /// SELLING MORTGAGE PROTECTION" on the paper form), but kept on Lead
+  /// generally rather than split onto a separate model since a lead can
+  /// change leadType and this isn't queried independently of its lead.
+  mortgageTerm          String?
+  /// "REFINANCED" | "ORIGINAL_PURCHASE" | "HOUSE" — the paper form's three
+  /// checkboxes are mutually exclusive, so this is a single field rather
+  /// than three booleans.
+  mortgagePurchaseType  String?
+  homeValue             String?
+  homeEquity            String?
+  rentOrMortgagePayment String?
+  isForeverHome         Boolean?
+  howLongWillStay       String?
+
+  // Existing Coverage (beyond the existingCoverage summary field above)
+  hasLifeInsurance        Boolean?
+  /// "PRIVATE" | "WORK"
+  lifeInsuranceSource     String?
+  /// "TERM" | "WHOLE_LIFE"
+  lifeInsuranceType       String?
+  lifeInsuranceCompany    String?
+  lifeInsuranceFaceAmount String?
+  lifeInsuranceMonthly    String?
+  lifeInsuranceSince      String?
+  /// Liquid-assets-for-an-emergency checklist (401k, IRA, Stocks, Bonds,
+  /// Mutual Funds, CDs, Rentals, Significant Savings) — see
+  /// lib/leadType.ts's LIQUID_ASSETS.
+  liquidAssets            String[] @default([])
+
+  // 3 Coverage Options
+  coverageEffectiveDate DateTime?
+  recurringDraftDay     String?
+  bronzeFaceAmount      String?
+  bronzeMonthly         String?
+  silverFaceAmount      String?
+  silverMonthly         String?
+  goldFaceAmount        String?
+  goldMonthly           String?
+
+  /// Golden Info — the paper form's own section name for this group.
+  /// Sensitive: full bank routing/account numbers, SSN and driver's
+  /// license, captured here only because this is the agency's existing
+  /// real paper process being digitized as asked, not a new exposure this
+  /// app invents. Stored as plain columns like every other Lead field —
+  /// no separate encryption-at-rest layer exists elsewhere in this app to
+  /// be consistent with, and introducing one asymmetrically for just these
+  /// columns was out of scope here; access is already restricted to the
+  /// assigned/vault-eligible agent same as the rest of the Lead record.
+  bankName             String?
+  bankRoutingNumber    String?
+  bankAccountNumber    String?
+  ssn                  String?
+  driversLicenseNumber String?
+  driversLicenseState  String?
+
   notes             LeadNote[]
   contactLogEntries ContactLogEntry[]
   policies          Policy[]

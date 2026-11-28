@@ -55,3 +55,34 @@ export const HEALTH_CONDITIONS = [
   "Kidney or Liver Disease",
   "STD",
 ] as const;
+
+// Liquid assets for an emergency checklist — see Lead.liquidAssets.
+export const LIQUID_ASSETS = [
+  "401k",
+  "IRA",
+  "Stocks",
+  "Bonds",
+  "Mutual Funds",
+  "CDs",
+  "Rentals",
+  "Significant Savings",
+] as const;
+
+export const MORTGAGE_PURCHASE_TYPES = ["REFINANCED", "ORIGINAL_PURCHASE", "HOUSE"] as const;
+export const MORTGAGE_PURCHASE_TYPE_LABELS: Record<(typeof MORTGAGE_PURCHASE_TYPES)[number], string> = {
+  REFINANCED: "Refinanced",
+  ORIGINAL_PURCHASE: "Original Purchase",
+  HOUSE: "House",
+};
+
+export const LIFE_INSURANCE_SOURCES = ["PRIVATE", "WORK"] as const;
+export const LIFE_INSURANCE_SOURCE_LABELS: Record<(typeof LIFE_INSURANCE_SOURCES)[number], string> = {
+  PRIVATE: "Private",
+  WORK: "Work",
+};
+
+export const LIFE_INSURANCE_TYPES = ["TERM", "WHOLE_LIFE"] as const;
+export const LIFE_INSURANCE_TYPE_LABELS: Record<(typeof LIFE_INSURANCE_TYPES)[number], string> = {
+  TERM: "Term",
+  WHOLE_LIFE: "Whole Life",
+};
