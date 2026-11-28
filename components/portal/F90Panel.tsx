@@ -24,17 +24,21 @@ import {
 import { formatKpiDate } from "@/lib/kpiTracker";
 import { zonedWallTimeToInstant } from "@/lib/timeZoneMath";
 
-// The step-detail "worksheet" is deliberately a literal paper-white surface,
-// a hard break from the rest of the app's dark theme — the roadmap above it
-// stays dark/game-like for navigation, but the actual fill-in content reads
-// like a printed worksheet, per how this was asked for. These are plain hex
-// values (not the app's dark-mode CSS vars) since they need to hold on a
-// white background regardless of the app's own theme.
-const INK = "#1f1b16";
-const INK_MUTED = "#6b6255";
-const PAPER_BORDER = "#e2d9c8";
-const PAPER_BG = "#fffdf8";
-const ACCENT = "#8a4a1f";
+// The step-detail "worksheet" is deliberately a literal printed-document
+// surface — white page, black rules, a copper frame and color-blocked
+// section bars, modeled directly on the agency's own New Agent Playbook
+// one-pager (black number badges, copper section bars, black-bordered
+// boxes, sharp corners) — a hard break from the rest of the app's dark
+// theme on purpose. The roadmap above it stays dark/game-like for
+// navigation; this is the actual fill-in content. Plain hex values (not
+// the app's dark-mode CSS vars) since they need to hold on a white
+// background regardless of the app's own theme.
+const INK = "#141414";
+const INK_MUTED = "#2b2b2b";
+const PAPER_BORDER = "#141414";
+const PAPER_BG = "#ffffff";
+const ACCENT = "#b5551e";
+const CREAM = "#f5efe3";
 
 // Winding-path positions (percent of the road container) for each stop —
 // deliberately not a straight evenly-spaced row, so this actually reads as
@@ -50,21 +54,21 @@ const ROAD_POSITIONS: Record<string, { x: number; y: number }> = {
 
 function WorksheetLinkPill({ link }: { link: F90Link }) {
   const className =
-    "rounded-lg border-2 px-3 py-1.5 text-xs font-bold transition-colors";
+    "border-2 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide transition-colors";
   if (!link.href) {
     return (
       <span
         className={cn(className, "cursor-not-allowed border-dashed")}
-        style={{ borderColor: PAPER_BORDER, color: INK_MUTED }}
+        style={{ borderColor: "#999", color: "#999" }}
       >
         {link.label} (coming soon)
       </span>
     );
   }
-  const style = { borderColor: ACCENT, color: ACCENT };
+  const style = { borderColor: INK, color: ACCENT, background: "#fff" };
   if (link.href.startsWith("/")) {
     return (
-      <Link href={link.href} className={cn(className, "hover:bg-[#f3ead9]")} style={style}>
+      <Link href={link.href} className={cn(className, "hover:bg-[#f5efe3]")} style={style}>
         {link.label}
       </Link>
     );
@@ -74,7 +78,7 @@ function WorksheetLinkPill({ link }: { link: F90Link }) {
       href={link.href}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn(className, "hover:bg-[#f3ead9]")}
+      className={cn(className, "hover:bg-[#f5efe3]")}
       style={style}
     >
       {link.label}
@@ -563,37 +567,65 @@ function PhaseDetail({
   agentTimeZone: string | null;
 }) {
   const isP5 = phase.key === "P5";
+  const phaseNumber = F90_PHASES.findIndex((p) => p.key === phase.key) + 1;
 
   return (
     <div
-      className="rounded-2xl border-4 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.45)] sm:p-8"
-      style={{ borderColor: PAPER_BORDER, background: "#fdfaf3" }}
+      className="overflow-hidden rounded-2xl border shadow-[0_12px_40px_rgba(0,0,0,0.35)]"
+      style={{ borderColor: "#ddd", background: PAPER_BG }}
     >
-      <div className="mb-6 border-b-2 pb-4" style={{ borderColor: PAPER_BORDER }}>
-        <p className="text-xs font-extrabold tracking-[0.2em] uppercase" style={{ color: ACCENT }}>
-          {phase.subtitle}
-        </p>
-        <h2 className="text-2xl font-extrabold sm:text-3xl" style={{ color: INK }}>
-          {phase.title}
-        </h2>
+      <div
+        className="flex items-center justify-between border-b-2 px-6 py-3 sm:px-8"
+        style={{ borderColor: INK }}
+      >
+        <span className="text-xs font-extrabold tracking-[0.2em] uppercase" style={{ color: ACCENT }}>
+          F90 Playbook
+        </span>
+        <span className="text-xs font-extrabold tracking-[0.2em] uppercase" style={{ color: ACCENT }}>
+          Phase {phaseNumber} · {String(phaseNumber).padStart(2, "0")}
+        </span>
       </div>
 
-      {isP5 ? (
+      <div
+        className="px-6 py-3 text-center sm:px-8"
+        style={{ background: ACCENT }}
+      >
+        <span className="text-sm font-extrabold tracking-[0.25em] text-white uppercase">
+          {phase.title}
+        </span>
+      </div>
+
+      <div className="p-6 sm:p-8">
+        <p className="mb-6 text-xs font-extrabold tracking-[0.15em] uppercase" style={{ color: INK_MUTED }}>
+          {phase.subtitle}
+        </p>
+
+        {isP5 ? (
         phase5Unlocked ? (
           <div>
-            <div className="mb-5 rounded-xl border-2 p-4" style={{ borderColor: PAPER_BORDER, background: PAPER_BG }}>
-              <p className="text-xs font-extrabold tracking-[0.15em] uppercase" style={{ color: INK_MUTED }}>
-                90-Day Graduation Standard
-              </p>
-              <p className="mt-1 text-base" style={{ color: INK }}>
-                {`Combine the Agent Accelerator Lead Program with whichever channel(s) below you run, and hit $${F90_GRADUATION_AP.toLocaleString()} in Issued Annual Premium within your first 90 days.`}
-              </p>
-              <p className="mt-2 text-base font-extrabold" style={{ color: ACCENT }}>
-                {`$${Math.round(issuedAP).toLocaleString()} / $${F90_GRADUATION_AP.toLocaleString()} Issued AP`}
-              </p>
+            <div className="mb-5 flex flex-wrap overflow-hidden rounded-xl border-2" style={{ borderColor: INK }}>
+              <div className="flex-1 border-r-2 p-4" style={{ borderColor: INK, background: CREAM }}>
+                <p className="text-xs font-extrabold tracking-[0.15em] uppercase" style={{ color: INK }}>
+                  90-Day Graduation Standard
+                </p>
+                <p className="mt-1 text-sm" style={{ color: INK }}>
+                  {`Combine the Agent Accelerator Lead Program with whichever channel(s) below you run, and hit $${F90_GRADUATION_AP.toLocaleString()} in Issued Annual Premium within your first 90 days.`}
+                </p>
+              </div>
+              <div
+                className="flex shrink-0 flex-col items-center justify-center p-4 text-center"
+                style={{ background: INK, minWidth: 180 }}
+              >
+                <span className="text-lg font-extrabold text-white">
+                  {`$${Math.round(issuedAP).toLocaleString()}`}
+                </span>
+                <span className="text-xs font-bold uppercase" style={{ color: ACCENT }}>
+                  {`of $${F90_GRADUATION_AP.toLocaleString()} AP`}
+                </span>
+              </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              {phase.channels?.map((c) => {
+              {phase.channels?.map((c, idx) => {
                 const selected = completedSteps.has(c.key);
                 return (
                   <button
@@ -601,22 +633,34 @@ function PhaseDetail({
                     type="button"
                     onClick={() => onToggle(c.key, !selected)}
                     disabled={savingKey === c.key}
-                    className="rounded-xl border-4 p-4 text-left transition-colors"
+                    className="rounded-xl border-2 p-4 text-left transition-colors"
                     style={{
-                      borderColor: selected ? ACCENT : PAPER_BORDER,
-                      background: selected ? "#f3ead9" : PAPER_BG,
+                      borderColor: INK,
+                      background: selected ? INK : PAPER_BG,
                     }}
                   >
-                    <div className="mb-1 flex items-center justify-between">
-                      <p className="text-base font-extrabold" style={{ color: INK }}>
+                    <div className="mb-1 flex items-center gap-2">
+                      <span
+                        className="text-xl font-extrabold"
+                        style={{ color: selected ? "#fff" : ACCENT }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <p
+                        className="flex-1 text-base font-extrabold"
+                        style={{ color: selected ? "#fff" : INK }}
+                      >
                         {c.title}
                       </p>
-                      {selected && <Check className="h-5 w-5 shrink-0" style={{ color: ACCENT }} />}
+                      {selected && <Check className="h-5 w-5 shrink-0 text-white" />}
                     </div>
-                    <p className="text-sm" style={{ color: INK_MUTED }}>
+                    <p className="text-sm" style={{ color: selected ? "#ddd" : INK_MUTED }}>
                       {c.description}
                     </p>
-                    <p className="mt-2 text-xs font-bold" style={{ color: INK_MUTED }}>
+                    <p
+                      className="mt-2 text-xs font-bold uppercase"
+                      style={{ color: selected ? "#ddd" : INK_MUTED }}
+                    >
                       Benchmark: {c.benchmark}
                     </p>
                     <div className="mt-3" onClick={(e) => e.stopPropagation()}>
@@ -659,19 +703,16 @@ function PhaseDetail({
                     onClick={() => onToggle(step.key, !checked)}
                     disabled={savingKey === step.key}
                     aria-label={checked ? "Mark incomplete" : "Mark complete"}
-                    className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 transition-colors"
+                    className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base font-extrabold transition-colors"
                     style={{
-                      borderColor: checked ? "#1f7a3d" : INK_MUTED,
-                      background: checked ? "#1f7a3d" : "transparent",
+                      background: checked ? "#1f7a3d" : INK,
+                      color: checked ? "#fff" : ACCENT,
                     }}
                   >
-                    {checked && <Check className="h-4 w-4 text-white" />}
+                    {checked ? <Check className="h-5 w-5 text-white" /> : i + 1}
                   </button>
                   <div className="flex-1">
                     <div className="flex flex-wrap items-baseline gap-2">
-                      <span className="text-base font-extrabold" style={{ color: ACCENT }}>
-                        {i + 1}.
-                      </span>
                       <p
                         className="text-lg font-extrabold"
                         style={{ color: INK, textDecoration: checked ? "line-through" : undefined }}
@@ -738,6 +779,7 @@ function PhaseDetail({
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -939,8 +981,8 @@ export function F90Panel({
       <div key={selectedNode} className="animate-f90-panel-in">
         {isGradSelected ? (
           <div
-            className="rounded-2xl border-4 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.45)] sm:p-8"
-            style={{ borderColor: PAPER_BORDER, background: "#fdfaf3" }}
+            className="rounded-2xl border p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] sm:p-8"
+            style={{ borderColor: "#ddd", background: PAPER_BG }}
           >
             <h2 className="mb-2 text-2xl font-extrabold" style={{ color: INK }}>
               Graduation
