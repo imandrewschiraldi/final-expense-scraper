@@ -37,6 +37,11 @@ export async function PATCH(
     product,
     line,
     annualPremium,
+    monthlyPremium,
+    policyNumber,
+    effectiveDate,
+    beneficiaryName,
+    beneficiaryRelationship,
     status,
     pipelineStageId,
     carrierPlanId,
@@ -44,18 +49,39 @@ export async function PATCH(
     followUpAt,
   } = body as {
     clientName?: string;
-    clientPhone?: string;
-    state?: string;
+    clientPhone?: string | null;
+    state?: string | null;
     carrier?: string;
-    product?: string;
+    product?: string | null;
     line?: PolicyLine;
     annualPremium?: number;
+    monthlyPremium?: number | null;
+    policyNumber?: string | null;
+    effectiveDate?: string | null;
+    beneficiaryName?: string | null;
+    beneficiaryRelationship?: string | null;
     status?: PolicyStatus;
     pipelineStageId?: string;
     carrierPlanId?: string | null;
     notes?: string | null;
     followUpAt?: string | null;
   };
+
+  let parsedEffectiveDate: Date | null | undefined;
+  if (effectiveDate !== undefined) {
+    if (effectiveDate === null || effectiveDate === "") {
+      parsedEffectiveDate = null;
+    } else {
+      const parsed = new Date(effectiveDate);
+      if (Number.isNaN(parsed.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid effective date" },
+          { status: 400 },
+        );
+      }
+      parsedEffectiveDate = parsed;
+    }
+  }
 
   let parsedFollowUpAt: Date | null | undefined;
   if (followUpAt !== undefined) {
@@ -123,15 +149,28 @@ export async function PATCH(
     data: {
       ...(clientName !== undefined ? { clientName: clientName.trim() } : {}),
       ...(clientPhone !== undefined
-        ? { clientPhone: clientPhone.trim() || null }
+        ? { clientPhone: clientPhone?.trim() || null }
         : {}),
       ...(state !== undefined
-        ? { state: state.trim().toUpperCase() || null }
+        ? { state: state?.trim().toUpperCase() || null }
         : {}),
       ...(carrier !== undefined ? { carrier: carrier.trim() } : {}),
-      ...(product !== undefined ? { product: product.trim() || null } : {}),
+      ...(product !== undefined ? { product: product?.trim() || null } : {}),
       ...(line !== undefined ? { line } : {}),
       ...(annualPremium !== undefined ? { annualPremium } : {}),
+      ...(monthlyPremium !== undefined ? { monthlyPremium } : {}),
+      ...(policyNumber !== undefined
+        ? { policyNumber: policyNumber?.trim() || null }
+        : {}),
+      ...(parsedEffectiveDate !== undefined
+        ? { effectiveDate: parsedEffectiveDate }
+        : {}),
+      ...(beneficiaryName !== undefined
+        ? { beneficiaryName: beneficiaryName?.trim() || null }
+        : {}),
+      ...(beneficiaryRelationship !== undefined
+        ? { beneficiaryRelationship: beneficiaryRelationship?.trim() || null }
+        : {}),
       ...(carrierPlanId !== undefined ? { carrierPlanId } : {}),
       ...(shouldRecomputeCommission ? { commissionAmount } : {}),
       ...(syncedStageId !== undefined

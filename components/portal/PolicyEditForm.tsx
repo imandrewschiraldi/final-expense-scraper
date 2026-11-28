@@ -16,6 +16,11 @@ export type EditablePolicy = {
   carrier: string;
   product: string | null;
   annualPremium: string;
+  monthlyPremium?: string | null;
+  policyNumber?: string | null;
+  effectiveDate?: string | null;
+  beneficiaryName?: string | null;
+  beneficiaryRelationship?: string | null;
   carrierPlanId?: string | null;
   notes?: string | null;
   followUpAt?: string | null;
@@ -47,6 +52,19 @@ export function PolicyEditForm({
   const [carrierPlanId, setCarrierPlanId] = useState(
     policy.carrierPlanId ?? "",
   );
+  const [monthlyPremium, setMonthlyPremium] = useState(
+    policy.monthlyPremium ?? "",
+  );
+  const [policyNumber, setPolicyNumber] = useState(policy.policyNumber ?? "");
+  const [effectiveDate, setEffectiveDate] = useState(
+    policy.effectiveDate ? policy.effectiveDate.slice(0, 10) : "",
+  );
+  const [beneficiaryName, setBeneficiaryName] = useState(
+    policy.beneficiaryName ?? "",
+  );
+  const [beneficiaryRelationship, setBeneficiaryRelationship] = useState(
+    policy.beneficiaryRelationship ?? "",
+  );
   const [notes, setNotes] = useState(policy.notes ?? "");
   const [followUpAt, setFollowUpAt] = useState(
     policy.followUpAt ? policy.followUpAt.slice(0, 10) : "",
@@ -73,6 +91,11 @@ export function PolicyEditForm({
         carrier: carrier.trim(),
         product: product.trim() || null,
         annualPremium: Number(annualPremium),
+        monthlyPremium: monthlyPremium ? Number(monthlyPremium) : null,
+        policyNumber: policyNumber.trim() || null,
+        effectiveDate: effectiveDate || null,
+        beneficiaryName: beneficiaryName.trim() || null,
+        beneficiaryRelationship: beneficiaryRelationship.trim() || null,
         carrierPlanId: carrierPlanId || null,
         notes: notes.trim() || null,
         followUpAt: followUpAt || null,
@@ -150,6 +173,45 @@ export function PolicyEditForm({
         </div>
       )}
 
+      <div>
+        <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
+          Policy Details
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            placeholder="Policy Number"
+            value={policyNumber}
+            onChange={(e) => setPolicyNumber(e.target.value)}
+          />
+          <Input
+            placeholder="Monthly Premium"
+            type="number"
+            min="0"
+            step="0.01"
+            value={monthlyPremium}
+            onChange={(e) => setMonthlyPremium(e.target.value)}
+          />
+          <div>
+            <label className="mb-1 block text-xs text-muted">Effective / Draft Date</label>
+            <input
+              type="date"
+              value={effectiveDate}
+              onChange={(e) => setEffectiveDate(e.target.value)}
+              className="w-full rounded-lg border border-copper-focus-gradient bg-surface px-3 py-2 text-sm text-foreground focus:outline-none"
+            />
+          </div>
+          <Input
+            placeholder="Beneficiary Name"
+            value={beneficiaryName}
+            onChange={(e) => setBeneficiaryName(e.target.value)}
+          />
+          <Input
+            placeholder="Beneficiary Relationship"
+            value={beneficiaryRelationship}
+            onChange={(e) => setBeneficiaryRelationship(e.target.value)}
+          />
+        </div>
+      </div>
       <div>
         <label className="font-condensed mb-1 block text-[11px] font-bold tracking-[0.12em] text-muted uppercase">
           Follow-Up Date

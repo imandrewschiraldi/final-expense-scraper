@@ -60,6 +60,11 @@ export async function POST(req: NextRequest) {
     line,
     leadType,
     annualPremium,
+    monthlyPremium,
+    policyNumber,
+    effectiveDate,
+    beneficiaryName,
+    beneficiaryRelationship,
     status,
     carrierPlanId,
   } = body as {
@@ -72,10 +77,26 @@ export async function POST(req: NextRequest) {
     line?: PolicyLine;
     leadType?: string;
     annualPremium?: number;
+    monthlyPremium?: number;
+    policyNumber?: string;
+    effectiveDate?: string;
+    beneficiaryName?: string;
+    beneficiaryRelationship?: string;
     status?: PolicyStatus;
     carrierPlanId?: string;
   };
   const resolvedLine: PolicyLine = line === "ANNUITY" ? "ANNUITY" : "LIFE";
+
+  let parsedEffectiveDate: Date | null = null;
+  if (effectiveDate) {
+    parsedEffectiveDate = new Date(effectiveDate);
+    if (Number.isNaN(parsedEffectiveDate.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid effective date" },
+        { status: 400 },
+      );
+    }
+  }
 
   if (
     !clientName?.trim() ||
@@ -127,6 +148,11 @@ export async function POST(req: NextRequest) {
       leadType: lead?.leadType ?? (isLeadType(leadType) ? leadType : null),
       pipelineStageId,
       annualPremium,
+      monthlyPremium: monthlyPremium ?? null,
+      policyNumber: policyNumber?.trim() || null,
+      effectiveDate: parsedEffectiveDate,
+      beneficiaryName: beneficiaryName?.trim() || null,
+      beneficiaryRelationship: beneficiaryRelationship?.trim() || null,
       status: resolvedStatus,
       issuedAt: resolvedStatus === "ISSUED" ? now : null,
       carrierPlanId: resolvedCarrierPlanId,
