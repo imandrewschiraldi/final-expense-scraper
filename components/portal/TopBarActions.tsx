@@ -153,6 +153,11 @@ function AtlasAssistant() {
     atlasVoice.getMuted,
     () => false,
   );
+  const conversationActive = useSyncExternalStore(
+    atlasVoice.subscribe,
+    atlasVoice.getConversationActive,
+    () => false,
+  );
   const handsFreeOn = voiceStatus !== "off" && voiceStatus !== "unsupported";
 
   function clearSilenceTimer() {
@@ -376,7 +381,10 @@ function AtlasAssistant() {
   const voiceStatusLabel: Record<atlasVoice.VoiceStatus, string | null> = {
     unsupported: null,
     off: null,
-    standby: "Standby: say “Hey Atlas”",
+    // Once a conversation is open, a follow-up doesn't need the wake word
+    // again until 30s of silence passes — say so, instead of implying
+    // "Hey Atlas" is still required on every question.
+    standby: conversationActive ? "Listening for your next question…" : "Standby: say “Hey Atlas”",
     capturing: "Listening…",
     speaking: "Speaking…",
   };

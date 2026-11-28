@@ -51,12 +51,21 @@ const WAKE_PATTERN = /\b(hey|hi|ok(?:ay)?)\s+atlas\b[,.]?\s*/i;
 // back to standby before the user had said anything.
 const SILENCE_AUTO_SEND_MS = 2200;
 const WAKE_GRACE_MS = 4500;
+// Once a conversation is open (the wake word has fired at least once),
+// how long a total stretch of user silence is tolerated before the wake
+// word is required again — lets a multi-question conversation happen off
+// one "Hey Atlas" instead of needing it before every single question.
+const CONVERSATION_TIMEOUT_MS = 30000;
 const STORAGE_KEY = "atlas-hands-free-enabled";
 
 let status: VoiceStatus = "off";
 let muted = false;
 let recognition: SpeechRecognitionLike | null = null;
 let shouldBeListening = false; // the user's own on/off toggle
+// True from the moment the wake word fires until either 30s of silence
+// passes or hands-free is turned off entirely — while true, handleResult
+// treats any speech as the next turn directly, skipping the wake-word check.
+let conversationActive = false;
 let lastResultIndex = 0;
 // Text captured since the wake word fired: `capturedFinal` is every fully-
 // recognized segment so far (continuous mode starts a new result index per
@@ -67,6 +76,7 @@ let lastResultIndex = 0;
 let capturedFinal = "";
 let captureBuffer = "";
 let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+let conversationTimer: ReturnType<typeof setTimeout> | null = null;
 
 const listeners = new Set<() => void>();
 function notify() {
@@ -82,6 +92,9 @@ export function getStatus() {
 }
 export function getMuted() {
   return muted;
+}
+export function getConversationActive() {
+  return conversationActive;
 }
 
 // Set by whichever AtlasAssistant instance is currently mounted — called
@@ -116,6 +129,28 @@ function armSilenceTimer() {
     status = shouldBeListening ? "standby" : "off";
     notify();
   }, delay);
+}
+
+function clearConversationTimer() {
+  if (conversationTimer) {
+    clearTimeout(conversationTimer);
+    conversationTimer = null;
+  }
+}
+
+// (Re)starts the 30-second "has the user gone quiet" clock — called on
+// every bit of recognized speech, on wake, and once more each time Atlas
+// finishes speaking (so time spent listening to Atlas's own reply never
+// counts against the user's 30 seconds).
+function armConversationTimer() {
+  clearConversationTimer();
+  conversationTimer = setTimeout(() => {
+    conversationActive = false;
+    if (status !== "speaking") {
+      status = shouldBeListening ? "standby" : "off";
+      notify();
+    }
+  }, CONVERSATION_TIMEOUT_MS);
 }
 
 function isSupported() {
@@ -159,17 +194,30 @@ function handleResult(e: SpeechRecognitionEventLike) {
     const transcript = e.results[i][0].transcript;
     const isFinal = e.results[i].isFinal;
 
-    if (status === "standby") {
+    if (status === "standby" && conversationActive) {
+      // A conversation is already open (the wake word fired at some point
+      // in the last 30 seconds of actual silence) — treat this speech as
+      // the next turn directly, no wake word needed.
+      status = "capturing";
+      capturedFinal = "";
+      captureBuffer = transcript;
+      if (isFinal) capturedFinal = transcript;
+      armSilenceTimer();
+      armConversationTimer();
+      notify();
+    } else if (status === "standby") {
       const match = WAKE_PATTERN.exec(transcript);
       if (match) {
         playChime();
         status = "capturing";
+        conversationActive = true;
         capturedFinal = "";
         const sameBreath = transcript.slice(match.index + match[0].length);
         captureBuffer = sameBreath;
         if (isFinal) capturedFinal = sameBreath;
         onWake?.();
         armSilenceTimer();
+        armConversationTimer();
         notify();
       }
     } else if (status === "capturing") {
@@ -180,6 +228,7 @@ function handleResult(e: SpeechRecognitionEventLike) {
       captureBuffer = `${capturedFinal} ${transcript}`.trim();
       if (isFinal) capturedFinal = captureBuffer;
       armSilenceTimer();
+      armConversationTimer();
     }
 
     if (isFinal) lastResultIndex = i + 1;
@@ -247,7 +296,9 @@ export function enableHandsFree() {
 
 export function disableHandsFree() {
   shouldBeListening = false;
+  conversationActive = false;
   clearSilenceTimer();
+  clearConversationTimer();
   recognition?.stop();
   recognition = null;
   window.speechSynthesis?.cancel();
@@ -352,21 +403,31 @@ export function speak(text: string, onDone: () => void) {
   status = "speaking";
   notify();
   // Stop listening while talking so hands-free mode doesn't hear (and
-  // potentially react to) its own voice.
+  // potentially react to) its own voice. Also pause the 30s conversation
+  // clock for the same reason it stops listening — time spent on Atlas's
+  // own reply isn't user silence and shouldn't count against their window
+  // to respond; it's restarted fresh in onend/onerror below instead.
   recognition?.stop();
+  clearConversationTimer();
   const utterance = new SpeechSynthesisUtterance(toSpeakableText(text));
   if (resolvedVoice) utterance.voice = resolvedVoice;
   utterance.rate = 1.03;
   utterance.onend = () => {
     status = shouldBeListening ? "standby" : "off";
     notify();
-    if (shouldBeListening) startRecognitionSession();
+    if (shouldBeListening) {
+      startRecognitionSession();
+      if (conversationActive) armConversationTimer();
+    }
     onDone();
   };
   utterance.onerror = () => {
     status = shouldBeListening ? "standby" : "off";
     notify();
-    if (shouldBeListening) startRecognitionSession();
+    if (shouldBeListening) {
+      startRecognitionSession();
+      if (conversationActive) armConversationTimer();
+    }
     onDone();
   };
   window.speechSynthesis.speak(utterance);

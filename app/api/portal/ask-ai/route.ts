@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/apiAuth";
 import { buildUnderwritingContext } from "@/lib/underwriting/aiContext";
 import { db } from "@/lib/db";
+import { getCalendarEventsForUser } from "@/lib/calendarEvents";
+import { shiftToZone, zonedWallTimeToInstant } from "@/lib/timeZoneMath";
+import { startOfDay, addDays, expandOccurrences, formatTime } from "@/lib/calendarRecurrence";
+import { metricsForWindow } from "@/lib/personalDashboard";
 
 // "-latest" alias instead of a pinned version (gemini-2.5-flash/2.0-flash
 // both now 404 — Google retires pinned versions) so this keeps working as
@@ -151,6 +155,83 @@ const WEB_SEARCH_TOOL = {
   },
 };
 
+// Three tools over the signed-in user's own real app data — same spirit as
+// search_crm (never guess or invent this stuff, actually look it up) for
+// the other "shouldn't this already know this" questions the assistant
+// otherwise has no way to answer: today's schedule, today's own
+// production, and team headcount.
+const TODAY_SCHEDULE_TOOL = {
+  name: "get_today_schedule",
+  description:
+    "Gets what's on the signed-in user's own calendar today — agency-wide events (training, company events) plus their own personal ones (appointments, policy follow-ups, Annual Reviews). Use this for any question about today's schedule, meetings, or what's on the calendar.",
+  parameters: { type: "OBJECT", properties: {}, required: [] },
+};
+
+const MY_PRODUCTION_TOOL = {
+  name: "get_my_production_today",
+  description:
+    "Gets the signed-in agent's own sales/production for today — how many policies they've submitted today and the total annual premium. Use this for questions like \"how many sales have I made today\" or \"what's my production today\". This is the signed-in user's own numbers only, not the whole agency's.",
+  parameters: { type: "OBJECT", properties: {}, required: [] },
+};
+
+const TEAM_HEADCOUNT_TOOL = {
+  name: "get_team_headcount",
+  description:
+    "Gets how many agents the signed-in user has under them — their downline if they're a manager, or the whole agency's active agent count if they're an admin. Use this for questions like \"how many agents do I have\" or \"how big is my team\".",
+  parameters: { type: "OBJECT", properties: {}, required: [] },
+};
+
+async function getTodaySchedule(userId: string) {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { timeZone: true } });
+  const timeZone = user?.timeZone || undefined;
+  const rawEvents = await getCalendarEventsForUser(userId);
+  // Same trick CalendarWidget uses: shift every real-instant value (each
+  // event's own times, and "now") through the user's zone once, so every
+  // date-math helper below — which only ever reads local getters — lines
+  // up on the zone's actual wall-clock "today" instead of this server's own.
+  const shiftedEvents = rawEvents.map((e) => ({
+    ...e,
+    startAt: shiftToZone(e.startAt, timeZone),
+    endAt: shiftToZone(e.endAt, timeZone),
+    recurrenceEndAt: e.recurrenceEndAt ? shiftToZone(e.recurrenceEndAt, timeZone) : null,
+  }));
+  const todayInZone = shiftToZone(new Date(), timeZone);
+  const rangeStart = startOfDay(todayInZone);
+  const rangeEnd = addDays(rangeStart, 1);
+  const occurrences = expandOccurrences(shiftedEvents, rangeStart, rangeEnd);
+  return {
+    events: occurrences.map((o) => ({
+      title: o.title,
+      time: o.allDay ? "All day" : `${formatTime(o.occurrenceStart)}–${formatTime(o.occurrenceEnd)}`,
+    })),
+  };
+}
+
+async function getMyProductionToday(agentId: string) {
+  const user = await db.user.findUnique({ where: { id: agentId }, select: { timeZone: true } });
+  const timeZone = user?.timeZone || undefined;
+  // zonedWallTimeToInstant (not shiftToZone) on purpose here — this bound
+  // goes straight into a Prisma query against real submittedAt instants, so
+  // it needs to actually BE midnight-today-in-this-zone as a real instant,
+  // not a Date whose local fields merely read that way (see
+  // lib/timeZoneMath.ts's own warning on shiftToZone's return value).
+  const startOfTodayInstant = zonedWallTimeToInstant(0, 0, timeZone ?? "UTC", new Date());
+  const metrics = await metricsForWindow(agentId, { gte: startOfTodayInstant });
+  return { policiesSubmittedToday: metrics.submittedCount, annualPremiumToday: metrics.submittedAP };
+}
+
+async function getTeamHeadcount(userId: string, role: string) {
+  if (role === "ADMIN") {
+    const count = await db.user.count({ where: { role: "AGENT", active: true } });
+    return { count, scope: "the whole agency's active agents" };
+  }
+  if (role === "MANAGER") {
+    const count = await db.user.count({ where: { managerId: userId, active: true } });
+    return { count, scope: "this manager's own downline" };
+  }
+  return { count: 0, scope: "a plain agent has no agents reporting to them" };
+}
+
 async function searchCrm(
   agentId: string,
   query: string,
@@ -241,6 +322,7 @@ const SYSTEM_INSTRUCTION =
   "You have a web_search tool for current, external information (see its own description for when to call it and when not to bother) — call it yourself when a question needs it, rather than assuming you already have current data. When you do call it, treat the results as your primary source for that answer, rather than from memory alone, for everything except the eligibility/carrier-matching case above, where the agency's own guide excerpts take priority instead. " +
   "Don't cite sources or append links as backup for an answer — just give the straight, accurate answer itself. The one exception: when the answer IS a place to go do something — buy or renew a license, apply/sign up/register for something, a specific tool or site to use — include that one link right in the answer, since the link itself is what's being asked for, not a citation for it. " +
   "You have a search_crm tool that looks up the signed-in agent's own leads and client policies by name, phone, or email. Call it whenever the question is about a specific person who might be one of the agent's own contacts (pulling someone up by name, checking a phone number, whether someone's in their book, what policy/carrier someone has) — don't guess or make up CRM data yourself. If it returns no matches, say so plainly rather than inventing a result. When it does find someone, name them in your answer (e.g. \"Found her — Sarah Jenkins, ...\") since that name is how the app turns it into a clickable link for the agent; you don't need to include a path or URL yourself for this case. " +
+  "You also have three tools over the app's own real data — never say you don't have access to this information, call the right tool instead: get_today_schedule for anything about today's calendar/schedule/meetings; get_my_production_today for the signed-in agent's own sales/production count or premium for today; get_team_headcount for how many agents someone has (their downline if a manager, the whole agency if an admin — a plain agent has none and the tool will say so, which you should relay honestly rather than guessing a number). " +
   "Scope is broad, not insurance-only — treat any reasonable work topic as answerable rather than redirecting on subject matter. The only thing to decline or redirect for is content that's inappropriate for a work setting (profanity, weapons/violence, drugs, partying, or similar) — never redirect just because a question isn't about insurance.";
 
 const MAX_QUESTION_LENGTH = 500;
@@ -328,7 +410,17 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
           contents,
-          tools: [{ functionDeclarations: [CRM_SEARCH_TOOL, WEB_SEARCH_TOOL] }],
+          tools: [
+            {
+              functionDeclarations: [
+                CRM_SEARCH_TOOL,
+                WEB_SEARCH_TOOL,
+                TODAY_SCHEDULE_TOOL,
+                MY_PRODUCTION_TOOL,
+                TEAM_HEADCOUNT_TOOL,
+              ],
+            },
+          ],
           generationConfig: { maxOutputTokens: 750, temperature: 0.3 },
         }),
       });
@@ -389,6 +481,24 @@ export async function POST(req: NextRequest) {
               },
             },
           ],
+        });
+      } else if (name === "get_today_schedule") {
+        const result = await getTodaySchedule(guard.session.user.id);
+        contents.push({
+          role: "user",
+          parts: [{ functionResponse: { name, response: result } }],
+        });
+      } else if (name === "get_my_production_today") {
+        const result = await getMyProductionToday(guard.session.user.id);
+        contents.push({
+          role: "user",
+          parts: [{ functionResponse: { name, response: result } }],
+        });
+      } else if (name === "get_team_headcount") {
+        const result = await getTeamHeadcount(guard.session.user.id, guard.session.user.role);
+        contents.push({
+          role: "user",
+          parts: [{ functionResponse: { name, response: result } }],
         });
       } else {
         contents.push({
