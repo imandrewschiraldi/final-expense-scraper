@@ -310,6 +310,11 @@ model Lead {
   height                  String?
   weight                  String?
   tobaccoUse              Boolean?
+  /// The richer Yes/No/Quit-12-months-or-more breakdown carriers actually
+  /// underwrite on — "YES" | "NO" | "QUIT_12_MONTHS_PLUS". `tobaccoUse`
+  /// above stays in sync automatically (true only for "YES") so existing
+  /// filters/reports built on the plain boolean keep working unchanged.
+  tobaccoStatus           String?
   occupation              String?
   income                  String?
   existingCoverage        String?
@@ -323,6 +328,13 @@ model Lead {
   /// Genie's own medication/condition picker (an ephemeral lookup tool,
   /// not persisted here) is what actually drives a carrier match.
   medicalNotes            String?
+  /// Client Health checklist — matches the paper Client Suitability
+  /// Sheet's "circle all that apply" list (see lib/leadType.ts's
+  /// HEALTH_CONDITIONS). Kept separate from the free-text `medicalNotes`
+  /// above (current medications / anything else) since this one is a
+  /// fixed list an agent multi-selects rather than types. Empty array
+  /// reads as "None".
+  healthConditions        String[] @default([])
   // Free-text notes carried over from the lead source/vendor at import
   // time — distinct from the `notes` relation below, which is the
   // in-app contact-note history agents write themselves.
@@ -660,21 +672,21 @@ model KpiEntry {
 // the client fields are always stored directly on the Policy rather than only
 // derived from the linked Lead.
 model Policy {
-  id               String         @id @default(cuid())
-  agentId          String?
-  agent            User?          @relation("AgentPolicies", fields: [agentId], references: [id], onDelete: SetNull)
-  leadId           String?
-  lead             Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  clientName       String
-  clientPhone      String?
-  state            String?
-  carrier          String
-  product          String?
+  id                      String         @id @default(cuid())
+  agentId                 String?
+  agent                   User?          @relation("AgentPolicies", fields: [agentId], references: [id], onDelete: SetNull)
+  leadId                  String?
+  lead                    Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  clientName              String
+  clientPhone             String?
+  state                   String?
+  carrier                 String
+  product                 String?
   /// Life vs Annuity — drives which Hall of Fame track (Personal/Annuity)
   /// a sale counts toward. Defaults to LIFE since that's the vast majority
   /// of existing and new business; set explicitly on the submit form when
   /// the product sold is an annuity.
-  line             PolicyLine     @default(LIFE)
+  line                    PolicyLine     @default(LIFE)
   /// Which Client pipeline this policy belongs to (Mortgage Protection
   /// Client, Annuity Client, etc.) — a separate field from `line` above
   /// (which only distinguishes Life vs Annuity for Hall of Fame purposes)
@@ -682,19 +694,33 @@ model Policy {
   /// split. Copied from the originating lead's own leadType at submit
   /// time when there is one; set directly on the submit form otherwise
   /// (a policy can be submitted without ever having had a Lead row).
-  leadType         LeadType?
-  annualPremium    Decimal        @db.Decimal(10, 2)
-  status           PolicyStatus   @default(SUBMITTED)
+  leadType                LeadType?
+  annualPremium           Decimal        @db.Decimal(10, 2)
+  /// The carrier-billed monthly draft amount — distinct from annualPremium
+  /// (AP), which is what commission/pipeline-value calculations use.
+  /// Optional since not every policy's premium mode is monthly.
+  monthlyPremium          Decimal?       @db.Decimal(10, 2)
+  /// The carrier-issued policy number, once known — blank at submit time
+  /// for a freshly-written app, filled in once the carrier issues it.
+  policyNumber            String?
+  /// The policy's real effective/first-draft date (what the carrier is
+  /// actually billing against), for triggering "first draft" check-in
+  /// texts — distinct from `submittedAt`, which is only when the agent
+  /// logged the sale in this app.
+  effectiveDate           DateTime?
+  beneficiaryName         String?
+  beneficiaryRelationship String?
+  status                  PolicyStatus   @default(SUBMITTED)
   /// The Opportunity board's own stage pointer, same reasoning as
   /// Lead.pipelineStageId — `status` above is untouched and keeps driving
   /// Hall of Fame/Leaderboard/the dashboards exactly as today.
-  pipelineStageId  String?
-  pipelineStage    PipelineStage? @relation("PolicyStage", fields: [pipelineStageId], references: [id], onDelete: SetNull)
-  submittedAt      DateTime       @default(now())
-  issuedAt         DateTime?
-  discordMessageId String?        @unique
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  pipelineStageId         String?
+  pipelineStage           PipelineStage? @relation("PolicyStage", fields: [pipelineStageId], references: [id], onDelete: SetNull)
+  submittedAt             DateTime       @default(now())
+  issuedAt                DateTime?
+  discordMessageId        String?        @unique
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
 
   /// Optional link to a rated Carrier/CarrierPlan so commissionAmount can be
   /// computed automatically. Free-text `carrier`/`product` above are kept

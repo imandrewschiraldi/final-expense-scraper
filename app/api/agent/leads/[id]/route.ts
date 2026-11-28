@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { LEAD_STATUSES, LeadStatus } from "@/lib/leadStatus";
-import { isLeadType } from "@/lib/leadType";
+import { isLeadType, TOBACCO_STATUSES } from "@/lib/leadType";
 import {
   computeVaultAwareStatusUpdate,
   agentHasVaultAccess,
@@ -74,7 +74,9 @@ export async function PATCH(
     height,
     weight,
     tobaccoUse,
+    tobaccoStatus,
     medicalNotes,
+    healthConditions,
     tags,
     source,
     dndAll,
@@ -100,7 +102,12 @@ export async function PATCH(
     height?: string;
     weight?: string;
     tobaccoUse?: boolean | null;
+    // "YES" | "NO" | "QUIT_12_MONTHS_PLUS" — see its own schema doc comment.
+    tobaccoStatus?: string | null;
     medicalNotes?: string;
+    // Major Health Conditions checklist — full replacement list, same
+    // reasoning as secondaryEmails/secondaryPhones below.
+    healthConditions?: string[];
     // Contacts page additions — tags (bulk or per-contact) and the
     // free-text acquisition source.
     tags?: string[];
@@ -128,7 +135,9 @@ export async function PATCH(
     height !== undefined ||
     weight !== undefined ||
     tobaccoUse !== undefined ||
+    tobaccoStatus !== undefined ||
     medicalNotes !== undefined ||
+    healthConditions !== undefined ||
     tags !== undefined ||
     source !== undefined ||
     dndAll !== undefined ||
@@ -141,6 +150,13 @@ export async function PATCH(
   }
   if (leadType !== undefined && !isLeadType(leadType)) {
     return NextResponse.json({ error: "Invalid lead type" }, { status: 400 });
+  }
+  if (
+    tobaccoStatus !== undefined &&
+    tobaccoStatus !== null &&
+    !(TOBACCO_STATUSES as readonly string[]).includes(tobaccoStatus)
+  ) {
+    return NextResponse.json({ error: "Invalid tobacco status" }, { status: 400 });
   }
   if (status !== undefined && pipelineStageId !== undefined) {
     return NextResponse.json(
@@ -239,8 +255,13 @@ export async function PATCH(
     if (height !== undefined) editData.height = height.trim() || null;
     if (weight !== undefined) editData.weight = weight.trim() || null;
     if (tobaccoUse !== undefined) editData.tobaccoUse = tobaccoUse;
+    if (tobaccoStatus !== undefined) {
+      editData.tobaccoStatus = tobaccoStatus;
+      editData.tobaccoUse = tobaccoStatus === "YES";
+    }
     if (medicalNotes !== undefined)
       editData.medicalNotes = medicalNotes.trim() || null;
+    if (healthConditions !== undefined) editData.healthConditions = healthConditions;
     if (tags !== undefined) editData.tags = tags;
     if (source !== undefined) editData.source = source?.trim() || null;
     if (email !== undefined) {

@@ -23,3 +23,35 @@ export const LEAD_TYPE_LABELS: Record<LeadType, string> = {
 export function isLeadType(value: string | null | undefined): value is LeadType {
   return !!value && (LEAD_TYPES as readonly string[]).includes(value);
 }
+
+// The richer tobacco-use breakdown carriers actually underwrite on — see
+// Lead.tobaccoStatus's own schema doc comment for why this exists
+// alongside the plain tobaccoUse boolean.
+export const TOBACCO_STATUSES = ["YES", "NO", "QUIT_12_MONTHS_PLUS"] as const;
+export type TobaccoStatus = (typeof TOBACCO_STATUSES)[number];
+export const TOBACCO_STATUS_LABELS: Record<TobaccoStatus, string> = {
+  YES: "Yes",
+  NO: "No",
+  QUIT_12_MONTHS_PLUS: "Quit 12+ months ago",
+};
+
+// Client Health checklist — matches the agency's real paper Client
+// Suitability Sheet's "circle all that apply" list exactly, so the digital
+// version captures the same conditions the paper one does. See
+// Lead.healthConditions's own schema doc comment.
+export const HEALTH_CONDITIONS = [
+  "Heart Attack",
+  "Stroke",
+  "TIA",
+  "Cancer",
+  "Stents",
+  "Diabetes",
+  "High Blood Pressure",
+  "Neuropathy",
+  "Lupus / Rheumatoid Arthritis",
+  "Asthma & COPD",
+  "Thyroid",
+  "Anxiety / Depression",
+  "Kidney or Liver Disease",
+  "STD",
+] as const;

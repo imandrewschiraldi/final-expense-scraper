@@ -34,7 +34,13 @@ function PhoneLink({ phone }: { phone: string }) {
  *  in normal flow, not absolutely positioned, so it can never overlap the
  *  name/phone below it regardless of how long the name is or how narrow
  *  the card gets on mobile. Silent (returns null) for Final Expense and
- *  IUL, which don't carry the same at-a-glance qualifier. */
+ *  IUL, which don't carry the same at-a-glance qualifier.
+ *
+ *  My Leads-only history: this rendered everywhere until the user asked
+ *  for a flatter, more professional My Leads card with the banner gone —
+ *  Vault explicitly keeps the mailer-postcard look ("for the vault, it's
+ *  okay to look like that"), so this component is now only ever called
+ *  with canEdit === false. */
 function LeadTypeBanner({ leadType }: { leadType: LeadType }) {
   if (leadType === "VETERANS_FINAL_EXPENSE") {
     return (
@@ -404,8 +410,14 @@ export function LeadDetailPanel({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="mt-3 flex items-center justify-between">
+    // lg:pt-24 (not just pt-10) because the desktop top bar's Ask A.T.L.A.S.
+    // pill and icon cluster are position:absolute over this page's top 74px
+    // (see Sidebar.tsx's HEADER_HEIGHT) — this page has no PageHeading
+    // wordmark reserving that band, so without this clearance the nav row's
+    // own Prev/Next buttons render underneath and become unclickable. Same
+    // fix as app/(portal)/profile/page.tsx.
+    <div className="space-y-6 pt-10 lg:pt-24">
+      <div className="flex items-center justify-between">
         <Link
           href={backHref}
           className="text-sm text-muted hover:text-foreground"
@@ -442,7 +454,11 @@ export function LeadDetailPanel({
       <Card
         key={lead.id}
         className={cn(
-          "relative overflow-hidden before:pointer-events-none before:absolute before:inset-[6px] before:rounded-[6px] before:border before:border-dashed before:border-copper-dim/25",
+          "relative overflow-hidden",
+          // The dashed-border mailer-postcard treatment stays for Vault
+          // (canEdit === false) — My Leads uses a plain, flat card instead.
+          !canEdit &&
+            "before:pointer-events-none before:absolute before:inset-[6px] before:rounded-[6px] before:border before:border-dashed before:border-copper-dim/25",
           navDirection === "next" && "animate-lead-card-next",
           navDirection === "prev" && "animate-lead-card-prev",
         )}
@@ -453,7 +469,7 @@ export function LeadDetailPanel({
           </CardHeader>
         ) : (
           <>
-            <LeadTypeBanner leadType={lead.leadType} />
+            {!canEdit && <LeadTypeBanner leadType={lead.leadType} />}
             <CardHeader>
               <div>
                 <CardTitle>
@@ -564,10 +580,15 @@ export function LeadDetailPanel({
                   return (
                     <Button
                       key={stage.id}
-                      variant="secondary"
+                      // My Leads gets the flat/muted treatment agreed on for
+                      // its professional redesign; Vault keeps the existing
+                      // shiny metal-copper buttons untouched.
+                      variant={canEdit ? "ghost" : "secondary"}
                       disabled={saving}
                       onClick={() => moveStage(stage.id)}
-                      className={cn(isActive && "btn-metal-copper-active")}
+                      className={cn(
+                        isActive && (canEdit ? "toggle-pill-active" : "btn-metal-copper-active"),
+                      )}
                     >
                       {stage.name}
                     </Button>
