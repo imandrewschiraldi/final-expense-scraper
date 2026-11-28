@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Lock, GraduationCap, Vault, Check, Upload, FileCheck, Power } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -1062,7 +1063,17 @@ export function F90Panel({
   return (
     <div className="space-y-6">
       <div className="mb-1">
-        <PageHeading slug="f90-sop" alt="F90 S.O.P." />
+        <PageHeading slug="first-90" alt="First 90" />
+        <div className="mb-3 flex justify-center">
+          <Image
+            src="/headings/standard-operating-procedures-light.png"
+            alt="Standard Operating Procedures"
+            width={796}
+            height={129}
+            className="h-10 w-auto"
+            priority
+          />
+        </div>
         <p className="max-w-2xl text-sm text-muted">
           {pastDay90
             ? "You've passed Day 90 — finish strong."
