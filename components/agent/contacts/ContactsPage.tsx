@@ -276,88 +276,91 @@ export function ContactsPage({
 
   return (
     <div>
-      {/* Smart List tab bar */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => switchSmartList("all")}
-          className={cn(
-            "font-condensed shrink-0 rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-            activeSmartListId === "all" ? "toggle-pill-active" : "border-copper-hover-gradient text-muted hover:text-foreground",
-          )}
+      {/* Action buttons row */}
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        <Button
+          variant="ghost"
+          onClick={() => {
+            /* Dialer integration isn't wired up yet — intentionally a no-op for now. */
+          }}
+          title="Dialer integration coming soon"
         >
-          All Contacts
-        </button>
-        {smartLists.map((list) => (
-          <button
-            key={list.id}
-            type="button"
-            onClick={() => switchSmartList(list.id)}
-            className={cn(
-              "font-condensed shrink-0 rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-              activeSmartListId === list.id ? "toggle-pill-active" : "border-copper-hover-gradient text-muted hover:text-foreground",
-            )}
-          >
-            {list.name}
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={() => setShowManageSmartLists(true)}
-          className="font-condensed shrink-0 rounded-lg border-[1.5px] border-dashed border-border px-4 py-2 text-[13px] font-bold tracking-[0.05em] text-muted uppercase hover:border-copper-hover-gradient hover:text-foreground"
-        >
-          <Plus className="mr-1 inline h-3.5 w-3.5" />
-          Add Smart List
-        </button>
-        {isDirty && (
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            <span className="font-condensed text-[11px] font-bold tracking-wide text-amber uppercase">Unsaved changes</span>
-            <Button variant="ghost" onClick={() => saveSmartList(false)} className="text-xs">
-              Save Changes
-            </Button>
-            <Button variant="secondary" onClick={() => saveSmartList(true)} className="text-xs">
-              Save as New
-            </Button>
-          </div>
-        )}
+          <PhoneIcon className="h-4 w-4" />
+          Dial this list
+        </Button>
+        <Button onClick={() => setShowAddContact(true)}>
+          <Plus className="h-4 w-4" />
+          Add Contact
+        </Button>
+        <Button variant="secondary" onClick={() => setShowImport(true)}>
+          Import
+        </Button>
+        <Button variant="secondary" onClick={() => exportCsv(selectedIds.size > 0)}>
+          Export{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+        </Button>
       </div>
 
-      {/* Toolbar */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => setShowAddContact(true)}>
-            <Plus className="h-4 w-4" />
-            Add Contact
-          </Button>
-          <Button variant="secondary" onClick={() => setShowImport(true)}>
-            Import
-          </Button>
-          <Button variant="secondary" onClick={() => exportCsv(selectedIds.size > 0)}>
-            Export{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              /* Dialer integration isn't wired up yet — intentionally a no-op for now. */
-            }}
-            title="Dialer integration coming soon"
+      {/* Smart List tab bar — plain pressable words, not boxed buttons,
+          matching the reference CRM's "All / + Add smart list" row. */}
+      <div className="mb-3 flex flex-wrap items-center gap-5 border-b border-border pb-3">
+        <div className="flex flex-wrap items-center gap-5 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => switchSmartList("all")}
+            className={cn(
+              "font-condensed shrink-0 pb-1 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+              activeSmartListId === "all"
+                ? "border-b-2 border-copper text-foreground"
+                : "border-b-2 border-transparent text-muted hover:text-foreground",
+            )}
           >
-            <PhoneIcon className="h-4 w-4" />
-            Dial this list
-          </Button>
+            All Contacts
+          </button>
+          {smartLists.map((list) => (
+            <button
+              key={list.id}
+              type="button"
+              onClick={() => switchSmartList(list.id)}
+              className={cn(
+                "font-condensed shrink-0 pb-1 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+                activeSmartListId === list.id
+                  ? "border-b-2 border-copper text-foreground"
+                  : "border-b-2 border-transparent text-muted hover:text-foreground",
+              )}
+            >
+              {list.name}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setShowManageSmartLists(true)}
+            className="font-condensed shrink-0 flex items-center gap-1 pb-1 text-[13px] font-bold tracking-[0.05em] text-muted uppercase hover:text-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Smart List
+          </button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, phone, email…"
-            className="w-56"
-          />
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          {isDirty && (
+            <>
+              <span className="font-condensed text-[11px] font-bold tracking-wide text-amber uppercase">Unsaved changes</span>
+              <button type="button" onClick={() => saveSmartList(false)} className="font-condensed text-[13px] font-bold text-muted uppercase hover:text-foreground">
+                Save Changes
+              </button>
+              <button type="button" onClick={() => saveSmartList(true)} className="font-condensed text-[13px] font-bold text-muted uppercase hover:text-foreground">
+                Save as New
+              </button>
+            </>
+          )}
           <div className="relative">
-            <Button variant="secondary" onClick={() => setShowColumns((s) => !s)}>
-              <Columns3 className="h-4 w-4" />
-              Columns
-            </Button>
+            <button
+              type="button"
+              onClick={() => setShowColumns((s) => !s)}
+              className="font-condensed flex items-center gap-1 text-[13px] font-bold text-muted uppercase hover:text-foreground"
+            >
+              <Columns3 className="h-3.5 w-3.5" />
+              Customize List
+            </button>
             {showColumns && (
               <div className="absolute top-full right-0 z-20 mt-1 w-56 space-y-1 rounded-lg border border-border bg-surface p-3 shadow-xl">
                 {ALL_COLUMNS.map((col) => (
@@ -377,6 +380,12 @@ export function ContactsPage({
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Filters row */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" onClick={() => setShowFilters(true)}>
             <Filter className="h-4 w-4" />
             More Filters
@@ -386,28 +395,30 @@ export function ContactsPage({
               </span>
             )}
           </Button>
+          <Select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className="!w-40">
+            <option value="">All States</option>
+            {stateOptions.map((s) => (
+              <option key={s.state} value={s.state}>
+                {s.state} ({s.count.toLocaleString()})
+              </option>
+            ))}
+          </Select>
+          <button
+            onClick={() => setArchiveView((v) => !v)}
+            className={cn(
+              "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+              archiveView ? "toggle-pill-active" : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
+            )}
+          >
+            Archive
+          </button>
         </div>
-      </div>
-
-      {/* State filter + archive toggle */}
-      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-        <Select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className="w-40">
-          <option value="">All States</option>
-          {stateOptions.map((s) => (
-            <option key={s.state} value={s.state}>
-              {s.state} ({s.count.toLocaleString()})
-            </option>
-          ))}
-        </Select>
-        <button
-          onClick={() => setArchiveView((v) => !v)}
-          className={cn(
-            "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-            archiveView ? "toggle-pill-active" : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
-          )}
-        >
-          Archive
-        </button>
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search name, phone, email…"
+          className="!w-56"
+        />
       </div>
 
       {/* Bulk action bar */}
