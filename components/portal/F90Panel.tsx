@@ -23,6 +23,7 @@ import {
   type F90DocType,
 } from "@/lib/f90Content";
 import { zonedWallTimeToInstant } from "@/lib/timeZoneMath";
+import { PageHeading } from "@/components/portal/PageHeading";
 import { F90Hud } from "@/components/portal/F90Hud";
 import { F90Diploma } from "@/components/portal/F90Diploma";
 
@@ -1061,9 +1062,7 @@ export function F90Panel({
   return (
     <div className="space-y-6">
       <div className="mb-1">
-        <h1 className="font-condensed mb-1.5 text-[28px] font-extrabold tracking-wide text-white uppercase">
-          F90 — First 90 Days
-        </h1>
+        <PageHeading slug="f90-sop" alt="F90 S.O.P." />
         <p className="max-w-2xl text-sm text-muted">
           {pastDay90
             ? "You've passed Day 90 — finish strong."

@@ -31,6 +31,8 @@ const HEADINGS = {
   notifications: { width: 553, height: 45 },
   "agent-accelerator": { width: 764, height: 43 },
   "kpi-tracker": { width: 899, height: 88 },
+  calendar: { width: 787, height: 144 },
+  "f90-sop": { width: 750, height: 146 },
 } as const;
 
 // Light-mode counterparts, cropped to the same glyph-to-image-height ratio
@@ -62,6 +64,8 @@ const HEADINGS_LIGHT = {
   notifications: { width: 548, height: 38 },
   "agent-accelerator": { width: 764, height: 43 },
   "kpi-tracker": { width: 450, height: 44 },
+  calendar: { width: 787, height: 144 },
+  "f90-sop": { width: 751, height: 146 },
 } satisfies Partial<
   Record<keyof typeof HEADINGS, { width: number; height: number }>
 >;

@@ -203,14 +203,16 @@
   --overlay-card-surface: #3d5c4a;
 }
 
-/* The "New Page Layout" beta's overlay card always reads as a white card
-   with dark text, regardless of the agency's selected theme (dark/light/
-   green) — only the sidebar/chrome around it follows that theme. Same
-   variable values as the light theme above, just scoped to this one
-   wrapper instead of :root, so everything inside it (text, borders,
-   nested surfaces, inputs) inherits light-theme-equivalent tokens the
-   same way the whole app already does when the theme itself is switched,
-   without actually switching the agency's theme. Gated to the exact same
+/* The F90 S.O.P. page's "New Page Layout" beta overlay card always reads
+   as a white card with dark text, regardless of the agency's selected
+   theme (dark/light/green) — only the sidebar/chrome around it, and every
+   other page's own card, follow that theme. AppShell applies this class
+   only when the current route is F90 (see isF90Route). Same variable
+   values as the light theme above, just scoped to this one wrapper
+   instead of :root, so everything inside it (text, borders, nested
+   surfaces, inputs) inherits light-theme-equivalent tokens the same way
+   the whole app already does when the theme itself is switched, without
+   actually switching the agency's theme. Gated to the exact same
    desktop-browser-only condition AppShell's own card styling already
    uses (`lg:[@media_not_(display-mode:standalone)]:...`) — on a phone or
    inside the installed web app this div never actually shows as a card
@@ -305,6 +307,22 @@
 }
 :root[data-theme="light"] .heading-img-light {
   display: block;
+}
+/* The F90 page's card is always white (see .overlay-card-surface-light),
+   so its own PageHeading wordmark needs the light/white-background-tuned
+   PNG too, even when the agency's real theme is dark or green — otherwise
+   it'd show the dark theme's brighter wordmark, tuned for a dark
+   background, sitting on this one white card. Same :has() scoping and
+   same desktop/non-standalone gating as that class's own definition. */
+@media (min-width: 1024px) {
+  @media not (display-mode: standalone) {
+    .overlay-card-surface-light div:has(> .heading-img-light) > .heading-img-dark {
+      display: none;
+    }
+    .overlay-card-surface-light .heading-img-light {
+      display: block;
+    }
+  }
 }
 
 @theme inline {

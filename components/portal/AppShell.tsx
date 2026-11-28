@@ -14,6 +14,7 @@ import { TourOverlay } from "@/components/tour/TourOverlay";
 import { CARD_LAYOUT_CHANGED_EVENT } from "@/lib/cardLayoutEvent";
 import { CardLayoutProvider } from "@/lib/cardLayoutContext";
 import { isFullBleedRoute } from "@/lib/fullBleedRoutes";
+import { isF90Route } from "@/lib/f90Routes";
 import { cn } from "@/lib/cn";
 
 type Role = "ADMIN" | "MANAGER" | "AGENT";
@@ -212,11 +213,12 @@ export function AppShell({
             // The card's shape — border, rounded corners, background,
             // shadow — shows on every page alike once the beta is on,
             // Scripts/Commission Calculator included.
-            // The card always reads as a white card with dark text
-            // regardless of the agency's dark/light/green theme — see
+            // Only the F90 S.O.P. page's card is always white with dark
+            // text regardless of the agency's dark/light/green theme — see
             // this class's own definition in globals.css, gated to the
             // same desktop/non-standalone condition as the rest of these.
-            cardLayoutEnabled && "overlay-card-surface-light",
+            // Every other page keeps following the selected theme.
+            cardLayoutEnabled && isF90Route(pathname) && "overlay-card-surface-light",
             cardLayoutEnabled &&
               "lg:[@media_not_(display-mode:standalone)]:relative lg:[@media_not_(display-mode:standalone)]:h-full lg:[@media_not_(display-mode:standalone)]:overflow-y-auto lg:[@media_not_(display-mode:standalone)]:rounded-[20px] lg:[@media_not_(display-mode:standalone)]:border lg:[@media_not_(display-mode:standalone)]:border-border lg:[@media_not_(display-mode:standalone)]:bg-[linear-gradient(to_bottom,var(--overlay-card-surface),var(--background))] lg:[@media_not_(display-mode:standalone)]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
             // The card's own content inset, though, is skipped on
