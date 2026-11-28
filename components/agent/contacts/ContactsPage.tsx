@@ -36,7 +36,6 @@ import {
   type ColumnKey,
   type ContactRow,
   type FilterGroup,
-  type PipelineStage,
   type SmartList,
   type SortConfig,
 } from "./types";
@@ -79,8 +78,6 @@ export function ContactsPage({
   initialContacts: ContactRow[];
   initialTotal: number;
 }) {
-  const [stages, setStages] = useState<PipelineStage[]>([]);
-  const [tab, setTab] = useState<string>("ALL");
   const [archiveView, setArchiveView] = useState(false);
   const [stateFilter, setStateFilter] = useState("");
   const [stateOptions, setStateOptions] = useState<{ state: string; count: number }[]>([]);
@@ -124,17 +121,11 @@ export function ContactsPage({
       .then((res) => res.json())
       .then((data) => setStateOptions(data.states))
       .catch(() => {});
-    fetch("/api/portal/pipeline-stages?phase=LEAD")
-      .then((res) => res.json())
-      .then((data) => setStages(data.stages))
-      .catch(() => {});
     fetch("/api/agent/smart-lists")
       .then((res) => res.json())
       .then((data) => setSmartLists(data.smartLists ?? []))
       .catch(() => {});
   }, []);
-
-  const activeTabs = stages.filter((s) => s.systemKey !== "SOLD");
 
   const activeSmartList = smartLists.find((s) => s.id === activeSmartListId) ?? null;
   const isDirty = useMemo(() => {
@@ -153,7 +144,6 @@ export function ContactsPage({
     params.set("limit", String(pageSize));
     params.set("offset", String(page * pageSize));
     if (archiveView) params.set("archived", "true");
-    else if (tab !== "ALL") params.set("pipelineStageId", tab);
     if (stateFilter) params.set("state", stateFilter);
     if (debouncedSearch) params.set("q", debouncedSearch);
     if (sortConfig) {
@@ -162,7 +152,7 @@ export function ContactsPage({
     }
     if (filterGroup.conditions.length > 0) params.set("filters", JSON.stringify(filterGroup));
     return params.toString();
-  }, [archiveView, tab, stateFilter, debouncedSearch, sortConfig, filterGroup, page, pageSize]);
+  }, [archiveView, stateFilter, debouncedSearch, sortConfig, filterGroup, page, pageSize]);
 
   useEffect(() => {
     let cancelled = false;
@@ -223,7 +213,6 @@ export function ContactsPage({
       params.set("ids", Array.from(selectedIds).join(","));
     } else {
       if (archiveView) params.set("archived", "true");
-      else if (tab !== "ALL") params.set("pipelineStageId", tab);
       if (stateFilter) params.set("state", stateFilter);
     }
     window.location.href = `/api/agent/leads/export?${params.toString()}`;
@@ -400,58 +389,25 @@ export function ContactsPage({
         </div>
       </div>
 
-      {/* Status tabs */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => {
-              setArchiveView(false);
-              setTab("ALL");
-              setPage(0);
-            }}
-            className={cn(
-              "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-              !archiveView && tab === "ALL" ? "toggle-pill-active" : "border-copper-hover-gradient text-muted hover:text-foreground",
-            )}
-          >
-            All Active
-          </button>
-          {activeTabs.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => {
-                setArchiveView(false);
-                setTab(s.id);
-                setPage(0);
-              }}
-              className={cn(
-                "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-                !archiveView && tab === s.id ? "toggle-pill-active" : "border-copper-hover-gradient text-muted hover:text-foreground",
-              )}
-            >
-              {s.name}
-            </button>
+      {/* State filter + archive toggle */}
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        <Select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className="w-40">
+          <option value="">All States</option>
+          {stateOptions.map((s) => (
+            <option key={s.state} value={s.state}>
+              {s.state} ({s.count.toLocaleString()})
+            </option>
           ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className="w-40">
-            <option value="">All States</option>
-            {stateOptions.map((s) => (
-              <option key={s.state} value={s.state}>
-                {s.state} ({s.count.toLocaleString()})
-              </option>
-            ))}
-          </Select>
-          <button
-            onClick={() => setArchiveView(true)}
-            className={cn(
-              "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
-              archiveView ? "toggle-pill-active" : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
-            )}
-          >
-            Archive
-          </button>
-        </div>
+        </Select>
+        <button
+          onClick={() => setArchiveView((v) => !v)}
+          className={cn(
+            "font-condensed rounded-lg border-[1.5px] px-4 py-2 text-[13px] font-bold tracking-[0.05em] uppercase transition-colors",
+            archiveView ? "toggle-pill-active" : "border-border text-muted hover:border-copper-gradient hover:text-foreground",
+          )}
+        >
+          Archive
+        </button>
       </div>
 
       {/* Bulk action bar */}
