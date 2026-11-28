@@ -117,7 +117,7 @@ const NAV_ITEMS: NavItem[] = [
 
   {
     href: "/f90",
-    label: "F90",
+    label: "F90 S.O.P.",
     icon: ListChecks,
     roles: ["MANAGER", "AGENT"],
     section: "team",
@@ -125,7 +125,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/admin/f90",
-    label: "F90",
+    label: "F90 S.O.P.",
     icon: ListChecks,
     roles: ["ADMIN"],
     section: "team",
