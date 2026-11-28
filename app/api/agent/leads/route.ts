@@ -25,6 +25,10 @@ export async function GET(req: NextRequest) {
   // plain contact-search caller, which keeps its existing capped-at-20,
   // no-total-count behavior untouched.
   const paginate = searchParams.get("paginate") === "true";
+  // Count-only mode — the Filters Drawer's live "Showing N matching
+  // contacts" readout and the table's "Select all N matching this filter"
+  // banner both just need the count, not a page of rows.
+  const countOnly = searchParams.get("countOnly") === "true";
   const limit = Math.min(Math.max(Number(searchParams.get("limit")) || 20, 1), 100);
   const offset = Math.max(Number(searchParams.get("offset")) || 0, 0);
   const sortKey = searchParams.get("sortKey");
@@ -66,6 +70,11 @@ export async function GET(req: NextRequest) {
   const extraWhere = filterGroupToWhere(filterGroup);
   const where: Prisma.LeadWhereInput = extraWhere ? { AND: [baseWhere, extraWhere] } : baseWhere;
 
+  if (countOnly) {
+    const total = await db.lead.count({ where });
+    return NextResponse.json({ total });
+  }
+
   // Only a few columns are meaningfully sortable server-side — "Last
   // Activity" has no single DB column of its own (it's synthesized
   // client-side from contact log entries), so it isn't included here and
@@ -75,10 +84,15 @@ export async function GET(req: NextRequest) {
     created: "createdAt",
     lastActivity: "updatedAt",
     status: "status",
+    phone: "phone",
+    email: "email",
+    age: "age",
   };
   const sortField = sortKey ? SORTABLE_FIELDS[sortKey] : undefined;
+  // Nulls always sort last regardless of direction — matters for the
+  // nullable columns above (email, age); harmless no-op on the rest.
   const orderBy: Prisma.LeadOrderByWithRelationInput = sortField
-    ? { [sortField]: sortDir }
+    ? { [sortField]: { sort: sortDir, nulls: "last" } }
     : AGENT_LEADS_ORDER_BY;
 
   if (!paginate) {

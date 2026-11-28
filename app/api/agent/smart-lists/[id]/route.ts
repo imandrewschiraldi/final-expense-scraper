@@ -24,6 +24,7 @@ export async function PATCH(
   if (body?.sortConfig !== undefined) data.sortConfig = body.sortConfig;
   if (typeof body?.pageSize === "number") data.pageSize = body.pageSize;
   if (typeof body?.order === "number") data.order = body.order;
+  if (typeof body?.isGlobal === "boolean") data.isGlobal = body.isGlobal;
 
   const smartList = await db.smartList.update({ where: { id }, data });
   return NextResponse.json({ smartList });

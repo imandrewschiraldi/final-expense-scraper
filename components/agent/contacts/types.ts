@@ -1,8 +1,8 @@
 import { LeadStatus } from "@/lib/leadStatus";
 import { LeadType } from "@/lib/leadType";
-import type { FilterCondition, FilterGroup } from "@/lib/contactFilters";
+import type { FilterCondition, FilterField, FilterGroup } from "@/lib/contactFilters";
 
-export type { FilterCondition, FilterGroup };
+export type { FilterCondition, FilterField, FilterGroup };
 
 export type PipelineStage = { id: string; name: string; systemKey: string | null };
 
@@ -38,6 +38,11 @@ export type SmartList = {
   sortConfig: SortConfig;
   pageSize: number;
   order: number;
+  isGlobal: boolean;
+  // Added client-side-visible by the GET route — true only for lists this
+  // agent created themselves; a Global list another agent made is visible
+  // but not owned, so rename/duplicate/delete/reorder stay locked to them.
+  isOwner: boolean;
 };
 
 export const ALL_COLUMNS = [

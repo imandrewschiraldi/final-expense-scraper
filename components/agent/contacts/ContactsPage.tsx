@@ -16,7 +16,21 @@ import {
   Trash2,
   Pencil,
   Copy,
+  GripVertical,
+  Globe,
+  Lock,
 } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -29,6 +43,7 @@ import { AddContactModal } from "./AddContactModal";
 import { ImportModal } from "./ImportModal";
 import { FiltersDrawer } from "./FiltersDrawer";
 import { ContactDrawer } from "./ContactDrawer";
+import { useTagColors } from "./useTagColors";
 import {
   ALL_COLUMNS,
   DEFAULT_VISIBLE_COLUMNS,
@@ -41,6 +56,19 @@ import {
 } from "./types";
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
+
+// Which columns have a server-side sort field (lib/agentLeads's
+// SORTABLE_FIELDS on the GET route) — the rest render as plain headers,
+// not clickable.
+const SORTABLE_COLUMNS: Partial<Record<ColumnKey, string>> = {
+  name: "name",
+  phone: "phone",
+  email: "email",
+  age: "age",
+  status: "status",
+  created: "created",
+  lastActivity: "lastActivity",
+};
 
 function computeAge(dateOfBirth: string | null, fallback: number | null): number | null {
   if (!dateOfBirth) return fallback;
@@ -69,6 +97,91 @@ function saveLocal(key: string, value: unknown) {
     // Private browsing / storage disabled — the page still works, it just
     // won't remember column/page-size prefs across reloads.
   }
+}
+
+function SortableColumnRow({ label, columnKey, onHide }: { label: string; columnKey: ColumnKey; onHide: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: columnKey });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 text-sm text-foreground">
+      <span {...attributes} {...listeners} className="flex h-5 w-5 shrink-0 cursor-grab items-center justify-center text-muted active:cursor-grabbing">
+        <GripVertical className="h-3.5 w-3.5" />
+      </span>
+      <input type="checkbox" checked readOnly onClick={onHide} className="cursor-pointer" />
+      <span className="flex-1">{label}</span>
+    </div>
+  );
+}
+
+// The Columns popover — visible columns are drag-reorderable (their order
+// here is exactly the table's left-to-right column order); hidden columns
+// are a plain checklist below, appended to the end of visibleColumns when
+// checked back on.
+function ColumnsPopover({
+  visibleColumns,
+  setVisibleColumns,
+}: {
+  visibleColumns: ColumnKey[];
+  setVisibleColumns: (updater: (prev: ColumnKey[]) => ColumnKey[]) => void;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor),
+  );
+  const hidden = ALL_COLUMNS.filter((c) => !visibleColumns.includes(c.key));
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = visibleColumns.indexOf(active.id as ColumnKey);
+    const newIndex = visibleColumns.indexOf(over.id as ColumnKey);
+    if (oldIndex === -1 || newIndex === -1) return;
+    setVisibleColumns((prev) => {
+      const reordered = [...prev];
+      const [moved] = reordered.splice(oldIndex, 1);
+      reordered.splice(newIndex, 0, moved);
+      return reordered;
+    });
+  }
+
+  return (
+    <div className="absolute top-full right-0 z-20 mt-1 w-60 space-y-3 rounded-lg border border-border bg-surface p-3 shadow-xl">
+      <div>
+        <p className="font-condensed mb-1.5 text-[10px] font-bold tracking-[0.1em] text-muted uppercase">Visible — drag to reorder</p>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={visibleColumns} strategy={verticalListSortingStrategy}>
+            <div className="space-y-1.5">
+              {visibleColumns.map((key) => (
+                <SortableColumnRow
+                  key={key}
+                  columnKey={key}
+                  label={ALL_COLUMNS.find((c) => c.key === key)!.label}
+                  onHide={() => setVisibleColumns((prev) => prev.filter((c) => c !== key))}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
+      {hidden.length > 0 && (
+        <div>
+          <p className="font-condensed mb-1.5 text-[10px] font-bold tracking-[0.1em] text-muted uppercase">Hidden</p>
+          <div className="space-y-1.5">
+            {hidden.map((col) => (
+              <label key={col.key} className="flex items-center gap-2 pl-7 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  checked={false}
+                  onChange={() => setVisibleColumns((prev) => [...prev, col.key])}
+                />
+                {col.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ContactsPage({
@@ -100,6 +213,13 @@ export function ContactsPage({
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // "Select all N matching this filter" mode — once active, every contact
+  // matching the current view is considered selected except whatever's in
+  // excludedIds (unchecked back out one at a time), rather than tracking
+  // potentially thousands of ids on the client.
+  const [selectAllMatching, setSelectAllMatching] = useState(false);
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  const { colorFor } = useTagColors();
 
   const [showAddContact, setShowAddContact] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -184,11 +304,37 @@ export function ContactsPage({
       });
   }
 
+  function clearSelection() {
+    setSelectedIds(new Set());
+    setSelectAllMatching(false);
+    setExcludedIds(new Set());
+  }
+
+  function isRowSelected(id: string) {
+    return selectAllMatching ? !excludedIds.has(id) : selectedIds.has(id);
+  }
+
   function toggleSelectAll() {
-    setSelectedIds((prev) => (prev.size === contacts.length ? new Set() : new Set(contacts.map((c) => c.id))));
+    const allSelected = contacts.length > 0 && contacts.every((c) => isRowSelected(c.id));
+    if (allSelected) {
+      clearSelection();
+    } else {
+      setSelectAllMatching(false);
+      setExcludedIds(new Set());
+      setSelectedIds(new Set(contacts.map((c) => c.id)));
+    }
   }
 
   function toggleSelect(id: string) {
+    if (selectAllMatching) {
+      setExcludedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      return;
+    }
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -197,21 +343,48 @@ export function ContactsPage({
     });
   }
 
+  const selectedCount = selectAllMatching ? total - excludedIds.size : selectedIds.size;
+
   async function bulkAction(body: Record<string, unknown>) {
+    const selection = selectAllMatching
+      ? {
+          selectAllMatching: true,
+          archived: archiveView,
+          state: stateFilter || null,
+          q: debouncedSearch || null,
+          filters: filterGroup.conditions.length > 0 ? filterGroup : null,
+          excludedIds: Array.from(excludedIds),
+        }
+      : { ids: Array.from(selectedIds) };
     await fetch("/api/agent/leads/bulk", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: Array.from(selectedIds), ...body }),
+      body: JSON.stringify({ ...selection, ...body }),
     });
-    setSelectedIds(new Set());
+    clearSelection();
     reload();
+  }
+
+  function cycleSort(columnKey: ColumnKey) {
+    const key = SORTABLE_COLUMNS[columnKey];
+    if (!key) return;
+    setSortConfig((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: "asc" };
+      if (prev.dir === "asc") return { key, dir: "desc" };
+      return null;
+    });
+    setPage(0);
   }
 
   function exportCsv(selectedOnly: boolean) {
     const params = new URLSearchParams();
-    if (selectedOnly && selectedIds.size > 0) {
+    if (selectedOnly && !selectAllMatching && selectedIds.size > 0) {
       params.set("ids", Array.from(selectedIds).join(","));
     } else {
+      // Either no selection, or "select all matching" — both cases just
+      // export everything the current view's own filters match (minus
+      // explicit per-row exclusions isn't supported for CSV export, an
+      // accepted simplification over the exact in-app selection).
       if (archiveView) params.set("archived", "true");
       if (stateFilter) params.set("state", stateFilter);
     }
@@ -228,10 +401,13 @@ export function ContactsPage({
     if (asNew || !activeSmartList) {
       const name = window.prompt("Name this smart list:");
       if (!name) return;
+      const isGlobal = window.confirm(
+        "Share this smart list with the whole team (Global)?\n\nOK = Global, visible to every agent.\nCancel = Private, only visible to you.",
+      );
       const res = await fetch("/api/agent/smart-lists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, ...payload }),
+        body: JSON.stringify({ name, isGlobal, ...payload }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -295,8 +471,8 @@ export function ContactsPage({
         <Button variant="secondary" onClick={() => setShowImport(true)}>
           Import
         </Button>
-        <Button variant="secondary" onClick={() => exportCsv(selectedIds.size > 0)}>
-          Export{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+        <Button variant="secondary" onClick={() => exportCsv(selectedCount > 0)}>
+          Export{selectedCount > 0 ? ` (${selectedCount.toLocaleString()})` : ""}
         </Button>
       </div>
 
@@ -362,22 +538,7 @@ export function ContactsPage({
               Customize List
             </button>
             {showColumns && (
-              <div className="absolute top-full right-0 z-20 mt-1 w-56 space-y-1 rounded-lg border border-border bg-surface p-3 shadow-xl">
-                {ALL_COLUMNS.map((col) => (
-                  <label key={col.key} className="flex items-center gap-2 text-sm text-foreground">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.includes(col.key)}
-                      onChange={(e) =>
-                        setVisibleColumns((prev) =>
-                          e.target.checked ? [...prev, col.key] : prev.filter((c) => c !== col.key),
-                        )
-                      }
-                    />
-                    {col.label}
-                  </label>
-                ))}
-              </div>
+              <ColumnsPopover visibleColumns={visibleColumns} setVisibleColumns={setVisibleColumns} />
             )}
           </div>
         </div>
@@ -422,9 +583,9 @@ export function ContactsPage({
       </div>
 
       {/* Bulk action bar */}
-      {selectedIds.size > 0 && (
+      {selectedCount > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-copper-dim-gradient bg-surface2 px-4 py-2.5">
-          <span className="text-sm text-foreground">{selectedIds.size} selected</span>
+          <span className="text-sm text-foreground">{selectedCount.toLocaleString()} selected</span>
           <Button
             variant="ghost"
             className="text-xs"
@@ -452,7 +613,7 @@ export function ContactsPage({
             variant="ghost"
             className="!text-red-light text-xs"
             onClick={() => {
-              if (window.confirm(`Delete ${selectedIds.size} contact(s)? This can't be undone.`)) {
+              if (window.confirm(`Delete ${selectedCount.toLocaleString()} contact(s)? This can't be undone.`)) {
                 bulkAction({ action: "delete" });
               }
             }}
@@ -460,9 +621,21 @@ export function ContactsPage({
             <Trash2 className="h-3.5 w-3.5" />
             Delete
           </Button>
-          {selectedIds.size === contacts.length && total > contacts.length && (
+          {!selectAllMatching && selectedIds.size === contacts.length && total > contacts.length && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectAllMatching(true);
+                setExcludedIds(new Set());
+              }}
+              className="font-condensed ml-auto text-[11px] font-bold tracking-wide text-teal-light uppercase hover:underline"
+            >
+              All {contacts.length} on this page selected · Select all {total.toLocaleString()} matching this filter
+            </button>
+          )}
+          {selectAllMatching && (
             <span className="font-condensed ml-auto text-[11px] font-bold tracking-wide text-muted uppercase">
-              All {contacts.length} on this page selected · {total.toLocaleString()} match this filter
+              All {total.toLocaleString()} matching contacts selected
             </span>
           )}
         </div>
@@ -476,21 +649,30 @@ export function ContactsPage({
               <th className="sticky left-0 z-10 w-10 bg-surface px-4 py-3">
                 <input
                   type="checkbox"
-                  checked={contacts.length > 0 && selectedIds.size === contacts.length}
+                  checked={contacts.length > 0 && contacts.every((c) => isRowSelected(c.id))}
                   onChange={toggleSelectAll}
                 />
               </th>
               {visibleColumns.map((key) => {
                 const col = ALL_COLUMNS.find((c) => c.key === key)!;
+                const sortField = SORTABLE_COLUMNS[key];
+                const isSorted = sortField && sortConfig?.key === sortField;
                 return (
                   <th
                     key={key}
+                    onClick={sortField ? () => cycleSort(key) : undefined}
                     className={cn(
                       "px-4 py-3",
+                      sortField && "cursor-pointer select-none hover:text-foreground",
                       key === "name" && "sticky left-10 z-10 bg-surface shadow-[2px_0_4px_rgba(0,0,0,0.3)]",
                     )}
                   >
-                    {col.label}
+                    <span className="inline-flex items-center gap-1">
+                      {col.label}
+                      {isSorted && (
+                        <span className="metal-copper-text">{sortConfig?.dir === "asc" ? "↑" : "↓"}</span>
+                      )}
+                    </span>
                   </th>
                 );
               })}
@@ -510,7 +692,7 @@ export function ContactsPage({
               return (
                 <tr key={contact.id} className="group border-b border-border/60 hover:bg-surface2">
                   <td className="sticky left-0 z-10 bg-surface px-4 py-3 group-hover:bg-surface2">
-                    <input type="checkbox" checked={selectedIds.has(contact.id)} onChange={() => toggleSelect(contact.id)} />
+                    <input type="checkbox" checked={isRowSelected(contact.id)} onChange={() => toggleSelect(contact.id)} />
                   </td>
                   {visibleColumns.map((key) => (
                     <td
@@ -544,7 +726,11 @@ export function ContactsPage({
                       {key === "tags" && (
                         <div className="flex flex-wrap gap-1">
                           {contact.tags.slice(0, 2).map((t) => (
-                            <span key={t} className="font-condensed rounded-full bg-copper-glow px-2 py-0.5 text-[10px] font-bold text-copper">
+                            <span
+                              key={t}
+                              style={{ backgroundColor: `${colorFor(t)}26`, color: colorFor(t) }}
+                              className="font-condensed rounded-full px-2 py-0.5 text-[10px] font-bold"
+                            >
                               {t}
                             </span>
                           ))}
@@ -645,6 +831,13 @@ export function ContactsPage({
             setPage(0);
             setShowFilters(false);
           }}
+          countParams={(() => {
+            const params = new URLSearchParams();
+            if (archiveView) params.set("archived", "true");
+            if (stateFilter) params.set("state", stateFilter);
+            if (debouncedSearch) params.set("q", debouncedSearch);
+            return params;
+          })()}
         />
       )}
       {drawerContactId && <ContactDrawer leadId={drawerContactId} onClose={() => setDrawerContactId(null)} />}
@@ -668,6 +861,103 @@ export function ContactsPage({
   );
 }
 
+function SmartListRow({
+  list,
+  editingId,
+  editingName,
+  setEditingName,
+  onStartEdit,
+  onRename,
+  onToggleGlobal,
+  onDuplicate,
+  onRemove,
+}: {
+  list: SmartList;
+  editingId: string | null;
+  editingName: string;
+  setEditingName: (name: string) => void;
+  onStartEdit: () => void;
+  onRename: () => void;
+  onToggleGlobal: () => void;
+  onDuplicate: () => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: list.id,
+    disabled: !list.isOwner,
+  });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const isEditing = editingId === list.id;
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 rounded-lg border border-border bg-surface2 p-2.5">
+      <span
+        {...(list.isOwner ? attributes : {})}
+        {...(list.isOwner ? listeners : {})}
+        title={list.isOwner ? "Drag to reorder" : undefined}
+        className={cn(
+          "flex h-6 w-6 shrink-0 items-center justify-center text-muted",
+          list.isOwner ? "cursor-grab touch-none active:cursor-grabbing" : "opacity-20",
+        )}
+      >
+        <GripVertical className="h-4 w-4" />
+      </span>
+      {isEditing ? (
+        <Input
+          value={editingName}
+          onChange={(e) => setEditingName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onRename()}
+          autoFocus
+          className="flex-1"
+        />
+      ) : (
+        <span className="flex-1 text-sm text-foreground">{list.name}</span>
+      )}
+      {list.isOwner ? (
+        <button
+          type="button"
+          onClick={onToggleGlobal}
+          title={list.isGlobal ? "Global — visible to every agent. Click to make Private." : "Private — only you. Click to share with the team."}
+          className={cn("shrink-0", list.isGlobal ? "text-teal-light" : "text-muted hover:text-foreground")}
+        >
+          {list.isGlobal ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+        </button>
+      ) : (
+        <span title="Global — shared by a teammate" className="shrink-0 text-teal-light">
+          <Globe className="h-4 w-4" />
+        </span>
+      )}
+      {isEditing ? (
+        <Button variant="ghost" className="text-xs" onClick={onRename}>
+          Save
+        </Button>
+      ) : (
+        <button
+          type="button"
+          onClick={onStartEdit}
+          disabled={!list.isOwner}
+          className="text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-20"
+          aria-label="Rename"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      )}
+      <button type="button" onClick={onDuplicate} className="text-muted hover:text-foreground" aria-label="Duplicate">
+        <Copy className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={!list.isOwner}
+        className="text-muted hover:text-red-light disabled:cursor-not-allowed disabled:opacity-20"
+        aria-label="Delete"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 function ManageSmartListsModal({
   smartLists,
   onClose,
@@ -679,6 +969,10 @@ function ManageSmartListsModal({
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor),
+  );
 
   async function rename(id: string) {
     if (!editingName.trim()) return;
@@ -689,9 +983,21 @@ function ManageSmartListsModal({
     });
     if (res.ok) {
       const data = await res.json();
-      onChange(smartLists.map((s) => (s.id === id ? data.smartList : s)));
+      onChange(smartLists.map((s) => (s.id === id ? { ...data.smartList, isOwner: s.isOwner } : s)));
     }
     setEditingId(null);
+  }
+
+  async function toggleGlobal(list: SmartList) {
+    const res = await fetch(`/api/agent/smart-lists/${list.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isGlobal: !list.isGlobal }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      onChange(smartLists.map((s) => (s.id === list.id ? { ...data.smartList, isOwner: s.isOwner } : s)));
+    }
   }
 
   async function duplicate(list: SmartList) {
@@ -708,7 +1014,7 @@ function ManageSmartListsModal({
     });
     if (res.ok) {
       const data = await res.json();
-      onChange([...smartLists, data.smartList]);
+      onChange([...smartLists, { ...data.smartList, isOwner: true }]);
     }
   }
 
@@ -718,49 +1024,59 @@ function ManageSmartListsModal({
     if (res.ok) onChange(smartLists.filter((s) => s.id !== id));
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = smartLists.map((s) => s.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = [...smartLists];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+    onChange(reordered);
+    // Only persist new positions for lists this agent owns — a Global list
+    // someone else made can't be reordered via this agent's PATCH anyway
+    // (ownerId-scoped), so it just keeps whatever order value it already has.
+    await Promise.all(
+      reordered.map((list, index) =>
+        list.isOwner && list.order !== index
+          ? fetch(`/api/agent/smart-lists/${list.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ order: index }),
+            })
+          : Promise.resolve(),
+      ),
+    );
+  }
+
   return (
     <Modal open onClose={onClose} title="Manage Smart Lists" maxWidthClassName="max-w-md">
-      <div className="space-y-2">
-        {smartLists.length === 0 && <p className="text-sm text-muted">No saved smart lists yet.</p>}
-        {smartLists.map((list) => (
-          <div key={list.id} className="flex items-center gap-2 rounded-lg border border-border bg-surface2 p-2.5">
-            {editingId === list.id ? (
-              <Input
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && rename(list.id)}
-                autoFocus
-                className="flex-1"
-              />
-            ) : (
-              <span className="flex-1 text-sm text-foreground">{list.name}</span>
-            )}
-            {editingId === list.id ? (
-              <Button variant="ghost" className="text-xs" onClick={() => rename(list.id)}>
-                Save
-              </Button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
+      {smartLists.length === 0 && <p className="text-sm text-muted">No saved smart lists yet.</p>}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={smartLists.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {smartLists.map((list) => (
+              <SmartListRow
+                key={list.id}
+                list={list}
+                editingId={editingId}
+                editingName={editingName}
+                setEditingName={setEditingName}
+                onStartEdit={() => {
                   setEditingId(list.id);
                   setEditingName(list.name);
                 }}
-                className="text-muted hover:text-foreground"
-                aria-label="Rename"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-            )}
-            <button type="button" onClick={() => duplicate(list)} className="text-muted hover:text-foreground" aria-label="Duplicate">
-              <Copy className="h-4 w-4" />
-            </button>
-            <button type="button" onClick={() => remove(list.id)} className="text-muted hover:text-red-light" aria-label="Delete">
-              <Trash2 className="h-4 w-4" />
-            </button>
+                onRename={() => rename(list.id)}
+                onToggleGlobal={() => toggleGlobal(list)}
+                onDuplicate={() => duplicate(list)}
+                onRemove={() => remove(list.id)}
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
     </Modal>
   );
 }

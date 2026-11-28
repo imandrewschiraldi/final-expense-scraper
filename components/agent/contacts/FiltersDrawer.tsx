@@ -1,66 +1,135 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
-import type { FilterCondition, FilterGroup } from "./types";
+import type { FilterCondition, FilterField, FilterGroup } from "./types";
 
-const FIELD_OPTIONS: { value: FilterCondition["field"]; label: string; operators: { value: string; label: string }[] }[] = [
-  {
-    value: "firstName",
-    label: "First Name",
-    operators: [{ value: "contains", label: "contains" }, { value: "equals", label: "equals" }],
-  },
-  {
-    value: "lastName",
-    label: "Last Name",
-    operators: [{ value: "contains", label: "contains" }, { value: "equals", label: "equals" }],
-  },
-  { value: "phone", label: "Phone", operators: [{ value: "contains", label: "contains" }] },
-  { value: "email", label: "Email", operators: [{ value: "contains", label: "contains" }] },
-  { value: "source", label: "Source", operators: [{ value: "equals", label: "is" }] },
-  { value: "state", label: "State", operators: [{ value: "equals", label: "is" }] },
-  {
-    value: "createdAt",
-    label: "Created Date",
-    operators: [{ value: "after", label: "is after" }, { value: "before", label: "is before" }],
-  },
-  {
-    value: "updatedAt",
-    label: "Last Activity Date",
-    operators: [{ value: "after", label: "is after" }, { value: "before", label: "is before" }],
-  },
-  {
-    value: "tags",
-    label: "Tags",
-    operators: [
-      { value: "includesAny", label: "includes any" },
-      { value: "includesAll", label: "includes all" },
-      { value: "excludes", label: "excludes" },
-    ],
-  },
-  { value: "hasOpenTask", label: "Has Open Task", operators: [{ value: "isTrue", label: "is true" }, { value: "isFalse", label: "is false" }] },
+type FieldType = "text" | "phone" | "tags" | "date" | "numeric" | "boolean";
+
+const FIELD_DEFS: { value: FilterField; label: string; category: string; type: FieldType }[] = [
+  { value: "firstName", label: "First Name", category: "Standard Fields", type: "text" },
+  { value: "lastName", label: "Last Name", category: "Standard Fields", type: "text" },
+  { value: "email", label: "Email", category: "Standard Fields", type: "text" },
+  { value: "phone", label: "Phone", category: "Standard Fields", type: "phone" },
+  { value: "state", label: "State", category: "Standard Fields", type: "text" },
+  { value: "city", label: "City", category: "Standard Fields", type: "text" },
+  { value: "source", label: "Source", category: "Standard Fields", type: "text" },
+  { value: "tags", label: "Tags", category: "Tags", type: "tags" },
+  { value: "createdAt", label: "Created Date", category: "Dates", type: "date" },
+  { value: "updatedAt", label: "Last Activity Date", category: "Dates", type: "date" },
+  { value: "age", label: "Age", category: "Other", type: "numeric" },
+  { value: "tobaccoUse", label: "Tobacco Use", category: "Other", type: "boolean" },
+  { value: "dndAll", label: "DND", category: "Other", type: "boolean" },
+  { value: "hasOpenTask", label: "Has Open Task", category: "Contact Activity", type: "boolean" },
 ];
+
+const OPERATORS_BY_TYPE: Record<FieldType, { value: string; label: string }[]> = {
+  text: [
+    { value: "is", label: "is" },
+    { value: "isNot", label: "is not" },
+    { value: "contains", label: "contains" },
+    { value: "doesNotContain", label: "does not contain" },
+    { value: "startsWith", label: "starts with" },
+    { value: "isEmpty", label: "is empty" },
+    { value: "isNotEmpty", label: "is not empty" },
+  ],
+  phone: [{ value: "contains", label: "contains" }],
+  tags: [
+    { value: "is", label: "is" },
+    { value: "isNot", label: "is not" },
+    { value: "includesAny", label: "any of" },
+    { value: "includesAll", label: "all of" },
+    { value: "isEmpty", label: "is empty (untagged)" },
+    { value: "isNotEmpty", label: "is not empty" },
+  ],
+  date: [
+    { value: "on", label: "on" },
+    { value: "before", label: "before" },
+    { value: "after", label: "after" },
+    { value: "between", label: "between" },
+    { value: "today", label: "today" },
+    { value: "yesterday", label: "yesterday" },
+    { value: "lastNDays", label: "last N days" },
+    { value: "nextNDays", label: "next N days" },
+    { value: "thisWeek", label: "this week" },
+    { value: "thisMonth", label: "this month" },
+  ],
+  numeric: [
+    { value: "equals", label: "equals" },
+    { value: "notEquals", label: "not equals" },
+    { value: "gt", label: "greater than" },
+    { value: "lt", label: "less than" },
+    { value: "between", label: "between" },
+    { value: "isEmpty", label: "is empty" },
+    { value: "isNotEmpty", label: "is not empty" },
+  ],
+  boolean: [
+    { value: "isTrue", label: "is true" },
+    { value: "isFalse", label: "is false" },
+  ],
+};
+
+const NO_VALUE_OPERATORS = new Set([
+  "isEmpty",
+  "isNotEmpty",
+  "isTrue",
+  "isFalse",
+  "today",
+  "yesterday",
+  "thisWeek",
+  "thisMonth",
+]);
+const RANGE_OPERATORS = new Set(["between"]);
+const NUMBER_INPUT_OPERATORS = new Set(["lastNDays", "nextNDays"]);
+
+function fieldDef(field: FilterField) {
+  return FIELD_DEFS.find((f) => f.value === field)!;
+}
 
 function newCondition(): FilterCondition {
   return { id: crypto.randomUUID(), field: "firstName", operator: "contains", value: "" };
 }
 
+const CATEGORIES = Array.from(new Set(FIELD_DEFS.map((f) => f.category)));
+
 export function FiltersDrawer({
   initial,
   onClose,
   onApply,
+  countParams,
 }: {
   initial: FilterGroup;
   onClose: () => void;
   onApply: (group: FilterGroup) => void;
+  // The rest of the Contacts page's current view (archive/state/search) so
+  // the live counter below reflects what Apply would actually show, not
+  // just these conditions in isolation.
+  countParams: URLSearchParams;
 }) {
   const [logic, setLogic] = useState<"AND" | "OR">(initial.logic);
   const [conditions, setConditions] = useState<FilterCondition[]>(
     initial.conditions.length > 0 ? initial.conditions : [],
   );
+  const [count, setCount] = useState<number | null>(null);
+  const [counting, setCounting] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setCounting(true);
+      const params = new URLSearchParams(countParams);
+      params.set("countOnly", "true");
+      if (conditions.length > 0) params.set("filters", JSON.stringify({ logic, conditions }));
+      fetch(`/api/agent/leads?${params.toString()}`)
+        .then((res) => res.json())
+        .then((data) => setCount(data.total ?? null))
+        .finally(() => setCounting(false));
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logic, JSON.stringify(conditions)]);
 
   function updateCondition(id: string, patch: Partial<FilterCondition>) {
     setConditions((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
@@ -90,7 +159,7 @@ export function FiltersDrawer({
           {conditions.length > 1 && (
             <div className="flex items-center gap-2 text-sm text-muted">
               Match
-              <Select value={logic} onChange={(e) => setLogic(e.target.value as "AND" | "OR")} className="w-24">
+              <Select value={logic} onChange={(e) => setLogic(e.target.value as "AND" | "OR")} className="!w-24">
                 <option value="AND">ALL</option>
                 <option value="OR">ANY</option>
               </Select>
@@ -99,23 +168,38 @@ export function FiltersDrawer({
           )}
 
           {conditions.map((condition) => {
-            const fieldDef = FIELD_OPTIONS.find((f) => f.value === condition.field)!;
+            const def = fieldDef(condition.field);
+            const operators = OPERATORS_BY_TYPE[def.type];
+            const needsRange = RANGE_OPERATORS.has(condition.operator);
+            const needsNumber = NUMBER_INPUT_OPERATORS.has(condition.operator);
+            const noValue = NO_VALUE_OPERATORS.has(condition.operator);
+            const valueInputType = def.type === "date" && !needsNumber ? "date" : needsNumber ? "number" : "text";
+
             return (
               <div key={condition.id} className="space-y-2 rounded-lg border border-border bg-surface2 p-3">
                 <div className="flex items-center gap-2">
                   <Select
                     value={condition.field}
                     onChange={(e) => {
-                      const field = e.target.value as FilterCondition["field"];
-                      const def = FIELD_OPTIONS.find((f) => f.value === field)!;
-                      updateCondition(condition.id, { field, operator: def.operators[0].value, value: "" });
+                      const field = e.target.value as FilterField;
+                      const nextDef = fieldDef(field);
+                      updateCondition(condition.id, {
+                        field,
+                        operator: OPERATORS_BY_TYPE[nextDef.type][0].value,
+                        value: "",
+                        value2: undefined,
+                      });
                     }}
                     className="flex-1"
                   >
-                    {FIELD_OPTIONS.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
+                    {CATEGORIES.map((cat) => (
+                      <optgroup key={cat} label={cat}>
+                        {FIELD_DEFS.filter((f) => f.category === cat).map((f) => (
+                          <option key={f.value} value={f.value}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </Select>
                   <button
@@ -129,21 +213,46 @@ export function FiltersDrawer({
                 </div>
                 <Select
                   value={condition.operator}
-                  onChange={(e) => updateCondition(condition.id, { operator: e.target.value })}
+                  onChange={(e) => updateCondition(condition.id, { operator: e.target.value, value: "", value2: undefined })}
                 >
-                  {fieldDef.operators.map((op) => (
+                  {operators.map((op) => (
                     <option key={op.value} value={op.value}>
                       {op.label}
                     </option>
                   ))}
                 </Select>
-                {condition.field !== "hasOpenTask" && (
+                {!noValue && !needsRange && (
                   <Input
-                    type={condition.field === "createdAt" || condition.field === "updatedAt" ? "date" : "text"}
+                    type={valueInputType}
                     value={condition.value}
                     onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
-                    placeholder="Value"
+                    placeholder={
+                      def.type === "tags"
+                        ? "tag1, tag2…"
+                        : needsNumber
+                          ? "Number of days"
+                          : "Value"
+                    }
                   />
+                )}
+                {!noValue && needsRange && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type={def.type === "date" ? "date" : "number"}
+                      value={condition.value}
+                      onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
+                      className="flex-1"
+                      placeholder="From"
+                    />
+                    <span className="text-xs text-muted">and</span>
+                    <Input
+                      type={def.type === "date" ? "date" : "number"}
+                      value={condition.value2 ?? ""}
+                      onChange={(e) => updateCondition(condition.id, { value2: e.target.value })}
+                      className="flex-1"
+                      placeholder="To"
+                    />
+                  </div>
                 )}
               </div>
             );
@@ -155,18 +264,23 @@ export function FiltersDrawer({
           </Button>
         </div>
 
-        <div className={cn("flex items-center justify-between gap-2 border-t border-border p-4")}>
-          <button
-            type="button"
-            onClick={() => {
-              setConditions([]);
-              onApply({ logic: "AND", conditions: [] });
-            }}
-            className="font-condensed text-[11px] font-bold tracking-[0.1em] text-muted uppercase hover:text-foreground"
-          >
-            Clear All
-          </button>
-          <Button onClick={() => onApply({ logic, conditions })}>Apply Filters</Button>
+        <div className={cn("space-y-2 border-t border-border p-4")}>
+          <p className="text-center text-xs text-muted">
+            {counting ? "Counting…" : count !== null ? `Showing ${count.toLocaleString()} matching contacts` : ""}
+          </p>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setConditions([]);
+                onApply({ logic: "AND", conditions: [] });
+              }}
+              className="font-condensed text-[11px] font-bold tracking-[0.1em] text-muted uppercase hover:text-foreground"
+            >
+              Clear All
+            </button>
+            <Button onClick={() => onApply({ logic, conditions })}>Apply Filters</Button>
+          </div>
         </div>
       </div>
     </div>

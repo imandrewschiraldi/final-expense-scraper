@@ -1,12 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
+import { buildAgentLeadsWhere } from "@/lib/agentLeads";
+import { filterGroupToWhere, type FilterGroup } from "@/lib/contactFilters";
 
 type BulkAction =
   | { action: "addTag"; tag: string }
   | { action: "removeTag"; tag: string }
   | { action: "delete" }
   | { action: "createTask"; title: string; dueAt: string | null; description: string };
+
+// Either an explicit set of ids (the normal "N selected" case), or
+// "every contact matching the current Contacts page filters" (the
+// "Select all 1,284 contacts in this Smart List" banner) minus whatever the
+// agent has since unchecked — resolved synchronously against the same
+// where-clause builder the GET route uses, rather than a background job
+// queue: this app's whole bulk-action surface is already synchronous
+// transactions, and an agent's own book of leads never approaches a size
+// where that stops being instant.
+type Selection =
+  | { ids: string[] }
+  | {
+      selectAllMatching: true;
+      archived?: boolean;
+      state?: string | null;
+      q?: string | null;
+      tags?: string[] | null;
+      source?: string | null;
+      filters?: FilterGroup | null;
+      excludedIds?: string[];
+    };
+
+async function resolveIds(agentId: string, body: Record<string, unknown>): Promise<string[]> {
+  if (Array.isArray(body.ids)) {
+    return body.ids.filter((id): id is string => typeof id === "string");
+  }
+  if (body.selectAllMatching !== true) return [];
+
+  const selection = body as Extract<Selection, { selectAllMatching: true }>;
+  const baseWhere = buildAgentLeadsWhere(agentId, {
+    status: null,
+    pipelineStageId: null,
+    pipelineStageSystemKey: null,
+    archived: selection.archived ?? false,
+    state: selection.state ?? null,
+    q: selection.q ?? null,
+    tags: selection.tags ?? null,
+    source: selection.source ?? null,
+  });
+  const extraWhere = filterGroupToWhere(selection.filters ?? null);
+  const where: Prisma.LeadWhereInput = extraWhere ? { AND: [baseWhere, extraWhere] } : baseWhere;
+  const excluded = new Set(selection.excludedIds ?? []);
+
+  const matches = await db.lead.findMany({ where, select: { id: true } });
+  return matches.map((l) => l.id).filter((id) => !excluded.has(id));
+}
 
 // The Contacts page's bulk action bar (checked rows -> Add Tag / Remove
 // Tag / Delete / Create Bulk Task). Scoped the same way every other agent
@@ -18,15 +67,15 @@ export async function POST(req: NextRequest) {
   if ("error" in guard) return guard.error;
   const agentId = guard.session.user.id;
 
-  const body = await req.json().catch(() => null);
-  const ids = Array.isArray(body?.ids)
-    ? body.ids.filter((id: unknown): id is string => typeof id === "string")
-    : [];
+  const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!body) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+
+  const ids = await resolveIds(agentId, body);
   if (ids.length === 0) {
     return NextResponse.json({ error: "No contacts selected" }, { status: 400 });
   }
 
-  const action = body as BulkAction;
+  const action = body as unknown as BulkAction;
   const where = { id: { in: ids }, assignedAgentId: agentId };
 
   // Delete only ever touches leads this agent imported themselves, same
@@ -64,6 +113,14 @@ export async function POST(req: NextRequest) {
         }),
       ),
     );
+    if (action.action === "addTag") {
+      const { colorForTagName } = await import("@/app/api/agent/tag-colors/route");
+      await db.tagColor.upsert({
+        where: { name: tag },
+        update: {},
+        create: { name: tag, color: colorForTagName(tag) },
+      });
+    }
     return NextResponse.json({ updated: leads.length });
   }
 
