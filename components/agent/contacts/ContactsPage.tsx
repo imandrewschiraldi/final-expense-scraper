@@ -676,7 +676,7 @@ export function ContactsPage({
                   </th>
                 );
               })}
-              <th className="px-4 py-3" />
+              <th className="w-28 px-4 py-3" />
             </tr>
           </thead>
           <tbody>
@@ -751,8 +751,8 @@ export function ContactsPage({
                         ))}
                     </td>
                   ))}
-                  <td className="px-4 py-3">
-                    <div className="hidden items-center gap-1 group-hover:flex">
+                  <td className="w-28 px-4 py-3">
+                    <div className="flex items-center gap-1 pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100">
                       <a href={telHref(contact.phone)} title="Call" className="text-muted hover:text-foreground">
                         <PhoneIcon className="h-4 w-4" />
                       </a>
