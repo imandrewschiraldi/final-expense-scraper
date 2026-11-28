@@ -363,14 +363,22 @@ export async function POST(req: NextRequest) {
         const result = await searchCrm(guard.session.user.id, query);
         allRecords.push(...result.records);
         contents.push({
-          role: "function",
+          // Gemini's Content role is only ever "user" or "model" — unlike
+          // OpenAI's separate "function"/"tool" role, a functionResponse
+          // part is sent back as the "user" turn. Gemini rejected every
+          // tool-call round with a 400 ("Role 'function' is not
+          // supported") until this was caught, meaning search_crm/
+          // web_search never actually worked once the model tried to call
+          // either of them — see the "Couldn't reach the AI assistant"
+          // error every one of those requests surfaced instead.
+          role: "user",
           parts: [{ functionResponse: { name, response: { matches: result.matches } } }],
         });
       } else if (name === "web_search") {
         const result = await liveSearch(query);
         allSources.push(...(result?.sources ?? []));
         contents.push({
-          role: "function",
+          role: "user",
           parts: [
             {
               functionResponse: {
@@ -384,7 +392,7 @@ export async function POST(req: NextRequest) {
         });
       } else {
         contents.push({
-          role: "function",
+          role: "user",
           parts: [{ functionResponse: { name, response: { error: "Unknown tool" } } }],
         });
       }
