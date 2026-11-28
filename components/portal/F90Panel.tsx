@@ -36,6 +36,18 @@ const PAPER_BORDER = "#e2d9c8";
 const PAPER_BG = "#fffdf8";
 const ACCENT = "#8a4a1f";
 
+// Winding-path positions (percent of the road container) for each stop —
+// deliberately not a straight evenly-spaced row, so this actually reads as
+// a road climbing toward graduation rather than a plain progress stepper.
+const ROAD_POSITIONS: Record<string, { x: number; y: number }> = {
+  P1: { x: 8, y: 82 },
+  P2: { x: 26, y: 40 },
+  P3: { x: 44, y: 76 },
+  P4: { x: 62, y: 34 },
+  P5: { x: 80, y: 72 },
+  GRAD: { x: 94, y: 22 },
+};
+
 function WorksheetLinkPill({ link }: { link: F90Link }) {
   const className =
     "rounded-lg border-2 px-3 py-1.5 text-xs font-bold transition-colors";
@@ -625,14 +637,21 @@ function PhaseDetail({
           </div>
         )
       ) : (
-        <div className="space-y-4">
-          {phase.steps.map((step) => {
+        // Numbered worksheet lines flowing down one continuous page — a
+        // thin rule between items, not a separate boxed/shadowed card per
+        // step, since a real worksheet is one sheet, not a stack of cards.
+        // The embedded modules below (mini KPI tracker, suitability sheet,
+        // training strip, the 6-box call workflow) keep their own light
+        // boxes on purpose — those are actual fillable fields/sections on
+        // the sheet, not another layer of "step cards."
+        <div>
+          {phase.steps.map((step, i) => {
             const checked = completedSteps.has(step.key);
             return (
               <div
                 key={step.key}
-                className="rounded-xl border-4 p-5 transition-colors"
-                style={{ borderColor: checked ? "#1f7a3d" : PAPER_BORDER, background: PAPER_BG }}
+                className={cn("py-5", i > 0 && "border-t-2")}
+                style={{ borderColor: PAPER_BORDER }}
               >
                 <div className="flex items-start gap-4">
                   <button
@@ -640,17 +659,23 @@ function PhaseDetail({
                     onClick={() => onToggle(step.key, !checked)}
                     disabled={savingKey === step.key}
                     aria-label={checked ? "Mark incomplete" : "Mark complete"}
-                    className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 transition-colors"
+                    className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 transition-colors"
                     style={{
-                      borderColor: checked ? "#1f7a3d" : PAPER_BORDER,
-                      background: checked ? "#1f7a3d" : "#fff",
+                      borderColor: checked ? "#1f7a3d" : INK_MUTED,
+                      background: checked ? "#1f7a3d" : "transparent",
                     }}
                   >
-                    {checked && <Check className="h-5 w-5 text-white" />}
+                    {checked && <Check className="h-4 w-4 text-white" />}
                   </button>
                   <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-extrabold" style={{ color: INK }}>
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <span className="text-base font-extrabold" style={{ color: ACCENT }}>
+                        {i + 1}.
+                      </span>
+                      <p
+                        className="text-lg font-extrabold"
+                        style={{ color: INK, textDecoration: checked ? "line-through" : undefined }}
+                      >
                         {step.title}
                       </p>
                       {checked && (
@@ -666,7 +691,7 @@ function PhaseDetail({
                 </div>
 
                 {step.links && (
-                  <div className="mt-4 ml-11 flex flex-wrap gap-2">
+                  <div className="mt-4 ml-10 flex flex-wrap gap-2">
                     {step.links.map((link) => (
                       <WorksheetLinkPill key={link.label} link={link} />
                     ))}
@@ -674,13 +699,13 @@ function PhaseDetail({
                 )}
 
                 {step.trainingSchedule && (
-                  <div className="ml-11">
+                  <div className="ml-10">
                     <TrainingScheduleStrip schedule={step.trainingSchedule} agentTimeZone={agentTimeZone} />
                   </div>
                 )}
 
                 {step.subSteps && (
-                  <div className="mt-4 ml-11 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-4 ml-10 grid gap-3 sm:grid-cols-2">
                     {step.subSteps.map((sub) => (
                       <div
                         key={sub.heading}
@@ -699,12 +724,12 @@ function PhaseDetail({
                 )}
 
                 {step.key === "P3_S1" && (
-                  <div className="ml-11">
+                  <div className="ml-10">
                     <MiniKpiTracker />
                   </div>
                 )}
                 {step.key === "P3_S2" && (
-                  <div className="ml-11">
+                  <div className="ml-10">
                     <SuitabilitySheetWidget />
                   </div>
                 )}
@@ -830,69 +855,84 @@ export function F90Panel({
           Roadmap to Graduation
         </p>
 
-        <div className="relative overflow-x-auto pb-2">
-          <div className="relative mx-auto flex min-w-[620px] max-w-3xl items-start justify-between px-2">
-            <div className="absolute top-8 right-[8%] left-[8%] h-[3px] rounded-full bg-white/10" />
-            <div
-              className="absolute top-8 left-[8%] h-[3px] rounded-full"
-              style={{
-                width: `${(Math.min(currentPhaseIndex, F90_PHASES.length - 1) / (roadItems.length - 1)) * 84}%`,
-                background: "linear-gradient(90deg, var(--copper-metal-dk), var(--copper-metal-hi))",
-                boxShadow: "0 0 12px var(--copper-metal-hi)",
-              }}
-            />
-            {roadItems.map((item) => {
-              const isGrad = item.key === "GRAD";
-              const isComplete = !isGrad && item.index < currentPhaseIndex;
-              const isCurrent = !isGrad && item.index === currentPhaseIndex;
-              const isSelected = selectedNode === item.key;
+        <div className="relative h-80 w-full sm:h-72">
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            className="absolute inset-0 h-full w-full"
+          >
+            {roadItems.slice(0, -1).map((item, i) => {
+              const a = ROAD_POSITIONS[item.key];
+              const b = ROAD_POSITIONS[roadItems[i + 1].key];
+              const traveled = item.index < currentPhaseIndex;
               return (
-                <button
+                <line
                   key={item.key}
-                  type="button"
-                  data-testid={`f90-road-node-${item.key}`}
-                  onClick={() => setSelectedNode(item.key)}
-                  className="relative z-10 flex flex-col items-center gap-2"
-                  style={{ width: `${100 / roadItems.length}%` }}
-                >
-                  <span
-                    className={cn(
-                      "flex h-16 w-16 items-center justify-center rounded-full border-4 font-condensed text-lg font-extrabold transition-transform hover:scale-105",
-                      isSelected && "scale-110",
-                      isCurrent && "animate-pulse",
-                      isGrad
-                        ? "border-[var(--copper-metal-hi)] bg-black/40 text-[var(--copper-metal-hi)]"
-                        : isComplete
-                          ? "border-white/20 bg-[linear-gradient(135deg,var(--copper-metal-dk),var(--copper-metal-hi))] text-black"
-                          : isCurrent
-                            ? "border-[var(--copper-metal-hi)] bg-black/40 text-white"
-                            : isSelected
-                              ? "border-white/60 bg-black/40 text-white"
-                              : "border-white/15 bg-black/30 text-white/50",
-                    )}
-                    style={
-                      isCurrent
-                        ? { boxShadow: "0 0 22px 2px var(--copper-metal-hi)" }
-                        : isComplete
-                          ? { boxShadow: "0 0 10px rgba(240,160,80,0.4)" }
-                          : undefined
-                    }
-                  >
-                    {isGrad ? (
-                      <GraduationCap className="h-7 w-7" />
-                    ) : isComplete ? (
-                      <Check className="h-7 w-7" />
-                    ) : (
-                      item.index + 1
-                    )}
-                  </span>
-                  <span className="max-w-[100px] text-center text-[11px] font-bold tracking-wide text-white/80 uppercase">
-                    {item.title}
-                  </span>
-                </button>
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke={traveled ? "var(--copper-metal-hi)" : "rgba(255,255,255,0.3)"}
+                  strokeWidth={traveled ? 1 : 0.6}
+                  strokeDasharray={traveled ? undefined : "2.5,2.5"}
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                />
               );
             })}
-          </div>
+          </svg>
+          {roadItems.map((item) => {
+            const isGrad = item.key === "GRAD";
+            const isComplete = !isGrad && item.index < currentPhaseIndex;
+            const isCurrent = !isGrad && item.index === currentPhaseIndex;
+            const isSelected = selectedNode === item.key;
+            const pos = ROAD_POSITIONS[item.key];
+            return (
+              <button
+                key={item.key}
+                type="button"
+                data-testid={`f90-road-node-${item.key}`}
+                onClick={() => setSelectedNode(item.key)}
+                className="absolute z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2"
+                style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+              >
+                <span
+                  className={cn(
+                    "flex h-16 w-16 items-center justify-center rounded-full border-4 font-condensed text-lg font-extrabold transition-transform hover:scale-105",
+                    isSelected && "scale-110",
+                    isCurrent && "animate-pulse",
+                    isGrad
+                      ? "border-[var(--copper-metal-hi)] bg-black/40 text-[var(--copper-metal-hi)]"
+                      : isComplete
+                        ? "border-white/20 bg-[linear-gradient(135deg,var(--copper-metal-dk),var(--copper-metal-hi))] text-black"
+                        : isCurrent
+                          ? "border-[var(--copper-metal-hi)] bg-black/40 text-white"
+                          : isSelected
+                            ? "border-white/60 bg-black/40 text-white"
+                            : "border-white/15 bg-black/30 text-white/50",
+                  )}
+                  style={
+                    isCurrent
+                      ? { boxShadow: "0 0 22px 2px var(--copper-metal-hi)" }
+                      : isComplete
+                        ? { boxShadow: "0 0 10px rgba(240,160,80,0.4)" }
+                        : undefined
+                  }
+                >
+                  {isGrad ? (
+                    <GraduationCap className="h-7 w-7" />
+                  ) : isComplete ? (
+                    <Check className="h-7 w-7" />
+                  ) : (
+                    item.index + 1
+                  )}
+                </span>
+                <span className="max-w-[100px] text-center text-[11px] font-bold tracking-wide text-white/80 uppercase">
+                  {item.title}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
