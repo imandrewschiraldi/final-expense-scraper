@@ -46,7 +46,7 @@ export default async function F90Page() {
   );
 
   return (
-    <div className="pt-10 lg:pt-24">
+    <div>
       <F90Panel
         agentName={user.name}
         agentTimeZone={user.timeZone}

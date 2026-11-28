@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default function CalendarPage() {
   return (
-    <div className="pt-10 lg:pt-24">
+    <div>
       <PageHeading slug="calendar" alt="Calendar" />
       <CalendarWidget />
     </div>
