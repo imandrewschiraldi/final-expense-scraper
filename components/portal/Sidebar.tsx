@@ -161,7 +161,7 @@ const NAV_ITEMS: NavItem[] = [
 
   {
     href: "/agent/dashboard",
-    label: "My Leads",
+    label: "Contacts",
     icon: Users,
     roles: ["MANAGER", "AGENT"],
     section: "leads",

@@ -19,6 +19,10 @@ export async function GET(req: NextRequest) {
   const pipelineStageId = searchParams.get("pipelineStageId");
   const archived = searchParams.get("archived") === "true";
   const state = searchParams.get("state");
+  // The Contacts page's "Export" button: checked rows export just those
+  // ids, with every other filter ignored; no ids means the active
+  // filtered view exports in full, same as before this param existed.
+  const ids = searchParams.get("ids")?.split(",").filter(Boolean) ?? null;
 
   let pipelineStageSystemKey: string | null = null;
   if (pipelineStageId) {
@@ -30,13 +34,15 @@ export async function GET(req: NextRequest) {
   }
 
   const leads = await db.lead.findMany({
-    where: buildAgentLeadsWhere(guard.session.user.id, {
-      status,
-      pipelineStageId,
-      pipelineStageSystemKey,
-      archived,
-      state,
-    }),
+    where: ids
+      ? { id: { in: ids }, assignedAgentId: guard.session.user.id }
+      : buildAgentLeadsWhere(guard.session.user.id, {
+          status,
+          pipelineStageId,
+          pipelineStageSystemKey,
+          archived,
+          state,
+        }),
     include: { pipelineStage: { select: { name: true } } },
     orderBy: AGENT_LEADS_ORDER_BY,
   });
@@ -72,6 +78,8 @@ export async function GET(req: NextRequest) {
       "Existing Coverage": lead.existingCoverage ?? "",
       "Coverage Requested": lead.coverageAmountRequested ?? "",
       "Military Branch": lead.militaryBranch ?? "",
+      Source: lead.source ?? "",
+      Tags: lead.tags.join("; "),
       "Source Notes": lead.vendorNotes ?? "",
     })),
   );

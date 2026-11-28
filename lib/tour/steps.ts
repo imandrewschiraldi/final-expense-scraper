@@ -185,7 +185,7 @@ export const TOUR_SECTIONS: TourSection[] = [
         id: "my-leads",
         path: "/agent/dashboard",
         selector: 'a[href="/agent/dashboard"]',
-        title: "My Leads",
+        title: "Contacts",
         body: "Every lead currently assigned to you, with its status and contact info.",
         roles: ["MANAGER", "AGENT"],
       },

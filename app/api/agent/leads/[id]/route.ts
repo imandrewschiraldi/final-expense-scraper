@@ -71,6 +71,8 @@ export async function PATCH(
     weight,
     tobaccoUse,
     medicalNotes,
+    tags,
+    source,
   } = body as {
     status?: LeadStatus;
     pipelineStageId?: string;
@@ -90,6 +92,10 @@ export async function PATCH(
     weight?: string;
     tobaccoUse?: boolean | null;
     medicalNotes?: string;
+    // Contacts page additions — tags (bulk or per-contact) and the
+    // free-text acquisition source.
+    tags?: string[];
+    source?: string | null;
   };
 
   const isFieldEdit =
@@ -105,7 +111,9 @@ export async function PATCH(
     height !== undefined ||
     weight !== undefined ||
     tobaccoUse !== undefined ||
-    medicalNotes !== undefined;
+    medicalNotes !== undefined ||
+    tags !== undefined ||
+    source !== undefined;
 
   if (status !== undefined && !LEAD_STATUSES.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
@@ -212,6 +220,8 @@ export async function PATCH(
     if (tobaccoUse !== undefined) editData.tobaccoUse = tobaccoUse;
     if (medicalNotes !== undefined)
       editData.medicalNotes = medicalNotes.trim() || null;
+    if (tags !== undefined) editData.tags = tags;
+    if (source !== undefined) editData.source = source?.trim() || null;
   }
 
   // The status this update resolves to for vault/contact-log purposes —

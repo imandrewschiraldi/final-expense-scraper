@@ -18,6 +18,11 @@ export function buildAgentLeadsWhere(
     archived?: boolean;
     state?: string | null;
     q?: string | null;
+    // Contacts page "Smart List"/filter-drawer additions — all optional,
+    // so every existing caller (Book of Business's contact search, the
+    // plain tab-filtered list) keeps working unchanged.
+    tags?: string[] | null;
+    source?: string | null;
   },
 ): Prisma.LeadWhereInput {
   const status = filters.status as LeadStatus | null | undefined;
@@ -45,13 +50,22 @@ export function buildAgentLeadsWhere(
     isArchived: filters.archived ?? false,
     ...stageFilter,
     ...(filters.state ? { state: filters.state } : {}),
-    // Book of Business's "Add Opportunity" contact search — matches first
-    // or last name containing the query, case-insensitively.
+    ...(filters.tags && filters.tags.length > 0 ? { tags: { hasSome: filters.tags } } : {}),
+    ...(filters.source ? { source: filters.source } : {}),
+    // Book of Business's "Add Opportunity" contact search matches name
+    // only; the Contacts page's live search also matches phone/email —
+    // both share this one helper, so phone/email just add more OR branches
+    // a name-only caller never populates fields for anyway. The phone
+    // branch only runs when the query has digits in it — an empty
+    // `contains: ""` matches every row, which would silently turn a
+    // pure-letters name search into "match everything".
     ...(q
       ? {
           OR: [
             { firstName: { contains: q, mode: "insensitive" } },
             { lastName: { contains: q, mode: "insensitive" } },
+            { email: { contains: q, mode: "insensitive" } },
+            ...(q.replace(/[^\d]/g, "") ? [{ phone: { contains: q.replace(/[^\d]/g, "") } }] : []),
           ],
         }
       : {}),

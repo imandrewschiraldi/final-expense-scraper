@@ -186,6 +186,9 @@ model User {
   announcementItems      AnnouncementItem[]
   calendarEventsCreated  CalendarEvent[]               @relation("CalendarEventsCreated")
   calendarEventsOwned    CalendarEvent[]               @relation("CalendarEventsOwned")
+  leadTasksAssigned      LeadTask[]                    @relation("LeadTasksAssigned")
+  leadTasksCreated       LeadTask[]                    @relation("LeadTasksCreated")
+  smartLists             SmartList[]                   @relation("SmartListsOwned")
 
   @@map("users")
 }
@@ -311,11 +314,22 @@ model Lead {
   // time — distinct from the `notes` relation below, which is the
   // in-app contact-note history agents write themselves.
   vendorNotes             String?
+  /// Free-form labels an agent applies from the Contacts page (e.g. "Hot
+  /// Lead", "Spanish Speaking") — agent-defined, not an admin-managed
+  /// taxonomy like LeadVendor, so no separate Tag table: a plain string
+  /// array is enough and matches the LeadVendor.bullets convention.
+  tags                    String[] @default([])
+  /// Free-text acquisition channel an agent picks on the Contacts page's
+  /// Add Contact form (e.g. "Self Gen", "Referral", "Purchased Mailer") —
+  /// distinct from `sourceImport` below, which tracks the CSV batch a
+  /// bulk-imported lead came from, not this kind of agent-facing category.
+  source                  String?
 
   notes             LeadNote[]
   contactLogEntries ContactLogEntry[]
   policies          Policy[]
   calendarEvents    CalendarEvent[]
+  tasks             LeadTask[]
 
   @@index([state])
   @@index([status])
@@ -1303,4 +1317,61 @@ model F90StepContent {
   updatedAt   DateTime @updatedAt
 
   @@map("f90_step_content")
+}
+
+/// A to-do tied to one Lead — "Tasks" on the Contacts page (callbacks,
+/// follow-ups, e-app reminders) and the per-contact drawer's Tasks tab are
+/// both just filtered views over this same table (all of an agent's open
+/// tasks across every lead, vs. one lead's own). Deliberately separate
+/// from CalendarEvent — a task is a personal reminder to act on a lead,
+/// not a scheduled block of time with a start/end, so it doesn't need
+/// recurrence, all-day/color, or any of CalendarEvent's calendar-specific
+/// fields.
+model LeadTask {
+  id           String    @id @default(cuid())
+  leadId       String
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  dueAt        DateTime?
+  assignedToId String?
+  assignedTo   User?     @relation("LeadTasksAssigned", fields: [assignedToId], references: [id], onDelete: SetNull)
+  completed    Boolean   @default(false)
+  createdById  String?
+  createdBy    User?     @relation("LeadTasksCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([leadId])
+  @@index([assignedToId, completed])
+  @@index([dueAt])
+  @@map("lead_tasks")
+}
+
+/// One agent's saved filter view on the Contacts page (the "Smart Lists"
+/// tab bar) — e.g. "Hot Follow-Ups" or "No Answer". Personal to the agent
+/// who created it (ownerId), not shared/admin-managed, since this is each
+/// agent's own working view of their own book, same scope as the rest of
+/// the Contacts page. `filterConditions`/`visibleColumns`/`sortConfig` are
+/// free-form JSON/arrays rather than fully normalized columns — the set of
+/// filterable fields and sortable columns is expected to grow, and a saved
+/// view is read back by the same client code that wrote it, not queried
+/// directly in SQL.
+model SmartList {
+  id               String   @id @default(cuid())
+  ownerId          String
+  owner            User     @relation("SmartListsOwned", fields: [ownerId], references: [id], onDelete: Cascade)
+  name             String
+  /// { logic: "AND" | "OR", conditions: [{ field, operator, value }] }
+  filterConditions Json
+  visibleColumns   String[] @default([])
+  /// { key, dir: "asc" | "desc" } | null
+  sortConfig       Json?
+  pageSize         Int      @default(20)
+  order            Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([ownerId, order])
+  @@map("smart_lists")
 }

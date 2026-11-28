@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { requireAgent } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
 import { buildAgentLeadsWhere, AGENT_LEADS_ORDER_BY } from "@/lib/agentLeads";
+import { filterGroupToWhere, type FilterGroup } from "@/lib/contactFilters";
 import { isLeadType } from "@/lib/leadType";
 import { generateUniqueLeadNumbers } from "@/lib/leadNumber";
 import { stageIdForSystemKey, getStageTarget } from "@/lib/pipelineSync";
@@ -16,6 +18,16 @@ export async function GET(req: NextRequest) {
   const archived = searchParams.get("archived") === "true";
   const state = searchParams.get("state");
   const q = searchParams.get("q");
+  const tags = searchParams.get("tags")?.split(",").filter(Boolean) ?? null;
+  const source = searchParams.get("source");
+  // Contacts page pagination — "limit" alone (no "paginate" flag) means a
+  // plain contact-search caller, which keeps its existing capped-at-20,
+  // no-total-count behavior untouched.
+  const paginate = searchParams.get("paginate") === "true";
+  const limit = Math.min(Math.max(Number(searchParams.get("limit")) || 20, 1), 100);
+  const offset = Math.max(Number(searchParams.get("offset")) || 0, 0);
+  const sortKey = searchParams.get("sortKey");
+  const sortDir = searchParams.get("sortDir") === "asc" ? "asc" : "desc";
 
   let pipelineStageSystemKey: string | null = null;
   if (pipelineStageId) {
@@ -26,31 +38,96 @@ export async function GET(req: NextRequest) {
     pipelineStageSystemKey = target.systemKey;
   }
 
-  const leads = await db.lead.findMany({
-    where: buildAgentLeadsWhere(guard.session.user.id, {
-      status,
-      pipelineStageId,
-      pipelineStageSystemKey,
-      archived,
-      state,
-      q,
-    }),
-    include: { pipelineStage: { select: { name: true, systemKey: true } } },
-    orderBy: AGENT_LEADS_ORDER_BY,
-    // A contact search only needs enough to list and pick a result —
-    // capped so a broad query (e.g. a common first name) can't return an
-    // unbounded list.
-    take: q ? 20 : undefined,
+  const baseWhere = buildAgentLeadsWhere(guard.session.user.id, {
+    status,
+    pipelineStageId,
+    pipelineStageSystemKey,
+    archived,
+    state,
+    q,
+    tags,
+    source,
   });
 
-  return NextResponse.json({ leads });
+  // The Contacts page's "More Filters" drawer — a JSON-encoded FilterGroup
+  // merged onto the base where above (not replacing it), so a filter-drawer
+  // condition narrows the already-tab/search-filtered set rather than
+  // bypassing it.
+  const filtersParam = searchParams.get("filters");
+  let filterGroup: FilterGroup | null = null;
+  if (filtersParam) {
+    try {
+      filterGroup = JSON.parse(filtersParam);
+    } catch {
+      return NextResponse.json({ error: "Invalid filters" }, { status: 400 });
+    }
+  }
+  const extraWhere = filterGroupToWhere(filterGroup);
+  const where: Prisma.LeadWhereInput = extraWhere ? { AND: [baseWhere, extraWhere] } : baseWhere;
+
+  // Only a few columns are meaningfully sortable server-side — "Last
+  // Activity" has no single DB column of its own (it's synthesized
+  // client-side from contact log entries), so it isn't included here and
+  // falls back to the default order below instead of erroring.
+  const SORTABLE_FIELDS: Record<string, string> = {
+    name: "firstName",
+    created: "createdAt",
+    lastActivity: "updatedAt",
+    status: "status",
+  };
+  const sortField = sortKey ? SORTABLE_FIELDS[sortKey] : undefined;
+  const orderBy: Prisma.LeadOrderByWithRelationInput = sortField
+    ? { [sortField]: sortDir }
+    : AGENT_LEADS_ORDER_BY;
+
+  if (!paginate) {
+    const leads = await db.lead.findMany({
+      where,
+      include: { pipelineStage: { select: { name: true, systemKey: true } } },
+      orderBy,
+      // A contact search only needs enough to list and pick a result —
+      // capped so a broad query (e.g. a common first name) can't return an
+      // unbounded list.
+      take: q ? 20 : undefined,
+    });
+    return NextResponse.json({ leads });
+  }
+
+  const [leads, total] = await Promise.all([
+    db.lead.findMany({
+      where,
+      include: {
+        pipelineStage: { select: { id: true, name: true, systemKey: true } },
+        tasks: {
+          where: { completed: false },
+          orderBy: { dueAt: "asc" },
+          select: { dueAt: true },
+        },
+      },
+      orderBy,
+      skip: offset,
+      take: limit,
+    }),
+    db.lead.count({ where }),
+  ]);
+
+  // Flattens each lead's open-task list into the two fields the Contacts
+  // table actually renders, so the client doesn't need its own copy of
+  // this "soonest due, or null" logic.
+  const contacts = leads.map((lead) => ({
+    ...lead,
+    openTaskCount: lead.tasks.length,
+    nextTaskDueAt: lead.tasks[0]?.dueAt ?? null,
+    tasks: undefined,
+  }));
+
+  return NextResponse.json({ leads: contacts, total });
 }
 
-// A single manual lead entry — distinct from the CSV import flow. Not
-// currently wired to any button (Book of Business's "+ Add Opportunity"
-// now searches existing contacts instead of creating new ones — see
-// AddOpportunityForm), kept as a general-purpose way to create one lead
-// directly.
+// A single manual lead entry — the Contacts page's "Add Contact" modal,
+// plus a general-purpose way to create one lead directly (Book of
+// Business's "+ Add Opportunity" instead searches existing contacts
+// rather than creating new ones — see AddOpportunityForm).
 export async function POST(req: NextRequest) {
   const guard = await requireAgent();
   if ("error" in guard) return guard.error;
@@ -62,7 +139,14 @@ export async function POST(req: NextRequest) {
     typeof body?.lastName === "string" ? body.lastName.trim() : "";
   const phone =
     typeof body?.phone === "string" ? body.phone.replace(/[^\d+]/g, "") : "";
-  const state =
+  const email = typeof body?.email === "string" ? body.email.trim() : "";
+  const city = typeof body?.city === "string" ? body.city.trim() : "";
+  const zip = typeof body?.zip === "string" ? body.zip.trim() : "";
+  const source = typeof body?.source === "string" ? body.source.trim() : "";
+  const tags = Array.isArray(body?.tags)
+    ? body.tags.filter((t: unknown): t is string => typeof t === "string" && t.trim().length > 0)
+    : [];
+  let state =
     typeof body?.state === "string" ? body.state.trim().toUpperCase() : "";
   const leadType = body?.leadType;
   const dateOfBirth =
@@ -79,14 +163,27 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (!state)
-    return NextResponse.json({ error: "State is required" }, { status: 400 });
   if (!isLeadType(leadType)) {
     return NextResponse.json(
       { error: "A valid lead type is required" },
       { status: 400 },
     );
   }
+
+  // Falls back to the agent's own primary licensed state when the form
+  // leaves it blank — `state` is a required column (every lead needs one
+  // for licensing/compliance filtering elsewhere), but the agent's own
+  // contacts overwhelmingly share that one state, so defaulting it removes
+  // a redundant field from the common case instead of rejecting the save.
+  if (!state) {
+    const agent = await db.user.findUnique({
+      where: { id: guard.session.user.id },
+      select: { licensedStates: true },
+    });
+    state = agent?.licensedStates[0] ?? "";
+  }
+  if (!state)
+    return NextResponse.json({ error: "State is required" }, { status: 400 });
 
   let parsedDob: Date | null = null;
   if (dateOfBirth) {
@@ -116,6 +213,11 @@ export async function POST(req: NextRequest) {
       pipelineStageId,
       assignedAgentId: agentId,
       assignedAt: new Date(),
+      email: email || null,
+      city: city || null,
+      zip: zip || null,
+      source: source || null,
+      tags,
     },
   });
 
