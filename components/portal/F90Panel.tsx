@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Lock, GraduationCap, Vault, Check, Upload, FileCheck, Power } from "lucide-react";
-import { Stepper } from "@/components/ui/Stepper";
 import { cn } from "@/lib/cn";
 import {
   F90_PHASES,
@@ -23,7 +22,6 @@ import {
   type F90Link,
   type F90DocType,
 } from "@/lib/f90Content";
-import { formatKpiDate } from "@/lib/kpiTracker";
 import { zonedWallTimeToInstant } from "@/lib/timeZoneMath";
 import { F90Hud } from "@/components/portal/F90Hud";
 import { F90Diploma } from "@/components/portal/F90Diploma";
@@ -77,97 +75,38 @@ function WorksheetLinkPill({ link }: { link: F90Link }) {
   );
 }
 
-const KPI_FIELDS = [
-  { key: "dials" as const, label: "Outbound Dials", goal: 300, step: 5 },
-  { key: "apptsShown" as const, label: "Appointments", goal: 3, step: 1 },
-  { key: "dealsClosed" as const, label: "Closed Policies", goal: 1, step: 1 },
+const DAILY_NON_NEGOTIABLES = [
+  { label: "Dials", value: "300" },
+  { label: "Conversions", value: "30" },
+  { label: "Appointments Booked", value: "3" },
+  { label: "Close", value: "1" },
 ];
 
-/** A genuinely live, editable mini KPI Tracker — the same per-agent daily
- *  KpiEntry the full tracker reads and writes (same +/- Stepper control,
- *  same endpoint), not a read-only summary of it. */
-function MiniKpiTracker() {
-  const today = useMemo(() => formatKpiDate(new Date()), []);
-  const [entry, setEntry] = useState<{
-    dials: number;
-    apptsShown: number;
-    dealsClosed: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch(`/api/agent/kpi-tracker/entry?date=${today}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.entry) setEntry(data.entry);
-      })
-      .finally(() => setLoading(false));
-  }, [today]);
-
-  function updateField(field: "dials" | "apptsShown" | "dealsClosed", value: number) {
-    setEntry((prev) => ({
-      dials: prev?.dials ?? 0,
-      apptsShown: prev?.apptsShown ?? 0,
-      dealsClosed: prev?.dealsClosed ?? 0,
-      ...prev,
-      [field]: value,
-    }));
-    setError(null);
-    fetch("/api/agent/kpi-tracker/entry", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: today, [field]: value }),
-    }).catch(() => setError("Didn't save — try again."));
-  }
-
-  const values = {
-    dials: entry?.dials ?? 0,
-    apptsShown: entry?.apptsShown ?? 0,
-    dealsClosed: entry?.dealsClosed ?? 0,
-  };
-  const hitGoal = KPI_FIELDS.some((f) => values[f.key] >= f.goal);
-
+/** A static statement of the agency's Standard Operating Procedure (SOP)
+ *  for daily production — not a live tracker. Agents log their actual
+ *  numbers in the real KPI Tracker (linked above via step.links); this is
+ *  just the fixed standard they're held to. */
+function DailyNonNegotiables() {
   return (
     <div className="mt-4 rounded-xl border-2 p-4" style={{ borderColor: PAPER_BORDER, background: PAPER_BG }}>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-extrabold tracking-wide uppercase" style={{ color: INK }}>
-          Win the day: 300 dials, 3 appointments, or 1 closed policy
-        </p>
-        {hitGoal && (
-          <span className="rounded-full bg-[#1f7a3d] px-2.5 py-1 text-xs font-bold text-white">
-            Goal hit today ✓
-          </span>
-        )}
+      <p className="text-xs font-extrabold tracking-wide uppercase" style={{ color: ACCENT }}>
+        Standard Operating Procedure
+      </p>
+      <p className="mt-1 mb-3 text-sm font-extrabold tracking-wide uppercase" style={{ color: INK }}>
+        Hit any one of these every working day
+      </p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {DAILY_NON_NEGOTIABLES.map((b) => (
+          <div key={b.label} className="rounded-lg border-2 p-3 text-center" style={{ borderColor: PAPER_BORDER }}>
+            <p className="text-2xl font-extrabold" style={{ color: ACCENT }}>
+              {b.value}
+            </p>
+            <p className="mt-1 text-[11px] font-bold uppercase" style={{ color: INK_MUTED }}>
+              {b.label}
+            </p>
+          </div>
+        ))}
       </div>
-      {loading ? (
-        <p className="text-sm" style={{ color: INK_MUTED }}>
-          Loading today&apos;s numbers…
-        </p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-3">
-          {KPI_FIELDS.map((f) => (
-            <div key={f.key}>
-              <label className="mb-1.5 block text-xs font-bold uppercase" style={{ color: INK_MUTED }}>
-                {f.label}
-              </label>
-              <Stepper
-                value={values[f.key]}
-                step={f.step}
-                onChange={(v) => updateField(f.key, v)}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-      {error && <p className="mt-2 text-xs font-semibold text-red-600">{error}</p>}
-      <Link
-        href="/agent/kpi-tracker"
-        className="mt-3 inline-block text-xs font-bold underline"
-        style={{ color: ACCENT }}
-      >
-        Open Full KPI Tracker →
-      </Link>
     </div>
   );
 }
@@ -878,11 +817,7 @@ function MissionDrawer({
         </div>
       )}
 
-      {step.key === "P3_S1" && (
-        <div className="mt-4">
-          <MiniKpiTracker />
-        </div>
-      )}
+      {step.key === "P3_S1" && <DailyNonNegotiables />}
       {step.key === "P3_S2" && (
         <div className="mt-4">
           <SuitabilitySheetWidget />

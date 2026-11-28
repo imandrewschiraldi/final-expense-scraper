@@ -189,7 +189,7 @@ export const F90_PHASES: F90Phase[] = [
         key: "P3_S1",
         title: "Daily Non-Negotiable KPIs",
         description:
-          "Transition into full-time dialing and hit one of the following benchmarks every working day: 300 outbound dials, OR 3 sit-down/phone appointments, OR 1 closed policy. Today's numbers are tracked live below.",
+          "This is the agency's Standard Operating Procedure (SOP) for full-time daily production — hit any one of the following benchmarks every working day: 300 outbound dials, 30 conversions, 3 appointments booked, or 1 close. Log your actual numbers in the KPI Tracker.",
         links: [{ label: "Open Full KPI Tracker →", href: "/agent/kpi-tracker" }],
       },
       {
