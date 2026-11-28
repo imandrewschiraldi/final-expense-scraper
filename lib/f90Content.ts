@@ -265,7 +265,7 @@ export const F90_PHASES: F90Phase[] = [
   {
     key: "P5",
     title: "Scaling Lead Generation",
-    subtitle: "After 5 Sales or Day 90",
+    subtitle: "Ongoing",
     steps: [],
     channels: [
       {
@@ -425,36 +425,3 @@ export function f90CurrentTrunkIndex(completedSteps: string[]): number {
   return phaseNodes.length; // the Vault's index once every phase is done
 }
 
-// Formula-driven 2D positions for the trunk-and-branch tree — a wide
-// left-right snake for the 6 trunk nodes (plenty of vertical room between
-// them for branches to fan out), with each phase's branch nodes hanging
-// off their trunk node in a short alternating-side comb, connected back
-// to that trunk node only (not to each other or to the main path).
-const TRUNK_LANES = [28, 72, 28, 72, 28, 72];
-// Tall enough to fit Phase 1's 6 branches comfortably spaced between it
-// and the next trunk node without crowding.
-const TRUNK_Y_GAP = 420;
-const BRANCH_SIDE_OFFSET = 22;
-
-export function f90TrunkNodePosition(index: number): { x: number; y: number } {
-  const x = TRUNK_LANES[index % TRUNK_LANES.length];
-  const y = 110 + index * TRUNK_Y_GAP;
-  return { x, y };
-}
-
-/** A branch node's position hangs between its own trunk node and the next
- *  one, offset to alternating sides like twigs off a tree, scaled to fit
- *  however many branches that particular trunk node has. */
-export function f90BranchNodePosition(
-  trunkIndex: number,
-  branchIndex: number,
-  branchCount: number,
-): { x: number; y: number } {
-  const trunk = f90TrunkNodePosition(trunkIndex);
-  const next = f90TrunkNodePosition(trunkIndex + 1);
-  const span = next.y - trunk.y;
-  const y = trunk.y + ((branchIndex + 1) / (branchCount + 1)) * span;
-  const side = branchIndex % 2 === 0 ? 1 : -1;
-  const x = Math.min(94, Math.max(6, trunk.x + side * BRANCH_SIDE_OFFSET));
-  return { x, y };
-}

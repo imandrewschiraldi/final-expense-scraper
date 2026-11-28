@@ -123,8 +123,8 @@ export function F90Diploma({
   const remaining = Math.max(0, F90_GRADUATION_AP - issuedAP);
 
   return (
-    <div className="f90-road-bg relative rounded-2xl border border-white/10 p-6 shadow-[0_0_40px_rgba(0,0,0,0.5)] sm:p-10">
-      <p className="font-condensed mb-6 text-center text-sm font-extrabold tracking-[0.3em] text-white/80 uppercase">
+    <div className="relative rounded-2xl border-2 p-6 sm:p-10" style={{ borderColor: "#141414", background: "#ffffff" }}>
+      <p className="mb-6 text-center text-sm font-extrabold tracking-[0.3em] uppercase" style={{ color: "#b5551e" }}>
         Final Destination
       </p>
 
@@ -150,11 +150,11 @@ export function F90Diploma({
 
         {!unlocked && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-black/50 px-4 text-center">
-            <Lock className="h-8 w-8 text-white/80" />
-            <p className="font-condensed text-sm font-extrabold tracking-wide text-white uppercase">
+            <Lock className="h-8 w-8 text-[#ffffff]/80" />
+            <p className="font-condensed text-sm font-extrabold tracking-wide text-[#ffffff] uppercase">
               {`$${Math.round(remaining).toLocaleString()} in Issued AP to go`}
             </p>
-            <p className="max-w-xs text-xs text-white/60">
+            <p className="max-w-xs text-xs text-[#ffffff]/60">
               Complete every Phase 1–4 step and reach $
               {F90_GRADUATION_AP.toLocaleString()} Issued AP to unlock your diploma.
             </p>

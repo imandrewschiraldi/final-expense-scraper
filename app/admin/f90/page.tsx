@@ -22,7 +22,7 @@ export default async function AdminF90Page() {
 
   return (
     <div>
-      <h1 className="font-condensed mb-10 text-2xl font-extrabold tracking-wide text-white uppercase">
+      <h1 className="font-condensed mb-10 text-2xl font-extrabold tracking-wide text-foreground uppercase">
         F90 — First 90 Days
       </h1>
       <F90AdminPanel

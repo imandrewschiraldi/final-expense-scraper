@@ -134,7 +134,7 @@ export function F90AdminPanel({
                   className="border-b border-border/60 hover:bg-surface2"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-white">{agent.name}</p>
+                    <p className="font-semibold text-foreground">{agent.name}</p>
                     <p className="text-xs text-muted">{agent.email}</p>
                   </td>
                   <td className="px-4 py-3 text-muted">
