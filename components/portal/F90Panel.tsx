@@ -3,8 +3,9 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Lock, GraduationCap, Vault, Check, Upload, FileCheck, Power } from "lucide-react";
+import { Lock, GraduationCap, Vault, Check, Upload, FileCheck, Power, Download } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { Modal } from "@/components/ui/Modal";
 import {
   F90_TOTAL_STEPS,
   F90_DAYS,
@@ -36,10 +37,16 @@ const PAPER_BORDER = "#141414";
 const PAPER_BG = "#ffffff";
 const ACCENT = "#b5551e";
 const GREEN = "#1f7a3d";
+// A clear "this is clickable" affordance shared by every worksheet button/
+// link pill — a copper-tinted fill plus a slight lift/shadow on hover, so
+// they read as buttons against the flat white page instead of just text in
+// a box. `transition-colors` alone (the previous treatment) doesn't
+// animate transform/box-shadow, hence `transition-all` here.
+const HOVER_LIFT =
+  "transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_4px_10px_rgba(0,0,0,0.18)] active:translate-y-0 active:shadow-none";
 
 function WorksheetLinkPill({ link }: { link: F90Link }) {
-  const className =
-    "border-2 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide transition-colors";
+  const className = "border-2 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide";
   if (!link.href) {
     return (
       <span
@@ -53,7 +60,11 @@ function WorksheetLinkPill({ link }: { link: F90Link }) {
   const style = { borderColor: INK, color: ACCENT, background: "#fff" };
   if (link.href.startsWith("/")) {
     return (
-      <Link href={link.href} className={cn(className, "hover:bg-[#f5efe3]")} style={style}>
+      <Link
+        href={link.href}
+        className={cn(className, HOVER_LIFT, "hover:bg-[rgba(181,85,30,0.08)]")}
+        style={style}
+      >
         {link.label}
       </Link>
     );
@@ -63,7 +74,7 @@ function WorksheetLinkPill({ link }: { link: F90Link }) {
       href={link.href}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn(className, "hover:bg-[#f5efe3]")}
+      className={cn(className, HOVER_LIFT, "hover:bg-[rgba(181,85,30,0.08)]")}
       style={style}
     >
       {link.label}
@@ -448,6 +459,12 @@ function DocUploadDropzone({
     }
   }
 
+  // Shows an actual thumbnail for an uploaded image, since "Uploaded" plus
+  // a checkmark icon doesn't let an agent confirm they attached the right
+  // file — a scanned PDF (no reliable in-browser thumbnail) still gets the
+  // "View File" link below instead.
+  const isImage = url ? /\.(png|jpe?g|webp)(\?|$)/i.test(url) : false;
+
   return (
     <div
       onDragOver={(e) => e.preventDefault()}
@@ -458,8 +475,9 @@ function DocUploadDropzone({
       }}
       onClick={() => inputRef.current?.click()}
       className={cn(
-        "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed p-3 text-center transition-colors",
-        url ? "bg-[rgba(31,122,61,0.08)]" : "hover:bg-[#f5efe3]",
+        "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed p-3 text-center",
+        HOVER_LIFT,
+        url ? "bg-[rgba(31,122,61,0.08)] hover:bg-[rgba(31,122,61,0.16)]" : "hover:bg-[rgba(181,85,30,0.08)]",
       )}
       style={{ borderColor: url ? GREEN : PAPER_BORDER }}
     >
@@ -474,7 +492,14 @@ function DocUploadDropzone({
           e.target.value = "";
         }}
       />
-      {url ? (
+      {url && isImage ? (
+        <img
+          src={url}
+          alt={`${label} preview`}
+          className="h-12 w-12 rounded-md border-2 object-cover"
+          style={{ borderColor: GREEN }}
+        />
+      ) : url ? (
         <FileCheck className="h-5 w-5" style={{ color: GREEN }} />
       ) : (
         <Upload className="h-5 w-5" style={{ color: INK_MUTED }} />
@@ -482,9 +507,22 @@ function DocUploadDropzone({
       <p className="text-[11px] font-extrabold uppercase" style={{ color: INK }}>
         {label}
       </p>
-      <p className="text-[9px]" style={{ color: INK_MUTED }}>
-        {uploading ? "Uploading…" : url ? "Uploaded" : "Click or drop"}
-      </p>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-[9px] font-bold tracking-wide uppercase underline decoration-dotted underline-offset-2 hover:text-[#141414]"
+          style={{ color: GREEN }}
+        >
+          View File →
+        </a>
+      ) : (
+        <p className="text-[9px]" style={{ color: INK_MUTED }}>
+          {uploading ? "Uploading…" : "Click or drop"}
+        </p>
+      )}
       {error && <p className="text-[9px] text-red-600">{error}</p>}
     </div>
   );
@@ -505,8 +543,9 @@ function DialerSeatToggle({
       onClick={() => onToggle(!checked)}
       disabled={saving}
       className={cn(
-        "flex w-full items-center justify-center gap-3 rounded-xl border-2 px-4 py-3 transition-colors",
-        checked ? "bg-[rgba(31,122,61,0.08)]" : "hover:bg-[#f5efe3]",
+        "flex w-full items-center justify-center gap-3 rounded-xl border-2 px-4 py-3",
+        HOVER_LIFT,
+        checked ? "bg-[rgba(31,122,61,0.08)] hover:bg-[rgba(31,122,61,0.16)]" : "hover:bg-[rgba(181,85,30,0.08)]",
       )}
       style={{ borderColor: checked ? GREEN : PAPER_BORDER }}
     >
@@ -533,8 +572,9 @@ function GenericCompleteButton({
       onClick={onClick}
       disabled={saving}
       className={cn(
-        "flex w-full items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-extrabold tracking-wide uppercase transition-colors",
-        checked ? "bg-[rgba(31,122,61,0.08)]" : "hover:bg-[#f5efe3]",
+        "flex w-full items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-extrabold tracking-wide uppercase",
+        HOVER_LIFT,
+        checked ? "bg-[rgba(31,122,61,0.08)] hover:bg-[rgba(31,122,61,0.16)]" : "hover:bg-[rgba(181,85,30,0.08)]",
       )}
       style={{ borderColor: checked ? GREEN : PAPER_BORDER, color: checked ? GREEN : INK }}
     >
@@ -628,6 +668,72 @@ function F90VideoEmbed({ url }: { url: string }) {
   );
 }
 
+const CLIENT_SUITABILITY_SHEET_URL = "/documents/client-suitability-sheet.pdf";
+
+/** Opens a reference document the same way Overview's Announcements
+ *  carousel opens a PDF card — the file rendered in an iframe (the
+ *  browser's own PDF viewer) plus a Download link below it. */
+function DocumentModal({
+  title,
+  url,
+  onClose,
+}: {
+  title: string;
+  url: string;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={title}
+      maxWidthClassName="max-w-4xl"
+      panelBorderClassName="border-copper-gradient"
+    >
+      <div className="space-y-4">
+        <iframe
+          src={url}
+          title={title}
+          className="h-[75vh] w-full rounded-lg border border-border bg-white"
+        />
+        <a
+          href={url}
+          download
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-condensed inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-teal-light uppercase hover:underline"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Download
+        </a>
+      </div>
+    </Modal>
+  );
+}
+
+// Turns one exact phrase inside a block of plain text into a clickable
+// trigger — used for "Client Suitability Sheet" inside the Open & Discover
+// sub-step's prompt — without needing to restructure F90Step's plain-string
+// `prompt` field into rich text just for this one case.
+function linkifyPhrase(text: string, phrase: string, onClick: () => void): React.ReactNode {
+  const index = text.indexOf(phrase);
+  if (index === -1) return text;
+  return (
+    <>
+      {text.slice(0, index)}
+      <button
+        type="button"
+        onClick={onClick}
+        className="font-extrabold underline decoration-dotted underline-offset-2 hover:decoration-solid"
+        style={{ color: ACCENT }}
+      >
+        {phrase}
+      </button>
+      {text.slice(index + phrase.length)}
+    </>
+  );
+}
+
 function StepRow({
   n,
   step,
@@ -647,6 +753,7 @@ function StepRow({
   docUrls: DocUrls;
   onDocUploaded: (docType: F90DocType, url: string) => void;
 }) {
+  const [suitabilitySheetOpen, setSuitabilitySheetOpen] = useState(false);
   return (
     <div className="flex gap-3 border-b pb-4 last:border-b-0 last:pb-0" style={{ borderColor: "#e5e5e5" }}>
       <NumberBadge n={n} done={checked} />
@@ -696,11 +803,19 @@ function StepRow({
                   {sub.heading}
                 </p>
                 <p className="mt-1.5 text-sm" style={{ color: INK }}>
-                  {sub.prompt}
+                  {linkifyPhrase(sub.prompt, "Client Suitability Sheet", () => setSuitabilitySheetOpen(true))}
                 </p>
               </div>
             ))}
           </div>
+        )}
+
+        {suitabilitySheetOpen && (
+          <DocumentModal
+            title="Client Suitability Sheet"
+            url={CLIENT_SUITABILITY_SHEET_URL}
+            onClose={() => setSuitabilitySheetOpen(false)}
+          />
         )}
 
         {step.key === "P3_S1" && <DailyNonNegotiables />}
